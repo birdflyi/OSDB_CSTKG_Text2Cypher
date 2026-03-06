@@ -41,7 +41,8 @@ def _load_module_from_path(module_path: Path, module_name: str) -> Any:
 
 def _configure_github_tokens(granular_script_path: str | None, input_csv_path: str) -> None:
     """
-    Ensure GH_CoRE request token pool uses data_scripts/etc/authConf.py.
+    Ensure GH_CoRE request token pool uses local data_scripts/etc/authConf.py when present.
+    Reference template: https://github.com/birdflyi/GitHub_Collaboration_Relation_Extraction/blob/main/etc/authConf.py
     Target module: GH_CoRE.utils.request_api.
     """
     input_path = Path(input_csv_path).resolve()
@@ -81,6 +82,9 @@ def _resolve_default_granular_script(input_csv_path: Path) -> Path:
         if cand.exists():
             return cand
     return candidates[0]
+
+
+EXID_PARSER_REFERENCE = "https://github.com/birdflyi/OSDB_STN_reference_coupling_data_analysis/blob/main/script/rag_demo/data_preprocess.py"
 
 
 def _load_granular_fns(granular_script_path: str | None, input_csv_path: str) -> GranularFns:
@@ -245,10 +249,11 @@ def _load_granular_fns_ast_fallback(script_path: Path) -> Any:
 
 
 def _resolve_default_exid_utils(input_csv_path: Path) -> Path:
+    # The repository does not ship a built-in fast_exid parser module.
+    # These are conventional example locations only; users can place a compatible
+    # data_preprocess.py locally or pass --exid-parser-path explicitly.
     candidates = [
-        input_csv_path.resolve().parent.parent / "data_scripts" / "exid_parse_utils.py",
         input_csv_path.resolve().parent.parent / "data_scripts" / "data_preprocess.py",
-        Path(__file__).resolve().parents[3] / "data_scripts" / "exid_parse_utils.py",
         Path(__file__).resolve().parents[3] / "data_scripts" / "data_preprocess.py",
     ]
     for cand in candidates:
@@ -904,6 +909,8 @@ def _parse_exid_fast(
     )
     if not exid_path.exists():
         # Allow deterministic local fallback from entity_id prefixes.
+        # For an external parser implementation, see EXID_PARSER_REFERENCE.
+        # A local data_scripts/data_preprocess.py is only a conventional example path, not a bundled dependency.
         exid_path = None
     module = None
     if exid_path:

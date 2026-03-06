@@ -214,8 +214,6 @@ graph-migration/outputs/
 experiment-harness/outputs/
 
 # Sensitive local configuration
-data_scripts/etc/authConf.py
-data_scripts/etc/filePathConf.py
 
 # Large local raw data snapshots
 data_real/redis_redis_2023_*.csv
@@ -295,4 +293,6 @@ text2cypher-proto/eval/template_first.json
 text2cypher-proto/eval/template_first_check.json
 text2cypher-proto/eval/template_first_mvp.json
 text2cypher-proto/eval/template_first_mvp_repair.json
+# Local confidential auth backup
+data_scripts/etc/authConf_confidential_copy.py
 

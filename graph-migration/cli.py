@@ -98,7 +98,7 @@ def build_parser() -> argparse.ArgumentParser:
     preprocess.add_argument(
         "--exid-parser-path",
         default=None,
-        help="Optional path to exid parser module (e.g. data_scripts/exid_parse_utils.py or data_scripts/data_preprocess.py) for mode=fast_exid.",
+        help="Optional path to an exid parser module for mode=fast_exid. The repo does not bundle this parser by default; if you need fast_exid, place a compatible data_scripts/data_preprocess.py locally or pass --exid-parser-path explicitly. Reference: https://github.com/birdflyi/OSDB_STN_reference_coupling_data_analysis/blob/main/script/rag_demo/data_preprocess.py.",
     )
     preprocess.add_argument(
         "--exid-repair-report",
@@ -211,7 +211,7 @@ def build_parser() -> argparse.ArgumentParser:
     resolve_entity.add_argument(
         "--token-conf",
         default=None,
-        help="Optional token config file path exporting GITHUB_TOKENS (e.g., data_scripts/etc/authConf.py).",
+        help="Optional token config file path exporting GITHUB_TOKENS (local authConf.py). For a reference template, see https://github.com/birdflyi/GitHub_Collaboration_Relation_Extraction/blob/main/etc/authConf.py and its README.",
     )
 
     probe_github = subparsers.add_parser(
@@ -227,7 +227,7 @@ def build_parser() -> argparse.ArgumentParser:
     probe_github.add_argument(
         "--token-conf",
         default=None,
-        help="Optional token config file path exporting GITHUB_TOKENS (e.g., data_scripts/etc/authConf.py).",
+        help="Optional token config file path exporting GITHUB_TOKENS (local authConf.py). For a reference template, see https://github.com/birdflyi/GitHub_Collaboration_Relation_Extraction/blob/main/etc/authConf.py and its README.",
     )
 
     extract_resolve = subparsers.add_parser(

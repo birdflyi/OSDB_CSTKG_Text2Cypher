@@ -94,6 +94,8 @@ def _load_github_tokens(token_conf_path: str | None = None) -> tuple[list[str], 
         pass
 
     try:
+        # Local authConf.py is intentionally kept out of git; reference template:
+        # https://github.com/birdflyi/GitHub_Collaboration_Relation_Extraction/blob/main/etc/authConf.py
         from etc.authConf import GITHUB_TOKENS as LOC_GITHUB_TOKENS  # type: ignore
         if isinstance(LOC_GITHUB_TOKENS, list):
             vals = [str(t).strip() for t in LOC_GITHUB_TOKENS if str(t).strip()]
