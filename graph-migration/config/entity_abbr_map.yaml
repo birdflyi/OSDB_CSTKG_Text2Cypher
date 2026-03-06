@@ -1,0 +1,16 @@
+entity_abbr_map:
+  Repo: R
+  Actor: A
+  Issue: I
+  PullRequest: PR
+  Commit: C
+  Branch: B
+  Tag: T
+  IssueComment: IC
+  PullRequestReview: PRR
+  PullRequestReviewComment: PRRC
+  CommitComment: CC
+  Push: P
+  Release: RE
+  Gollum: G
+

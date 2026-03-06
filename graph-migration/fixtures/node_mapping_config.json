@@ -1,0 +1,8 @@
+{
+  "node_type_map": {
+    "service": "Object",
+    "ticket": "Issue",
+    "discussion": "IssueComment"
+  }
+}
+

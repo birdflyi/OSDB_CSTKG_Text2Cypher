@@ -1,0 +1,9 @@
+priority,contains_any,maps_to,notes
+10,"open|opened|create issue",OPENED_BY,issue creation semantics
+20,"comment|commented|reply",COMMENTED_ON,comment interaction semantics
+30,"mention|reference|cite",MENTIONS,textual mention/reference
+40,"resolve|fix|close",RESOLVES,resolution semantics
+50,"in_repo|belong|belongs",BELONGS_TO,containment semantics
+60,"couple|cochange|co-change",COUPLES_WITH,coupling semantics
+70,"refer|link|point",REFERS_TO,default semantic link
+

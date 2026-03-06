@@ -1,0 +1,12 @@
+raw_node_type,normalized_label,confidence,notes
+user,Actor,high,core actor entity
+actor,Actor,high,alias
+issue,Issue,high,github issue
+issue_comment,IssueComment,high,issue comment object
+pull_request,PullRequest,high,pull request object
+repository,Repo,high,repository
+repo,Repo,high,alias
+commit,Commit,high,commit object
+url,ExternalResource,medium,URL-like external target
+object,Object,medium,generic fallback object
+

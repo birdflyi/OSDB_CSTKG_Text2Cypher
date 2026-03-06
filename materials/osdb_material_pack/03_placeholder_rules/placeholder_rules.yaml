@@ -1,0 +1,16 @@
+placeholder_policy: external_if_url
+placeholder_values:
+  - ""
+  - "nan"
+  - "none"
+  - "null"
+  - "na"
+  - "n/a"
+  - "unknown"
+fallback_labels:
+  unknown: UnknownObject
+  external_if_url: ExternalResource
+notes:
+  - "Use skip only when noisy placeholder records dominate."
+  - "Prefer external_if_url for link-heavy event streams."
+

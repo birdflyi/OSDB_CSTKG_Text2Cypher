@@ -1,0 +1,47 @@
+allowed_node_labels:
+  - Actor
+  - Issue
+  - IssueComment
+  - PullRequest
+  - Repo
+  - Commit
+  - ExternalResource
+  - UnknownObject
+allowed_rel_types:
+  - OPENED_BY
+  - COMMENTED_ON
+  - BELONGS_TO
+  - MENTIONS
+  - RESOLVES
+  - COUPLES_WITH
+  - REFERS_TO
+direction_constraints:
+  - "Actor-[:OPENED_BY]->Issue"
+  - "Actor-[:COMMENTED_ON]->IssueComment"
+  - "PullRequest-[:BELONGS_TO]->Repo"
+allowed_properties:
+  - entity_id
+  - raw_event_type
+  - raw_relation_type
+  - raw_relation_label_repr
+  - raw_event_trigger
+  - source_event_id
+  - source_event_time
+properties_by_label:
+  Actor: [entity_id]
+  Issue: [entity_id]
+  IssueComment: [entity_id]
+  PullRequest: [entity_id]
+  Repo: [entity_id]
+  Commit: [entity_id]
+  ExternalResource: [entity_id]
+  UnknownObject: [entity_id]
+properties_by_relation:
+  OPENED_BY: [source_event_id, source_event_time, raw_event_type]
+  COMMENTED_ON: [source_event_time, raw_event_trigger]
+  BELONGS_TO: [source_event_id, source_event_time]
+allowed_template_families_by_query_type:
+  join_traversal: [join_traversal, entity_filter]
+  entity_filter: [entity_filter]
+  aggregation: [join_traversal, entity_filter]
+

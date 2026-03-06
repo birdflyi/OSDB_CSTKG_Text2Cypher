@@ -1,0 +1,96 @@
+﻿# schema_metadata.yaml (Pilot, A-mode, Two-track)
+
+mode:
+  allow_service_view_rel_in_cypher: true
+  allow_placeholders_in_cypher: false
+
+allowed_node_labels: [Actor, Repo, Issue, PullRequest, Commit, Branch, Tag, IssueComment, PullRequestReview, PullRequestReviewComment, CommitComment, Gollum, Release, Push, UnknownObject, ExternalResource]
+allowed_relationship_types: [EVENT_ACTION, REFERENCE]
+service_view_candidates: [MENTIONS, REFERENCES, LINKS_TO, ADDED_BY, ADDED_TO, BASED_ON_BRANCH, CLOSED_BY, COMMENTED_ON_COMMIT, COMMENTED_ON_ISSUE, COMMENTED_ON_REVIEW, COMMITTED_AS, CREATED_BY, CREATED_IN, CREATED_ON_BRANCH, CREATED_ON_COMMIT, DELETED_BY, LABELED_BY, MADE_PUBLIC_BY, MERGED_AS, MERGED_BY, MERGED_TO, OPENED_BY, OWNED_BY, PUBLISHED_BY, PUBLISHED_ON_TAG, PULLED_BRANCH_FROM, PULLED_BRANCH_TO, PULLED_REPO_FROM, PULLED_REPO_TO, RECEIVED_REACTION_FROM, REOPENED_BY, REVIEWED_ON_BRANCH, STARTED_BY, UPDATED_WITH]
+placeholder_relation_types: [COUPLES_WITH, RESOLVES]
+
+# Backward-compatible top-level flags for existing runner path.
+# NOTE: duplicated flags are kept for backward compatibility with runner;
+# keep them consistent with mode.*.
+allow_service_view_rel_in_cypher: true
+allow_placeholders_in_cypher: false
+
+two_track_fields:
+  native_rel_type_field: rel_type
+  service_rel_type_field: service_rel_type
+
+allowed_properties: [entity_id, raw_event_type, raw_relation_type, raw_relation_label_repr, raw_event_trigger, source_event_id]
+properties_by_relation:
+  EVENT_ACTION: [event_time, source_event_time]
+  REFERENCE: [event_time, source_event_time, url_domain_etld1]
+
+# Trace/report only; not a required validator property set.
+evidence_fields_by_relation:
+  REFERENCE:
+    - tar_entity_match_text
+    - tar_entity_match_pattern_type
+    - url_raw
+    - url_domain_etld1
+
+forbidden_relation_labels: [REFERS_TO]
+alias_relations:
+  REFERS_TO: REFERENCE
+
+derivation_notes:
+  - "direction_constraints are schema-level type constraints only; no field bindings or helper functions are included."
+  - "Some EventAction edge realizations depend on row fields (e.g., pull_head_ref, release_tag_name) in implementation."
+  - "Online API helper functions (e.g., __get_*) belong to data derivation logic, not schema constraints."
+
+direction_constraints:
+  - "Actor-[:ADDED_BY]->Actor"
+  - "Actor-[:ADDED_TO]->Repo"
+  - "Branch-[:BASED_ON_BRANCH]->Branch"
+  - "Branch-[:CREATED_BY]->Actor"
+  - "Branch-[:CREATED_IN]->Repo"
+  - "Branch-[:DELETED_BY]->Actor"
+  - "Branch-[:MERGED_TO]->Branch"
+  - "Branch-[:UPDATED_WITH]->Commit"
+  - "CommitComment-[:ADDED_BY]->Actor"
+  - "CommitComment-[:COMMENTED_ON_COMMIT]->Commit"
+  - "Gollum-[:ADDED_BY]->Actor"
+  - "Gollum-[:ADDED_TO]->Repo"
+  - "Issue-[:CLOSED_BY]->Actor"
+  - "Issue-[:CREATED_IN]->Repo"
+  - "Issue-[:LABELED_BY]->Actor"
+  - "Issue-[:OPENED_BY]->Actor"
+  - "Issue-[:RECEIVED_REACTION_FROM]->Actor"
+  - "Issue-[:REOPENED_BY]->Actor"
+  - "IssueComment-[:COMMENTED_ON_ISSUE]->Issue"
+  - "IssueComment-[:COMMENTED_ON_ISSUE]->PullRequest"
+  - "IssueComment-[:OPENED_BY]->Actor"
+  - "PullRequest-[:CLOSED_BY]->Actor"
+  - "PullRequest-[:LABELED_BY]->Actor"
+  - "PullRequest-[:MERGED_AS]->Commit"
+  - "PullRequest-[:MERGED_BY]->Actor"
+  - "PullRequest-[:OPENED_BY]->Actor"
+  - "PullRequest-[:PULLED_BRANCH_FROM]->Branch"
+  - "PullRequest-[:PULLED_BRANCH_TO]->Branch"
+  - "PullRequest-[:PULLED_REPO_FROM]->Repo"
+  - "PullRequest-[:PULLED_REPO_TO]->Repo"
+  - "PullRequest-[:RECEIVED_REACTION_FROM]->Actor"
+  - "PullRequest-[:REOPENED_BY]->Actor"
+  - "PullRequestReview-[:CREATED_BY]->Actor"
+  - "PullRequestReview-[:CREATED_IN]->PullRequest"
+  - "PullRequestReview-[:REVIEWED_ON_BRANCH]->Branch"
+  - "PullRequestReviewComment-[:COMMENTED_ON_REVIEW]->PullRequestReview"
+  - "PullRequestReviewComment-[:CREATED_BY]->Actor"
+  - "Push-[:ADDED_BY]->Actor"
+  - "Push-[:ADDED_TO]->Branch"
+  - "Push-[:COMMITTED_AS]->Commit"
+  - "Release-[:PUBLISHED_BY]->Actor"
+  - "Release-[:PUBLISHED_ON_TAG]->Tag"
+  - "Repo-[:ADDED_BY]->Actor"
+  - "Repo-[:ADDED_TO]->Repo"
+  - "Repo-[:MADE_PUBLIC_BY]->Actor"
+  - "Repo-[:OWNED_BY]->Actor"
+  - "Repo-[:STARTED_BY]->Actor"
+  - "Tag-[:CREATED_BY]->Actor"
+  - "Tag-[:CREATED_ON_BRANCH]->Branch"
+  - "Tag-[:CREATED_ON_COMMIT]->Commit"
+  - "Tag-[:DELETED_BY]->Actor"
+

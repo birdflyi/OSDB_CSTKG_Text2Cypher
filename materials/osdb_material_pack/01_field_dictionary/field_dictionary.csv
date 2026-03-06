@@ -1,0 +1,15 @@
+field_name,source_type,required,description,example,normalization_notes
+source_entity_id,string,yes,source node identifier,user_001,placeholder handling applies
+source_entity_type,string,yes,source semantic type,user,map via node_type_mapping.csv
+target_entity_id,string,yes,target node identifier,issue_42,placeholder handling applies
+target_entity_type,string,yes,target semantic type,issue,map via node_type_mapping.csv
+relation_type,string,no,raw relation type token,open,used with relation_label/event fields
+relation_label_repr,string,no,raw relation textual representation,opened issue,primary semantic signal
+event_type,string,no,raw event type,issue_opened,provenance only unless mapped
+event_trigger,string,no,event trigger text/url,opened by user_001,provenance and URL fallback cue
+event_time,string,no,event timestamp,2024-09-01 10:00:00,normalized to UTC ISO string
+source_event_id,string,no,source event id,evt_1001,stored as provenance
+object_properties,string,no,stringified object dict,"{\"priority\":\"high\"}",parse to dict if valid
+weight,string,no,numeric-like edge weight,1.5,coerce float when safe
+multiplicity,string,no,numeric-like multiplicity,2,coerce int when safe
+

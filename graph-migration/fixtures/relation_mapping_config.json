@@ -1,0 +1,25 @@
+{
+  "relation_rules": [
+    {
+      "contains_any": ["open", "opened"],
+      "maps_to": "OPENED_BY"
+    },
+    {
+      "contains_any": ["comment", "reply"],
+      "maps_to": "COMMENTED_ON"
+    },
+    {
+      "contains_any": ["mention", "cite", "reference"],
+      "maps_to": "MENTIONS"
+    },
+    {
+      "contains_any": ["resolve", "close", "fix"],
+      "maps_to": "RESOLVES"
+    },
+    {
+      "contains_any": ["in_repo", "belong"],
+      "maps_to": "BELONGS_TO"
+    }
+  ]
+}
+

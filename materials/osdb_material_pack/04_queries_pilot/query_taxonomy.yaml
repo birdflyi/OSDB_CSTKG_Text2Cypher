@@ -1,0 +1,16 @@
+query_types:
+  join_traversal:
+    description: "Two-hop or one-hop relation traversal between semantic node types."
+    allowed_template_families:
+      - join_traversal
+      - entity_filter
+  entity_filter:
+    description: "Single entity retrieval with optional property/time/sort filtering."
+    allowed_template_families:
+      - entity_filter
+  aggregation:
+    description: "Aggregation over matched entities or relations."
+    allowed_template_families:
+      - join_traversal
+      - entity_filter
+

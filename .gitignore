@@ -205,3 +205,94 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+# Project-local IDE files
+.idea/
+
+# Generated outputs
+data_real/pilot_output/
+graph-migration/outputs/
+experiment-harness/outputs/
+
+# Sensitive local configuration
+data_scripts/etc/authConf.py
+data_scripts/etc/filePathConf.py
+
+# Large local raw data snapshots
+data_real/redis_redis_2023_*.csv
+
+# Intermediate repair evaluation artifacts
+experiment-harness/repair/evaluate_repair_corpus_v1.py
+experiment-harness/repair/evaluate_repair_corpus_v2.py
+experiment-harness/repair/evaluate_repair_corpus_v3.py
+experiment-harness/repair_corpus/repair_eval_v1.md
+experiment-harness/repair_corpus/repair_eval_v2.md
+experiment-harness/repair_corpus/repair_eval_v3.md
+experiment-harness/repair_corpus/repair_results_v1.jsonl
+experiment-harness/repair_corpus/repair_results_v2.jsonl
+experiment-harness/repair_corpus/repair_results_v3.jsonl
+
+# Historical template pack intermediates
+data_real/pilot_queries/minimal_template_pack_group3.yaml
+data_real/pilot_queries/minimal_template_pack_group3_v2.yaml
+
+# Local examples and paper drafts
+experiment-harness/examples/
+paper/
+
+# Graph-migration local fixture scratch files
+graph-migration/fixtures/raw_records.csv
+graph-migration/fixtures/raw_records.json
+graph-migration/fixtures/raw_records.jsonl
+graph-migration/fixtures/run_regression.ps1
+
+# Group-3 supplemental local reports and generated mapping/index artifacts
+graph-migration/fixtures/real_pilot_redis/actor_login_index.csv
+graph-migration/fixtures/real_pilot_redis/repo_name_index.csv
+graph-migration/fixtures/real_pilot_redis/field_dictionary.csv
+graph-migration/fixtures/real_pilot_redis/node_type_mapping.csv
+graph-migration/fixtures/real_pilot_redis/reference_tar_entity_type_fine_grained_stats.csv
+graph-migration/fixtures/real_pilot_redis/relation_mapping.csv
+graph-migration/fixtures/real_pilot_redis/relation_mapping_eventaction_expanded.csv
+graph-migration/fixtures/real_pilot_redis/relation_mapping_native_aggregated.csv
+graph-migration/fixtures/real_pilot_redis/relation_mapping_native_minimal.csv
+graph-migration/fixtures/real_pilot_redis/pilot_run_summary.md
+graph-migration/fixtures/real_pilot_redis/pilot_run_traces.jsonl
+graph-migration/fixtures/real_pilot_redis/pilot_queries_report.md
+graph-migration/fixtures/real_pilot_redis/node_type_mapping_report.md
+graph-migration/fixtures/real_pilot_redis/relation_mapping_report.md
+graph-migration/fixtures/real_pilot_redis/schema_readme.md
+graph-migration/fixtures/real_pilot_redis/taxonomy_readme.md
+graph-migration/fixtures/real_pilot_redis/repro_commands.md
+graph-migration/fixtures/real_pilot_redis/appendix_query_examples.md
+graph-migration/fixtures/real_pilot_redis/appendix_reference_index.md
+graph-migration/fixtures/real_pilot_redis/eventaction_service_coverage_report.md
+graph-migration/fixtures/real_pilot_redis/exid_repair_report.md
+graph-migration/fixtures/real_pilot_redis/group3_slot_catalog.md
+graph-migration/fixtures/real_pilot_redis/group3_template_coverage_report.md
+graph-migration/fixtures/real_pilot_redis/second_group_final_decision.md
+graph-migration/fixtures/real_pilot_redis/slot_trace_group3.md
+graph-migration/fixtures/real_pilot_redis/placeholder_rules.yaml
+graph-migration/fixtures/real_pilot_redis/raw_records_sample.jsonl
+
+# Mini samples and local checks
+graph-migration/fixtures/real_pilot_redis/mini_sample.csv
+graph-migration/fixtures/real_pilot_redis/mini_sample_aug.csv
+graph-migration/fixtures/real_pilot_redis/mini_sample_aug_check.csv
+graph-migration/fixtures/real_pilot_redis/mini_sample_aug_check2.csv
+graph-migration/fixtures/real_pilot_redis/mini_sample_expected_cols.txt
+
+# Text2Cypher local evaluation outputs
+text2cypher-proto/eval/controlled.json
+text2cypher-proto/eval/controlled_check.json
+text2cypher-proto/eval/controlled_mvp.json
+text2cypher-proto/eval/controlled_mvp_repair.json
+text2cypher-proto/eval/free_form.json
+text2cypher-proto/eval/free_form_check.json
+text2cypher-proto/eval/free_form_mvp.json
+text2cypher-proto/eval/free_form_mvp_repair.json
+text2cypher-proto/eval/free_form_repair.json
+text2cypher-proto/eval/template_first.json
+text2cypher-proto/eval/template_first_check.json
+text2cypher-proto/eval/template_first_mvp.json
+text2cypher-proto/eval/template_first_mvp_repair.json
+

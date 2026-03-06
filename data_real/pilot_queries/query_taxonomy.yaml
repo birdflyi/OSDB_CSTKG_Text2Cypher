@@ -1,0 +1,36 @@
+query_types:
+  - label: l1_issue_opened_by_actor
+    aliases: [issue_actor, issue-opened-by, issue_owner]
+  - label: l1_pr_in_repo_scope
+    aliases: [pr_repo, pr-belongs, l1_pr_belongs_to_repo]
+  - label: l1_pr_references_object
+    aliases: [pr_reference, pull_reference, pr_ref]
+  - label: l2_issue_commented_after_time
+    aliases: [issue_comment_time, issue-comment-after]
+  - label: l2_pr_links_to_external
+    aliases: [pr_external_links, pr-links]
+  - label: l2_issuecomment_mentions_actor
+    aliases: [issuecomment_mentions, comment_mentions_actor]
+  - label: l3_repo_pr_reference_time
+    aliases: [repo_pr_ref_time, l3_ref_time]
+  - label: l3_actor_mentions_and_links
+    aliases: [actor_mentions_links, actor_union_links]
+  - label: l3_pr_reference_domain_agg
+    aliases: [pr_ref_domain, pr_domain_agg]
+  - label: l4_repo_pr_actor_external_combo
+    aliases: [repo_pr_actor_external, l4_combo_1]
+  - label: l4_issue_comment_reference_commit
+    aliases: [issue_comment_ref_commit, l4_combo_2]
+  - label: l4_pr_actor_review_reference
+    aliases: [pr_actor_review_ref, l4_combo_3]
+  - label: comprehensive_repo_pr_external_actor_time
+    aliases: [comprehensive_1, full_combo]
+  - label: ch5_repo_couples_with_placeholder
+    aliases: [ch5_couples_with, chapter5_couples]
+  - label: ch6_pr_resolves_issue_placeholder
+    aliases: [ch6_resolves, chapter6_resolves]
+
+deprecations:
+  - deprecated_aliases: [l1_pr_belongs_to_repo, pr-belongs]
+    canonical_label: l1_pr_in_repo_scope
+    note: "\"belongs\" aliases are natural-language synonyms for repo scope constraint and do not imply a graph relation type."

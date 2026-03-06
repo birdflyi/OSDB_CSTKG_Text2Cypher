@@ -1,0 +1,119 @@
+[
+  {
+    "id": "ex-001",
+    "nl_query": "Find papers written by Alice in 2024.",
+    "query_type": "entity_filter",
+    "predicted_query_type": "entity_filter",
+    "gold_cypher": "MATCH (a:Author {name: 'Alice'})-[:WROTE]->(p:Paper) WHERE p.year = 2024 RETURN p.title",
+    "extracted_slot_candidates": {
+      "entity_slots": [
+        {"label": "Author", "value": "Alice", "alias": "a"},
+        {"label": "Paper", "alias": "p"}
+      ],
+      "relation_slots": [
+        {"rel_type": "WROTE", "src_label": "Author", "dst_label": "Paper"}
+      ],
+      "property_slots": [
+        {"owner_kind": "node", "owner_type": "Author", "property_name": "name", "operator": "=", "value": "Alice", "alias": "a"}
+      ],
+      "time_range_slots": [
+        {"owner_kind": "node", "owner_type": "Paper", "property_name": "year", "start": 2024, "end": 2024, "alias": "p"}
+      ],
+      "sort_slots": [
+        {"property_name": "title", "order": "ASC", "limit": 25, "alias": "p"}
+      ]
+    },
+    "expected_constraints": {
+      "allowed_node_labels": ["Author", "Paper"],
+      "allowed_rel_types": ["WROTE"],
+      "direction_constraints": ["Author-[:WROTE]->Paper"],
+      "allowed_properties": ["name", "year", "title"],
+      "allowed_properties_by_node": {
+        "Author": ["name"],
+        "Paper": ["year", "title"]
+      },
+      "allowed_properties_by_relation": {
+        "WROTE": []
+      },
+      "allowed_template_families_by_query_type": {
+        "entity_filter": ["join_traversal", "entity_filter"],
+        "join_traversal": ["join_traversal", "entity_filter"]
+      }
+    }
+  },
+  {
+    "id": "ex-002",
+    "nl_query": "List datasets used by paper DeepGraph.",
+    "query_type": "join_traversal",
+    "predicted_query_type": "join_traversal",
+    "gold_cypher": "MATCH (p:Paper {title: 'DeepGraph'})-[:USES]->(d:Dataset) RETURN d.name",
+    "extracted_slot_candidates": {
+      "entity_slots": [
+        {"label": "Paper", "value": "DeepGraph", "alias": "p"},
+        {"label": "Dataset", "alias": "d"}
+      ],
+      "relation_slots": [
+        {"rel_type": "USES", "src_label": "Paper", "dst_label": "Dataset"}
+      ],
+      "property_slots": [
+        {"owner_kind": "node", "owner_type": "Paper", "property_name": "title", "operator": "=", "value": "DeepGraph", "alias": "p"}
+      ],
+      "time_range_slots": [],
+      "sort_slots": [
+        {"property_name": "name", "order": "ASC", "limit": 25, "alias": "d"}
+      ]
+    },
+    "expected_constraints": {
+      "allowed_node_labels": ["Paper", "Dataset"],
+      "allowed_rel_types": ["USES"],
+      "direction_constraints": ["Paper-[:USES]->Dataset"],
+      "allowed_properties": ["title", "name"],
+      "allowed_properties_by_node": {
+        "Paper": ["title"],
+        "Dataset": ["name"]
+      },
+      "allowed_properties_by_relation": {
+        "USES": []
+      },
+      "allowed_template_families_by_query_type": {
+        "join_traversal": ["join_traversal", "entity_filter"],
+        "entity_filter": ["entity_filter"]
+      }
+    }
+  },
+  {
+    "id": "ex-003",
+    "nl_query": "Show authors in the graph.",
+    "query_type": "join_traversal",
+    "predicted_query_type": "join_traversal",
+    "gold_cypher": "MATCH (a:Author) RETURN a LIMIT 25",
+    "extracted_slot_candidates": {
+      "entity_slots": [
+        {"label": "Author", "alias": "a"}
+      ],
+      "relation_slots": [
+        {"rel_type": "WROTE", "src_label": "Author", "dst_label": "Paper"}
+      ],
+      "property_slots": [],
+      "time_range_slots": [],
+      "sort_slots": []
+    },
+    "expected_constraints": {
+      "allowed_node_labels": ["Author", "Paper"],
+      "allowed_rel_types": ["WROTE"],
+      "direction_constraints": ["Author-[:WROTE]->Paper"],
+      "allowed_properties": ["name", "year", "title"],
+      "allowed_properties_by_node": {
+        "Author": ["name"],
+        "Paper": ["year", "title"]
+      },
+      "allowed_properties_by_relation": {
+        "WROTE": []
+      },
+      "allowed_template_families_by_query_type": {
+        "join_traversal": ["join_traversal", "entity_filter"],
+        "entity_filter": ["entity_filter"]
+      }
+    }
+  }
+]

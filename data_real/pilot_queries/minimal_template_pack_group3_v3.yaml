@@ -1,0 +1,437 @@
+﻿template_pack_version: group3_minimal_template_pack_v3
+refactor_note: merged_structurally_similar_templates_with_enum_slots
+native_rel_types:
+- EVENT_ACTION
+- REFERENCE
+notes:
+- Two-track boundary unchanged: native relations remain EVENT_ACTION/REFERENCE.
+- Service semantics stay in rel.service_rel_type filters.
+- Repo scope remains base-prefix STARTS WITH via derived slots.
+templates:
+- template_id: tplv3_01
+  family: OneHopEA
+  intent: One-hop EventAction OPENED_BY lookup for Issue.
+  cypher_skeleton: 'MATCH (i:Issue {entity_id: $issue_entity_id})-[rel:EVENT_ACTION]->(a:Actor)
+    WHERE rel.service_rel_type = ''OPENED_BY'' RETURN a.entity_id LIMIT 25'
+  covered_queries:
+  - q_l1_01
+  required_slots:
+  - name: issue_entity_id
+    type: EntityIdSlot
+    source: mention_extractor+entity_aligner
+  optional_slots: []
+  derived_slots: []
+  constraints:
+    native_rel_types_allowed:
+    - EVENT_ACTION
+    - REFERENCE
+    service_rel_types_allowed:
+    - OPENED_BY
+    hop_limit: 1
+    forbid_nodes:
+    - UnknownObject as intermediate
+    - ExternalResource as intermediate
+    forbid_placeholders: true
+  property_whitelist:
+    node_properties:
+    - entity_id
+    edge_properties_common:
+    - service_rel_type
+    - event_time
+    - source_event_time
+    reference_edge_evidence_optional:
+    - tar_entity_match_text
+    - tar_entity_match_pattern_type
+    - url_raw
+    - url_domain_etld1
+    extra_properties_used: []
+  repo_scope_policy: []
+- template_id: tplv3_02
+  family: OneHopRef
+  intent: Generic one-hop REFERENCE traversal by source entity id + reference semantic.
+  cypher_skeleton: 'MATCH (s {entity_id: $source_entity_id})-[rel:REFERENCE]->(t)
+    WHERE rel.service_rel_type = $ref_semantic RETURN t.entity_id LIMIT 25
+
+    '
+  covered_queries:
+  - q_l1_03
+  - q_l2_02
+  - q_l2_03
+  - q_l3_02
+  - q_l3_03
+  required_slots:
+  - name: source_entity_id
+    type: EntityIdSlot
+    source: mention_extractor+entity_aligner
+  - name: ref_semantic
+    type: EnumSlot
+    source: query_slots_or_gold_parse
+  optional_slots: []
+  derived_slots: []
+  constraints:
+    native_rel_types_allowed:
+    - EVENT_ACTION
+    - REFERENCE
+    service_rel_types_allowed:
+    - LINKS_TO
+    - MENTIONS
+    - REFERENCES
+    hop_limit: 3
+    bounded_hop_note: bounded 3-hop composite allowed; still native-only and service_rel_type-filtered.
+    forbid_nodes:
+    - UnknownObject as intermediate
+    - ExternalResource as intermediate
+    forbid_placeholders: true
+  property_whitelist:
+    node_properties:
+    - entity_id
+    edge_properties_common:
+    - service_rel_type
+    - event_time
+    - source_event_time
+    reference_edge_evidence_optional:
+    - tar_entity_match_text
+    - tar_entity_match_pattern_type
+    - url_raw
+    - url_domain_etld1
+    extra_properties_used: []
+  repo_scope_policy: []
+- template_id: tplv3_03
+  family: EntityFilter
+  intent: Repo-scope pull request listing via derived base-prefix constraint.
+  cypher_skeleton: MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH $pr_base_prefix
+    RETURN pr.entity_id LIMIT 25
+  covered_queries:
+  - q_l1_02
+  required_slots:
+  - name: pr_base_prefix
+    type: DerivedPrefixSlot
+    source: derived_slot_builder
+  optional_slots: []
+  derived_slots:
+  - name: repo_scope_prefixes
+    type: DERIVED_PREFIX_MAP
+    builder: build_repo_scope_prefixes(repo_entity_id, labels)
+  constraints:
+    native_rel_types_allowed:
+    - EVENT_ACTION
+    - REFERENCE
+    service_rel_types_allowed: []
+    hop_limit: 0
+    forbid_nodes:
+    - UnknownObject as intermediate
+    - ExternalResource as intermediate
+    forbid_placeholders: true
+  property_whitelist:
+    node_properties:
+    - entity_id
+    edge_properties_common:
+    - service_rel_type
+    - event_time
+    - source_event_time
+    reference_edge_evidence_optional:
+    - tar_entity_match_text
+    - tar_entity_match_pattern_type
+    - url_raw
+    - url_domain_etld1
+    extra_properties_used: []
+  repo_scope_policy:
+  - scope_label: PullRequest
+    base_prefix_slot: pr_base_prefix
+    base_prefix_value_rule: ABBR_<repo_id> (NO separator)
+    cypher_constraint: pr.entity_id STARTS WITH $pr_base_prefix
+- template_id: tplv3_04
+  family: TwoHopComposite
+  intent: Issue comment interaction chain (actors on issue with time lower bound).
+  cypher_skeleton: 'MATCH (ic:IssueComment)-[r1:EVENT_ACTION]->(i:Issue {entity_id:
+    $issue_entity_id}) MATCH (ic)-[r2:EVENT_ACTION]->(a:Actor) WHERE r1.service_rel_type
+    = ''COMMENTED_ON_ISSUE'' AND r2.service_rel_type = ''OPENED_BY'' AND r1.source_event_time
+    >= $time_start RETURN DISTINCT a.entity_id LIMIT 25
+
+    '
+  covered_queries:
+  - q_l2_01
+  required_slots:
+  - name: issue_entity_id
+    type: EntityIdSlot
+    source: mention_extractor+entity_aligner
+  - name: time_start
+    type: TimeRangeSlot
+    source: nl_time_parser
+  optional_slots: []
+  derived_slots: []
+  constraints:
+    native_rel_types_allowed:
+    - EVENT_ACTION
+    - REFERENCE
+    service_rel_types_allowed:
+    - COMMENTED_ON_ISSUE
+    - OPENED_BY
+    hop_limit: 2
+    forbid_nodes:
+    - UnknownObject as intermediate
+    - ExternalResource as intermediate
+    forbid_placeholders: true
+  property_whitelist:
+    node_properties:
+    - entity_id
+    edge_properties_common:
+    - service_rel_type
+    - event_time
+    - source_event_time
+    reference_edge_evidence_optional:
+    - tar_entity_match_text
+    - tar_entity_match_pattern_type
+    - url_raw
+    - url_domain_etld1
+    extra_properties_used: []
+  repo_scope_policy: []
+- template_id: tplv3_05
+  family: OneHopRef
+  intent: Repo-scoped PR reference window query.
+  cypher_skeleton: 'MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH $pr_base_prefix
+    MATCH (pr)-[rr:REFERENCE]->(x:UnknownObject) WHERE rr.service_rel_type = ''REFERENCES''
+    AND rr.source_event_time >= $time_start AND rr.source_event_time < $time_end RETURN
+    pr.entity_id, x.entity_id ORDER BY rr.source_event_time DESC LIMIT 50
+
+    '
+  covered_queries:
+  - q_l3_01
+  required_slots:
+  - name: time_start
+    type: TimeRangeSlot
+    source: nl_time_parser
+  - name: time_end
+    type: TimeRangeSlot
+    source: nl_time_parser
+  - name: pr_base_prefix
+    type: DerivedPrefixSlot
+    source: derived_slot_builder
+  optional_slots: []
+  derived_slots:
+  - name: repo_scope_prefixes
+    type: DERIVED_PREFIX_MAP
+    builder: build_repo_scope_prefixes(repo_entity_id, labels)
+  constraints:
+    native_rel_types_allowed:
+    - EVENT_ACTION
+    - REFERENCE
+    service_rel_types_allowed:
+    - REFERENCES
+    hop_limit: 1
+    forbid_nodes:
+    - UnknownObject as intermediate
+    - ExternalResource as intermediate
+    forbid_placeholders: true
+  property_whitelist:
+    node_properties:
+    - entity_id
+    edge_properties_common:
+    - service_rel_type
+    - event_time
+    - source_event_time
+    reference_edge_evidence_optional:
+    - tar_entity_match_text
+    - tar_entity_match_pattern_type
+    - url_raw
+    - url_domain_etld1
+    extra_properties_used: []
+  repo_scope_policy:
+  - scope_label: PullRequest
+    base_prefix_slot: pr_base_prefix
+    base_prefix_value_rule: ABBR_<repo_id> (NO separator)
+    cypher_constraint: pr.entity_id STARTS WITH $pr_base_prefix
+- template_id: tplv3_06
+  family: TwoHopComposite
+  intent: Repo-scoped issue comment -> commit reference traversal.
+  cypher_skeleton: 'MATCH (i:Issue) WHERE i.entity_id STARTS WITH $issue_base_prefix
+    MATCH (ic:IssueComment)-[rci:EVENT_ACTION]->(i) MATCH (ic)-[rr:REFERENCE]->(c:Commit)
+    WHERE rci.service_rel_type = ''COMMENTED_ON_ISSUE'' AND rr.service_rel_type =
+    ''REFERENCES'' RETURN i.entity_id, c.entity_id ORDER BY rr.source_event_time DESC
+    LIMIT 50
+
+    '
+  covered_queries:
+  - q_l4_02
+  required_slots:
+  - name: issue_base_prefix
+    type: DerivedPrefixSlot
+    source: derived_slot_builder
+  optional_slots: []
+  derived_slots:
+  - name: repo_scope_prefixes
+    type: DERIVED_PREFIX_MAP
+    builder: build_repo_scope_prefixes(repo_entity_id, labels)
+  constraints:
+    native_rel_types_allowed:
+    - EVENT_ACTION
+    - REFERENCE
+    service_rel_types_allowed:
+    - COMMENTED_ON_ISSUE
+    - REFERENCES
+    hop_limit: 2
+    forbid_nodes:
+    - UnknownObject as intermediate
+    - ExternalResource as intermediate
+    forbid_placeholders: true
+  property_whitelist:
+    node_properties:
+    - entity_id
+    edge_properties_common:
+    - service_rel_type
+    - event_time
+    - source_event_time
+    reference_edge_evidence_optional:
+    - tar_entity_match_text
+    - tar_entity_match_pattern_type
+    - url_raw
+    - url_domain_etld1
+    extra_properties_used: []
+  repo_scope_policy:
+  - scope_label: Issue
+    base_prefix_slot: issue_base_prefix
+    base_prefix_value_rule: ABBR_<repo_id> (NO separator)
+    cypher_constraint: i.entity_id STARTS WITH $issue_base_prefix
+- template_id: tplv3_07
+  family: TwoHopComposite
+  intent: PR review comment interaction chain with time window.
+  cypher_skeleton: 'MATCH (prrc:PullRequestReviewComment)-[r1:EVENT_ACTION]->(prr:PullRequestReview)
+    MATCH (prr)-[r2:EVENT_ACTION]->(pr:PullRequest {entity_id: $pr_entity_id}) MATCH
+    (prrc)-[r3:REFERENCE]->(a:Actor) WHERE r1.service_rel_type = ''COMMENTED_ON_REVIEW''
+    AND r2.service_rel_type = ''CREATED_IN'' AND r3.service_rel_type IN [''MENTIONS'',''REFERENCES'']
+    AND r3.source_event_time >= $time_start AND r3.source_event_time < $time_end RETURN
+    DISTINCT a.entity_id LIMIT 50
+
+    '
+  covered_queries:
+  - q_l4_03
+  required_slots:
+  - name: pr_entity_id
+    type: EntityIdSlot
+    source: mention_extractor+entity_aligner
+  - name: time_start
+    type: TimeRangeSlot
+    source: nl_time_parser
+  - name: time_end
+    type: TimeRangeSlot
+    source: nl_time_parser
+  optional_slots: []
+  derived_slots: []
+  constraints:
+    native_rel_types_allowed:
+    - EVENT_ACTION
+    - REFERENCE
+    service_rel_types_allowed:
+    - COMMENTED_ON_REVIEW
+    - CREATED_IN
+    - MENTIONS
+    - REFERENCES
+    hop_limit: 3
+    bounded_hop_note: bounded 3-hop composite allowed; still native-only and service_rel_type-filtered.
+    forbid_nodes:
+    - UnknownObject as intermediate
+    - ExternalResource as intermediate
+    forbid_placeholders: true
+  property_whitelist:
+    node_properties:
+    - entity_id
+    edge_properties_common:
+    - service_rel_type
+    - event_time
+    - source_event_time
+    reference_edge_evidence_optional:
+    - tar_entity_match_text
+    - tar_entity_match_pattern_type
+    - url_raw
+    - url_domain_etld1
+    extra_properties_used: []
+  repo_scope_policy: []
+- template_id: tplv3_08
+  family: Aggregation
+  intent: Repo-scoped comprehensive external-domain aggregation with actor evidence.
+  cypher_skeleton: 'MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH $pr_base_prefix
+    MATCH (pr)-[rl:REFERENCE]->(e:ExternalResource) OPTIONAL MATCH (pr)-[ra:REFERENCE]->(a:Actor)
+    WHERE rl.service_rel_type = ''LINKS_TO'' AND (ra IS NULL OR ra.service_rel_type
+    IN [''MENTIONS'',''REFERENCES'']) AND rl.source_event_time >= $time_start AND
+    rl.source_event_time < $time_end RETURN rl.url_domain_etld1 AS domain, collect(DISTINCT
+    a.entity_id) AS actors, max(rl.source_event_time) AS latest_time, count(DISTINCT
+    pr.entity_id) AS pr_count ORDER BY pr_count DESC, latest_time DESC LIMIT 30
+
+    '
+  covered_queries:
+  - q_l4_01
+  - q_comp_01
+  required_slots:
+  - name: time_start
+    type: TimeRangeSlot
+    source: nl_time_parser
+  - name: time_end
+    type: TimeRangeSlot
+    source: nl_time_parser
+  - name: pr_base_prefix
+    type: DerivedPrefixSlot
+    source: derived_slot_builder
+  optional_slots: []
+  derived_slots:
+  - name: repo_scope_prefixes
+    type: DERIVED_PREFIX_MAP
+    builder: build_repo_scope_prefixes(repo_entity_id, labels)
+  constraints:
+    native_rel_types_allowed:
+    - EVENT_ACTION
+    - REFERENCE
+    service_rel_types_allowed:
+    - LINKS_TO
+    - MENTIONS
+    - REFERENCES
+    hop_limit: 2
+    forbid_nodes:
+    - UnknownObject as intermediate
+    - ExternalResource as intermediate
+    forbid_placeholders: true
+  property_whitelist:
+    node_properties:
+    - entity_id
+    edge_properties_common:
+    - service_rel_type
+    - event_time
+    - source_event_time
+    reference_edge_evidence_optional:
+    - tar_entity_match_text
+    - tar_entity_match_pattern_type
+    - url_raw
+    - url_domain_etld1
+    extra_properties_used:
+    - url_domain_etld1
+  repo_scope_policy:
+  - scope_label: PullRequest
+    base_prefix_slot: pr_base_prefix
+    base_prefix_value_rule: ABBR_<repo_id> (NO separator)
+    cypher_constraint: pr.entity_id STARTS WITH $pr_base_prefix
+injection_pending_templates:
+- query_id: q_ch5_01
+  relation: COUPLES_WITH
+  gold_cypher_injected: MATCH (r:Repo {entity_id:'R_156018'})-[:COUPLES_WITH]->(r2:Repo)
+    RETURN r2.entity_id LIMIT 25
+  why_pending: Chapter 5 structural injection pending
+  required_slots:
+  - name: repo_entity_id
+    type: EntityIdSlot
+    source: mention_extractor+entity_aligner
+  constraints:
+    executable_until_injected: false
+    forbid_placeholders: false
+- query_id: q_ch6_01
+  relation: RESOLVES
+  gold_cypher_injected: MATCH (p:PullRequest)-[r:RESOLVES]->(i:Issue {entity_id:'I_156018#12095'})
+    RETURN p.entity_id, r.source_event_time ORDER BY r.source_event_time ASC LIMIT
+    25
+  why_pending: Chapter 6 strict task semantic injection pending
+  required_slots:
+  - name: issue_entity_id
+    type: EntityIdSlot
+    source: mention_extractor+entity_aligner
+  constraints:
+    executable_until_injected: false
+    forbid_placeholders: false
+
