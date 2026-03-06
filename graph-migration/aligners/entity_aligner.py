@@ -68,6 +68,25 @@ def _index_build_report_path() -> Path:
     return _fixtures_dir() / "index_build_report.md"
 
 
+def _load_tokens_from_local_auth_modules() -> tuple[list[str], str] | None:
+    # Prefer local override file authConf_local.py, then fall back to the checked-in authConf.py template.
+    candidates = [
+        ("etc.authConf_local", "etc.authConf_local import path"),
+        ("etc.authConf", "etc.authConf import path"),
+    ]
+    for module_name, source_name in candidates:
+        try:
+            mod = importlib.import_module(module_name)
+            local_tokens = getattr(mod, "GITHUB_TOKENS", None)
+            if isinstance(local_tokens, list):
+                vals = [str(t).strip() for t in local_tokens if str(t).strip()]
+                if vals:
+                    return vals, source_name
+        except Exception:
+            pass
+    return None
+
+
 def _load_github_tokens(token_conf_path: str | None = None) -> tuple[list[str], str]:
     if token_conf_path:
         try:
@@ -79,9 +98,13 @@ def _load_github_tokens(token_conf_path: str | None = None) -> tuple[list[str], 
                 conf_tokens = getattr(mod, "GITHUB_TOKENS", None)
                 if isinstance(conf_tokens, list):
                     vals = [str(t).strip() for t in conf_tokens if str(t).strip()]
-                    return vals, "authConf.py"
+                    return vals, conf_path.name
         except Exception:
             pass
+
+    local_tokens = _load_tokens_from_local_auth_modules()
+    if local_tokens is not None:
+        return local_tokens
 
     try:
         import GH_CoRE.utils.request_api as request_api  # type: ignore
@@ -90,17 +113,6 @@ def _load_github_tokens(token_conf_path: str | None = None) -> tuple[list[str], 
             vals = [str(t).strip() for t in tokens if str(t).strip()]
             if vals:
                 return vals, "GH_CoRE.utils.request_api default"
-    except Exception:
-        pass
-
-    try:
-        # Local authConf.py is intentionally kept out of git; reference template:
-        # https://github.com/birdflyi/GitHub_Collaboration_Relation_Extraction/blob/main/etc/authConf.py
-        from etc.authConf import GITHUB_TOKENS as LOC_GITHUB_TOKENS  # type: ignore
-        if isinstance(LOC_GITHUB_TOKENS, list):
-            vals = [str(t).strip() for t in LOC_GITHUB_TOKENS if str(t).strip()]
-            if vals:
-                return vals, "etc.authConf import path"
     except Exception:
         pass
 
@@ -156,15 +168,21 @@ def load_tokens():
                 conf_tokens = getattr(mod, "GITHUB_TOKENS", None)
                 if isinstance(conf_tokens, list):
                     tokens = [str(t).strip() for t in conf_tokens if str(t).strip()]
-                    token_source = "authConf.py"
+                    token_source = os.path.basename(conf_path)
         except Exception:
             pass
     if tokens is None:
         try:
-            from etc.authConf import GITHUB_TOKENS as LOC_GITHUB_TOKENS
-            if isinstance(LOC_GITHUB_TOKENS, list):
-                tokens = [str(t).strip() for t in LOC_GITHUB_TOKENS if str(t).strip()]
-                token_source = "etc.authConf import path"
+            for module_name, source_name in (("etc.authConf_local", "etc.authConf_local import path"), ("etc.authConf", "etc.authConf import path")):
+                try:
+                    mod = importlib.import_module(module_name)
+                    local_tokens = getattr(mod, "GITHUB_TOKENS", None)
+                    if isinstance(local_tokens, list):
+                        tokens = [str(t).strip() for t in local_tokens if str(t).strip()]
+                        token_source = source_name
+                        break
+                except Exception:
+                    continue
         except Exception:
             tokens = None
     if tokens is None:
@@ -1106,15 +1124,21 @@ if token_conf:
             conf_tokens = getattr(mod, "GITHUB_TOKENS", None)
             if isinstance(conf_tokens, list):
                 tokens = [str(t).strip() for t in conf_tokens if str(t).strip()]
-                token_source = "authConf.py"
+                token_source = os.path.basename(conf_path)
     except Exception:
         pass
 if tokens is None:
     try:
-        from etc.authConf import GITHUB_TOKENS as LOC_GITHUB_TOKENS
-        if isinstance(LOC_GITHUB_TOKENS, list):
-            tokens = [str(t).strip() for t in LOC_GITHUB_TOKENS if str(t).strip()]
-            token_source = "etc.authConf import path"
+        for module_name, source_name in (("etc.authConf_local", "etc.authConf_local import path"), ("etc.authConf", "etc.authConf import path")):
+            try:
+                mod = importlib.import_module(module_name)
+                local_tokens = getattr(mod, "GITHUB_TOKENS", None)
+                if isinstance(local_tokens, list):
+                    tokens = [str(t).strip() for t in local_tokens if str(t).strip()]
+                    token_source = source_name
+                    break
+            except Exception:
+                continue
     except Exception:
         tokens = None
 if tokens is None:

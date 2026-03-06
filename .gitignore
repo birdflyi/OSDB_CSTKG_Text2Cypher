@@ -294,5 +294,5 @@ text2cypher-proto/eval/template_first_check.json
 text2cypher-proto/eval/template_first_mvp.json
 text2cypher-proto/eval/template_first_mvp_repair.json
 # Local confidential auth backup
-data_scripts/etc/authConf_confidential_copy.py
+data_scripts/etc/authConf_local.py
 

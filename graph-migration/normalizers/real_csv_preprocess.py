@@ -41,17 +41,20 @@ def _load_module_from_path(module_path: Path, module_name: str) -> Any:
 
 def _configure_github_tokens(granular_script_path: str | None, input_csv_path: str) -> None:
     """
-    Ensure GH_CoRE request token pool uses local data_scripts/etc/authConf.py when present.
+    Ensure GH_CoRE request token pool prefers local data_scripts/etc/authConf_local.py and falls back to authConf.py.
     Reference template: https://github.com/birdflyi/GitHub_Collaboration_Relation_Extraction/blob/main/etc/authConf.py
     Target module: GH_CoRE.utils.request_api.
     """
     input_path = Path(input_csv_path).resolve()
     script_path = Path(granular_script_path).resolve() if granular_script_path else _resolve_default_granular_script(input_path).resolve()
-    auth_path = script_path.parent / "etc" / "authConf.py"
-    if not auth_path.exists():
-        # Try workspace-level data_scripts/etc/authConf.py.
-        auth_path = input_path.parent.parent / "data_scripts" / "etc" / "authConf.py"
-    if not auth_path.exists():
+    auth_candidates = [
+        script_path.parent / "etc" / "authConf_local.py",
+        script_path.parent / "etc" / "authConf.py",
+        input_path.parent.parent / "data_scripts" / "etc" / "authConf_local.py",
+        input_path.parent.parent / "data_scripts" / "etc" / "authConf.py",
+    ]
+    auth_path = next((cand for cand in auth_candidates if cand.exists()), None)
+    if auth_path is None:
         return
 
     tokens: list[str] | None = None

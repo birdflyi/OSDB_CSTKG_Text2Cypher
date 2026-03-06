@@ -211,7 +211,7 @@ def build_parser() -> argparse.ArgumentParser:
     resolve_entity.add_argument(
         "--token-conf",
         default=None,
-        help="Optional token config file path exporting GITHUB_TOKENS (local authConf.py). For a reference template, see https://github.com/birdflyi/GitHub_Collaboration_Relation_Extraction/blob/main/etc/authConf.py and its README.",
+        help="Optional token config file path exporting GITHUB_TOKENS. If omitted, the loader prefers data_scripts/etc/authConf_local.py and falls back to data_scripts/etc/authConf.py. For a reference template, see https://github.com/birdflyi/GitHub_Collaboration_Relation_Extraction/blob/main/etc/authConf.py and its README.",
     )
 
     probe_github = subparsers.add_parser(
@@ -227,7 +227,7 @@ def build_parser() -> argparse.ArgumentParser:
     probe_github.add_argument(
         "--token-conf",
         default=None,
-        help="Optional token config file path exporting GITHUB_TOKENS (local authConf.py). For a reference template, see https://github.com/birdflyi/GitHub_Collaboration_Relation_Extraction/blob/main/etc/authConf.py and its README.",
+        help="Optional token config file path exporting GITHUB_TOKENS. If omitted, the loader prefers data_scripts/etc/authConf_local.py and falls back to data_scripts/etc/authConf.py. For a reference template, see https://github.com/birdflyi/GitHub_Collaboration_Relation_Extraction/blob/main/etc/authConf.py and its README.",
     )
 
     extract_resolve = subparsers.add_parser(
@@ -248,7 +248,7 @@ def build_parser() -> argparse.ArgumentParser:
     extract_resolve.add_argument(
         "--token-conf",
         default=None,
-        help="Optional token config file path exporting GITHUB_TOKENS.",
+        help="Optional token config file path exporting GITHUB_TOKENS. If omitted, the loader prefers data_scripts/etc/authConf_local.py and falls back to data_scripts/etc/authConf.py.",
     )
     extract_resolve.add_argument(
         "--d-record-json",
