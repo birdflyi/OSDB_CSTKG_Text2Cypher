@@ -106,7 +106,9 @@ def _evaluate(results: list[IndependentGenerationResult], annotations: dict[str,
                 "v3_historical_mapping_reference": v3_template_map.get(result.request_id),
                 "static_valid": static_valid,
                 "static_semantic_signature_match": bool(signature.get("match")),
+                "static_semantic_signature_match_v2": bool(signature.get("match")),
                 "static_semantic_signature_differences": signature.get("differences", {}),
+                "semantic_signature_scope": "bounded_current_contract_grammar",
                 "gold_aligned_post_generation_evaluation": gold_aligned,
                 "exact_text_match_diagnostic": gold_aligned,
                 "failure_stage": result.failure_stage,
@@ -126,6 +128,9 @@ def _evaluate(results: list[IndependentGenerationResult], annotations: dict[str,
         "relation_semantic_accuracy": sum(x["relation_semantics_ok"] for x in executable_rows) / len(executable_rows) if executable_rows else 0.0,
         "static_valid_pre_repair": sum(x["static_valid"] for x in executable_rows),
         "static_semantic_signature_match": sum(x["static_semantic_signature_match"] for x in executable_rows),
+        "static_semantic_signature_match_v2": sum(x["static_semantic_signature_match_v2"] for x in executable_rows),
+        "semantic_signature_version": "v2_role_aware_bounded",
+        "semantic_signature_scope": "bounded_current_contract_grammar",
         "exact_text_match_diagnostic": sum(x["exact_text_match_diagnostic"] for x in executable_rows),
         "main_path_failure_count": len(main_failures),
         "diagnosable_failure_count": sum(x["failure_stage"] == "static_validation" for x in main_failures),
@@ -206,7 +211,10 @@ def main() -> int:
     for result, row in zip(results, evaluation["rows"]):
         result.validation["post_generation_evaluation"] = {
             "static_semantic_signature_match": row["static_semantic_signature_match"],
+            "static_semantic_signature_match_v2": row["static_semantic_signature_match_v2"],
             "static_semantic_signature_differences": row["static_semantic_signature_differences"],
+            "semantic_signature_version": "v2_role_aware_bounded",
+            "semantic_signature_scope": "bounded_current_contract_grammar",
             "exact_text_match_diagnostic": row["exact_text_match_diagnostic"],
         }
     corpus = _run_corpus_regression(schema)
@@ -222,6 +230,7 @@ def main() -> int:
     (OUT / "d1_1_run_summary_v1.md").write_text(
         "# D1.1 Independent Main-Path Run Summary\n\n"
         + "Generation input fields: `id`, `nl_query` only. Evaluation annotations were loaded after generation and repair.\n\n"
+        + "Semantic signature: `v2_role_aware_bounded` over the current independent-template grammar; this is static pilot/development-set closure evidence, not runtime correctness or general Cypher equivalence.\n\n"
         + "## Main Path\n\n"
         + "```json\n"
         + json.dumps(summary, ensure_ascii=False, indent=2)

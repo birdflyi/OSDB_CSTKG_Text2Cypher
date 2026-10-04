@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-"""Evaluation-only semantic signatures for static Cypher comparison.
+"""Evaluation-only semantic signatures for bounded static Cypher comparison.
 
-This module may consume a frozen reference query after generation. It is not
-imported by the independent generation or repair path.
+The parser intentionally covers the current independent v4 template grammar.
+It canonicalizes aliases and presentation details while retaining ownership of
+node-, relationship-, branch-, scope-, projection-, and sort-level semantics.
+This module is not a general Cypher equivalence engine and is not imported by
+the independent generation or repair path.
 """
 
 import re
+from collections import defaultdict
 from typing import Any
 
 
@@ -22,11 +26,28 @@ REL_PATTERN = re.compile(
     r"(?:\s*\{(?P<dst_props>[^}]*)\})?\)"
 )
 ENTITY_ID_PATTERN = re.compile(r"entity_id\s*:\s*'([^']+)'", re.IGNORECASE)
-PREFIX_PATTERN = re.compile(r"entity_id\s+STARTS\s+WITH\s+'([^']+)'", re.IGNORECASE)
-SERVICE_EQ_PATTERN = re.compile(r"service_rel_type\s*=\s*'([A-Z_]+)'", re.IGNORECASE)
-SERVICE_IN_PATTERN = re.compile(r"service_rel_type\s+IN\s*\[([^\]]+)\]", re.IGNORECASE)
-TIME_PATTERN = re.compile(r"source_event_time\s*(>=|<|<=|>)\s*'([^']+)'", re.IGNORECASE)
+PREFIX_PATTERN = re.compile(
+    r"(?P<alias>[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*entity_id\s+STARTS\s+WITH\s+'(?P<value>[^']+)'",
+    re.IGNORECASE,
+)
+SERVICE_EQ_PATTERN = re.compile(
+    r"(?P<alias>[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*service_rel_type\s*=\s*'(?P<value>[^']+)'",
+    re.IGNORECASE,
+)
+SERVICE_IN_PATTERN = re.compile(
+    r"(?P<alias>[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*service_rel_type\s+IN\s*\[(?P<values>[^\]]+)\]",
+    re.IGNORECASE,
+)
+TIME_PATTERN = re.compile(
+    r"(?:(?P<owner>[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*)?source_event_time\s*"
+    r"(?P<operator>>=|<=|>|<)\s*'(?P<value>[^']+)'",
+    re.IGNORECASE,
+)
 LIMIT_PATTERN = re.compile(r"\bLIMIT\s+(\d+)\b", re.IGNORECASE)
+AGGREGATION_PATTERN = re.compile(r"\b(count|max|min|collect|sum|avg)\s*\(", re.IGNORECASE)
+KNOWN_EXPRESSION_TOKENS = re.compile(
+    r"\b(COUNT|MAX|MIN|COLLECT|SUM|AVG|DISTINCT|AS|ASC|DESC)\b", re.IGNORECASE
+)
 
 
 def _split_top_level(text: str) -> list[str]:
@@ -53,80 +74,308 @@ def _split_top_level(text: str) -> list[str]:
 def _props(raw: str | None) -> dict[str, str]:
     if not raw:
         return {}
-    return {key.lower(): value for key, value in re.findall(r"([A-Za-z_][A-Za-z0-9_]*)\s*:\s*'([^']*)'", raw)}
+    return {
+        key.lower(): value
+        for key, value in re.findall(
+            r"([A-Za-z_][A-Za-z0-9_]*)\s*:\s*'([^']*)'", raw
+        )
+    }
 
 
-def _return_items(cypher: str, aliases: dict[str, str], rel_aliases: dict[str, str]) -> list[str]:
-    match = re.search(r"\bRETURN\b(?P<body>.*?)(?:\bORDER\s+BY\b|\bLIMIT\b|$)", cypher, flags=re.IGNORECASE | re.DOTALL)
+def _normalize_expression_surface(value: str) -> str:
+    """Normalize whitespace and Cypher keyword/function case only."""
+
+    pieces: list[str] = []
+    start = 0
+    quote = False
+    for index, char in enumerate(value):
+        if char == "'":
+            if not quote:
+                pieces.append(
+                    KNOWN_EXPRESSION_TOKENS.sub(lambda m: m.group(1).lower(), value[start:index])
+                )
+            quote = not quote
+            pieces.append(char)
+            start = index + 1
+    if start < len(value):
+        pieces.append(
+            value[start:]
+            if quote
+            else KNOWN_EXPRESSION_TOKENS.sub(lambda m: m.group(1).lower(), value[start:])
+        )
+    return " ".join("".join(pieces).split())
+
+
+def _branch_kind(text: str, position: int) -> str:
+    matches = list(
+        re.finditer(r"\b(?:OPTIONAL\s+)?MATCH\b", text[:position], flags=re.IGNORECASE)
+    )
+    if not matches:
+        return "match"
+    return "optional" if matches[-1].group(0).upper().startswith("OPTIONAL") else "match"
+
+
+def _canonical_expression(
+    expression: str,
+    node_roles: dict[str, str],
+    relationship_roles: dict[str, str],
+) -> str:
+    aliases = sorted(set(node_roles) | set(relationship_roles), key=len, reverse=True)
+    output = expression
+    for alias in aliases:
+        role = node_roles.get(alias) or relationship_roles.get(alias)
+        output = re.sub(
+            rf"\b{re.escape(alias)}\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)",
+            lambda match: f"{role}.{match.group(1)}",
+            output,
+        )
+    return _normalize_expression_surface(output)
+
+
+def _return_items(
+    cypher: str,
+    node_roles: dict[str, str],
+    relationship_roles: dict[str, str],
+) -> list[str]:
+    match = re.search(
+        r"\bRETURN\b(?P<body>.*?)(?=\bORDER\s+BY\b|\bLIMIT\b|$)",
+        cypher,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
     if not match:
         return []
-    body = match.group("body").strip()
-    body = re.sub(r"^DISTINCT\s+", "DISTINCT ", body, flags=re.IGNORECASE)
     output: list[str] = []
-    for item in _split_top_level(body):
-        normalized = re.sub(r"\s+AS\s+[A-Za-z_][A-Za-z0-9_]*", "", item, flags=re.IGNORECASE)
-        normalized = re.sub(r"\b([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)\b", lambda m: f"{aliases.get(m.group(1), rel_aliases.get(m.group(1), m.group(1)))}.{m.group(2)}", normalized)
-        output.append(" ".join(normalized.lower().split()))
+    for item in _split_top_level(match.group("body")):
+        normalized = re.sub(
+            r"\s+AS\s+[A-Za-z_][A-Za-z0-9_]*", "", item, flags=re.IGNORECASE
+        )
+        output.append(_canonical_expression(normalized, node_roles, relationship_roles))
     return output
+
+
+def _aggregation_expressions(
+    cypher: str,
+    node_roles: dict[str, str],
+    relationship_roles: dict[str, str],
+) -> list[str]:
+    expressions: list[str] = []
+    for match in re.finditer(
+        r"\b(?P<function>count|max|min|collect|sum|avg)\s*\((?P<body>[^()]*)\)",
+        cypher,
+        flags=re.IGNORECASE,
+    ):
+        body = _canonical_expression(match.group("body"), node_roles, relationship_roles)
+        expressions.append(f"{match.group('function').lower()}({body})")
+    return expressions
 
 
 def semantic_signature(cypher: str) -> dict[str, Any]:
     text = " ".join(str(cypher or "").split())
-    aliases: dict[str, str] = {}
-    node_entities: dict[str, str] = {}
+
+    # First occurrence order is a deterministic bounded role scheme for the
+    # current template grammar. It is alias-independent and distinguishes
+    # repeated labels by their structural occurrence.
+    node_records: dict[str, dict[str, Any]] = {}
+    node_order: list[str] = []
     for match in NODE_PATTERN.finditer(text):
         alias = match.group("alias")
-        label = match.group("label")
+        label = match.group("label") or ""
         props = _props(match.group("props"))
-        if label:
-            aliases[alias] = label
-        if "entity_id" in props:
-            node_entities[alias] = props["entity_id"]
-
-    rel_aliases: dict[str, str] = {}
-    paths: list[dict[str, Any]] = []
-    for match in REL_PATTERN.finditer(text):
-        src = match.group("src")
-        dst = match.group("dst")
-        rel = match.group("rel") or ""
-        rel_alias = match.group("rel_alias") or ""
-        src_label = match.group("src_label") or aliases.get(src, "")
-        dst_label = match.group("dst_label") or aliases.get(dst, "")
-        if rel_alias and rel:
-            rel_aliases[rel_alias] = rel
-        paths.append({"source_label": src_label, "relationship": rel, "target_label": dst_label})
-
-    services = {value.upper() for value in SERVICE_EQ_PATTERN.findall(text)}
-    for block in SERVICE_IN_PATTERN.findall(text):
-        services.update(value.upper() for value in re.findall(r"'([A-Z_]+)'", block, flags=re.IGNORECASE))
-
-    time_bounds = {"lower": [], "upper": []}
-    for operator, value in TIME_PATTERN.findall(text):
-        if operator in {">=", ">"}:
-            time_bounds["lower"].append(value)
+        if alias not in node_records:
+            node_records[alias] = {"label": label, "props": props}
+            node_order.append(alias)
         else:
-            time_bounds["upper"].append(value)
+            if not node_records[alias]["label"] and label:
+                node_records[alias]["label"] = label
+            node_records[alias]["props"].update(props)
 
-    order_match = re.search(r"\bORDER\s+BY\s+(?P<body>.*?)(?:\bLIMIT\b|$)", text, flags=re.IGNORECASE)
+    label_indices: defaultdict[str, int] = defaultdict(int)
+    node_roles: dict[str, str] = {}
+    for alias in node_order:
+        label = str(node_records[alias]["label"] or "").upper()
+        index = label_indices[label]
+        label_indices[label] += 1
+        node_roles[alias] = f"node:{label or '_'}[{index}]"
+
+    relationship_records: list[dict[str, Any]] = []
+    for match in REL_PATTERN.finditer(text):
+        source_alias = match.group("src")
+        target_alias = match.group("dst")
+        source_role = node_roles.get(source_alias, f"node:_[{source_alias}]")
+        target_role = node_roles.get(target_alias, f"node:_[{target_alias}]")
+        native_relationship = (match.group("rel") or "").upper()
+        branch_kind = _branch_kind(text, match.start())
+        relationship_records.append(
+            {
+                "source_alias": source_alias,
+                "target_alias": target_alias,
+                "source_role": source_role,
+                "target_role": target_role,
+                "native_relationship": native_relationship,
+                "alias": match.group("rel_alias") or "",
+                "branch_kind": branch_kind,
+            }
+        )
+
+    occurrence_indices: defaultdict[tuple[str, str, str, str], int] = defaultdict(int)
+    relationship_roles: dict[str, str] = {}
+    paths: list[dict[str, Any]] = []
+    for record in relationship_records:
+        key = (
+            record["branch_kind"],
+            record["source_role"],
+            record["native_relationship"],
+            record["target_role"],
+        )
+        index = occurrence_indices[key]
+        occurrence_indices[key] += 1
+        role = (
+            f"rel:{record['branch_kind']}:{record['source_role']}"
+            f"-[:{record['native_relationship']}]->{record['target_role']}[{index}]"
+        )
+        record["role"] = role
+        if record["alias"]:
+            relationship_roles[record["alias"]] = role
+        paths.append(
+            {
+                "role": role,
+                "branch_kind": record["branch_kind"],
+                "source_node_role": record["source_role"],
+                "relationship": record["native_relationship"],
+                "target_node_role": record["target_role"],
+            }
+        )
+
+    node_property_bindings = [
+        {
+            "node_role": node_roles[alias],
+            "properties": sorted(node_records[alias]["props"].items()),
+        }
+        for alias in node_order
+        if node_records[alias]["props"]
+    ]
+
+    anchor_bindings = [
+        {"node_role": node_roles[alias], "entity_id": node_records[alias]["props"]["entity_id"]}
+        for alias in node_order
+        if "entity_id" in node_records[alias]["props"]
+    ]
+
+    service_bindings: list[dict[str, Any]] = []
+    for match in SERVICE_EQ_PATTERN.finditer(text):
+        service_bindings.append(
+            {
+                "relationship_role": relationship_roles.get(match.group("alias"), "unbound"),
+                "values": [match.group("value").upper()],
+            }
+        )
+    for match in SERVICE_IN_PATTERN.finditer(text):
+        service_bindings.append(
+            {
+                "relationship_role": relationship_roles.get(match.group("alias"), "unbound"),
+                "values": sorted(
+                    value.upper() for value in re.findall(r"'([^']+)'", match.group("values"))
+                ),
+            }
+        )
+    service_bindings = sorted(
+        service_bindings,
+        key=lambda item: (item["relationship_role"], tuple(item["values"])),
+    )
+    service_values = sorted(
+        {value for binding in service_bindings for value in binding["values"]}
+    )
+
+    repo_scope_bindings = [
+        {
+            "node_role": node_roles.get(match.group("alias"), "unbound"),
+            "prefix": match.group("value"),
+        }
+        for match in PREFIX_PATTERN.finditer(text)
+    ]
+    repo_scope_bindings = sorted(
+        repo_scope_bindings, key=lambda item: (item["node_role"], item["prefix"])
+    )
+
+    time_bounds: dict[str, list[dict[str, Any]]] = {"lower": [], "upper": []}
+    for match in TIME_PATTERN.finditer(text):
+        operator = match.group("operator")
+        bucket = "lower" if operator in {">=", ">"} else "upper"
+        owner = match.group("owner")
+        owner_role = relationship_roles.get(owner) or node_roles.get(owner) or "unbound"
+        time_bounds[bucket].append(
+            {
+                "owner_role": owner_role,
+                "operator": operator,
+                "value": match.group("value"),
+            }
+        )
+    for bucket in time_bounds:
+        time_bounds[bucket] = sorted(
+            time_bounds[bucket],
+            key=lambda item: (item["owner_role"], item["operator"], item["value"]),
+        )
+
+    branch_topology = [
+        {
+            "branch_kind": record["branch_kind"],
+            "relationship_roles": [record["role"]],
+            "endpoint_roles": [record["source_role"], record["target_role"]],
+        }
+        for record in relationship_records
+    ]
+
+    order_match = re.search(
+        r"\bORDER\s+BY\s+(?P<body>.*?)(?=\bLIMIT\b|$)",
+        text,
+        flags=re.IGNORECASE,
+    )
     sort_keys: list[str] = []
     if order_match:
         for item in _split_top_level(order_match.group("body")):
-            item = re.sub(r"\s+AS\s+[A-Za-z_][A-Za-z0-9_]*", "", item, flags=re.IGNORECASE)
-            sort_keys.append(" ".join(item.lower().split()))
+            sort_keys.append(_canonical_expression(item, node_roles, relationship_roles))
+
+    aggregation_functions = sorted(
+        {match.group(1).lower() for match in AGGREGATION_PATTERN.finditer(text)}
+    )
 
     return {
-        "anchor_entity_ids": sorted(set(ENTITY_ID_PATTERN.findall(text))),
-        "repo_scope_prefixes": sorted(set(PREFIX_PATTERN.findall(text))),
-        "node_labels": sorted(set(aliases.values())),
+        # Retained diagnostic fields; semantic comparison also checks the
+        # role-bound fields below, so global bags cannot create a match alone.
+        "anchor_entity_ids": sorted({item["entity_id"] for item in anchor_bindings}),
+        "repo_scope_prefixes": sorted({item["prefix"] for item in repo_scope_bindings}),
+        "node_labels": sorted(
+            {str(record["label"]).upper() for record in node_records.values() if record["label"]}
+        ),
         "paths": paths,
-        "native_relationships": sorted({item["relationship"] for item in paths if item["relationship"]}),
-        "service_rel_types": sorted(services),
+        "native_relationships": sorted(
+            {item["relationship"] for item in paths if item["relationship"]}
+        ),
+        "service_rel_types": service_values,
         "time_bounds": time_bounds,
-        "target_projection": _return_items(text, aliases, rel_aliases),
-        "aggregation_functions": sorted(set(re.findall(r"\b(count|max|min|collect|sum|avg)\s*\(", text, flags=re.IGNORECASE))),
+        "target_projection": _return_items(text, node_roles, relationship_roles),
+        "aggregation_functions": aggregation_functions,
+        "aggregation_expressions": _aggregation_expressions(text, node_roles, relationship_roles),
         "sort_keys": sort_keys,
-        "optional_match_count": len(re.findall(r"\bOPTIONAL\s+MATCH\b", text, flags=re.IGNORECASE)),
+        "optional_match_count": len(
+            re.findall(r"\bOPTIONAL\s+MATCH\b", text, flags=re.IGNORECASE)
+        ),
         "limit": int(LIMIT_PATTERN.search(text).group(1)) if LIMIT_PATTERN.search(text) else None,
+        "node_roles": sorted(
+            [
+                {
+                    "node_role": node_roles[alias],
+                    "label": str(node_records[alias]["label"]).upper(),
+                }
+                for alias in node_order
+            ],
+            key=lambda item: item["node_role"],
+        ),
+        "node_property_bindings": sorted(node_property_bindings, key=lambda item: item["node_role"]),
+        "anchor_bindings": sorted(anchor_bindings, key=lambda item: item["node_role"]),
+        "service_predicates_by_relationship_role": service_bindings,
+        "repo_scope_prefixes_by_node_role": repo_scope_bindings,
+        "branch_topology": branch_topology,
     }
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 
 from repair.gold_blind_repair import repair_gold_blind
 from runners.independent_controlled_pipeline import (
@@ -145,3 +146,101 @@ def test_d1_1_report_metadata_has_no_stale_recommendation_or_v3_id_score() -> No
     assert "v3_template_mapping_match_diagnostic" not in script
     assert "PROCEED_TO_D1_2_HELDOUT_NL_ROBUSTNESS" in script
     assert "v3_historical_mapping_reference" in script
+
+
+def test_semantic_signature_binds_service_values_to_relationship_roles() -> None:
+    reference = (
+        "MATCH (c:IssueComment)-[r1:EVENT_ACTION]->(i:Issue) "
+        "MATCH (c)-[r2:EVENT_ACTION]->(a:Actor) "
+        "WHERE r1.service_rel_type = 'COMMENTED_ON_ISSUE' "
+        "AND r2.service_rel_type = 'OPENED_BY' RETURN a.entity_id"
+    )
+    swapped = reference.replace(
+        "r1.service_rel_type = 'COMMENTED_ON_ISSUE' AND r2.service_rel_type = 'OPENED_BY'",
+        "r1.service_rel_type = 'OPENED_BY' AND r2.service_rel_type = 'COMMENTED_ON_ISSUE'",
+    )
+    result = compare_semantic_signatures(swapped, reference)
+    assert not result["match"]
+    assert "service_predicates_by_relationship_role" in result["differences"]
+
+
+def test_semantic_signature_binds_anchor_ids_to_node_roles() -> None:
+    reference = (
+        "MATCH (i:Issue {entity_id: 'I_1#1'})-[:EVENT_ACTION]->"
+        "(a:Actor {entity_id: 'A_1'}) RETURN a.entity_id"
+    )
+    swapped = reference.replace("I_1#1", "TEMP").replace("A_1", "I_1#1").replace("TEMP", "A_1")
+    result = compare_semantic_signatures(swapped, reference)
+    assert not result["match"]
+    assert "anchor_bindings" in result["differences"]
+
+
+def test_semantic_signature_normalizes_aggregation_function_case() -> None:
+    upper = "MATCH (pr:PullRequest) RETURN COUNT(*) AS c LIMIT 20"
+    lower = "match (pr:PullRequest) return count(*) as c limit 20"
+    assert compare_semantic_signatures(upper, lower)["match"]
+
+
+def test_semantic_signature_is_alias_invariant() -> None:
+    reference = (
+        "MATCH (pr:PullRequest {entity_id: 'PR_1#2'})-[rel:REFERENCE]->"
+        "(x:UnknownObject) WHERE rel.service_rel_type = 'REFERENCES' "
+        "RETURN x.entity_id LIMIT 25"
+    )
+    renamed = (
+        "MATCH (p:PullRequest {entity_id: 'PR_1#2'})-[edge:REFERENCE]->"
+        "(obj:UnknownObject) WHERE edge.service_rel_type = 'REFERENCES' "
+        "RETURN obj.entity_id LIMIT 25"
+    )
+    assert compare_semantic_signatures(renamed, reference)["match"]
+
+
+def test_semantic_signature_ignores_whitespace_and_keyword_case() -> None:
+    reference = "MATCH (pr:PullRequest) RETURN pr.entity_id LIMIT 20"
+    formatted = "  match  (pr:PullRequest)  return  pr.entity_id  limit 20  "
+    assert compare_semantic_signatures(formatted, reference)["match"]
+
+
+def test_semantic_signature_detects_path_role_change() -> None:
+    reference = (
+        "MATCH (pr:PullRequest)-[rel:REFERENCE]->(x:UnknownObject) "
+        "WHERE rel.service_rel_type = 'REFERENCES' RETURN x.entity_id"
+    )
+    changed = reference.replace(":REFERENCE", ":EVENT_ACTION")
+    result = compare_semantic_signatures(changed, reference)
+    assert not result["match"]
+    assert "paths" in result["differences"]
+
+
+def test_d1_1_pilot_closure_regression() -> None:
+    queries_path = ROOT / "data_real" / "pilot_queries" / "queries_pilot.jsonl"
+    requests = []
+    annotations = {}
+    for line in queries_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        payload = json.loads(line)
+        request_id = str(payload.get("id") or "")
+        requests.append({"id": request_id, "nl_query": str(payload.get("nl_query") or "")})
+        annotations[request_id] = payload
+
+    results = __import__("runners.independent_controlled_pipeline", fromlist=["run_independent_requests"]).run_independent_requests(
+        requests,
+        TEMPLATES,
+        SCHEMA,
+    )
+    executable = [result for result in results if annotations[result.request_id].get("gold_cypher")]
+    pending = [result for result in results if not annotations[result.request_id].get("gold_cypher")]
+    assert len(results) == 15
+    assert len(executable) == 13
+    assert len(pending) == 2
+    assert sum(bool(result.validation.get("valid")) for result in executable) == 13
+    assert sum(
+        compare_semantic_signatures(
+            result.rendered_cypher,
+            str(annotations[result.request_id].get("gold_cypher") or ""),
+        )["match"]
+        for result in executable
+    ) == 13
+    assert sum(result.failure_stage == "template_selection_or_abstention" for result in pending) == 2
+    assert sum(bool(result.repair) for result in results) == 0
