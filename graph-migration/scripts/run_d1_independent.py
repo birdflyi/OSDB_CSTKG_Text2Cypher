@@ -103,8 +103,7 @@ def _evaluate(results: list[IndependentGenerationResult], annotations: dict[str,
                 "entity_alignment_ok": entity_ok,
                 "relation_semantics_ok": service_ok,
                 "selected_template": result.template_id,
-                "v3_expected_template": v3_template_map.get(result.request_id),
-                "v3_template_mapping_match": result.template_id == v3_template_map.get(result.request_id),
+                "v3_historical_mapping_reference": v3_template_map.get(result.request_id),
                 "static_valid": static_valid,
                 "static_semantic_signature_match": bool(signature.get("match")),
                 "static_semantic_signature_differences": signature.get("differences", {}),
@@ -125,7 +124,6 @@ def _evaluate(results: list[IndependentGenerationResult], annotations: dict[str,
         "pending_count": len(pending_rows),
         "entity_alignment_accuracy": sum(x["entity_alignment_ok"] for x in executable_rows) / len(executable_rows) if executable_rows else 0.0,
         "relation_semantic_accuracy": sum(x["relation_semantics_ok"] for x in executable_rows) / len(executable_rows) if executable_rows else 0.0,
-        "v3_template_mapping_match_diagnostic": sum(x["v3_template_mapping_match"] for x in executable_rows) / len(executable_rows) if executable_rows else 0.0,
         "static_valid_pre_repair": sum(x["static_valid"] for x in executable_rows),
         "static_semantic_signature_match": sum(x["static_semantic_signature_match"] for x in executable_rows),
         "exact_text_match_diagnostic": sum(x["exact_text_match_diagnostic"] for x in executable_rows),
@@ -321,7 +319,7 @@ def main() -> int:
         "HIGHEST_SUPPORTED_PIPELINE_LEVEL_AFTER_D1_1 =\n"
         "LEVEL_2_BOUNDED_SEMANTIC_CLOSURE\n\n"
         "NEXT_RECOMMENDATION =\n"
-        "FIX_MAIN_PATH\n",
+        "PROCEED_TO_D1_2_HELDOUT_NL_ROBUSTNESS\n",
         encoding="utf-8",
     )
     return 0

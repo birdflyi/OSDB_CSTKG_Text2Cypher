@@ -137,3 +137,11 @@ def test_d1_entity_alignment_and_relation_mapping_regress() -> None:
     ir = parse_nl_to_ir("q", "Which actors interacted with PR PR_156018#11659 via review comments and references in 2023?")
     assert {x["entity_id"] for x in ir.aligned_entities if x.get("entity_id")} >= {"PR_156018#11659", "R_156018"}
     assert {x["semantic"] for x in ir.relation_semantics} >= {"COMMENTED_ON_REVIEW", "MENTIONS", "REFERENCES"}
+
+
+def test_d1_1_report_metadata_has_no_stale_recommendation_or_v3_id_score() -> None:
+    script = (ROOT / "graph-migration" / "scripts" / "run_d1_independent.py").read_text(encoding="utf-8")
+    assert "FIX_MAIN_PATH" not in script
+    assert "v3_template_mapping_match_diagnostic" not in script
+    assert "PROCEED_TO_D1_2_HELDOUT_NL_ROBUSTNESS" in script
+    assert "v3_historical_mapping_reference" in script
