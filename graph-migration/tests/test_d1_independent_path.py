@@ -348,6 +348,20 @@ def test_semantic_signature_retains_where_branch_ownership() -> None:
     assert "predicate_boolean_structure" in result["differences"]
 
 
+def test_semantic_signature_retains_additional_labels_on_reused_aliases() -> None:
+    reference = (
+        "MATCH (c:IssueComment)-[r1:EVENT_ACTION]->(i:Issue) "
+        "MATCH (c)-[r2:REFERENCE]->(i) RETURN i.entity_id"
+    )
+    changed = (
+        "MATCH (c:IssueComment)-[r1:EVENT_ACTION]->(i:Issue) "
+        "MATCH (c)-[r2:REFERENCE]->(i:Actor) RETURN i.entity_id"
+    )
+    result = compare_semantic_signatures(changed, reference)
+    assert not result["match"]
+    assert "node_roles" in result["differences"]
+
+
 def test_d1_1_pilot_closure_regression() -> None:
     queries_path = ROOT / "data_real" / "pilot_queries" / "queries_pilot.jsonl"
     requests = []

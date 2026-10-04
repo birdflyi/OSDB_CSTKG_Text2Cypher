@@ -312,17 +312,27 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         label = match.group("label") or ""
         props = _props(match.group("props"))
         if alias not in node_records:
-            node_records[alias] = {"label": label, "props": props}
+            node_records[alias] = {
+                "label": label,
+                "labels": {label} if label else set(),
+                "props": props,
+            }
             node_order.append(alias)
         else:
-            if not node_records[alias]["label"] and label:
-                node_records[alias]["label"] = label
+            if label:
+                node_records[alias]["labels"].add(label)
             node_records[alias]["props"].update(props)
 
     label_indices: defaultdict[str, int] = defaultdict(int)
     node_roles: dict[str, str] = {}
     for alias in node_order:
-        label = str(node_records[alias]["label"] or "").upper()
+        labels = sorted(
+            str(value).upper()
+            for value in node_records[alias].get("labels", set())
+            if value
+        )
+        label = "&".join(labels)
+        node_records[alias]["label"] = label
         index = label_indices[label]
         label_indices[label] += 1
         node_roles[alias] = f"node:{label or '_'}[{index}]"
