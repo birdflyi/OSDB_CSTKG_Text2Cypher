@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import json
+import yaml
 
 from repair.gold_blind_repair import repair_gold_blind
 from runners.independent_controlled_pipeline import (
@@ -17,6 +18,7 @@ from evaluation.semantic_signature import compare_semantic_signatures
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES = ROOT / "data_real" / "pilot_queries" / "independent_template_pack_v4.yaml"
 SCHEMA = ROOT / "data_real" / "pilot_queries" / "schema_metadata.yaml"
+REFERENCE_CORRECTIONS = ROOT / "data_real" / "pilot_queries" / "independent_eval_reference_corrections_v1.yaml"
 
 
 def _generate(query: str):
@@ -34,6 +36,44 @@ def test_independent_modules_do_not_read_annotation_fields() -> None:
     combined = pipeline + repair
     for forbidden in ["gold_cypher", "extracted_slot_candidates", "covered_queries", "query_type"]:
         assert forbidden not in combined
+
+
+def test_generation_modules_do_not_access_evaluation_reference_corrections() -> None:
+    pipeline = (ROOT / "graph-migration" / "runners" / "independent_controlled_pipeline.py").read_text(encoding="utf-8")
+    repair = (ROOT / "graph-migration" / "repair" / "gold_blind_repair.py").read_text(encoding="utf-8")
+    assert "independent_eval_reference_corrections_v1.yaml" not in pipeline + repair
+
+
+def test_comprehensive_template_binds_link_and_time_filters_to_mandatory_match() -> None:
+    text = TEMPLATES.read_text(encoding="utf-8")
+    section = text.split("template_id: indv4_comprehensive_external_actor_aggregation", 1)[1]
+    skeleton = section.split("    required_slots:", 1)[0]
+    assert skeleton.index("MATCH (pr)-[rl:REFERENCE]->(e:ExternalResource)") < skeleton.index("WHERE rl.service_rel_type = 'LINKS_TO'")
+    assert skeleton.index("WHERE rl.service_rel_type = 'LINKS_TO'") < skeleton.index("OPTIONAL MATCH (pr)-[ra:REFERENCE]->(a:Actor)")
+    assert skeleton.index("rl.source_event_time >= $time_start") < skeleton.index("OPTIONAL MATCH (pr)-[ra:REFERENCE]->(a:Actor)")
+    assert "WHERE ra.service_rel_type IN ['MENTIONS','REFERENCES']" in skeleton
+
+
+def test_historical_q_comp_reference_is_preserved_and_correction_is_separate() -> None:
+    source_text = (ROOT / "data_real" / "pilot_queries" / "queries_pilot.jsonl").read_text(encoding="utf-8")
+    assert "OPTIONAL MATCH (pr)-[ra:REFERENCE]->(a:Actor) WHERE rl.service_rel_type = 'LINKS_TO'" in source_text
+    corrections = yaml.safe_load(REFERENCE_CORRECTIONS.read_text(encoding="utf-8"))
+    correction = corrections["corrections"]["q_comp_01"]["corrected_cypher"]
+    assert "MATCH (pr)-[rl:REFERENCE]->(e:ExternalResource)\nWHERE rl.service_rel_type = 'LINKS_TO'" in correction
+    assert "OPTIONAL MATCH (pr)-[ra:REFERENCE]->(a:Actor)\nWHERE ra.service_rel_type" in correction
+
+
+def test_q_comp_original_source_mismatch_and_effective_reference_match() -> None:
+    query = "Comprehensive: For repo R_156018 in 2023, find PRs linked to external resources, group by domain, and return involved actors and latest interaction time."
+    result = _generate(query)
+    source = next(
+        json.loads(line)["gold_cypher"]
+        for line in (ROOT / "data_real" / "pilot_queries" / "queries_pilot.jsonl").read_text(encoding="utf-8").splitlines()
+        if json.loads(line).get("id") == "q_comp_01"
+    )
+    effective = yaml.safe_load(REFERENCE_CORRECTIONS.read_text(encoding="utf-8"))["corrections"]["q_comp_01"]["corrected_cypher"]
+    assert not compare_semantic_signatures(result.rendered_cypher, source)["match"]
+    assert compare_semantic_signatures(result.rendered_cypher, effective)["match"]
 
 
 def test_parse_opened_by_and_selects_contract() -> None:
@@ -385,12 +425,22 @@ def test_d1_1_pilot_closure_regression() -> None:
     assert len(executable) == 13
     assert len(pending) == 2
     assert sum(bool(result.validation.get("valid")) for result in executable) == 13
-    assert sum(
+    corrections = yaml.safe_load(REFERENCE_CORRECTIONS.read_text(encoding="utf-8"))["corrections"]
+    source_matches = sum(
         compare_semantic_signatures(
             result.rendered_cypher,
             str(annotations[result.request_id].get("gold_cypher") or ""),
         )["match"]
         for result in executable
-    ) == 13
+    )
+    effective_matches = sum(
+        compare_semantic_signatures(
+            result.rendered_cypher,
+            str(corrections.get(result.request_id, {}).get("corrected_cypher") or annotations[result.request_id].get("gold_cypher") or ""),
+        )["match"]
+        for result in executable
+    )
+    assert source_matches == 12
+    assert effective_matches == 13
     assert sum(result.failure_stage == "template_selection_or_abstention" for result in pending) == 2
     assert sum(bool(result.repair) for result in results) == 0

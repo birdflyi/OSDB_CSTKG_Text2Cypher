@@ -303,9 +303,10 @@ templates:
       MATCH (pr:PullRequest)
       WHERE pr.entity_id STARTS WITH $pr_base_prefix
       MATCH (pr)-[rl:REFERENCE]->(e:ExternalResource)
-      OPTIONAL MATCH (pr)-[ra:REFERENCE]->(a:Actor)
-      WHERE rl.service_rel_type = 'LINKS_TO' AND (ra IS NULL OR ra.service_rel_type IN ['MENTIONS','REFERENCES'])
+      WHERE rl.service_rel_type = 'LINKS_TO'
       AND rl.source_event_time >= $time_start AND rl.source_event_time < $time_end
+      OPTIONAL MATCH (pr)-[ra:REFERENCE]->(a:Actor)
+      WHERE ra.service_rel_type IN ['MENTIONS','REFERENCES']
       RETURN rl.url_domain_etld1 AS domain, collect(DISTINCT a.entity_id) AS actors,
       max(rl.source_event_time) AS latest_time, count(DISTINCT pr.entity_id) AS pr_count
       ORDER BY pr_count DESC, latest_time DESC LIMIT 30
