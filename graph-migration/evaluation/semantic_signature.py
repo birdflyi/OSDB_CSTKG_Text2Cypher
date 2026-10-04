@@ -76,7 +76,7 @@ def _props(raw: str | None) -> dict[str, str]:
     if not raw:
         return {}
     return {
-        key.lower(): value
+        key: value
         for key, value in re.findall(
             r"([A-Za-z_][A-Za-z0-9_]*)\s*:\s*'([^']*)'", raw
         )
@@ -233,17 +233,17 @@ def _where_boolean_structure(
     node_roles: dict[str, str],
     relationship_roles: dict[str, str],
     relationship_records: list[dict[str, Any]],
-) -> list[str]:
+) -> list[dict[str, str]]:
     clauses = list(
         re.finditer(r"\b(?:OPTIONAL\s+)?MATCH\b", cypher, flags=re.IGNORECASE)
     )
     entries: list[tuple[str, str, int, str]] = []
-    matches = re.finditer(
+    where_matches = list(re.finditer(
         r"\bWHERE\b(?P<body>.*?)(?=\bOPTIONAL\s+MATCH\b|\bMATCH\b|\bRETURN\b|\bWITH\b|\bUNWIND\b|\bORDER\s+BY\b|\bLIMIT\b|$)",
         cypher,
         flags=re.IGNORECASE | re.DOTALL,
-    )
-    for sequence, match in enumerate(matches):
+    ))
+    for sequence, match in enumerate(where_matches):
         previous = next(
             (clause for clause in reversed(clauses) if clause.start() < match.start()),
             None,
@@ -257,22 +257,22 @@ def _where_boolean_structure(
                 if previous.group(0).upper().startswith("OPTIONAL")
                 else "match"
             )
-            next_clause = next(
-                (clause for clause in clauses if clause.start() > previous.start()),
+            previous_where = next(
+                (item for item in reversed(where_matches[:sequence]) if item.start() < match.start()),
                 None,
             )
-            clause_end = next_clause.start() if next_clause else len(cypher)
+            group_start = previous_where.end() if previous_where else 0
             relationship_owners = sorted(
                 record["role"]
                 for record in relationship_records
-                if previous.start() <= record["match_start"] < clause_end
+                if group_start <= record["match_start"] < match.start()
             )
             if relationship_owners:
                 owner_key = "|".join(relationship_owners)
             else:
                 node_owners = sorted(
                     node_roles.get(node_match.group("alias"), "unbound")
-                    for node_match in NODE_PATTERN.finditer(cypher, previous.start(), clause_end)
+                    for node_match in NODE_PATTERN.finditer(cypher, group_start, match.start())
                 )
                 owner_key = "|".join(node_owners) if node_owners else "unbound"
         entries.append(
@@ -289,7 +289,14 @@ def _where_boolean_structure(
         key=lambda entry: (entry[1], entry[2]),
     )
     optional = [entry for entry in entries if entry[0] == "optional"]
-    return [entry[3] for entry in mandatory + optional]
+    return [
+        {
+            "branch_kind": entry[0],
+            "owner": entry[1],
+            "structure": entry[3],
+        }
+        for entry in mandatory + optional
+    ]
 
 
 def semantic_signature(cypher: str) -> dict[str, Any]:

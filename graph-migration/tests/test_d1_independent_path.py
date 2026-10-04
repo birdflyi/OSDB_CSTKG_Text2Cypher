@@ -322,6 +322,32 @@ def test_semantic_signature_canonicalizes_predicate_order_with_match_order() -> 
     assert compare_semantic_signatures(reordered, reference)["match"]
 
 
+def test_semantic_signature_preserves_inline_property_key_case() -> None:
+    reference = "MATCH (pr:PullRequest {entity_id: 'PR_1#2'}) RETURN pr.entity_id"
+    changed = "MATCH (pr:PullRequest {ENTITY_ID: 'PR_1#2'}) RETURN pr.entity_id"
+    result = compare_semantic_signatures(changed, reference)
+    assert not result["match"]
+    assert "node_property_bindings" in result["differences"]
+
+
+def test_semantic_signature_retains_where_branch_ownership() -> None:
+    mandatory_where = (
+        "MATCH (pr:PullRequest)-[rl:REFERENCE]->(e:ExternalResource) "
+        "WHERE rl.service_rel_type = 'LINKS_TO' "
+        "OPTIONAL MATCH (pr)-[ra:REFERENCE]->(a:Actor) "
+        "RETURN e.url_domain_etld1"
+    )
+    optional_where = (
+        "MATCH (pr:PullRequest)-[rl:REFERENCE]->(e:ExternalResource) "
+        "OPTIONAL MATCH (pr)-[ra:REFERENCE]->(a:Actor) "
+        "WHERE rl.service_rel_type = 'LINKS_TO' "
+        "RETURN e.url_domain_etld1"
+    )
+    result = compare_semantic_signatures(optional_where, mandatory_where)
+    assert not result["match"]
+    assert "predicate_boolean_structure" in result["differences"]
+
+
 def test_d1_1_pilot_closure_regression() -> None:
     queries_path = ROOT / "data_real" / "pilot_queries" / "queries_pilot.jsonl"
     requests = []
