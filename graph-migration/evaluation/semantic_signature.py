@@ -166,7 +166,7 @@ def _return_projection_context(
         canonical = _canonical_expression(expression, node_roles, relationship_roles)
         output.append(canonical)
         if alias_match:
-            projection_aliases[alias_match.group("alias").lower()] = canonical
+            projection_aliases[alias_match.group("alias")] = canonical
     return output, projection_aliases
 
 
@@ -180,7 +180,7 @@ def _canonical_sort_expression(
     if projection_aliases:
         canonical = re.sub(
             r"\b([A-Za-z_][A-Za-z0-9_]*)\b",
-            lambda match: projection_aliases.get(match.group(1).lower(), match.group(0)),
+            lambda match: projection_aliases.get(match.group(1), match.group(0)),
             canonical,
         )
     return " ".join(canonical.split())
@@ -206,15 +206,16 @@ def _where_boolean_structure(
     cypher: str,
     node_roles: dict[str, str],
     relationship_roles: dict[str, str],
-) -> str:
-    match = re.search(
-        r"\bWHERE\b(?P<body>.*?)(?=\bRETURN\b|$)",
+) -> list[str]:
+    matches = re.finditer(
+        r"\bWHERE\b(?P<body>.*?)(?=\bOPTIONAL\s+MATCH\b|\bMATCH\b|\bRETURN\b|\bWITH\b|\bUNWIND\b|\bORDER\s+BY\b|\bLIMIT\b|$)",
         cypher,
         flags=re.IGNORECASE | re.DOTALL,
     )
-    if not match:
-        return ""
-    return _canonical_expression(match.group("body"), node_roles, relationship_roles)
+    return [
+        _canonical_expression(match.group("body"), node_roles, relationship_roles)
+        for match in matches
+    ]
 
 
 def semantic_signature(cypher: str) -> dict[str, Any]:

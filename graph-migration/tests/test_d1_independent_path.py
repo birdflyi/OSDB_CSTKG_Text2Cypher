@@ -188,6 +188,28 @@ def test_semantic_signature_preserves_service_literal_case() -> None:
     assert "service_predicates_by_relationship_role" in result["differences"]
 
 
+def test_semantic_signature_bounds_each_where_before_next_match_clause() -> None:
+    reference = (
+        "MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH 'PR_1' "
+        "MATCH (pr)-[rr:REFERENCE]->(x:UnknownObject) "
+        "WHERE rr.service_rel_type = 'REFERENCES' RETURN x.entity_id"
+    )
+    renamed = (
+        "MATCH (pull:PullRequest) WHERE pull.entity_id STARTS WITH 'PR_1' "
+        "MATCH (pull)-[edge:REFERENCE]->(obj:UnknownObject) "
+        "WHERE edge.service_rel_type = 'REFERENCES' RETURN obj.entity_id"
+    )
+    assert compare_semantic_signatures(renamed, reference)["match"]
+
+
+def test_semantic_signature_projection_alias_lookup_is_case_sensitive() -> None:
+    valid = "MATCH (pr:PullRequest) RETURN count(*) AS c ORDER BY c LIMIT 20"
+    invalid_case = "MATCH (pr:PullRequest) RETURN count(*) AS C ORDER BY c LIMIT 20"
+    result = compare_semantic_signatures(invalid_case, valid)
+    assert not result["match"]
+    assert "sort_keys" in result["differences"]
+
+
 def test_semantic_signature_binds_anchor_ids_to_node_roles() -> None:
     reference = (
         "MATCH (i:Issue {entity_id: 'I_1#1'})-[:EVENT_ACTION]->"
