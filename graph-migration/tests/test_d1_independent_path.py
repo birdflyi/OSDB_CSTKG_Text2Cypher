@@ -95,6 +95,13 @@ def test_multi_relation_target_contract_is_preserved() -> None:
     assert "repo.entity_id" in result.rendered_cypher and "e.entity_id" in result.rendered_cypher
 
 
+def test_multiple_actor_ids_abstain_instead_of_dropping_an_actor() -> None:
+    result = _generate("For actors A_7045099 and A_7045100, find mentioned repos and external links.")
+    assert result.template_id is None
+    assert result.failure_stage == "template_selection_or_abstention"
+    assert result.ir.bounded_status == "ABSTAIN_MULTIPLE_ACTOR_IDS"
+
+
 def test_narrow_and_comprehensive_aggregation_are_distinct_contracts() -> None:
     narrow = _generate("Count references by domain for PR PR_156018#11659 in 2023.")
     comprehensive = _generate("Comprehensive: For repo R_156018 in 2023, find PRs linked to external resources, group by domain, and return involved actors and latest interaction time.")
@@ -284,6 +291,35 @@ def test_semantic_signature_canonicalizes_independent_mandatory_match_order() ->
         "AND r2.service_rel_type = 'OPENED_BY' RETURN a.entity_id"
     )
     assert compare_semantic_signatures(reordered, first)["match"]
+
+
+def test_semantic_signature_canonicalizes_bare_alias_references() -> None:
+    reference = (
+        "MATCH (pr:PullRequest)-[ra:REFERENCE]->(a:Actor) "
+        "WHERE ra IS NULL OR ra.service_rel_type IN ['MENTIONS','REFERENCES'] "
+        "RETURN a.entity_id"
+    )
+    renamed = (
+        "MATCH (pull:PullRequest)-[edge:REFERENCE]->(actor:Actor) "
+        "WHERE edge IS NULL OR edge.service_rel_type IN ['MENTIONS','REFERENCES'] "
+        "RETURN actor.entity_id"
+    )
+    assert compare_semantic_signatures(renamed, reference)["match"]
+
+
+def test_semantic_signature_canonicalizes_predicate_order_with_match_order() -> None:
+    reference = (
+        "MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH 'PR_1' "
+        "MATCH (pr)-[rr:REFERENCE]->(x:UnknownObject) "
+        "WHERE rr.service_rel_type = 'REFERENCES' RETURN x.entity_id"
+    )
+    reordered = (
+        "MATCH (pr:PullRequest)-[rr:REFERENCE]->(x:UnknownObject) "
+        "WHERE rr.service_rel_type = 'REFERENCES' "
+        "MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH 'PR_1' "
+        "RETURN x.entity_id"
+    )
+    assert compare_semantic_signatures(reordered, reference)["match"]
 
 
 def test_d1_1_pilot_closure_regression() -> None:

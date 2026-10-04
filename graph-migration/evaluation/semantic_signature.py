@@ -123,6 +123,32 @@ def _canonical_expression(
 ) -> str:
     aliases = sorted(set(node_roles) | set(relationship_roles), key=len, reverse=True)
     output = expression
+
+    # Canonicalize standalone alias tokens before inserting role strings, so
+    # the alias names cannot be re-matched inside the generated role text.
+    segments: list[str] = []
+    start = 0
+    quote = False
+    for index, char in enumerate(output):
+        if char != "'":
+            continue
+        segments.append(output[start:index])
+        quote = not quote
+        segments.append(char)
+        start = index + 1
+    segments.append(output[start:])
+    for index in range(0, len(segments), 2):
+        segment = segments[index]
+        for alias in aliases:
+            role = node_roles.get(alias) or relationship_roles.get(alias)
+            segment = re.sub(
+                rf"(?<![A-Za-z0-9_.]){re.escape(alias)}(?![A-Za-z0-9_]|\s*\.)",
+                role,
+                segment,
+            )
+        segments[index] = segment
+    output = "".join(segments)
+
     for alias in aliases:
         role = node_roles.get(alias) or relationship_roles.get(alias)
         output = re.sub(
@@ -206,16 +232,64 @@ def _where_boolean_structure(
     cypher: str,
     node_roles: dict[str, str],
     relationship_roles: dict[str, str],
+    relationship_records: list[dict[str, Any]],
 ) -> list[str]:
+    clauses = list(
+        re.finditer(r"\b(?:OPTIONAL\s+)?MATCH\b", cypher, flags=re.IGNORECASE)
+    )
+    entries: list[tuple[str, str, int, str]] = []
     matches = re.finditer(
         r"\bWHERE\b(?P<body>.*?)(?=\bOPTIONAL\s+MATCH\b|\bMATCH\b|\bRETURN\b|\bWITH\b|\bUNWIND\b|\bORDER\s+BY\b|\bLIMIT\b|$)",
         cypher,
         flags=re.IGNORECASE | re.DOTALL,
     )
-    return [
-        _canonical_expression(match.group("body"), node_roles, relationship_roles)
-        for match in matches
-    ]
+    for sequence, match in enumerate(matches):
+        previous = next(
+            (clause for clause in reversed(clauses) if clause.start() < match.start()),
+            None,
+        )
+        if previous is None:
+            branch_kind = "match"
+            owner_key = "unbound"
+        else:
+            branch_kind = (
+                "optional"
+                if previous.group(0).upper().startswith("OPTIONAL")
+                else "match"
+            )
+            next_clause = next(
+                (clause for clause in clauses if clause.start() > previous.start()),
+                None,
+            )
+            clause_end = next_clause.start() if next_clause else len(cypher)
+            relationship_owners = sorted(
+                record["role"]
+                for record in relationship_records
+                if previous.start() <= record["match_start"] < clause_end
+            )
+            if relationship_owners:
+                owner_key = "|".join(relationship_owners)
+            else:
+                node_owners = sorted(
+                    node_roles.get(node_match.group("alias"), "unbound")
+                    for node_match in NODE_PATTERN.finditer(cypher, previous.start(), clause_end)
+                )
+                owner_key = "|".join(node_owners) if node_owners else "unbound"
+        entries.append(
+            (
+                branch_kind,
+                owner_key,
+                sequence,
+                _canonical_expression(match.group("body"), node_roles, relationship_roles),
+            )
+        )
+
+    mandatory = sorted(
+        (entry for entry in entries if entry[0] == "match"),
+        key=lambda entry: (entry[1], entry[2]),
+    )
+    optional = [entry for entry in entries if entry[0] == "optional"]
+    return [entry[3] for entry in mandatory + optional]
 
 
 def semantic_signature(cypher: str) -> dict[str, Any]:
@@ -263,6 +337,7 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
                 "native_relationship": native_relationship,
                 "alias": match.group("rel_alias") or "",
                 "branch_kind": branch_kind,
+                "match_start": match.start(),
             }
         )
 
@@ -348,6 +423,7 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         text,
         node_roles,
         relationship_roles,
+        relationship_records,
     )
 
     repo_scope_bindings = [

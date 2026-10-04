@@ -340,6 +340,15 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
     for item in aligned:
         _append_provenance(ir, "aligned_entities", str(item["provenance"]))
 
+    # The current controlled templates expose one actor slot. Abstain when a
+    # request names multiple canonical actors instead of silently retaining
+    # only the last ID during slot materialization.
+    actor_ids = {
+        str(item.get("entity_id"))
+        for item in aligned
+        if item.get("entity_label") == "Actor" and item.get("entity_id")
+    }
+
     relation_semantics: list[str] = []
     if "structurally coupled" in lower or "coupled with" in lower:
         relation_semantics.append("COUPLES_WITH")
@@ -439,6 +448,9 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
     if "COUPLES_WITH" in relation_semantics or "RESOLVES" in relation_semantics:
         ir.bounded_status = "ABSTAIN_PLACEHOLDER"
         ir.abstention_reason = "placeholder relation is outside the executable native contract"
+    elif len(actor_ids) > 1:
+        ir.bounded_status = "ABSTAIN_MULTIPLE_ACTOR_IDS"
+        ir.abstention_reason = "current actor-targeted contract supports one canonical actor slot"
     elif not aligned:
         ir.bounded_status = "ABSTAIN_UNALIGNED_ENTITY"
         ir.abstention_reason = "no canonical or alignable entity mention"
