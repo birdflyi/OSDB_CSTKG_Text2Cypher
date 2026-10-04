@@ -84,27 +84,39 @@ def _props(raw: str | None) -> dict[str, str]:
 
 
 def _normalize_expression_surface(value: str) -> str:
-    """Normalize whitespace and Cypher keyword/function case only."""
+    """Normalize bounded predicate punctuation without touching quoted literals."""
 
-    pieces: list[str] = []
+    quoted: list[str] = []
+    outside: list[str] = []
     start = 0
-    quote = False
-    for index, char in enumerate(value):
-        if char == "'":
-            if not quote:
-                pieces.append(
-                    KNOWN_EXPRESSION_TOKENS.sub(lambda m: m.group(1).lower(), value[start:index])
-                )
-            quote = not quote
-            pieces.append(char)
-            start = index + 1
-    if start < len(value):
-        pieces.append(
-            value[start:]
-            if quote
-            else KNOWN_EXPRESSION_TOKENS.sub(lambda m: m.group(1).lower(), value[start:])
-        )
-    return " ".join("".join(pieces).split())
+    quote_start = value.find("'", start)
+    while quote_start >= 0:
+        quote_end = value.find("'", quote_start + 1)
+        if quote_end < 0:
+            # Preserve an unterminated literal exactly; the evaluator will
+            # report any resulting mismatch rather than rewriting user data.
+            outside.append(value[start:])
+            break
+        outside.append(value[start:quote_start])
+        quoted.append(value[quote_start : quote_end + 1])
+        outside.append("__CODEX_QUOTE_%d__" % (len(quoted) - 1))
+        start = quote_end + 1
+        quote_start = value.find("'", start)
+    else:
+        outside.append(value[start:])
+
+    expression = "".join(outside)
+    expression = KNOWN_EXPRESSION_TOKENS.sub(lambda m: m.group(1).lower(), expression)
+    expression = re.sub(r"\s*(>=|<=|<>|!=)\s*", r" \1 ", expression)
+    expression = re.sub(r"(?<![-<>!=])\s*([=<>])\s*(?![=<>])", r" \1 ", expression)
+    for punctuation in ",()[]":
+        expression = re.sub(rf"\s*{re.escape(punctuation)}\s*", punctuation, expression)
+    expression = " ".join(expression.split())
+
+    for index, literal in enumerate(quoted):
+        marker = "__CODEX_QUOTE_%d__" % index
+        expression = expression.replace(marker, literal)
+    return expression
 
 
 def _branch_kind(text: str, position: int) -> str:

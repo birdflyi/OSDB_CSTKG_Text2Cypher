@@ -56,6 +56,18 @@ DATE_PATTERN = re.compile(r"\b(20\d{2}-\d{2}-\d{2})\b")
 YEAR_PATTERN = re.compile(r"\b(20\d{2}|2100)\b")
 LIMIT_PATTERN = re.compile(r"\b(?:top|limit)\s+(\d+)\b", re.IGNORECASE)
 
+ENTITY_SLOT_BY_LABEL = {
+    "Issue": "issue_entity_id",
+    "PullRequest": "pr_entity_id",
+    "Repo": "repo_entity_id",
+    "Commit": "commit_entity_id",
+    "IssueComment": "issuecomment_entity_id",
+    "PullRequestReview": "prreview_entity_id",
+    "PullRequestReviewComment": "prreviewcomment_entity_id",
+    "Actor": "actor_entity_id",
+}
+ARTIFACT_LABELS = set(ENTITY_SLOT_BY_LABEL) - {"Repo", "Actor"}
+
 
 @dataclass
 class IRField:
@@ -459,7 +471,200 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
     return ir
 
 
+def _template_slot_names(template: IndependentTemplate) -> set[str]:
+    required = {
+        str(item.get("name"))
+        for item in template.required_slots
+        if item.get("name")
+    }
+    return required | set(TOKEN_PATTERN.findall(template.skeleton))
+
+
+def _repo_number(entity_id: str) -> str | None:
+    match = re.match(r"(?:PRRC|PRR|IC|PR|I|C|R)_(\d+)(?:[#@]|$)", entity_id)
+    return match.group(1) if match else None
+
+
+def _entity_constraint_detail(item: dict[str, Any], *, status: str, reason: str | None = None) -> dict[str, Any]:
+    detail = {
+        "entity_id": str(item.get("entity_id")),
+        "entity_label": str(item.get("entity_label")),
+        "provenance": str(item.get("provenance")),
+        "status": status,
+    }
+    if reason:
+        detail["reason"] = reason
+    return detail
+
+
+def audit_entity_constraint_coverage(ir: ControlledQueryIR, template: IndependentTemplate) -> dict[str, Any]:
+    """Audit direct canonical entity constraints against one template contract.
+
+    Derived repository prefixes are implementation helpers, while only direct
+    canonical IDs from NL are user constraints. A candidate is admissible only
+    when every direct constraint is consumed or directionally entailed.
+    """
+
+    slot_names = _template_slot_names(template)
+    direct: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for item in ir.aligned_entities:
+        if item.get("provenance") != "canonical_id_from_nl" or not item.get("entity_id"):
+            continue
+        key = (str(item.get("entity_label")), str(item.get("entity_id")))
+        if key in seen:
+            continue
+        seen.add(key)
+        direct.append(item)
+
+    consumed: list[dict[str, Any]] = []
+    entailed: list[dict[str, Any]] = []
+    unconsumed: list[dict[str, Any]] = []
+    conflicting: list[dict[str, Any]] = []
+
+    # A singular entity slot cannot silently choose one of multiple distinct
+    # direct IDs carrying the same label.
+    direct_by_label: dict[str, list[dict[str, Any]]] = {}
+    for item in direct:
+        direct_by_label.setdefault(str(item.get("entity_label")), []).append(item)
+
+    source_id = str(ir.source_entity.get("entity_id")) if ir.source_entity and ir.source_entity.get("entity_id") else None
+    repo_slot_consumed = bool(
+        "repo_entity_id" in slot_names
+        or any(name.endswith("_base_prefix") for name in slot_names)
+        or bool(template.selection.get("requires_repo_scope"))
+    )
+    consumed_artifact_repo_numbers: set[str] = set()
+
+    for label, items in direct_by_label.items():
+        slot = ENTITY_SLOT_BY_LABEL.get(label)
+        if label == "Repo":
+            if "source_entity_id" in slot_names and len(items) == 1 and str(items[0].get("entity_id")) == source_id:
+                consumed.append(
+                    _entity_constraint_detail(items[0], status="consumed", reason="source_entity_id contract")
+                )
+                continue
+            if repo_slot_consumed:
+                if len(items) > 1:
+                    conflicting.extend(
+                        _entity_constraint_detail(item, status="conflicting", reason="multiple direct Repo IDs for one scope contract")
+                        for item in items
+                    )
+                else:
+                    consumed.append(
+                        _entity_constraint_detail(items[0], status="consumed", reason="repo scope contract")
+                    )
+            else:
+                unconsumed.extend(
+                    _entity_constraint_detail(item, status="unconsumed", reason="template has no repo scope slot")
+                    for item in items
+                )
+            continue
+
+        if slot and slot in slot_names:
+            if len(items) > 1:
+                conflicting.extend(
+                    _entity_constraint_detail(item, status="conflicting", reason=f"multiple direct {label} IDs for singular slot {slot}")
+                    for item in items
+                )
+            else:
+                consumed.append(
+                    _entity_constraint_detail(items[0], status="consumed", reason=f"slot {slot}")
+                )
+                if label in ARTIFACT_LABELS:
+                    repo_number = _repo_number(str(items[0].get("entity_id")))
+                    if repo_number:
+                        consumed_artifact_repo_numbers.add(repo_number)
+            continue
+
+        if "source_entity_id" in slot_names and len(items) == 1 and str(items[0].get("entity_id")) == source_id:
+            consumed.append(
+                _entity_constraint_detail(items[0], status="consumed", reason="source_entity_id contract")
+            )
+            if label in ARTIFACT_LABELS:
+                repo_number = _repo_number(str(items[0].get("entity_id")))
+                if repo_number:
+                    consumed_artifact_repo_numbers.add(repo_number)
+            continue
+
+        unconsumed.extend(
+            _entity_constraint_detail(item, status="unconsumed", reason="no compatible singular entity slot")
+            for item in items
+        )
+
+    # A consumed concrete artifact can entail an explicitly named repository
+    # scope in the same repository. The implication is intentionally one-way.
+    for item in direct_by_label.get("Repo", []):
+        repo_number = _repo_number(str(item.get("entity_id")))
+        if repo_number and repo_number in consumed_artifact_repo_numbers:
+            matching = next((x for x in consumed if x.get("entity_id") == item.get("entity_id")), None)
+            if matching:
+                consumed.remove(matching)
+            existing = next((x for x in unconsumed if x.get("entity_id") == item.get("entity_id")), None)
+            if existing:
+                unconsumed.remove(existing)
+            entailed.append(
+                _entity_constraint_detail(item, status="entailed", reason="matching consumed artifact implies repository scope")
+            )
+
+    # Explicit artifact/repository IDs from different repositories conflict
+    # whenever both are direct constraints in one request.
+    direct_repo_numbers = {
+        _repo_number(str(item.get("entity_id")))
+        for item in direct_by_label.get("Repo", [])
+        if _repo_number(str(item.get("entity_id")))
+    }
+    artifact_repo_numbers = {
+        _repo_number(str(item.get("entity_id")))
+        for label, items in direct_by_label.items()
+        if label in ARTIFACT_LABELS
+        for item in items
+        if _repo_number(str(item.get("entity_id")))
+    }
+    if direct_repo_numbers and artifact_repo_numbers and not direct_repo_numbers.intersection(artifact_repo_numbers):
+        conflicting.extend(
+            _entity_constraint_detail(item, status="conflicting", reason="explicit artifact and repo IDs identify different repositories")
+            for item in direct
+            if item.get("entity_label") == "Repo" or item.get("entity_label") in ARTIFACT_LABELS
+        )
+
+    classified_direct: list[dict[str, Any]] = []
+    for item in direct:
+        entity_id = str(item.get("entity_id"))
+        classification = "unconsumed"
+        for category, entries in (
+            ("conflicting", conflicting),
+            ("unconsumed", unconsumed),
+            ("entailed", entailed),
+            ("consumed", consumed),
+        ):
+            if any(str(entry.get("entity_id")) == entity_id for entry in entries):
+                classification = category
+                break
+        classified_direct.append(
+            _entity_constraint_detail(item, status=classification, reason="candidate-level classification")
+        )
+
+    accepted = not unconsumed and not conflicting
+    return {
+        "accepted": accepted,
+        "direct_constraints": classified_direct,
+        "consumed": consumed,
+        "entailed": entailed,
+        "unconsumed": unconsumed,
+        "conflicting": conflicting,
+    }
+
+
 def _template_score(template: IndependentTemplate, ir: ControlledQueryIR) -> tuple[int, list[str]]:
+    coverage = audit_entity_constraint_coverage(ir, template)
+    if not coverage["accepted"]:
+        reasons: list[str] = []
+        if coverage["unconsumed"]:
+            reasons.append("unconsumed direct entity constraint")
+        if coverage["conflicting"]:
+            reasons.append("conflicting direct entity constraint")
+        return -100, reasons or ["entity constraint coverage failed"]
     if template.selection:
         selection = template.selection
         expected_intent = str(selection.get("intent_key") or "")
@@ -535,25 +740,55 @@ def _template_score(template: IndependentTemplate, ir: ControlledQueryIR) -> tup
 
 def select_template(ir: ControlledQueryIR, templates: list[IndependentTemplate]) -> tuple[IndependentTemplate | None, dict[str, Any]]:
     if ir.bounded_status.startswith("ABSTAIN"):
-        return None, {"status": "abstain", "reason": ir.abstention_reason}
-    scored: list[tuple[int, IndependentTemplate, list[str]]] = []
+        return None, {
+            "status": "abstain",
+            "reason": ir.abstention_reason,
+            "candidate_entity_constraint_coverage": {
+                template.template_id: audit_entity_constraint_coverage(ir, template)
+                for template in templates
+            },
+        }
+    scored: list[tuple[int, IndependentTemplate, list[str], dict[str, Any]]] = []
+    coverage_by_template: dict[str, dict[str, Any]] = {}
     for template in templates:
+        coverage = audit_entity_constraint_coverage(ir, template)
+        coverage_by_template[template.template_id] = coverage
         score, reasons = _template_score(template, ir)
         if score >= 0:
-            scored.append((score, template, reasons))
+            scored.append((score, template, reasons, coverage))
     scored.sort(key=lambda item: (-item[0], item[1].family, item[1].template_id))
     if not scored:
-        return None, {"status": "abstain", "reason": "no compatible template contract"}
+        has_conflict = any(item["conflicting"] for item in coverage_by_template.values())
+        has_unconsumed = any(item["unconsumed"] for item in coverage_by_template.values())
+        reason = (
+            "conflicting direct entity scope"
+            if has_conflict
+            else "unconsumed direct entity constraint"
+            if has_unconsumed
+            else "no compatible template contract"
+        )
+        return None, {
+            "status": "abstain",
+            "reason": reason,
+            "candidate_entity_constraint_coverage": coverage_by_template,
+        }
     best_score = scored[0][0]
     tied = [x for x in scored if x[0] == best_score]
     if len(tied) > 1 and best_score <= 2:
-        return None, {"status": "abstain", "reason": "ambiguous low-confidence template contract", "candidates": [x[1].template_id for x in tied]}
+        return None, {
+            "status": "abstain",
+            "reason": "ambiguous low-confidence template contract",
+            "candidates": [x[1].template_id for x in tied],
+            "candidate_entity_constraint_coverage": coverage_by_template,
+        }
     chosen = tied[0]
     return chosen[1], {
         "status": "selected",
         "score": chosen[0],
         "reasons": chosen[2],
         "candidates": [{"template_id": x[1].template_id, "score": x[0]} for x in scored],
+        "entity_constraint_coverage": chosen[3],
+        "candidate_entity_constraint_coverage": coverage_by_template,
     }
 
 

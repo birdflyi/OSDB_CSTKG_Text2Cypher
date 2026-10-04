@@ -142,6 +142,44 @@ def test_multiple_actor_ids_abstain_instead_of_dropping_an_actor() -> None:
     assert result.ir.bounded_status == "ABSTAIN_MULTIPLE_ACTOR_IDS"
 
 
+def test_entity_constraint_coverage_abstains_on_unrelated_direct_pr() -> None:
+    result = _generate("For actor A_7045099 and PR PR_156018#11659, find mentioned repos and external links.")
+    assert result.template_id is None
+    coverage = result.validation["selection"]["candidate_entity_constraint_coverage"]["indv4_actor_multi_target_reference"]
+    assert coverage["unconsumed"][0]["entity_id"] == "PR_156018#11659"
+    assert {x["status"] for x in coverage["direct_constraints"]} == {"consumed", "unconsumed"}
+
+
+def test_entity_constraint_coverage_allows_matching_repo_entailment() -> None:
+    result = _generate("What objects are referenced by PR PR_156018#11659 and repo R_156018?")
+    assert result.template_id == "indv4_reference_object"
+    coverage = result.validation["selection"]["entity_constraint_coverage"]
+    assert [x["entity_id"] for x in coverage["entailed"]] == ["R_156018"]
+    assert not coverage["unconsumed"] and not coverage["conflicting"]
+
+
+def test_entity_constraint_coverage_does_not_reverse_entail_specific_pr() -> None:
+    result = _generate("List pull requests in repo R_156018 and PR PR_156018#11659.")
+    assert result.template_id is None
+    coverage = result.validation["selection"]["candidate_entity_constraint_coverage"]["indv4_repo_pull_request_filter"]
+    assert any(x["entity_id"] == "PR_156018#11659" for x in coverage["unconsumed"])
+
+
+def test_entity_constraint_coverage_rejects_conflicting_repo_scope() -> None:
+    result = _generate("What objects are referenced by PR PR_156018#11659 and repo R_999999?")
+    assert result.template_id is None
+    coverage = result.validation["selection"]["candidate_entity_constraint_coverage"]["indv4_reference_object"]
+    assert coverage["conflicting"]
+    assert any("different repositories" in x.get("reason", "") for x in coverage["conflicting"])
+
+
+def test_entity_constraint_coverage_rejects_multiple_direct_ids_for_singular_slot() -> None:
+    result = _generate("What objects are referenced by PR PR_156018#11659 and PR PR_156018#11660?")
+    assert result.template_id is None
+    coverage = result.validation["selection"]["candidate_entity_constraint_coverage"]["indv4_reference_object"]
+    assert len(coverage["conflicting"]) == 2
+
+
 def test_narrow_and_comprehensive_aggregation_are_distinct_contracts() -> None:
     narrow = _generate("Count references by domain for PR PR_156018#11659 in 2023.")
     comprehensive = _generate("Comprehensive: For repo R_156018 in 2023, find PRs linked to external resources, group by domain, and return involved actors and latest interaction time.")
@@ -292,6 +330,38 @@ def test_semantic_signature_ignores_whitespace_and_keyword_case() -> None:
     reference = "MATCH (pr:PullRequest) RETURN pr.entity_id LIMIT 20"
     formatted = "  match  (pr:PullRequest)  return  pr.entity_id  limit 20  "
     assert compare_semantic_signatures(formatted, reference)["match"]
+
+
+def test_semantic_signature_normalizes_comparison_operator_spacing() -> None:
+    compact = "MATCH (pr:PullRequest) WHERE pr.entity_id='PR_1#2' RETURN pr.entity_id"
+    spaced = "MATCH (pr:PullRequest) WHERE pr.entity_id = 'PR_1#2' RETURN pr.entity_id"
+    assert compare_semantic_signatures(compact, spaced)["match"]
+
+
+def test_semantic_signature_normalizes_in_list_comma_spacing() -> None:
+    compact = "MATCH (pr:PullRequest)-[rel:REFERENCE]->(a:Actor) WHERE rel.service_rel_type IN ['MENTIONS','REFERENCES'] RETURN a.entity_id"
+    spaced = "MATCH (pr:PullRequest)-[rel:REFERENCE]->(a:Actor) WHERE rel.service_rel_type IN ['MENTIONS', 'REFERENCES'] RETURN a.entity_id"
+    assert compare_semantic_signatures(compact, spaced)["match"]
+
+
+def test_semantic_signature_preserves_multi_character_comparison_operators() -> None:
+    greater_or_equal = "MATCH (pr:PullRequest) WHERE pr.event_time >= '2023-01-01' RETURN pr.entity_id"
+    greater = "MATCH (pr:PullRequest) WHERE pr.event_time > '2023-01-01' RETURN pr.entity_id"
+    assert not compare_semantic_signatures(greater_or_equal, greater)["match"]
+
+
+def test_semantic_signature_preserves_distinct_equality_operators() -> None:
+    equal = "MATCH (pr:PullRequest) WHERE pr.entity_id = 'PR_1#2' RETURN pr.entity_id"
+    not_equal = "MATCH (pr:PullRequest) WHERE pr.entity_id <> 'PR_1#2' RETURN pr.entity_id"
+    bang_not_equal = "MATCH (pr:PullRequest) WHERE pr.entity_id != 'PR_1#2' RETURN pr.entity_id"
+    assert not compare_semantic_signatures(equal, not_equal)["match"]
+    assert not compare_semantic_signatures(equal, bang_not_equal)["match"]
+
+
+def test_semantic_signature_preserves_quoted_literal_comma_and_space() -> None:
+    with_space = "MATCH (pr:PullRequest)-[rel:REFERENCE]->(a:Actor) WHERE rel.service_rel_type = 'A, B' RETURN a.entity_id"
+    without_space = "MATCH (pr:PullRequest)-[rel:REFERENCE]->(a:Actor) WHERE rel.service_rel_type = 'A,B' RETURN a.entity_id"
+    assert not compare_semantic_signatures(with_space, without_space)["match"]
 
 
 def test_semantic_signature_detects_path_role_change() -> None:
