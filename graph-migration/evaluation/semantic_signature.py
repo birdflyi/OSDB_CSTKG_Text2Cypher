@@ -137,20 +137,52 @@ def _return_items(
     node_roles: dict[str, str],
     relationship_roles: dict[str, str],
 ) -> list[str]:
+    items, _ = _return_projection_context(cypher, node_roles, relationship_roles)
+    return items
+
+
+def _return_projection_context(
+    cypher: str,
+    node_roles: dict[str, str],
+    relationship_roles: dict[str, str],
+) -> tuple[list[str], dict[str, str]]:
     match = re.search(
         r"\bRETURN\b(?P<body>.*?)(?=\bORDER\s+BY\b|\bLIMIT\b|$)",
         cypher,
         flags=re.IGNORECASE | re.DOTALL,
     )
     if not match:
-        return []
+        return [], {}
     output: list[str] = []
+    projection_aliases: dict[str, str] = {}
     for item in _split_top_level(match.group("body")):
-        normalized = re.sub(
-            r"\s+AS\s+[A-Za-z_][A-Za-z0-9_]*", "", item, flags=re.IGNORECASE
+        alias_match = re.match(
+            r"(?P<expression>.*?)\s+AS\s+(?P<alias>[A-Za-z_][A-Za-z0-9_]*)\s*$",
+            item,
+            flags=re.IGNORECASE,
         )
-        output.append(_canonical_expression(normalized, node_roles, relationship_roles))
-    return output
+        expression = alias_match.group("expression") if alias_match else item
+        canonical = _canonical_expression(expression, node_roles, relationship_roles)
+        output.append(canonical)
+        if alias_match:
+            projection_aliases[alias_match.group("alias").lower()] = canonical
+    return output, projection_aliases
+
+
+def _canonical_sort_expression(
+    expression: str,
+    node_roles: dict[str, str],
+    relationship_roles: dict[str, str],
+    projection_aliases: dict[str, str],
+) -> str:
+    canonical = _canonical_expression(expression, node_roles, relationship_roles)
+    if projection_aliases:
+        canonical = re.sub(
+            r"\b([A-Za-z_][A-Za-z0-9_]*)\b",
+            lambda match: projection_aliases.get(match.group(1).lower(), match.group(0)),
+            canonical,
+        )
+    return " ".join(canonical.split())
 
 
 def _aggregation_expressions(
@@ -246,6 +278,15 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
             }
         )
 
+    # Mandatory MATCH clauses are conjunctive in the current v4 grammar, so
+    # their textual order is presentation-only. OPTIONAL branches retain
+    # textual order because their attachment order is part of the bounded
+    # branch topology.
+    paths = sorted(
+        [item for item in paths if item["branch_kind"] == "match"],
+        key=lambda item: item["role"],
+    ) + [item for item in paths if item["branch_kind"] == "optional"]
+
     node_property_bindings = [
         {
             "node_role": node_roles[alias],
@@ -324,6 +365,10 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         }
         for record in relationship_records
     ]
+    branch_topology = sorted(
+        [item for item in branch_topology if item["branch_kind"] == "match"],
+        key=lambda item: item["relationship_roles"][0],
+    ) + [item for item in branch_topology if item["branch_kind"] == "optional"]
 
     order_match = re.search(
         r"\bORDER\s+BY\s+(?P<body>.*?)(?=\bLIMIT\b|$)",
@@ -331,9 +376,17 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         flags=re.IGNORECASE,
     )
     sort_keys: list[str] = []
+    _, projection_aliases = _return_projection_context(text, node_roles, relationship_roles)
     if order_match:
         for item in _split_top_level(order_match.group("body")):
-            sort_keys.append(_canonical_expression(item, node_roles, relationship_roles))
+            sort_keys.append(
+                _canonical_sort_expression(
+                    item,
+                    node_roles,
+                    relationship_roles,
+                    projection_aliases,
+                )
+            )
 
     aggregation_functions = sorted(
         {match.group(1).lower() for match in AGGREGATION_PATTERN.finditer(text)}

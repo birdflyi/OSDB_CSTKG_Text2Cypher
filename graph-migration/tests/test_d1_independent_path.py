@@ -212,6 +212,34 @@ def test_semantic_signature_detects_path_role_change() -> None:
     assert "paths" in result["differences"]
 
 
+def test_semantic_signature_resolves_projection_aliases_in_sort_keys() -> None:
+    reference = (
+        "MATCH (pr:PullRequest) RETURN count(pr.entity_id) AS c "
+        "ORDER BY c DESC LIMIT 20"
+    )
+    renamed = (
+        "MATCH (pr:PullRequest) RETURN COUNT(pr.entity_id) AS total "
+        "ORDER BY total DESC LIMIT 20"
+    )
+    assert compare_semantic_signatures(renamed, reference)["match"]
+
+
+def test_semantic_signature_canonicalizes_independent_mandatory_match_order() -> None:
+    first = (
+        "MATCH (c:IssueComment)-[r1:EVENT_ACTION]->(i:Issue) "
+        "MATCH (c)-[r2:EVENT_ACTION]->(a:Actor) "
+        "WHERE r1.service_rel_type = 'COMMENTED_ON_ISSUE' "
+        "AND r2.service_rel_type = 'OPENED_BY' RETURN a.entity_id"
+    )
+    reordered = (
+        "MATCH (c:IssueComment)-[r2:EVENT_ACTION]->(a:Actor) "
+        "MATCH (c)-[r1:EVENT_ACTION]->(i:Issue) "
+        "WHERE r1.service_rel_type = 'COMMENTED_ON_ISSUE' "
+        "AND r2.service_rel_type = 'OPENED_BY' RETURN a.entity_id"
+    )
+    assert compare_semantic_signatures(reordered, first)["match"]
+
+
 def test_d1_1_pilot_closure_regression() -> None:
     queries_path = ROOT / "data_real" / "pilot_queries" / "queries_pilot.jsonl"
     requests = []
