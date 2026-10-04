@@ -46,7 +46,8 @@ TIME_PATTERN = re.compile(
 LIMIT_PATTERN = re.compile(r"\bLIMIT\s+(\d+)\b", re.IGNORECASE)
 AGGREGATION_PATTERN = re.compile(r"\b(count|max|min|collect|sum|avg)\s*\(", re.IGNORECASE)
 KNOWN_EXPRESSION_TOKENS = re.compile(
-    r"\b(COUNT|MAX|MIN|COLLECT|SUM|AVG|DISTINCT|AS|ASC|DESC)\b", re.IGNORECASE
+    r"\b(COUNT|MAX|MIN|COLLECT|SUM|AVG|DISTINCT|AS|ASC|DESC|AND|OR|NOT|IN|STARTS|WITH|IS|NULL)\b",
+    re.IGNORECASE,
 )
 
 
@@ -201,6 +202,21 @@ def _aggregation_expressions(
     return expressions
 
 
+def _where_boolean_structure(
+    cypher: str,
+    node_roles: dict[str, str],
+    relationship_roles: dict[str, str],
+) -> str:
+    match = re.search(
+        r"\bWHERE\b(?P<body>.*?)(?=\bRETURN\b|$)",
+        cypher,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        return ""
+    return _canonical_expression(match.group("body"), node_roles, relationship_roles)
+
+
 def semantic_signature(cypher: str) -> dict[str, Any]:
     text = " ".join(str(cypher or "").split())
 
@@ -307,7 +323,7 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         service_bindings.append(
             {
                 "relationship_role": relationship_roles.get(match.group("alias"), "unbound"),
-                "values": [match.group("value").upper()],
+                "values": [match.group("value")],
             }
         )
     for match in SERVICE_IN_PATTERN.finditer(text):
@@ -315,7 +331,7 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
             {
                 "relationship_role": relationship_roles.get(match.group("alias"), "unbound"),
                 "values": sorted(
-                    value.upper() for value in re.findall(r"'([^']+)'", match.group("values"))
+                    value for value in re.findall(r"'([^']+)'", match.group("values"))
                 ),
             }
         )
@@ -325,6 +341,12 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
     )
     service_values = sorted(
         {value for binding in service_bindings for value in binding["values"]}
+    )
+
+    predicate_boolean_structure = _where_boolean_structure(
+        text,
+        node_roles,
+        relationship_roles,
     )
 
     repo_scope_bindings = [
@@ -405,6 +427,7 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
             {item["relationship"] for item in paths if item["relationship"]}
         ),
         "service_rel_types": service_values,
+        "predicate_boolean_structure": predicate_boolean_structure,
         "time_bounds": time_bounds,
         "target_projection": _return_items(text, node_roles, relationship_roles),
         "aggregation_functions": aggregation_functions,

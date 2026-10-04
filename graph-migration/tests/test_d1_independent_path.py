@@ -164,6 +164,30 @@ def test_semantic_signature_binds_service_values_to_relationship_roles() -> None
     assert "service_predicates_by_relationship_role" in result["differences"]
 
 
+def test_semantic_signature_preserves_service_predicate_boolean_structure() -> None:
+    reference = (
+        "MATCH (c:IssueComment)-[r1:EVENT_ACTION]->(i:Issue) "
+        "MATCH (c)-[r2:EVENT_ACTION]->(a:Actor) "
+        "WHERE r1.service_rel_type = 'COMMENTED_ON_ISSUE' "
+        "AND r2.service_rel_type = 'OPENED_BY' RETURN a.entity_id"
+    )
+    changed = reference.replace("AND r2.service_rel_type", "OR r2.service_rel_type")
+    result = compare_semantic_signatures(changed, reference)
+    assert not result["match"]
+    assert "predicate_boolean_structure" in result["differences"]
+
+
+def test_semantic_signature_preserves_service_literal_case() -> None:
+    reference = (
+        "MATCH (pr:PullRequest)-[rel:REFERENCE]->(x:UnknownObject) "
+        "WHERE rel.service_rel_type = 'REFERENCES' RETURN x.entity_id"
+    )
+    changed = reference.replace("'REFERENCES'", "'references'")
+    result = compare_semantic_signatures(changed, reference)
+    assert not result["match"]
+    assert "service_predicates_by_relationship_role" in result["differences"]
+
+
 def test_semantic_signature_binds_anchor_ids_to_node_roles() -> None:
     reference = (
         "MATCH (i:Issue {entity_id: 'I_1#1'})-[:EVENT_ACTION]->"
