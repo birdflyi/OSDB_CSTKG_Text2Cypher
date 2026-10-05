@@ -303,6 +303,365 @@ def _canonical_boolean_expression(
     return " and ".join(sorted(canonical_terms))
 
 
+def _aliases_in_text(value: str, aliases: set[str]) -> set[str]:
+    """Return bounded alias references outside quoted literals."""
+
+    if not value or not aliases:
+        return set()
+    segments = re.split(r"('(?:[^']|'')*')", value)
+    found: set[str] = set()
+    for index, segment in enumerate(segments):
+        if index % 2:
+            continue
+        for alias in aliases:
+            if re.search(rf"\b{re.escape(alias)}\b", segment):
+                found.add(alias)
+    return found
+
+
+def _bounded_clause_model(text: str) -> list[dict[str, Any]]:
+    """Parse the small MATCH/OPTIONAL MATCH clause surface used by D1.2a.
+
+    This is deliberately a clause-boundary model, not a general Cypher parser.
+    A WHERE body is attached to the immediately preceding MATCH clause.  The
+    distinction is important for consecutive OPTIONAL MATCH clauses where one
+    WHERE may reference an alias introduced by an earlier branch.
+    """
+
+    clause_matches = list(
+        re.finditer(r"\b(?:OPTIONAL\s+)?MATCH\b", text, flags=re.IGNORECASE)
+    )
+    terminal_pattern = re.compile(
+        r"\b(?:RETURN|WITH|UNWIND|ORDER\s+BY|LIMIT)\b", flags=re.IGNORECASE
+    )
+    clauses: list[dict[str, Any]] = []
+    for index, match in enumerate(clause_matches):
+        next_clause = (
+            clause_matches[index + 1].start()
+            if index + 1 < len(clause_matches)
+            else len(text)
+        )
+        terminal = terminal_pattern.search(text, match.end(), next_clause)
+        clause_end = terminal.start() if terminal else next_clause
+        where_match = re.compile(
+            r"\bWHERE\b(?P<body>.*)", flags=re.IGNORECASE | re.DOTALL
+        ).search(text, match.end(), clause_end)
+        pattern_end = where_match.start() if where_match else clause_end
+        pattern = text[match.end():pattern_end].strip()
+        where_body = where_match.group("body").strip() if where_match else ""
+        clauses.append(
+            {
+                "index": index,
+                "kind": (
+                    "optional"
+                    if match.group(0).upper().startswith("OPTIONAL")
+                    else "match"
+                ),
+                "start": match.start(),
+                "end": clause_end,
+                "pattern_start": match.end(),
+                "pattern_end": pattern_end,
+                "pattern": pattern,
+                "where_start": where_match.start() if where_match else None,
+                "where_body": where_body,
+                "where_end": where_match.end() if where_match else None,
+                "node_aliases": {
+                    item.group("alias") for item in NODE_PATTERN.finditer(pattern)
+                },
+                "relationship_aliases": {
+                    item.group("rel_alias")
+                    for item in REL_PATTERN.finditer(pattern)
+                    if item.group("rel_alias")
+                },
+                "relationship_records": [],
+            }
+        )
+    return clauses
+
+
+def _branch_predicate_key(
+    unit: dict[str, Any],
+    node_roles: dict[str, str],
+    node_records: dict[str, dict[str, Any]],
+) -> str:
+    """Create an alias/order-independent key for an OPTIONAL branch."""
+
+    node_map = dict(node_roles)
+    relationship_map: dict[str, str] = {}
+    for record in unit.get("relationship_records", []):
+        alias = str(record.get("alias") or "")
+        if alias:
+            relationship_map[alias] = (
+                f"rel-type:{record.get('native_relationship') or '_'}"
+            )
+    own_aliases = set(unit.get("node_aliases", set()))
+    own_relationship_aliases = set(unit.get("relationship_aliases", set()))
+    source_aliases = set(unit.get("source_aliases", set()))
+    target_aliases = set(unit.get("target_aliases", set()))
+    for alias in own_aliases:
+        if alias in source_aliases:
+            node_map.setdefault(alias, node_roles.get(alias, "source:" + str(
+                node_records.get(alias, {}).get("label", "")
+            )))
+        elif alias in target_aliases:
+            node_map.setdefault(alias, "target:" + str(
+                node_records.get(alias, {}).get("label", "")
+            ))
+        else:
+            node_map.setdefault(alias, "node:" + str(
+                node_records.get(alias, {}).get("label", "")
+            ))
+    for alias in own_relationship_aliases:
+        relationship_map.setdefault(alias, "relationship:_")
+    body = str(unit.get("where_body") or "")
+    if not body:
+        return ""
+    return _canonical_boolean_expression(body, node_map, relationship_map)
+
+
+def _stable_optional_units(
+    text: str,
+    clauses: list[dict[str, Any]],
+    relationship_records: list[dict[str, Any]],
+    node_records: dict[str, dict[str, Any]],
+    mandatory_node_roles: dict[str, str],
+    mandatory_aliases: set[str],
+) -> tuple[list[dict[str, Any]], dict[str, str], dict[str, str], list[dict[str, Any]]]:
+    """Build clause-owned OPTIONAL units and assign stable final roles.
+
+    The function intentionally performs the D1.2a ordering in one place:
+    clause ownership -> dependency marking -> sibling canonicalization -> role
+    assignment.  Terminal RETURN/ORDER BY/LIMIT text never participates in the
+    dependency scan.
+    """
+
+    optional_clauses = [clause for clause in clauses if clause["kind"] == "optional"]
+    for clause in clauses:
+        clause["relationship_records"] = [
+            record
+            for record in relationship_records
+            if record.get("clause_index") == clause["index"]
+        ]
+
+    # Build raw units before assigning occurrence-sensitive roles.
+    units: list[dict[str, Any]] = []
+    known_aliases = set(node_records)
+    for clause in optional_clauses:
+        records = list(clause["relationship_records"])
+        node_aliases = set(clause["node_aliases"])
+        rel_aliases = set(clause["relationship_aliases"])
+        aliases_defined = node_aliases | rel_aliases
+        source_aliases = {str(record["source_alias"]) for record in records}
+        target_aliases = {str(record["target_alias"]) for record in records}
+        units.append(
+            {
+                "clause_index": clause["index"],
+                "clause": clause,
+                "relationship_records": records,
+                "node_aliases": node_aliases,
+                "relationship_aliases": rel_aliases,
+                "aliases_defined": aliases_defined,
+                "source_aliases": source_aliases,
+                "target_aliases": target_aliases,
+                "where_body": clause.get("where_body", ""),
+                "dependency_aliases": set(),
+                "downstream_aliases": set(),
+                "introduced_aliases": set(),
+            }
+        )
+
+    # Immediate ownership and dependency aliases are based only on clause
+    # pattern/WHERE content.  A WHERE referring to an earlier alias remains
+    # owned by this clause; the earlier alias merely creates a dependency.
+    prior_optional_aliases: set[str] = set()
+    for unit in units:
+        clause = unit["clause"]
+        used = _aliases_in_text(
+            str(clause.get("pattern", "")) + " " + str(unit.get("where_body", "")),
+            known_aliases | set().union(*(item["aliases_defined"] for item in units)),
+        )
+        unit["dependency_aliases"] = used & prior_optional_aliases
+        unit["introduced_aliases"] = (
+            set(unit["aliases_defined"]) - mandatory_aliases - prior_optional_aliases
+        )
+        prior_optional_aliases.update(unit["introduced_aliases"])
+
+    # Mark a branch as order-sensitive when a later query-producing clause
+    # consumes one of its aliases.  RETURN/ORDER BY/LIMIT are intentionally
+    # excluded; they are terminal projection/sort consumers, not branch flow.
+    for position, unit in enumerate(units):
+        introduced = set(unit["introduced_aliases"])
+        if not introduced:
+            continue
+        clause_index = int(unit["clause_index"])
+        for later in clauses:
+            if int(later["index"]) <= clause_index:
+                continue
+            later_text = str(later.get("pattern", "")) + " " + str(later.get("where_body", ""))
+            consumed = _aliases_in_text(later_text, introduced)
+            if consumed:
+                unit["downstream_aliases"].update(consumed)
+
+    for unit in units:
+        unit["predicate_key"] = _branch_predicate_key(
+            unit, mandatory_node_roles, node_records
+        )
+        path_key = tuple(
+            sorted(
+                (
+                    mandatory_node_roles.get(record["source_alias"], "source:" + str(
+                        node_records.get(record["source_alias"], {}).get("label", "")
+                    )),
+                    str(record.get("native_relationship") or ""),
+                    str(node_records.get(record["target_alias"], {}).get("label", "")),
+                    tuple(sorted(node_records.get(record["target_alias"], {}).get("props", {}).items())),
+                )
+                for record in unit["relationship_records"]
+            )
+        )
+        unit["stable_key"] = (path_key, str(unit["predicate_key"]))
+
+    all_independent = all(
+        not unit["dependency_aliases"] and not unit["downstream_aliases"]
+        for unit in units
+    )
+    ordered_units = sorted(units, key=lambda unit: unit["stable_key"]) if all_independent else units
+
+    # Assign mandatory roles first, then optional siblings in canonical order.
+    node_roles = dict(mandatory_node_roles)
+    label_counts: defaultdict[str, int] = defaultdict(int)
+    for role in node_roles.values():
+        match = re.search(r"node:(.+)\[(\d+)\]$", role)
+        if match:
+            label_counts[match.group(1)] = max(label_counts[match.group(1)], int(match.group(2)) + 1)
+
+    def aliases_in_pattern(unit: dict[str, Any]) -> list[str]:
+        return [
+            item.group("alias")
+            for item in NODE_PATTERN.finditer(str(unit["clause"].get("pattern", "")))
+        ]
+
+    for unit in ordered_units:
+        for alias in aliases_in_pattern(unit):
+            if alias in node_roles:
+                continue
+            label = str(node_records.get(alias, {}).get("label", "")).upper() or "_"
+            index = label_counts[label]
+            label_counts[label] += 1
+            node_roles[alias] = f"node:{label}[{index}]"
+
+    # Any remaining node-only aliases are assigned deterministically after the
+    # clause model; these do not affect the current v4 OPTIONAL grammar.
+    for alias in sorted(set(node_records) - set(node_roles)):
+        label = str(node_records[alias].get("label", "")).upper() or "_"
+        index = label_counts[label]
+        label_counts[label] += 1
+        node_roles[alias] = f"node:{label}[{index}]"
+
+    # Relationship roles follow the same canonical unit order.  Alias names
+    # are mapped only after stable branch identity exists.
+    mandatory_records = [record for record in relationship_records if record["branch_kind"] == "match"]
+    mandatory_records = sorted(
+        mandatory_records,
+        key=lambda record: (
+            node_roles.get(record["source_alias"], ""),
+            str(record.get("native_relationship") or ""),
+            node_roles.get(record["target_alias"], ""),
+            int(record.get("match_start", 0)),
+        ),
+    )
+    ordered_records = mandatory_records + [
+        record for unit in ordered_units for record in unit["relationship_records"]
+    ]
+    occurrence_indices: defaultdict[tuple[str, str, str, str], int] = defaultdict(int)
+    relationship_roles: dict[str, str] = {}
+    paths: list[dict[str, Any]] = []
+    for record in ordered_records:
+        source_role = node_roles.get(record["source_alias"], "unbound")
+        target_role = node_roles.get(record["target_alias"], "unbound")
+        record["source_role"] = source_role
+        record["target_role"] = target_role
+        key = (
+            str(record["branch_kind"]),
+            source_role,
+            str(record.get("native_relationship") or ""),
+            target_role,
+        )
+        index = occurrence_indices[key]
+        occurrence_indices[key] += 1
+        role = (
+            f"rel:{record['branch_kind']}:{source_role}"
+            f"-[:{record['native_relationship']}]->{target_role}[{index}]"
+        )
+        record["role"] = role
+        if record.get("alias"):
+            relationship_roles[str(record["alias"])] = role
+        paths.append(
+            {
+                "role": role,
+                "branch_kind": record["branch_kind"],
+                "source_node_role": source_role,
+                "relationship": record["native_relationship"],
+                "target_node_role": target_role,
+            }
+        )
+
+    # Resolve dependency roles and build clause-owned predicates from the same
+    # ordered units.  Composite owners are possible only within one clause.
+    for unit in ordered_units:
+        unit["dependency_roles"] = sorted(
+            {
+                relationship_roles.get(alias) or node_roles.get(alias) or f"unbound:{alias}"
+                for alias in unit["dependency_aliases"]
+            }
+        )
+        unit["relationship_binding_dependency"] = sorted(
+            relationship_roles[alias]
+            for alias in unit["dependency_aliases"]
+            if alias in relationship_roles
+        )
+        unit["introduced_roles"] = sorted(
+            node_roles[alias]
+            for alias in unit["introduced_aliases"]
+            if alias in node_roles
+        )
+        unit["downstream_roles"] = sorted(
+            relationship_roles.get(alias) or node_roles.get(alias) or f"unbound:{alias}"
+            for alias in unit["downstream_aliases"]
+        )
+        unit["dependency_roles"] = sorted(
+            set(unit["dependency_roles"]) | {f"downstream:{role}" for role in unit["downstream_roles"]}
+        )
+        rel_roles = sorted(record["role"] for record in unit["relationship_records"])
+        node_owner_roles = sorted(node_roles.get(alias, "unbound") for alias in unit["node_aliases"])
+        unit["role"] = "|".join(rel_roles or node_owner_roles or [f"optional:{unit['clause_index']}"])
+        unit["path"] = next(
+            (item for item in paths if item["role"] == rel_roles[0]),
+            {
+                "role": unit["role"],
+                "branch_kind": "optional",
+                "source_node_role": node_owner_roles[0] if node_owner_roles else "unbound",
+                "relationship": "",
+                "target_node_role": node_owner_roles[-1] if node_owner_roles else "unbound",
+            },
+        )
+        unit["path"] = dict(unit["path"])
+        unit["path"]["dependency_roles"] = list(unit["dependency_roles"])
+        unit["path"]["introduced_roles"] = list(unit["introduced_roles"])
+        unit["path"]["relationship_binding_dependency"] = list(unit["relationship_binding_dependency"])
+        owner = unit["role"]
+        structure = _canonical_boolean_expression(
+            str(unit.get("where_body") or ""), node_roles, relationship_roles
+        ) if unit.get("where_body") else ""
+        unit["predicate"] = {
+            "branch_kind": "optional",
+            "owner": owner,
+            "structure": structure,
+        }
+
+    return ordered_units, node_roles, relationship_roles, paths
+
+
 def _optional_branch_units(
     relationship_records: list[dict[str, Any]],
     paths: list[dict[str, Any]],
@@ -580,10 +939,8 @@ def _where_boolean_structure(
 
 def semantic_signature(cypher: str) -> dict[str, Any]:
     text = " ".join(str(cypher or "").split())
+    clauses = _bounded_clause_model(text)
 
-    # First occurrence order is a deterministic bounded role scheme for the
-    # current template grammar. It is alias-independent and distinguishes
-    # repeated labels by their structural occurrence.
     node_records: dict[str, dict[str, Any]] = {}
     node_order: list[str] = []
     for match in NODE_PATTERN.finditer(text):
@@ -601,71 +958,96 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
             if label:
                 node_records[alias]["labels"].add(label)
             node_records[alias]["props"].update(props)
-
-    label_indices: defaultdict[str, int] = defaultdict(int)
-    node_roles: dict[str, str] = {}
-    for alias in node_order:
-        labels = sorted(
-            str(value).upper()
-            for value in node_records[alias].get("labels", set())
-            if value
-        )
-        label = "&".join(labels)
-        node_records[alias]["label"] = label
-        index = label_indices[label]
-        label_indices[label] += 1
-        node_roles[alias] = f"node:{label or '_'}[{index}]"
+    for record in node_records.values():
+        labels = sorted(str(value).upper() for value in record["labels"] if value)
+        record["label"] = "&".join(labels)
 
     relationship_records: list[dict[str, Any]] = []
     for match in REL_PATTERN.finditer(text):
-        source_alias = match.group("src")
-        target_alias = match.group("dst")
-        source_role = node_roles.get(source_alias, f"node:_[{source_alias}]")
-        target_role = node_roles.get(target_alias, f"node:_[{target_alias}]")
-        native_relationship = (match.group("rel") or "").upper()
-        branch_kind = _branch_kind(text, match.start())
+        clause = next(
+            (
+                item
+                for item in clauses
+                if int(item["pattern_start"]) <= match.start() < int(item["pattern_end"])
+            ),
+            None,
+        )
+        if clause is None:
+            continue
         relationship_records.append(
             {
-                "source_alias": source_alias,
-                "target_alias": target_alias,
-                "source_role": source_role,
-                "target_role": target_role,
-                "native_relationship": native_relationship,
+                "source_alias": match.group("src"),
+                "target_alias": match.group("dst"),
+                "native_relationship": (match.group("rel") or "").upper(),
                 "alias": match.group("rel_alias") or "",
-                "branch_kind": branch_kind,
+                "branch_kind": clause["kind"],
+                "clause_index": clause["index"],
                 "match_start": match.start(),
                 "match_end": match.end(),
             }
         )
 
-    occurrence_indices: defaultdict[tuple[str, str, str, str], int] = defaultdict(int)
-    relationship_roles: dict[str, str] = {}
-    paths: list[dict[str, Any]] = []
-    for record in relationship_records:
-        key = (
-            record["branch_kind"],
-            record["source_role"],
-            record["native_relationship"],
-            record["target_role"],
+    mandatory_aliases = set().union(
+        *(set(clause["node_aliases"]) for clause in clauses if clause["kind"] == "match")
+    )
+
+    # Mandatory roles are keyed by bounded structural context rather than by
+    # surface alias.  This retains the existing mandatory-MATCH reorder
+    # invariance while leaving OPTIONAL occurrence roles to the second phase.
+    mandatory_records = [record for record in relationship_records if record["branch_kind"] == "match"]
+    first_positions = {
+        alias: next(
+            (match.start() for match in NODE_PATTERN.finditer(text) if match.group("alias") == alias),
+            len(text),
         )
-        index = occurrence_indices[key]
-        occurrence_indices[key] += 1
-        role = (
-            f"rel:{record['branch_kind']}:{record['source_role']}"
-            f"-[:{record['native_relationship']}]->{record['target_role']}[{index}]"
-        )
-        record["role"] = role
-        if record["alias"]:
-            relationship_roles[record["alias"]] = role
-        paths.append(
-            {
-                "role": role,
-                "branch_kind": record["branch_kind"],
-                "source_node_role": record["source_role"],
-                "relationship": record["native_relationship"],
-                "target_node_role": record["target_role"],
-            }
-        )
+        for alias in node_records
+    }
+    context_by_alias: dict[str, tuple[Any, ...]] = {}
+    for alias in mandatory_aliases:
+        contexts: list[tuple[str, str, str]] = []
+        for record in mandatory_records:
+            if alias == record["source_alias"]:
+                contexts.append(
+                    (
+                        "out",
+                        str(record["native_relationship"]),
+                        str(node_records.get(record["target_alias"], {}).get("label", "")),
+                    )
+                )
+            elif alias == record["target_alias"]:
+                contexts.append(
+                    (
+                        "in",
+                        str(record["native_relationship"]),
+                        str(node_records.get(record["source_alias"], {}).get("label", "")),
+                    )
+                )
+        context_by_alias[alias] = tuple(sorted(contexts))
+    mandatory_alias_order = sorted(
+        mandatory_aliases,
+        key=lambda alias: (
+            str(node_records.get(alias, {}).get("label", "")).upper() or "_",
+            context_by_alias.get(alias, ()),
+            tuple(sorted(node_records.get(alias, {}).get("props", {}).items())),
+            first_positions.get(alias, len(text)),
+        ),
+    )
+    label_indices: defaultdict[str, int] = defaultdict(int)
+    mandatory_node_roles: dict[str, str] = {}
+    for alias in mandatory_alias_order:
+        label = str(node_records[alias]["label"]).upper() or "_"
+        index = label_indices[label]
+        label_indices[label] += 1
+        mandatory_node_roles[alias] = f"node:{label}[{index}]"
+
+    optional_units, node_roles, relationship_roles, paths = _stable_optional_units(
+        text,
+        clauses,
+        relationship_records,
+        node_records,
+        mandatory_node_roles,
+        mandatory_aliases,
+    )
 
     node_property_bindings = [
         {
@@ -675,7 +1057,6 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         for alias in node_order
         if node_records[alias]["props"]
     ]
-
     anchor_bindings = [
         {"node_role": node_roles[alias], "entity_id": node_records[alias]["props"]["entity_id"]}
         for alias in node_order
@@ -694,64 +1075,52 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         service_bindings.append(
             {
                 "relationship_role": relationship_roles.get(match.group("alias"), "unbound"),
-                "values": sorted(
-                    value for value in re.findall(r"'([^']+)'", match.group("values"))
-                ),
+                "values": sorted(re.findall(r"'([^']+)'", match.group("values"))),
             }
         )
     service_bindings = sorted(
         service_bindings,
         key=lambda item: (item["relationship_role"], tuple(item["values"])),
     )
-    service_values = sorted(
-        {value for binding in service_bindings for value in binding["values"]}
-    )
+    service_values = sorted({value for binding in service_bindings for value in binding["values"]})
 
-    predicate_boolean_structure = _where_boolean_structure(
-        text,
-        node_roles,
-        relationship_roles,
-        relationship_records,
-    )
-    optional_units = _optional_branch_units(
-        relationship_records,
-        paths,
-        predicate_boolean_structure,
-        text,
-        node_roles,
-        relationship_roles,
-        {
-            match.group("alias")
-            for match in NODE_PATTERN.finditer(
-                text,
-                0,
-                min(
-                    (record["match_start"] for record in relationship_records if record["branch_kind"] == "optional"),
-                    default=len(text),
-                ),
+    mandatory_predicates: list[dict[str, str]] = []
+    for clause in clauses:
+        if clause["kind"] != "match" or not clause.get("where_body"):
+            continue
+        records = clause.get("relationship_records", [])
+        body = str(clause["where_body"])
+        referenced_relationships = sorted(
+            relationship_roles[alias]
+            for alias in relationship_roles
+            if alias in _aliases_in_text(body, set(relationship_roles))
+        )
+        owner_roles = referenced_relationships or sorted(record["role"] for record in records)
+        if not owner_roles:
+            owner_roles = sorted(
+                node_roles.get(alias, "unbound") for alias in clause.get("node_aliases", set())
             )
-        },
-    )
-    mandatory_paths = sorted(
-        [item for item in paths if item["branch_kind"] == "match"],
-        key=lambda item: item["role"],
-    )
-    paths = mandatory_paths + [unit["path"] for unit in optional_units]
-    predicate_boolean_structure = [
-        entry
-        for entry in predicate_boolean_structure
-        if entry["branch_kind"] == "match"
-    ] + [unit["predicate"] for unit in optional_units]
+        mandatory_predicates.append(
+            {
+                "branch_kind": "match",
+                "owner": "|".join(owner_roles) or "unbound",
+                "structure": _canonical_boolean_expression(
+                    body, node_roles, relationship_roles
+                ),
+            }
+        )
+    mandatory_predicates.sort(key=lambda item: item["owner"])
+    predicate_boolean_structure = mandatory_predicates + [unit["predicate"] for unit in optional_units]
 
-    repo_scope_bindings = [
-        {
-            "node_role": node_roles.get(match.group("alias"), "unbound"),
-            "prefix": match.group("value"),
-        }
-        for match in PREFIX_PATTERN.finditer(text)
-    ]
     repo_scope_bindings = sorted(
-        repo_scope_bindings, key=lambda item: (item["node_role"], item["prefix"])
+        [
+            {
+                "node_role": node_roles.get(match.group("alias"), "unbound"),
+                "prefix": match.group("value"),
+            }
+            for match in PREFIX_PATTERN.finditer(text)
+        ],
+        key=lambda item: (item["node_role"], item["prefix"]),
     )
 
     time_bounds: dict[str, list[dict[str, Any]]] = {"lower": [], "upper": []}
@@ -761,31 +1130,27 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         owner = match.group("owner")
         owner_role = relationship_roles.get(owner) or node_roles.get(owner) or "unbound"
         time_bounds[bucket].append(
-            {
-                "owner_role": owner_role,
-                "operator": operator,
-                "value": match.group("value"),
-            }
+            {"owner_role": owner_role, "operator": operator, "value": match.group("value")}
         )
     for bucket in time_bounds:
-        time_bounds[bucket] = sorted(
-            time_bounds[bucket],
-            key=lambda item: (item["owner_role"], item["operator"], item["value"]),
+        time_bounds[bucket].sort(
+            key=lambda item: (item["owner_role"], item["operator"], item["value"])
         )
 
+    mandatory_paths = sorted(
+        [item for item in paths if item["branch_kind"] == "match"],
+        key=lambda item: item["role"],
+    )
+    paths = mandatory_paths + [unit["path"] for unit in optional_units]
     mandatory_topology = [
         {
-            "branch_kind": record["branch_kind"],
+            "branch_kind": "match",
             "relationship_roles": [record["role"]],
             "endpoint_roles": [record["source_role"], record["target_role"]],
         }
-        for record in relationship_records
-        if record["branch_kind"] == "match"
+        for record in sorted(mandatory_records, key=lambda item: item["role"])
     ]
-    branch_topology = sorted(
-        mandatory_topology,
-        key=lambda item: item["relationship_roles"][0],
-    ) + [
+    branch_topology = mandatory_topology + [
         {
             "branch_kind": "optional",
             "relationship_roles": [unit["role"]],
@@ -810,20 +1175,14 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         for item in _split_top_level(order_match.group("body")):
             sort_keys.append(
                 _canonical_sort_expression(
-                    item,
-                    node_roles,
-                    relationship_roles,
-                    projection_aliases,
+                    item, node_roles, relationship_roles, projection_aliases
                 )
             )
 
     aggregation_functions = sorted(
         {match.group(1).lower() for match in AGGREGATION_PATTERN.finditer(text)}
     )
-
     return {
-        # Retained diagnostic fields; semantic comparison also checks the
-        # role-bound fields below, so global bags cannot create a match alone.
         "anchor_entity_ids": sorted({item["entity_id"] for item in anchor_bindings}),
         "repo_scope_prefixes": sorted({item["prefix"] for item in repo_scope_bindings}),
         "node_labels": sorted(
@@ -840,16 +1199,11 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         "aggregation_functions": aggregation_functions,
         "aggregation_expressions": _aggregation_expressions(text, node_roles, relationship_roles),
         "sort_keys": sort_keys,
-        "optional_match_count": len(
-            re.findall(r"\bOPTIONAL\s+MATCH\b", text, flags=re.IGNORECASE)
-        ),
+        "optional_match_count": len(optional_units),
         "limit": int(LIMIT_PATTERN.search(text).group(1)) if LIMIT_PATTERN.search(text) else None,
         "node_roles": sorted(
             [
-                {
-                    "node_role": node_roles[alias],
-                    "label": str(node_records[alias]["label"]).upper(),
-                }
+                {"node_role": node_roles[alias], "label": str(node_records[alias]["label"]).upper()}
                 for alias in node_order
             ],
             key=lambda item: item["node_role"],
