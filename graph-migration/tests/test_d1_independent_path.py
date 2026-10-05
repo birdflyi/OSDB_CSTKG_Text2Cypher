@@ -588,6 +588,96 @@ def test_semantic_signature_canonicalizes_predicate_order_with_match_order() -> 
     assert compare_semantic_signatures(reordered, reference)["match"]
 
 
+def test_semantic_signature_canonicalizes_independent_optional_branch_units() -> None:
+    reference = (
+        "MATCH (s:Actor)-[rm:REFERENCE]->(a:Actor) "
+        "WHERE rm.service_rel_type = 'MENTIONS' "
+        "OPTIONAL MATCH (s)-[rr:REFERENCE]->(repo:Repo) "
+        "WHERE rr.service_rel_type = 'MENTIONS' "
+        "OPTIONAL MATCH (s)-[rl:REFERENCE]->(e:ExternalResource) "
+        "WHERE rl.service_rel_type = 'LINKS_TO' "
+        "RETURN repo.entity_id, e.entity_id"
+    )
+    reordered = (
+        "MATCH (source:Actor)-[main_rel:REFERENCE]->(actor:Actor) "
+        "WHERE main_rel.service_rel_type = 'MENTIONS' "
+        "OPTIONAL MATCH (source)-[external_rel:REFERENCE]->(external:ExternalResource) "
+        "WHERE external_rel.service_rel_type = 'LINKS_TO' "
+        "OPTIONAL MATCH (source)-[repo_rel:REFERENCE]->(repository:Repo) "
+        "WHERE repo_rel.service_rel_type = 'MENTIONS' "
+        "RETURN repository.entity_id, external.entity_id"
+    )
+    assert compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_preserves_optional_branch_predicate_ownership() -> None:
+    reference = (
+        "MATCH (s:Actor)-[rm:REFERENCE]->(a:Actor) "
+        "WHERE rm.service_rel_type = 'MENTIONS' "
+        "OPTIONAL MATCH (s)-[rr:REFERENCE]->(repo:Repo) "
+        "WHERE rr.service_rel_type = 'MENTIONS' "
+        "OPTIONAL MATCH (s)-[rl:REFERENCE]->(e:ExternalResource) "
+        "WHERE rl.service_rel_type = 'LINKS_TO' "
+        "RETURN repo.entity_id, e.entity_id"
+    )
+    swapped_predicates = reference.replace(
+        "rr.service_rel_type = 'MENTIONS'",
+        "rr.service_rel_type = 'LINKS_TO'",
+    ).replace(
+        "rl.service_rel_type = 'LINKS_TO'",
+        "rl.service_rel_type = 'MENTIONS'",
+    )
+    result = compare_semantic_signatures(swapped_predicates, reference)
+    assert not result["match"]
+    assert "predicate_boolean_structure" in result["differences"]
+
+
+def test_semantic_signature_preserves_dependent_optional_order() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(repo:Repo) "
+        "OPTIONAL MATCH (repo)-[rb:REFERENCE]->(e:ExternalResource) "
+        "RETURN e.entity_id"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (repo)-[rb:REFERENCE]->(e:ExternalResource) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(repo:Repo) "
+        "RETURN e.entity_id"
+    )
+    assert not compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_strips_repeated_redundant_outer_parentheses() -> None:
+    atomic = "MATCH (r:REFERENCE) WHERE r.service_rel_type = 'REFERENCES' RETURN r.entity_id"
+    wrapped = "MATCH (r:REFERENCE) WHERE ((r.service_rel_type = 'REFERENCES')) RETURN r.entity_id"
+    assert compare_semantic_signatures(wrapped, atomic)["match"]
+
+
+def test_semantic_signature_strips_outer_parentheses_around_whole_or_only() -> None:
+    plain = "MATCH (r:REFERENCE) WHERE r.a = 'A' OR r.b = 'B' RETURN r.entity_id"
+    wrapped = "MATCH (r:REFERENCE) WHERE (r.a = 'A' OR r.b = 'B') RETURN r.entity_id"
+    assert compare_semantic_signatures(wrapped, plain)["match"]
+
+
+def test_semantic_signature_preserves_meaningful_boolean_grouping() -> None:
+    grouped = "MATCH (r:REFERENCE) WHERE r.a = 'A' AND (r.b = 'B' OR r.c = 'C') RETURN r.entity_id"
+    redistributed = "MATCH (r:REFERENCE) WHERE (r.a = 'A' AND r.b = 'B') OR r.c = 'C' RETURN r.entity_id"
+    assert not compare_semantic_signatures(redistributed, grouped)["match"]
+
+
+def test_semantic_signature_preserves_parentheses_in_literals_and_bounded_lists() -> None:
+    with_parentheses = (
+        "MATCH (r:REFERENCE) WHERE r.service_rel_type IN ['A(B)', 'C'] "
+        "RETURN count(r.entity_id)"
+    )
+    changed_literal = (
+        "MATCH (r:REFERENCE) WHERE r.service_rel_type IN ['AB', 'C'] "
+        "RETURN count(r.entity_id)"
+    )
+    assert not compare_semantic_signatures(with_parentheses, changed_literal)["match"]
+
+
 def test_semantic_signature_preserves_inline_property_key_case() -> None:
     reference = "MATCH (pr:PullRequest {entity_id: 'PR_1#2'}) RETURN pr.entity_id"
     changed = "MATCH (pr:PullRequest {ENTITY_ID: 'PR_1#2'}) RETURN pr.entity_id"

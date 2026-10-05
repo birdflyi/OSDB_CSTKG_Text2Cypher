@@ -119,6 +119,48 @@ def _normalize_expression_surface(value: str) -> str:
     return expression
 
 
+def _strip_redundant_outer_parentheses(expression: str) -> str:
+    """Strip only parentheses that wrap the entire bounded expression.
+
+    This deliberately does not simplify boolean algebra or remove internal
+    grouping.  It is limited to balanced outer pairs so function calls, list
+    expressions, quoted literals, and nested ``OR`` structure remain intact.
+    """
+
+    value = expression.strip()
+    while value.startswith("(") and value.endswith(")"):
+        paren_depth = 0
+        bracket_depth = 0
+        brace_depth = 0
+        quote = False
+        closes_at: int | None = None
+        for index, char in enumerate(value):
+            if char == "'":
+                quote = not quote
+                continue
+            if quote:
+                continue
+            if char == "(":
+                paren_depth += 1
+            elif char == ")":
+                paren_depth -= 1
+                if paren_depth == 0:
+                    closes_at = index
+                    break
+            elif char == "[":
+                bracket_depth += 1
+            elif char == "]":
+                bracket_depth -= 1
+            elif char == "{":
+                brace_depth += 1
+            elif char == "}":
+                brace_depth -= 1
+        if quote or closes_at != len(value) - 1 or bracket_depth or brace_depth:
+            break
+        value = value[1:-1].strip()
+    return value
+
+
 def _branch_kind(text: str, position: int) -> str:
     matches = list(
         re.finditer(r"\b(?:OPTIONAL\s+)?MATCH\b", text[:position], flags=re.IGNORECASE)
@@ -247,6 +289,7 @@ def _canonical_boolean_expression(
 ) -> str:
     """Canonicalize only pure top-level AND conjunctions."""
 
+    expression = _strip_redundant_outer_parentheses(expression)
     and_terms = _top_level_boolean_terms(expression, "AND")
     if and_terms is None or len(and_terms) <= 1:
         return _canonical_expression(expression, node_roles, relationship_roles)
@@ -258,6 +301,105 @@ def _canonical_boolean_expression(
         for term in and_terms
     ]
     return " and ".join(sorted(canonical_terms))
+
+
+def _optional_branch_units(
+    relationship_records: list[dict[str, Any]],
+    paths: list[dict[str, Any]],
+    predicate_entries: list[dict[str, Any]],
+    node_roles: dict[str, str],
+    relationship_roles: dict[str, str],
+    initially_bound_aliases: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Build bounded OPTIONAL branch units and canonicalize independent siblings.
+
+    The current v4 grammar uses one relationship pattern per OPTIONAL MATCH.
+    A unit retains its path, dependency/introduced roles, and owned WHERE
+    structure.  Only a region in which every OPTIONAL branch is independent of
+    earlier OPTIONAL branches is sorted; once a dependency appears, textual
+    order is retained conservatively for the whole OPTIONAL region.
+    """
+
+    optional_records = [
+        record for record in relationship_records if record["branch_kind"] == "optional"
+    ]
+    if not optional_records:
+        return []
+
+    path_by_role = {
+        item["role"]: item for item in paths if item["branch_kind"] == "optional"
+    }
+    predicates_by_owner = {
+        str(item["owner"]): item
+        for item in predicate_entries
+        if item["branch_kind"] == "optional"
+    }
+
+    seen_aliases: set[str] = set(initially_bound_aliases or set())
+    prior_optional_introduced: set[str] = set()
+    for record in relationship_records:
+        aliases = {
+            str(record["source_alias"]),
+            str(record["target_alias"]),
+        }
+        if record.get("alias"):
+            aliases.add(str(record["alias"]))
+        if record["branch_kind"] == "match":
+            seen_aliases.update(aliases)
+            continue
+        dependency_aliases = sorted(aliases & prior_optional_introduced)
+        introduced_aliases = sorted(aliases - seen_aliases)
+        record["dependency_aliases"] = dependency_aliases
+        record["introduced_aliases"] = introduced_aliases
+        record["dependency_roles"] = sorted(
+            relationship_roles.get(alias) or node_roles.get(alias) or f"unbound:{alias}"
+            for alias in dependency_aliases
+        )
+        record["introduced_roles"] = sorted(
+            relationship_roles.get(alias) or node_roles.get(alias) or f"unbound:{alias}"
+            for alias in introduced_aliases
+        )
+        seen_aliases.update(aliases)
+        prior_optional_introduced.update(introduced_aliases)
+
+    units: list[dict[str, Any]] = []
+    for record in optional_records:
+        role = str(record["role"])
+        path = dict(path_by_role[role])
+        owner = next(
+            (
+                key
+                for key in predicates_by_owner
+                if key == role or role in key.split("|")
+            ),
+            None,
+        )
+        predicate = dict(predicates_by_owner[owner]) if owner else {
+            "branch_kind": "optional",
+            "owner": role,
+            "structure": "",
+        }
+        dependency_roles = list(record.get("dependency_roles", []))
+        introduced_roles = list(record.get("introduced_roles", []))
+        path["dependency_roles"] = dependency_roles
+        path["introduced_roles"] = introduced_roles
+        units.append(
+            {
+                "role": role,
+                "path": path,
+                "predicate": predicate,
+                "dependency_roles": dependency_roles,
+                "introduced_roles": introduced_roles,
+            }
+        )
+
+    # Current v4 optional siblings are independent and can be sorted as whole
+    # units.  Dependent chains retain their original order, including all
+    # sibling units in that region, to avoid a partial reorder that would detach
+    # a predicate from its branch or imply a general planner.
+    if all(not unit["dependency_roles"] for unit in units):
+        return sorted(units, key=lambda unit: unit["role"])
+    return units
 
 
 def _return_items(
@@ -488,15 +630,6 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
             }
         )
 
-    # Mandatory MATCH clauses are conjunctive in the current v4 grammar, so
-    # their textual order is presentation-only. OPTIONAL branches retain
-    # textual order because their attachment order is part of the bounded
-    # branch topology.
-    paths = sorted(
-        [item for item in paths if item["branch_kind"] == "match"],
-        key=lambda item: item["role"],
-    ) + [item for item in paths if item["branch_kind"] == "optional"]
-
     node_property_bindings = [
         {
             "node_role": node_roles[alias],
@@ -543,6 +676,34 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         relationship_roles,
         relationship_records,
     )
+    optional_units = _optional_branch_units(
+        relationship_records,
+        paths,
+        predicate_boolean_structure,
+        node_roles,
+        relationship_roles,
+        {
+            match.group("alias")
+            for match in NODE_PATTERN.finditer(
+                text,
+                0,
+                min(
+                    (record["match_start"] for record in relationship_records if record["branch_kind"] == "optional"),
+                    default=len(text),
+                ),
+            )
+        },
+    )
+    mandatory_paths = sorted(
+        [item for item in paths if item["branch_kind"] == "match"],
+        key=lambda item: item["role"],
+    )
+    paths = mandatory_paths + [unit["path"] for unit in optional_units]
+    predicate_boolean_structure = [
+        entry
+        for entry in predicate_boolean_structure
+        if entry["branch_kind"] == "match"
+    ] + [unit["predicate"] for unit in optional_units]
 
     repo_scope_bindings = [
         {
@@ -574,18 +735,31 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
             key=lambda item: (item["owner_role"], item["operator"], item["value"]),
         )
 
-    branch_topology = [
+    mandatory_topology = [
         {
             "branch_kind": record["branch_kind"],
             "relationship_roles": [record["role"]],
             "endpoint_roles": [record["source_role"], record["target_role"]],
         }
         for record in relationship_records
+        if record["branch_kind"] == "match"
     ]
     branch_topology = sorted(
-        [item for item in branch_topology if item["branch_kind"] == "match"],
+        mandatory_topology,
         key=lambda item: item["relationship_roles"][0],
-    ) + [item for item in branch_topology if item["branch_kind"] == "optional"]
+    ) + [
+        {
+            "branch_kind": "optional",
+            "relationship_roles": [unit["role"]],
+            "endpoint_roles": [
+                unit["path"]["source_node_role"],
+                unit["path"]["target_node_role"],
+            ],
+            "dependency_roles": unit["dependency_roles"],
+            "introduced_roles": unit["introduced_roles"],
+        }
+        for unit in optional_units
+    ]
 
     order_match = re.search(
         r"\bORDER\s+BY\s+(?P<body>.*?)(?=\bLIMIT\b|$)",
