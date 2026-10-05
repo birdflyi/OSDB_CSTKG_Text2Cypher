@@ -128,6 +128,49 @@ def test_contract_default_limits_are_family_specific() -> None:
     assert comprehensive.rendered_cypher.endswith("LIMIT 30")
 
 
+def test_semantic_ir_routes_external_link_count_to_narrow_aggregation() -> None:
+    result = _generate("Count external links by domain for PR PR_156018#11659 in 2023.")
+    assert result.template_id == "indv4_narrow_domain_aggregation"
+    assert result.ir.intent_key == "narrow_domain_aggregation"
+    assert result.ir.time_range == {
+        "start": "2023-01-01T00:00:00Z",
+        "end": "2024-01-01T00:00:00Z",
+        "provenance": "year_range_from_nl",
+        "year": 2023,
+        "bounded": True,
+    }
+
+
+def test_narrow_external_link_aggregation_is_lexically_independent() -> None:
+    result = _generate("Compute external links by domain for PR PR_156018#11659 during 2023.")
+    assert "references" not in result.nl_query.lower()
+    assert result.template_id == "indv4_narrow_domain_aggregation"
+    assert result.ir.intent_key == "narrow_domain_aggregation"
+
+
+def test_non_aggregation_external_link_request_keeps_projection_contract() -> None:
+    result = _generate("Show external links and their domains for PR PR_156018#11659.")
+    assert result.template_id == "indv4_reference_external_property"
+    assert result.ir.intent_key == "typed_reference_external_property"
+
+
+def test_comprehensive_aggregation_keeps_precedence_over_narrow_route() -> None:
+    result = _generate(
+        "Comprehensive: For repo R_156018 in 2023, find PRs linked to external "
+        "resources, group by domain, and return involved actors and latest interaction time."
+    )
+    assert result.template_id == "indv4_comprehensive_external_actor_aggregation"
+    assert result.ir.intent_key == "comprehensive_external_actor_aggregation"
+    assert result.validation["valid"]
+
+
+def test_narrow_aggregation_without_bounded_time_does_not_fabricate_bounds() -> None:
+    result = _generate("Count external links by domain for PR PR_156018#11659.")
+    assert result.template_id is None
+    assert result.ir.intent_key != "narrow_domain_aggregation"
+    assert result.ir.time_range is None
+
+
 def test_multi_relation_target_contract_is_preserved() -> None:
     result = _generate("For actor A_7045099, find mentioned repos and external links.")
     assert result.template_id == "indv4_actor_multi_target_reference"
@@ -362,6 +405,48 @@ def test_semantic_signature_preserves_quoted_literal_comma_and_space() -> None:
     with_space = "MATCH (pr:PullRequest)-[rel:REFERENCE]->(a:Actor) WHERE rel.service_rel_type = 'A, B' RETURN a.entity_id"
     without_space = "MATCH (pr:PullRequest)-[rel:REFERENCE]->(a:Actor) WHERE rel.service_rel_type = 'A,B' RETURN a.entity_id"
     assert not compare_semantic_signatures(with_space, without_space)["match"]
+
+
+def test_semantic_signature_canonicalizes_top_level_and_conjunction_order() -> None:
+    first = (
+        "MATCH (pr:PullRequest)-[rel:REFERENCE]->(x:ExternalResource) "
+        "WHERE rel.service_rel_type = 'LINKS_TO' "
+        "AND rel.source_event_time >= '2023-01-01T00:00:00Z' "
+        "AND rel.source_event_time < '2024-01-01T00:00:00Z' "
+        "RETURN x.entity_id"
+    )
+    reordered = (
+        "MATCH (pr:PullRequest)-[rel:REFERENCE]->(x:ExternalResource) "
+        "WHERE rel.source_event_time < '2024-01-01T00:00:00Z' "
+        "AND rel.service_rel_type = 'LINKS_TO' "
+        "AND rel.source_event_time >= '2023-01-01T00:00:00Z' "
+        "RETURN x.entity_id"
+    )
+    assert compare_semantic_signatures(reordered, first)["match"]
+
+
+def test_semantic_signature_preserves_top_level_or_sensitivity() -> None:
+    and_query = "MATCH (pr:PullRequest) WHERE pr.a = 'A' AND pr.b = 'B' RETURN pr.entity_id"
+    or_query = "MATCH (pr:PullRequest) WHERE pr.a = 'A' OR pr.b = 'B' RETURN pr.entity_id"
+    assert not compare_semantic_signatures(and_query, or_query)["match"]
+
+
+def test_semantic_signature_preserves_nested_or_grouping() -> None:
+    grouped = "MATCH (pr:PullRequest) WHERE pr.a = 'A' AND (pr.b = 'B' OR pr.c = 'C') RETURN pr.entity_id"
+    flattened = "MATCH (pr:PullRequest) WHERE pr.a = 'A' AND pr.b = 'B' AND pr.c = 'C' RETURN pr.entity_id"
+    assert not compare_semantic_signatures(grouped, flattened)["match"]
+
+
+def test_semantic_signature_reorders_parenthesized_top_level_terms_only() -> None:
+    first = "MATCH (pr:PullRequest) WHERE (pr.a = 'A' OR pr.b = 'B') AND pr.c = 'C' RETURN pr.entity_id"
+    reordered = "MATCH (pr:PullRequest) WHERE pr.c = 'C' AND (pr.a = 'A' OR pr.b = 'B') RETURN pr.entity_id"
+    assert compare_semantic_signatures(reordered, first)["match"]
+
+
+def test_semantic_signature_does_not_split_and_inside_quoted_literal() -> None:
+    first = "MATCH (pr:PullRequest) WHERE pr.note = 'R&D AND REFERENCES' AND pr.kind = 'x' RETURN pr.entity_id"
+    reordered = "MATCH (pr:PullRequest) WHERE pr.kind = 'x' AND pr.note = 'R&D AND REFERENCES' RETURN pr.entity_id"
+    assert compare_semantic_signatures(reordered, first)["match"]
 
 
 def test_semantic_signature_detects_path_role_change() -> None:

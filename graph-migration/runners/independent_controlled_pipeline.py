@@ -269,7 +269,22 @@ def _infer_intent_key(text: str, relation_semantics: list[str], ir: ControlledQu
     semantic_set = set(relation_semantics)
     if "comprehensive" in lower and "domain" in lower and "involved actors" in lower:
         return "comprehensive_external_actor_aggregation"
-    if "count" in lower and "domain" in lower and "references" in lower:
+    source_is_pull_request = bool(
+        ir.source_entity and ir.source_entity.get("entity_label") == "PullRequest"
+    )
+    narrow_domain_aggregation = bool(
+        ir.aggregation
+        and "ExternalResource" in ir.target_labels
+        and "LINKS_TO" in semantic_set
+        and ir.projection.get("property") == "url_domain_etld1"
+        and source_is_pull_request
+        and ir.time_range
+        and ir.time_range.get("start")
+        and ir.time_range.get("end")
+        and "Actor" not in ir.target_labels
+        and "involved actors" not in lower
+    )
+    if narrow_domain_aggregation:
         return "narrow_domain_aggregation"
     if "mentioned repos" in lower and "external links" in lower:
         return "actor_multi_target_reference"
@@ -285,7 +300,12 @@ def _infer_intent_key(text: str, relation_semantics: list[str], ir: ControlledQu
         return "issue_comment_actor"
     if "opened" in lower and "issue" in lower and "OPENED_BY" in semantic_set:
         return "issue_opened_by"
-    if "external links" in lower and ("pull request" in lower or re.search(r"\bpr\b", lower)) and "LINKS_TO" in semantic_set:
+    if (
+        "external links" in lower
+        and ("pull request" in lower or re.search(r"\bpr\b", lower))
+        and "LINKS_TO" in semantic_set
+        and not ir.aggregation
+    ):
         return "typed_reference_external_property"
     if "objects" in lower and "REFERENCES" in semantic_set:
         return "typed_reference_object"

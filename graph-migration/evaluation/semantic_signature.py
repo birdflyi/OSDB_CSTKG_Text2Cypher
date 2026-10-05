@@ -171,6 +171,95 @@ def _canonical_expression(
     return _normalize_expression_surface(output)
 
 
+def _top_level_boolean_terms(expression: str, keyword: str) -> list[str] | None:
+    """Split a bounded boolean expression without crossing literals/groups."""
+
+    terms: list[str] = []
+    start = 0
+    quote = False
+    paren_depth = 0
+    bracket_depth = 0
+    brace_depth = 0
+    found = False
+    index = 0
+    upper_keyword = keyword.upper()
+    upper_expression = expression.upper()
+    while index < len(expression):
+        char = expression[index]
+        if char == "'":
+            quote = not quote
+            index += 1
+            continue
+        if quote:
+            index += 1
+            continue
+        if char == "(":
+            paren_depth += 1
+            index += 1
+            continue
+        if char == ")":
+            paren_depth = max(0, paren_depth - 1)
+            index += 1
+            continue
+        if char == "[":
+            bracket_depth += 1
+            index += 1
+            continue
+        if char == "]":
+            bracket_depth = max(0, bracket_depth - 1)
+            index += 1
+            continue
+        if char == "{":
+            brace_depth += 1
+            index += 1
+            continue
+        if char == "}":
+            brace_depth = max(0, brace_depth - 1)
+            index += 1
+            continue
+        if paren_depth == 0 and bracket_depth == 0 and brace_depth == 0:
+            end = index + len(upper_keyword)
+            if (
+                upper_expression[index:end] == upper_keyword
+                and (index == 0 or not upper_expression[index - 1].isalnum() and upper_expression[index - 1] != "_")
+                and (end == len(expression) or not upper_expression[end].isalnum() and upper_expression[end] != "_")
+            ):
+                terms.append(expression[start:index].strip())
+                start = end
+                found = True
+                index = end
+                continue
+        index += 1
+    if quote:
+        return None
+    if not found:
+        return [expression.strip()]
+    terms.append(expression[start:].strip())
+    if any(not term for term in terms):
+        return None
+    return terms
+
+
+def _canonical_boolean_expression(
+    expression: str,
+    node_roles: dict[str, str],
+    relationship_roles: dict[str, str],
+) -> str:
+    """Canonicalize only pure top-level AND conjunctions."""
+
+    and_terms = _top_level_boolean_terms(expression, "AND")
+    if and_terms is None or len(and_terms) <= 1:
+        return _canonical_expression(expression, node_roles, relationship_roles)
+    or_terms = _top_level_boolean_terms(expression, "OR")
+    if or_terms is None or len(or_terms) > 1:
+        return _canonical_expression(expression, node_roles, relationship_roles)
+    canonical_terms = [
+        _canonical_expression(term, node_roles, relationship_roles)
+        for term in and_terms
+    ]
+    return " and ".join(sorted(canonical_terms))
+
+
 def _return_items(
     cypher: str,
     node_roles: dict[str, str],
@@ -292,7 +381,7 @@ def _where_boolean_structure(
                 branch_kind,
                 owner_key,
                 sequence,
-                _canonical_expression(match.group("body"), node_roles, relationship_roles),
+                _canonical_boolean_expression(match.group("body"), node_roles, relationship_roles),
             )
         )
 
