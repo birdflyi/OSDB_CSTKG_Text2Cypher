@@ -307,6 +307,7 @@ def _optional_branch_units(
     relationship_records: list[dict[str, Any]],
     paths: list[dict[str, Any]],
     predicate_entries: list[dict[str, Any]],
+    cypher: str,
     node_roles: dict[str, str],
     relationship_roles: dict[str, str],
     initially_bound_aliases: set[str] | None = None,
@@ -335,32 +336,61 @@ def _optional_branch_units(
         if item["branch_kind"] == "optional"
     }
 
-    seen_aliases: set[str] = set(initially_bound_aliases or set())
-    prior_optional_introduced: set[str] = set()
+    seen_node_aliases: set[str] = set(initially_bound_aliases or set())
+    prior_optional_introduced_nodes: set[str] = set()
+
+    def alias_used_outside_literals(value: str, alias: str) -> bool:
+        segments = re.split(r"('(?:[^']|'')*')", value)
+        return any(
+            index % 2 == 0
+            and re.search(rf"\b{re.escape(alias)}\b", segment)
+            for index, segment in enumerate(segments)
+        )
+
+    def downstream_relationship_dependency(record: dict[str, Any]) -> bool:
+        alias = str(record.get("alias") or "")
+        if not alias:
+            return False
+        clause_match = re.search(
+            r"\b(?:OPTIONAL\s+MATCH|MATCH|RETURN|WITH|UNWIND|ORDER\s+BY|LIMIT)\b",
+            cypher[int(record.get("match_end", record["match_start"])) :],
+            flags=re.IGNORECASE,
+        )
+        if clause_match is None:
+            return False
+        later_start = int(record.get("match_end", record["match_start"])) + clause_match.start()
+        suffix = cypher[later_start:]
+        # The current bounded grammar has no relationship-variable flow
+        # contract. Keep a conservative marker if a later clause actually
+        # consumes the alias, while ignoring its own attached WHERE body.
+        return later_start < len(cypher) and alias_used_outside_literals(suffix, alias)
+
     for record in relationship_records:
-        aliases = {
+        node_aliases = {
             str(record["source_alias"]),
             str(record["target_alias"]),
         }
-        if record.get("alias"):
-            aliases.add(str(record["alias"]))
         if record["branch_kind"] == "match":
-            seen_aliases.update(aliases)
+            seen_node_aliases.update(node_aliases)
             continue
-        dependency_aliases = sorted(aliases & prior_optional_introduced)
-        introduced_aliases = sorted(aliases - seen_aliases)
-        record["dependency_aliases"] = dependency_aliases
-        record["introduced_aliases"] = introduced_aliases
+        dependency_node_aliases = sorted(node_aliases & prior_optional_introduced_nodes)
+        introduced_node_aliases = sorted(node_aliases - seen_node_aliases)
+        relationship_dependency = (
+            [str(record["role"])] if downstream_relationship_dependency(record) else []
+        )
+        record["dependency_aliases"] = dependency_node_aliases
+        record["introduced_aliases"] = introduced_node_aliases
         record["dependency_roles"] = sorted(
-            relationship_roles.get(alias) or node_roles.get(alias) or f"unbound:{alias}"
-            for alias in dependency_aliases
+            [node_roles.get(alias) or f"unbound:{alias}" for alias in dependency_node_aliases]
+            + relationship_dependency
         )
         record["introduced_roles"] = sorted(
-            relationship_roles.get(alias) or node_roles.get(alias) or f"unbound:{alias}"
-            for alias in introduced_aliases
+            node_roles.get(alias) or f"unbound:{alias}"
+            for alias in introduced_node_aliases
         )
-        seen_aliases.update(aliases)
-        prior_optional_introduced.update(introduced_aliases)
+        record["relationship_binding_dependency"] = relationship_dependency
+        seen_node_aliases.update(node_aliases)
+        prior_optional_introduced_nodes.update(introduced_node_aliases)
 
     units: list[dict[str, Any]] = []
     for record in optional_records:
@@ -383,6 +413,9 @@ def _optional_branch_units(
         introduced_roles = list(record.get("introduced_roles", []))
         path["dependency_roles"] = dependency_roles
         path["introduced_roles"] = introduced_roles
+        path["relationship_binding_dependency"] = list(
+            record.get("relationship_binding_dependency", [])
+        )
         units.append(
             {
                 "role": role,
@@ -390,6 +423,9 @@ def _optional_branch_units(
                 "predicate": predicate,
                 "dependency_roles": dependency_roles,
                 "introduced_roles": introduced_roles,
+                "relationship_binding_dependency": list(
+                    record.get("relationship_binding_dependency", [])
+                ),
             }
         )
 
@@ -598,6 +634,7 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
                 "alias": match.group("rel_alias") or "",
                 "branch_kind": branch_kind,
                 "match_start": match.start(),
+                "match_end": match.end(),
             }
         )
 
@@ -680,6 +717,7 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         relationship_records,
         paths,
         predicate_boolean_structure,
+        text,
         node_roles,
         relationship_roles,
         {
