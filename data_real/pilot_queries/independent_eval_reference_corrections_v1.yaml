@@ -1,0 +1,27 @@
+correction_version: independent_eval_reference_corrections_v1
+scope: post_generation_evaluation_only
+generation_access: forbidden
+corrections:
+  q_comp_01:
+    correction_type: optional_match_filter_ownership
+    source_file: data_real/pilot_queries/queries_pilot.jsonl
+    source_query_id: q_comp_01
+    correction_stage: D1.1
+    review_thread: 4178296476
+    rationale: >
+      The historical pilot reference attaches mandatory rl service/time
+      predicates to the OPTIONAL actor branch. The corrected reference places
+      rl predicates after the mandatory external-resource MATCH and leaves actor
+      semantics optional.
+    historical_source_preserved: true
+    corrected_cypher: |
+      MATCH (pr:PullRequest)
+      WHERE pr.entity_id STARTS WITH 'PR_156018'
+      MATCH (pr)-[rl:REFERENCE]->(e:ExternalResource)
+      WHERE rl.service_rel_type = 'LINKS_TO'
+      AND rl.source_event_time >= '2023-01-01T00:00:00Z' AND rl.source_event_time < '2024-01-01T00:00:00Z'
+      OPTIONAL MATCH (pr)-[ra:REFERENCE]->(a:Actor)
+      WHERE ra.service_rel_type IN ['MENTIONS','REFERENCES']
+      RETURN rl.url_domain_etld1 AS domain, collect(DISTINCT a.entity_id) AS actors,
+      max(rl.source_event_time) AS latest_time, count(DISTINCT pr.entity_id) AS pr_count
+      ORDER BY pr_count DESC, latest_time DESC LIMIT 30

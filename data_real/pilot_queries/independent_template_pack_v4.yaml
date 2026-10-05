@@ -1,0 +1,323 @@
+template_pack_version: independent_template_pack_v4
+purpose: independent_semantic_contracts_for_d1_1
+native_rel_types:
+  - EVENT_ACTION
+  - REFERENCE
+notes:
+  - This pack is selected by semantic intent and slot contracts, never by query id.
+  - Evaluation annotations and request-dispatch metadata are intentionally absent.
+  - COUPLES_WITH and RESOLVES remain outside the executable native contract.
+templates:
+  - template_id: indv4_issue_opened_by
+    family: OneHopEA
+    intent: Issue opened-by actor lookup.
+    default_limit: 25
+    selection:
+      intent_key: issue_opened_by
+      target_labels: [Actor]
+    cypher_skeleton: |
+      MATCH (i:Issue {entity_id: $issue_entity_id})-[rel:EVENT_ACTION]->(a:Actor)
+      WHERE rel.service_rel_type = 'OPENED_BY'
+      RETURN a.entity_id LIMIT 25
+    required_slots:
+      - name: issue_entity_id
+        type: EntityIdSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [OPENED_BY]
+      hop_limit: 1
+
+  - template_id: indv4_repo_pull_request_filter
+    family: EntityFilter
+    intent: Repo-scoped pull-request listing.
+    default_limit: 25
+    selection:
+      intent_key: repo_pull_request_filter
+      target_labels: [PullRequest]
+      requires_repo_scope: true
+    cypher_skeleton: |
+      MATCH (pr:PullRequest)
+      WHERE pr.entity_id STARTS WITH $pr_base_prefix
+      RETURN pr.entity_id LIMIT 25
+    required_slots:
+      - name: pr_base_prefix
+        type: DerivedPrefixSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: []
+      hop_limit: 0
+
+  - template_id: indv4_reference_object
+    family: OneHopRef
+    intent: Typed reference traversal to unknown objects.
+    default_limit: 25
+    selection:
+      intent_key: typed_reference_object
+      target_labels: [UnknownObject]
+    cypher_skeleton: |
+      MATCH (pr:PullRequest {entity_id: $pr_entity_id})-[rel:REFERENCE]->(x:UnknownObject)
+      WHERE rel.service_rel_type = 'REFERENCES'
+      RETURN x.entity_id LIMIT 25
+    required_slots:
+      - name: pr_entity_id
+        type: EntityIdSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [REFERENCES]
+      hop_limit: 1
+
+  - template_id: indv4_reference_external_property
+    family: OneHopRef
+    intent: Typed external-resource link projection.
+    default_limit: 25
+    selection:
+      intent_key: typed_reference_external_property
+      target_labels: [ExternalResource]
+    cypher_skeleton: |
+      MATCH (pr:PullRequest {entity_id: $pr_entity_id})-[rel:REFERENCE]->(e:ExternalResource)
+      WHERE rel.service_rel_type = 'LINKS_TO'
+      RETURN rel.url_domain_etld1, e.entity_id LIMIT 25
+    required_slots:
+      - name: pr_entity_id
+        type: EntityIdSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [LINKS_TO]
+      hop_limit: 1
+
+  - template_id: indv4_reference_actor
+    family: OneHopRef
+    intent: Typed actor mention projection.
+    default_limit: 25
+    selection:
+      intent_key: typed_reference_actor
+      target_labels: [Actor]
+    cypher_skeleton: |
+      MATCH (ic:IssueComment {entity_id: $issuecomment_entity_id})-[rel:REFERENCE]->(a:Actor)
+      WHERE rel.service_rel_type = 'MENTIONS'
+      RETURN a.entity_id LIMIT 25
+    required_slots:
+      - name: issuecomment_entity_id
+        type: EntityIdSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [MENTIONS]
+      hop_limit: 1
+
+  - template_id: indv4_issue_comment_actor
+    family: TwoHopComposite
+    intent: Issue comment actor interaction with lower time bound.
+    default_limit: 25
+    selection:
+      intent_key: issue_comment_actor
+      target_labels: [Actor]
+      requires_time_start: true
+    cypher_skeleton: |
+      MATCH (ic:IssueComment)-[r1:EVENT_ACTION]->(i:Issue {entity_id: $issue_entity_id})
+      MATCH (ic)-[r2:EVENT_ACTION]->(a:Actor)
+      WHERE r1.service_rel_type = 'COMMENTED_ON_ISSUE' AND r2.service_rel_type = 'OPENED_BY'
+      AND r1.source_event_time >= $time_start
+      RETURN DISTINCT a.entity_id LIMIT 25
+    required_slots:
+      - name: issue_entity_id
+        type: EntityIdSlot
+      - name: time_start
+        type: TimeRangeSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [COMMENTED_ON_ISSUE, OPENED_BY]
+      hop_limit: 2
+
+  - template_id: indv4_repo_pr_reference_window
+    family: RepoScopedReference
+    intent: Repo-scoped PR reference window.
+    default_limit: 50
+    selection:
+      intent_key: repo_pr_reference_window
+      target_labels: [UnknownObject]
+      requires_repo_scope: true
+      requires_time_start: true
+      requires_time_end: true
+    cypher_skeleton: |
+      MATCH (pr:PullRequest)
+      WHERE pr.entity_id STARTS WITH $pr_base_prefix
+      MATCH (pr)-[rr:REFERENCE]->(x:UnknownObject)
+      WHERE rr.service_rel_type = 'REFERENCES' AND rr.source_event_time >= $time_start
+      AND rr.source_event_time < $time_end
+      RETURN pr.entity_id, x.entity_id ORDER BY rr.source_event_time DESC LIMIT 50
+    required_slots:
+      - name: pr_base_prefix
+        type: DerivedPrefixSlot
+      - name: time_start
+        type: TimeRangeSlot
+      - name: time_end
+        type: TimeRangeSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [REFERENCES]
+      hop_limit: 1
+
+  - template_id: indv4_actor_multi_target_reference
+    family: MultiRelationComposite
+    intent: Actor-anchored mentioned repositories and external links.
+    default_limit: 50
+    selection:
+      intent_key: actor_multi_target_reference
+      target_labels: [Repo, ExternalResource]
+    cypher_skeleton: |
+      MATCH (s)-[rm:REFERENCE]->(a:Actor {entity_id: $actor_entity_id})
+      WHERE rm.service_rel_type = 'MENTIONS'
+      OPTIONAL MATCH (s)-[rr:REFERENCE]->(repo:Repo)
+      WHERE rr.service_rel_type = 'MENTIONS'
+      OPTIONAL MATCH (s)-[rl:REFERENCE]->(e:ExternalResource)
+      WHERE rl.service_rel_type = 'LINKS_TO'
+      RETURN DISTINCT repo.entity_id, e.entity_id LIMIT 50
+    required_slots:
+      - name: actor_entity_id
+        type: EntityIdSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [MENTIONS, LINKS_TO]
+      hop_limit: 3
+
+  - template_id: indv4_narrow_domain_aggregation
+    family: Aggregation
+    intent: Narrow PR external-link domain count.
+    default_limit: 20
+    selection:
+      intent_key: narrow_domain_aggregation
+      target_labels: [ExternalResource]
+      requires_time_start: true
+      requires_time_end: true
+      requires_aggregation: true
+    cypher_skeleton: |
+      MATCH (pr:PullRequest {entity_id: $pr_entity_id})-[rel:REFERENCE]->(x:ExternalResource)
+      WHERE rel.service_rel_type = 'LINKS_TO' AND rel.source_event_time >= $time_start
+      AND rel.source_event_time < $time_end
+      RETURN rel.url_domain_etld1, count(*) AS c ORDER BY c DESC LIMIT 20
+    required_slots:
+      - name: pr_entity_id
+        type: EntityIdSlot
+      - name: time_start
+        type: TimeRangeSlot
+      - name: time_end
+        type: TimeRangeSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [LINKS_TO]
+      hop_limit: 1
+
+  - template_id: indv4_repo_actor_external_lower_bound
+    family: MultiRelationComposite
+    intent: Repo PR actor mention plus external link after lower bound.
+    default_limit: 50
+    selection:
+      intent_key: repo_actor_external_lower_bound
+      target_labels: [Actor, ExternalResource]
+      requires_repo_scope: true
+      requires_time_start: true
+    cypher_skeleton: |
+      MATCH (pr:PullRequest)
+      WHERE pr.entity_id STARTS WITH $pr_base_prefix
+      MATCH (pr)-[rm:REFERENCE]->(a:Actor {entity_id: $actor_entity_id})
+      MATCH (pr)-[rl:REFERENCE]->(e:ExternalResource)
+      WHERE rm.service_rel_type = 'MENTIONS' AND rl.service_rel_type = 'LINKS_TO'
+      AND rl.source_event_time >= $time_start
+      RETURN pr.entity_id, rl.url_domain_etld1 ORDER BY rl.source_event_time DESC LIMIT 50
+    required_slots:
+      - name: pr_base_prefix
+        type: DerivedPrefixSlot
+      - name: actor_entity_id
+        type: EntityIdSlot
+      - name: time_start
+        type: TimeRangeSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [MENTIONS, LINKS_TO]
+      hop_limit: 2
+
+  - template_id: indv4_issue_comment_commit
+    family: TwoHopComposite
+    intent: Repo issue comment to commit reference traversal.
+    default_limit: 50
+    selection:
+      intent_key: issue_comment_commit
+      target_labels: [Commit]
+      requires_repo_scope: true
+    cypher_skeleton: |
+      MATCH (i:Issue)
+      WHERE i.entity_id STARTS WITH $issue_base_prefix
+      MATCH (ic:IssueComment)-[rci:EVENT_ACTION]->(i)
+      MATCH (ic)-[rr:REFERENCE]->(c:Commit)
+      WHERE rci.service_rel_type = 'COMMENTED_ON_ISSUE' AND rr.service_rel_type = 'REFERENCES'
+      RETURN i.entity_id, c.entity_id ORDER BY rr.source_event_time DESC LIMIT 50
+    required_slots:
+      - name: issue_base_prefix
+        type: DerivedPrefixSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [COMMENTED_ON_ISSUE, REFERENCES]
+      hop_limit: 2
+
+  - template_id: indv4_review_reference
+    family: TwoHopComposite
+    intent: PR review comment reference interaction window.
+    default_limit: 50
+    selection:
+      intent_key: review_reference
+      target_labels: [Actor]
+      requires_time_start: true
+      requires_time_end: true
+    cypher_skeleton: |
+      MATCH (prrc:PullRequestReviewComment)-[r1:EVENT_ACTION]->(prr:PullRequestReview)
+      MATCH (prr)-[r2:EVENT_ACTION]->(pr:PullRequest {entity_id: $pr_entity_id})
+      MATCH (prrc)-[r3:REFERENCE]->(a:Actor)
+      WHERE r1.service_rel_type = 'COMMENTED_ON_REVIEW' AND r2.service_rel_type = 'CREATED_IN'
+      AND r3.service_rel_type IN ['MENTIONS','REFERENCES']
+      AND r3.source_event_time >= $time_start AND r3.source_event_time < $time_end
+      RETURN DISTINCT a.entity_id LIMIT 50
+    required_slots:
+      - name: pr_entity_id
+        type: EntityIdSlot
+      - name: time_start
+        type: TimeRangeSlot
+      - name: time_end
+        type: TimeRangeSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [COMMENTED_ON_REVIEW, CREATED_IN, MENTIONS, REFERENCES]
+      hop_limit: 3
+
+  - template_id: indv4_comprehensive_external_actor_aggregation
+    family: Aggregation
+    intent: Comprehensive repo PR external-domain aggregation with actor evidence.
+    default_limit: 30
+    selection:
+      intent_key: comprehensive_external_actor_aggregation
+      target_labels: [Actor, ExternalResource]
+      requires_repo_scope: true
+      requires_time_start: true
+      requires_time_end: true
+      requires_aggregation: true
+    cypher_skeleton: |
+      MATCH (pr:PullRequest)
+      WHERE pr.entity_id STARTS WITH $pr_base_prefix
+      MATCH (pr)-[rl:REFERENCE]->(e:ExternalResource)
+      WHERE rl.service_rel_type = 'LINKS_TO'
+      AND rl.source_event_time >= $time_start AND rl.source_event_time < $time_end
+      OPTIONAL MATCH (pr)-[ra:REFERENCE]->(a:Actor)
+      WHERE ra.service_rel_type IN ['MENTIONS','REFERENCES']
+      RETURN rl.url_domain_etld1 AS domain, collect(DISTINCT a.entity_id) AS actors,
+      max(rl.source_event_time) AS latest_time, count(DISTINCT pr.entity_id) AS pr_count
+      ORDER BY pr_count DESC, latest_time DESC LIMIT 30
+    required_slots:
+      - name: pr_base_prefix
+        type: DerivedPrefixSlot
+      - name: time_start
+        type: TimeRangeSlot
+      - name: time_end
+        type: TimeRangeSlot
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [LINKS_TO, MENTIONS, REFERENCES]
+      hop_limit: 2

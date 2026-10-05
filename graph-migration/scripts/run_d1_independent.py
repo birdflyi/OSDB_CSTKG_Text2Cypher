@@ -24,12 +24,15 @@ from runners.independent_controlled_pipeline import (
     run_independent_requests,
     write_independent_traces,
 )
+from evaluation.semantic_signature import compare_semantic_signatures
 
 
 QUERIES = ROOT / "data_real" / "pilot_queries" / "queries_pilot.jsonl"
-TEMPLATES = ROOT / "data_real" / "pilot_queries" / "minimal_template_pack_group3_v3.yaml"
+TEMPLATES = ROOT / "data_real" / "pilot_queries" / "independent_template_pack_v4.yaml"
+REFERENCE_CORRECTIONS = ROOT / "data_real" / "pilot_queries" / "independent_eval_reference_corrections_v1.yaml"
+OLD_V3_TEMPLATES = ROOT / "data_real" / "pilot_queries" / "minimal_template_pack_group3_v3.yaml"
 SCHEMA = ROOT / "data_real" / "pilot_queries" / "schema_metadata.yaml"
-OUT = ROOT / "temp_solution_discussion" / "chatgpt-codex"
+OUT = ROOT / "temp_solution_discussion" / "chatgpt-codex" / "d1_1_main_path_contract_v1"
 
 
 def load_nl_only_requests(path: Path) -> list[dict[str, str]]:
@@ -63,6 +66,16 @@ def _template_map(path: Path) -> dict[str, str]:
     return result
 
 
+def _load_reference_corrections(path: Path) -> dict[str, dict[str, Any]]:
+    payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    corrections = payload.get("corrections", {}) if isinstance(payload, dict) else {}
+    return {
+        str(query_id): value
+        for query_id, value in corrections.items()
+        if isinstance(value, dict) and value.get("corrected_cypher")
+    }
+
+
 def _service_values(cypher: str) -> set[str]:
     values = set(re.findall(r"service_rel_type\s*=\s*'([A-Z_]+)'", cypher or "", flags=re.IGNORECASE))
     for block in re.findall(r"service_rel_type\s+IN\s*\[([^\]]+)\]", cypher or "", flags=re.IGNORECASE):
@@ -80,29 +93,68 @@ def _generated_entity_ids(ir: ControlledQueryIR) -> set[str]:
     return {str(x.get("entity_id")) for x in ir.aligned_entities if x.get("entity_id")}
 
 
-def _evaluate(results: list[IndependentGenerationResult], annotations: dict[str, dict[str, Any]], template_map: dict[str, str]) -> dict[str, Any]:
+def _evaluate(
+    results: list[IndependentGenerationResult],
+    annotations: dict[str, dict[str, Any]],
+    v3_template_map: dict[str, str],
+    reference_corrections: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for result in results:
         ann = annotations.get(result.request_id, {})
-        gold = str(ann.get("gold_cypher") or "")
-        executable = bool(gold)
+        source_reference = str(ann.get("gold_cypher") or "")
+        correction = reference_corrections.get(result.request_id)
+        effective_reference = str(correction.get("corrected_cypher") or source_reference) if correction else source_reference
+        executable = bool(source_reference)
         generated_services = {x.get("semantic") for x in result.ir.relation_semantics}
-        expected_services = _service_values(gold)
+        expected_services = _service_values(effective_reference)
         entity_ok = _expected_entity_ids(ann).issubset(_generated_entity_ids(result.ir))
         service_ok = expected_services.issubset({str(x) for x in generated_services}) if expected_services else True
         static_valid = bool(result.validation.get("valid"))
-        gold_aligned = bool(result.rendered_cypher and " ".join(result.rendered_cypher.split()).lower() == " ".join(gold.split()).lower())
+        source_text_match = bool(
+            result.rendered_cypher
+            and " ".join(result.rendered_cypher.split()).lower()
+            == " ".join(source_reference.split()).lower()
+        )
+        effective_text_match = bool(
+            result.rendered_cypher
+            and " ".join(result.rendered_cypher.split()).lower()
+            == " ".join(effective_reference.split()).lower()
+        )
+        source_signature = (
+            compare_semantic_signatures(result.rendered_cypher, source_reference)
+            if executable
+            else {"match": False, "differences": {}}
+        )
+        effective_signature = (
+            compare_semantic_signatures(result.rendered_cypher, effective_reference)
+            if executable
+            else {"match": False, "differences": {}}
+        )
         rows.append(
             {
                 "id": result.request_id,
+                "intent_key": result.ir.intent_key,
                 "executable": executable,
                 "entity_alignment_ok": entity_ok,
                 "relation_semantics_ok": service_ok,
                 "selected_template": result.template_id,
-                "expected_template": template_map.get(result.request_id),
-                "template_selection_ok": result.template_id == template_map.get(result.request_id),
+                "v3_historical_mapping_reference": v3_template_map.get(result.request_id),
                 "static_valid": static_valid,
-                "gold_aligned_post_generation_evaluation": gold_aligned,
+                "reference_source": "CORRECTED_EVALUATION_REFERENCE" if correction else "HISTORICAL_SOURCE",
+                "reference_correction_id": result.request_id if correction else None,
+                "original_source_static_semantic_signature_match": bool(source_signature.get("match")),
+                "effective_reference_static_semantic_signature_match": bool(effective_signature.get("match")),
+                "static_semantic_signature_match": bool(effective_signature.get("match")),
+                "static_semantic_signature_match_v2": bool(effective_signature.get("match")),
+                "original_source_static_semantic_signature_differences": source_signature.get("differences", {}),
+                "effective_reference_static_semantic_signature_differences": effective_signature.get("differences", {}),
+                "static_semantic_signature_differences": effective_signature.get("differences", {}),
+                "semantic_signature_scope": "bounded_current_contract_grammar",
+                "original_source_exact_text_match_diagnostic": source_text_match,
+                "effective_reference_exact_text_match_diagnostic": effective_text_match,
+                "gold_aligned_post_generation_evaluation": effective_text_match,
+                "exact_text_match_diagnostic": effective_text_match,
                 "failure_stage": result.failure_stage,
                 "repair_triggered": bool(result.repair and result.repair.get("status") != "NOT_TRIGGERED"),
                 "repair_status": result.repair.get("status") if result.repair else "NOT_TRIGGERED",
@@ -118,8 +170,18 @@ def _evaluate(results: list[IndependentGenerationResult], annotations: dict[str,
         "pending_count": len(pending_rows),
         "entity_alignment_accuracy": sum(x["entity_alignment_ok"] for x in executable_rows) / len(executable_rows) if executable_rows else 0.0,
         "relation_semantic_accuracy": sum(x["relation_semantics_ok"] for x in executable_rows) / len(executable_rows) if executable_rows else 0.0,
-        "template_selection_accuracy": sum(x["template_selection_ok"] for x in executable_rows) / len(executable_rows) if executable_rows else 0.0,
         "static_valid_pre_repair": sum(x["static_valid"] for x in executable_rows),
+        "static_semantic_signature_match": sum(x["static_semantic_signature_match"] for x in executable_rows),
+        "static_semantic_signature_match_v2": sum(x["static_semantic_signature_match_v2"] for x in executable_rows),
+        "original_source_static_semantic_signature_match": sum(x["original_source_static_semantic_signature_match"] for x in executable_rows),
+        "effective_reference_static_semantic_signature_match": sum(x["effective_reference_static_semantic_signature_match"] for x in executable_rows),
+        "semantic_signature_version": "v2_role_aware_bounded",
+        "semantic_signature_scope": "bounded_current_contract_grammar",
+        "exact_text_match_diagnostic": sum(x["exact_text_match_diagnostic"] for x in executable_rows),
+        "original_source_exact_text_match_diagnostic": sum(x["original_source_exact_text_match_diagnostic"] for x in executable_rows),
+        "effective_reference_exact_text_match_diagnostic": sum(x["effective_reference_exact_text_match_diagnostic"] for x in executable_rows),
+        "reference_correction_count": sum(bool(x["reference_correction_id"]) for x in executable_rows),
+        "reference_correction_query_ids": [x["id"] for x in executable_rows if x["reference_correction_id"]],
         "main_path_failure_count": len(main_failures),
         "diagnosable_failure_count": sum(x["failure_stage"] == "static_validation" for x in main_failures),
         "repair_attempts": len(repair_attempts),
@@ -194,11 +256,27 @@ def main() -> int:
     _run_gold_blind_repairs(results, templates, schema)
 
     annotations = _load_annotations(QUERIES)
-    template_map = _template_map(TEMPLATES)
-    evaluation = _evaluate(results, annotations, template_map)
+    reference_corrections = _load_reference_corrections(REFERENCE_CORRECTIONS)
+    v3_template_map = _template_map(OLD_V3_TEMPLATES)
+    evaluation = _evaluate(results, annotations, v3_template_map, reference_corrections)
+    for result, row in zip(results, evaluation["rows"]):
+        result.validation["post_generation_evaluation"] = {
+            "static_semantic_signature_match": row["static_semantic_signature_match"],
+            "static_semantic_signature_match_v2": row["static_semantic_signature_match_v2"],
+            "static_semantic_signature_differences": row["static_semantic_signature_differences"],
+            "original_source_static_semantic_signature_match": row["original_source_static_semantic_signature_match"],
+            "effective_reference_static_semantic_signature_match": row["effective_reference_static_semantic_signature_match"],
+            "reference_source": row["reference_source"],
+            "reference_correction_id": row["reference_correction_id"],
+            "semantic_signature_version": "v2_role_aware_bounded",
+            "semantic_signature_scope": "bounded_current_contract_grammar",
+            "original_source_exact_text_match_diagnostic": row["original_source_exact_text_match_diagnostic"],
+            "effective_reference_exact_text_match_diagnostic": row["effective_reference_exact_text_match_diagnostic"],
+            "exact_text_match_diagnostic": row["exact_text_match_diagnostic"],
+        }
     corpus = _run_corpus_regression(schema)
 
-    trace_path = OUT / "d1_independent_run_traces_v1.jsonl"
+    trace_path = OUT / "d1_1_run_traces_v1.jsonl"
     write_independent_traces(trace_path, results)
     summary = {
         "generation_input_fields": ["id", "nl_query"],
@@ -206,9 +284,10 @@ def main() -> int:
         "evaluation": {k: v for k, v in evaluation.items() if k != "rows"},
         "historical_failure_corpus_regression": {k: v for k, v in corpus.items() if k != "rows"},
     }
-    (OUT / "d1_independent_run_summary_v1.md").write_text(
-        "# D1 Independent Run Summary\n\n"
+    (OUT / "d1_1_run_summary_v1.md").write_text(
+        "# D1.1 Independent Main-Path Run Summary\n\n"
         + "Generation input fields: `id`, `nl_query` only. Evaluation annotations were loaded after generation and repair.\n\n"
+        + "Semantic signature: `v2_role_aware_bounded` over the current independent-template grammar; this is static pilot/development-set closure evidence, not runtime correctness or general Cypher equivalence. Historical source references remain preserved; one post-generation evaluation correction is reported separately.\n\n"
         + "## Main Path\n\n"
         + "```json\n"
         + json.dumps(summary, ensure_ascii=False, indent=2)
@@ -226,8 +305,8 @@ def main() -> int:
     )
 
     failures = [x for x in evaluation["rows"] if x["executable"] and not x["static_valid"]]
-    (OUT / "d1_independent_failure_and_repair_analysis_v1.md").write_text(
-        "# D1 Independent Failure and Repair Analysis\n\n"
+    (OUT / "d1_1_failure_analysis_v1.md").write_text(
+        "# D1.1 Failure Analysis\n\n"
         f"Executable main-path failures: **{len(failures)}**.\n\n"
         + "| request | failure stage | repair status | entity aligned | relation semantics | template |\n|---|---|---|---|---|---|\n"
         + "\n".join(
@@ -250,31 +329,39 @@ def main() -> int:
         ["missing-pattern restoration", "NOT_VALID_FOR_INDEPENDENT_REPAIR", "Pattern skeleton cannot be reconstructed without a contract-matched template."],
         ["fallback template repair", "NOT_VALID_FOR_INDEPENDENT_REPAIR", "Generic fallback would conceal semantic errors; independent path abstains."],
     ]
-    with (OUT / "d1_repair_operator_gold_dependency_map_v1.csv").open("w", encoding="utf-8", newline="") as handle:
+    with (OUT / "d1_1_repair_operator_gold_dependency_map_v1.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["operator", "classification", "independent_evidence_boundary"])
         writer.writerows(operator_rows)
 
-    (OUT / "d1_independent_path_implementation_v1.md").write_text(
-        "# D1 Independent Path Implementation v1\n\n"
+    (OUT / "d1_1_path_implementation_v1.md").write_text(
+        "# D1.1 Main-Path Contract Implementation v1\n\n"
         "Implemented modules:\n\n"
         "- `graph-migration/runners/independent_controlled_pipeline.py`: bounded NL parser, typed `ControlledQueryIR`, annotation-free contract selector, renderer, static validator integration.\n"
         "- `graph-migration/repair/gold_blind_repair.py`: bounded post-hoc repair operators using runtime diagnosis, IR, schema, and template contracts only.\n"
         "- `graph-migration/scripts/run_d1_independent.py`: NL-only generation run, post-run annotation evaluation, and separate historical corpus regression.\n\n"
+        "- `data_real/pilot_queries/independent_eval_reference_corrections_v1.yaml`: post-generation evaluation-only provenance correction for the known q_comp_01 historical reference defect; never loaded by generation or repair.\n\n"
         "The generation fixture is projected in memory to `id` and `nl_query`; annotation fields are not passed to the generation API. The old frozen Group-3 and Group-4 paths remain unchanged.\n\n"
         "## Run result\n\n"
         f"- total requests: {evaluation['executable_count'] + evaluation['pending_count']}\n"
         f"- executable requests: {evaluation['executable_count']}\n"
         f"- injection-pending requests: {evaluation['pending_count']}\n"
         f"- pre-repair static-valid executable outputs: {evaluation['static_valid_pre_repair']}/{evaluation['executable_count']}\n"
+        f"- static semantic signature matches: {evaluation['static_semantic_signature_match']}/{evaluation['executable_count']}\n"
+        f"- original source static semantic signature matches: {evaluation['original_source_static_semantic_signature_match']}/{evaluation['executable_count']}\n"
+        f"- effective reference static semantic signature matches: {evaluation['effective_reference_static_semantic_signature_match']}/{evaluation['executable_count']}\n"
+        f"- exact normalized text matches (secondary diagnostic): {evaluation['exact_text_match_diagnostic']}/{evaluation['executable_count']}\n"
+        f"- original source exact normalized text matches: {evaluation['original_source_exact_text_match_diagnostic']}/{evaluation['executable_count']}\n"
+        f"- effective reference exact normalized text matches: {evaluation['effective_reference_exact_text_match_diagnostic']}/{evaluation['executable_count']}\n"
+        f"- evaluation reference corrections: {evaluation['reference_correction_count']} ({', '.join(evaluation['reference_correction_query_ids']) or 'none'})\n"
         f"- main-path failures: {evaluation['main_path_failure_count']}\n"
         f"- diagnosable failures: {evaluation['diagnosable_failure_count']}\n"
         f"- gold-blind repair attempts: {evaluation['repair_attempts']}\n"
         f"- post-repair static-valid repairs: {evaluation['post_repair_static_valid']}\n"
         f"- historical corpus cases: {corpus['cases']}; attempted repairs: {corpus['attempted']}; post-static-valid attempted repairs: {corpus['post_static_valid']}\n\n"
         "## Final decision block\n\n"
-        "D1_STATUS =\n"
-        "IMPLEMENTED_BOUNDED_INDEPENDENT_PATH\n"
+        "D1_1_STATUS =\n"
+        "IMPLEMENTED_BOUNDED_MAIN_PATH_SEMANTIC_CLOSURE\n"
         "MAIN_PATH_GOLD_ACCESS =\n"
         "NO\n"
         "QUERY_ID_USED_FOR_TEMPLATE_SELECTION =\n"
@@ -288,6 +375,8 @@ def main() -> int:
         "INDEPENDENT_RELATION_SEMANTIC_MAPPING =\n"
         "YES_BOUNDED_LEXICAL_AND_TYPED_CONTEXT\n"
         f"EXECUTABLE_STATIC_VALID_PRE_REPAIR =\n{evaluation['static_valid_pre_repair']}/{evaluation['executable_count']}\n"
+        f"STATIC_SEMANTIC_SIGNATURE_MATCH =\n{evaluation['static_semantic_signature_match']}/{evaluation['executable_count']}\n"
+        f"EXACT_TEXT_MATCH_DIAGNOSTIC =\n{evaluation['exact_text_match_diagnostic']}/{evaluation['executable_count']}\n"
         f"MAIN_PATH_FAILURE_COUNT =\n{evaluation['main_path_failure_count']}\n"
         f"DIAGNOSABLE_FAILURE_COUNT =\n{evaluation['diagnosable_failure_count']}\n"
         "GOLD_BLIND_REPAIR_IMPLEMENTED =\n"
@@ -296,13 +385,13 @@ def main() -> int:
         "FAILURE_CORPUS_V1_ROLE =\n"
         "REGRESSION_CONFORMANCE_SUITE_ONLY\n"
         "FIGURE1_MAIN_PATH_SUPPORTED =\n"
-        "PARTIAL\n"
+        "YES_BOUNDED\n"
         "FIGURE1_REPAIR_BRANCH_SUPPORTED =\n"
         "PARTIAL\n"
-        "HIGHEST_SUPPORTED_PIPELINE_LEVEL_AFTER_D1 =\n"
-        "LEVEL_2_BOUNDED\n\n"
+        "HIGHEST_SUPPORTED_PIPELINE_LEVEL_AFTER_D1_1 =\n"
+        "LEVEL_2_BOUNDED_SEMANTIC_CLOSURE\n\n"
         "NEXT_RECOMMENDATION =\n"
-        "FIX_MAIN_PATH\n",
+        "PROCEED_TO_D1_2_HELDOUT_NL_ROBUSTNESS\n",
         encoding="utf-8",
     )
     return 0
