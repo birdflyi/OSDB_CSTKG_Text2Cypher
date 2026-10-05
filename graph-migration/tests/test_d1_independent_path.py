@@ -6,6 +6,7 @@ import yaml
 
 from repair.gold_blind_repair import repair_gold_blind
 from runners.independent_controlled_pipeline import (
+    audit_ir_constraint_coverage,
     generate_independent,
     load_independent_schema,
     load_independent_templates,
@@ -119,6 +120,76 @@ def test_explicit_limit_overrides_contract_default() -> None:
     result = _generate("Show top 10 external links mentioned by PR PR_156018#11659.")
     assert result.validation["valid"]
     assert result.rendered_cypher.endswith("LIMIT 10")
+
+
+def test_unconsumed_count_does_not_route_to_reference_object_template() -> None:
+    result = _generate("Count referenced objects for PR PR_156018#11659")
+    assert result.template_id is None
+    assert result.failure_stage == "template_selection_or_abstention"
+    coverage = result.validation["selection"]["candidate_ir_constraint_coverage"]["indv4_reference_object"]
+    assert coverage["aggregation"]["unconsumed"]
+    assert any("aggregation" in reason for reason in coverage["reasons"])
+
+
+def test_unconsumed_time_does_not_route_to_timeless_reference_template() -> None:
+    result = _generate("Find referenced objects for PR PR_156018#11659 in 2023")
+    assert result.template_id is None
+    assert result.failure_stage == "template_selection_or_abstention"
+    coverage = result.validation["selection"]["candidate_ir_constraint_coverage"]["indv4_reference_object"]
+    assert coverage["time"]["unconsumed"]
+    assert coverage["time"]["requested_start"] == "2023-01-01T00:00:00Z"
+    assert coverage["time"]["requested_end"] == "2024-01-01T00:00:00Z"
+
+
+def test_aggregation_and_time_rejection_retains_both_unconsumed_dimensions() -> None:
+    result = _generate("Count referenced objects for PR PR_156018#11659 in 2023")
+    assert result.template_id is None
+    coverage = result.validation["selection"]["candidate_ir_constraint_coverage"]["indv4_reference_object"]
+    assert coverage["aggregation"]["unconsumed"]
+    assert coverage["time"]["unconsumed"]
+
+
+def test_explicit_domain_projection_and_sort_are_consumed_by_compatible_contract() -> None:
+    result = _generate(
+        "Comprehensive: For repo R_156018 in 2023, find PRs linked to external resources, "
+        "group by domain, and return involved actors and latest interaction time."
+    )
+    coverage = result.validation["selection"]["ir_constraint_coverage"]
+    assert coverage["projection"]["consumed"] == ["url_domain_etld1"]
+    assert not coverage["projection"]["unconsumed"]
+    assert not coverage["sort"]["unconsumed"]
+
+
+def test_latest_aggregation_projection_is_not_misclassified_as_explicit_sort() -> None:
+    ir = parse_nl_to_ir(
+        "q",
+        "Comprehensive: For repo R_156018 in 2023, find PRs linked to external resources, "
+        "group by domain, and return involved actors and latest interaction time.",
+    )
+    assert not [item for item in ir.sort if item.get("provenance") == "explicit_sort_from_nl"]
+    assert any(item.get("provenance") == "aggregation_latest_projection" for item in ir.aggregation)
+
+
+def test_extra_explicit_target_class_cannot_be_dropped() -> None:
+    result = _generate("For actor A_7045099, find mentioned repos and referenced objects.")
+    assert result.template_id is None
+    assert result.validation["selection"]["reason"] == "unconsumed IR constraint"
+
+
+def test_explicit_projection_is_rejected_by_incompatible_template_contract() -> None:
+    templates = load_independent_templates(TEMPLATES)
+    ir = parse_nl_to_ir("q", "Show external links and their domains for PR PR_156018#11659.")
+    template = next(item for item in templates if item.template_id == "indv4_reference_object")
+    coverage = audit_ir_constraint_coverage(ir, template)
+    assert coverage["projection"]["unconsumed"]
+    assert not coverage["accepted"]
+
+
+def test_explicit_sort_is_rejected_by_timeless_template_contract() -> None:
+    result = _generate("Find referenced objects for PR PR_156018#11659 sorted by time.")
+    assert result.template_id is None
+    coverage = result.validation["selection"]["candidate_ir_constraint_coverage"]["indv4_reference_object"]
+    assert coverage["sort"]["unconsumed"]
 
 
 def test_contract_default_limits_are_family_specific() -> None:
