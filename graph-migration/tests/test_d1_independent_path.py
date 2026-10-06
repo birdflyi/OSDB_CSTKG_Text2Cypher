@@ -13,7 +13,13 @@ from runners.independent_controlled_pipeline import (
     parse_nl_to_ir,
     select_template,
 )
-from evaluation.semantic_signature import compare_semantic_signatures
+from evaluation.semantic_signature import (
+    _bounded_clause_model,
+    _clause_binding_provenance,
+    _expression_alias_references,
+    compare_semantic_signatures,
+    semantic_signature,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -586,6 +592,739 @@ def test_semantic_signature_canonicalizes_predicate_order_with_match_order() -> 
         "RETURN x.entity_id"
     )
     assert compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_canonicalizes_independent_optional_branch_units() -> None:
+    reference = (
+        "MATCH (s:Actor)-[rm:REFERENCE]->(a:Actor) "
+        "WHERE rm.service_rel_type = 'MENTIONS' "
+        "OPTIONAL MATCH (s)-[rr:REFERENCE]->(repo:Repo) "
+        "WHERE rr.service_rel_type = 'MENTIONS' "
+        "OPTIONAL MATCH (s)-[rl:REFERENCE]->(e:ExternalResource) "
+        "WHERE rl.service_rel_type = 'LINKS_TO' "
+        "RETURN repo.entity_id, e.entity_id"
+    )
+    reordered = (
+        "MATCH (source:Actor)-[main_rel:REFERENCE]->(actor:Actor) "
+        "WHERE main_rel.service_rel_type = 'MENTIONS' "
+        "OPTIONAL MATCH (source)-[external_rel:REFERENCE]->(external:ExternalResource) "
+        "WHERE external_rel.service_rel_type = 'LINKS_TO' "
+        "OPTIONAL MATCH (source)-[repo_rel:REFERENCE]->(repository:Repo) "
+        "WHERE repo_rel.service_rel_type = 'MENTIONS' "
+        "RETURN repository.entity_id, external.entity_id"
+    )
+    assert compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_preserves_optional_branch_predicate_ownership() -> None:
+    reference = (
+        "MATCH (s:Actor)-[rm:REFERENCE]->(a:Actor) "
+        "WHERE rm.service_rel_type = 'MENTIONS' "
+        "OPTIONAL MATCH (s)-[rr:REFERENCE]->(repo:Repo) "
+        "WHERE rr.service_rel_type = 'MENTIONS' "
+        "OPTIONAL MATCH (s)-[rl:REFERENCE]->(e:ExternalResource) "
+        "WHERE rl.service_rel_type = 'LINKS_TO' "
+        "RETURN repo.entity_id, e.entity_id"
+    )
+    swapped_predicates = reference.replace(
+        "rr.service_rel_type = 'MENTIONS'",
+        "rr.service_rel_type = 'LINKS_TO'",
+    ).replace(
+        "rl.service_rel_type = 'LINKS_TO'",
+        "rl.service_rel_type = 'MENTIONS'",
+    )
+    result = compare_semantic_signatures(swapped_predicates, reference)
+    assert not result["match"]
+    assert "predicate_boolean_structure" in result["differences"]
+
+
+def test_semantic_signature_preserves_dependent_optional_order() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(repo:Repo) "
+        "OPTIONAL MATCH (repo)-[rb:REFERENCE]->(e:ExternalResource) "
+        "RETURN e.entity_id"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (repo)-[rb:REFERENCE]->(e:ExternalResource) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(repo:Repo) "
+        "RETURN e.entity_id"
+    )
+    assert not compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_ignores_unused_optional_relationship_alias() -> None:
+    named = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[r:REFERENCE]->(repo:Repo) "
+        "RETURN repo.entity_id"
+    )
+    anonymous = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(repo:Repo) "
+        "RETURN repo.entity_id"
+    )
+    assert compare_semantic_signatures(named, anonymous)["match"]
+
+
+def test_semantic_signature_ignores_unused_optional_relationship_alias_rename() -> None:
+    first = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[r:REFERENCE]->(repo:Repo) "
+        "RETURN repo.entity_id"
+    )
+    renamed = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[link_rel:REFERENCE]->(repo:Repo) "
+        "RETURN repo.entity_id"
+    )
+    assert compare_semantic_signatures(renamed, first)["match"]
+
+
+def test_semantic_signature_keeps_own_optional_relationship_predicate_alias_invariant() -> None:
+    first = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[r:REFERENCE]->(repo:Repo) "
+        "WHERE r.service_rel_type = 'MENTIONS' RETURN repo.entity_id"
+    )
+    renamed = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[link_rel:REFERENCE]->(repo:Repo) "
+        "WHERE link_rel.service_rel_type = 'MENTIONS' RETURN repo.entity_id"
+    )
+    assert compare_semantic_signatures(renamed, first)["match"]
+
+
+def test_semantic_signature_does_not_erase_owned_predicate_with_anonymous_edge() -> None:
+    named = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[r:REFERENCE]->(repo:Repo) "
+        "WHERE r.service_rel_type = 'MENTIONS' RETURN repo.entity_id"
+    )
+    anonymous_without_predicate = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(repo:Repo) "
+        "RETURN repo.entity_id"
+    )
+    result = compare_semantic_signatures(named, anonymous_without_predicate)
+    assert not result["match"]
+    assert "predicate_boolean_structure" in result["differences"]
+
+
+def test_semantic_signature_preserves_real_optional_relationship_dependency() -> None:
+    first = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[r:REFERENCE]->(repo:Repo) "
+        "OPTIONAL MATCH (r)-[:REFERENCE]->(e:ExternalResource) "
+        "RETURN e.entity_id"
+    )
+    renamed = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[link_rel:REFERENCE]->(repo:Repo) "
+        "OPTIONAL MATCH (link_rel)-[:REFERENCE]->(e:ExternalResource) "
+        "RETURN e.entity_id"
+    )
+    anonymous_rewrite = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(repo:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(e:ExternalResource) "
+        "RETURN e.entity_id"
+    )
+    assert compare_semantic_signatures(renamed, first)["match"]
+    assert not compare_semantic_signatures(anonymous_rewrite, first)["match"]
+
+
+def test_semantic_signature_later_match_does_not_retroactively_bind_optional_alias() -> None:
+    optional_first = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "MATCH (a)-[:REFERENCE]->(x:ExternalResource) "
+        "RETURN a.entity_id, x.entity_id"
+    )
+    mandatory_first = (
+        "MATCH (s:Actor) "
+        "MATCH (a:Repo)-[:REFERENCE]->(x:ExternalResource) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a) "
+        "RETURN a.entity_id, x.entity_id"
+    )
+
+    result = compare_semantic_signatures(optional_first, mandatory_first)
+    assert not result["match"]
+    optional_branch = next(
+        item for item in result["generated"]["branch_topology"]
+        if item["branch_kind"] == "optional"
+    )
+    assert "node:REPO[0]" in optional_branch["introduced_roles"]
+    assert "downstream:node:REPO[0]" in optional_branch["dependency_roles"]
+    mandatory_first_branch = next(
+        item for item in result["reference"]["branch_topology"]
+        if item["branch_kind"] == "optional"
+    )
+    assert "node:REPO[0]" not in mandatory_first_branch["introduced_roles"]
+
+
+def test_semantic_signature_earlier_mandatory_binding_suppresses_optional_introduction() -> None:
+    query = (
+        "MATCH (a:Repo) MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a) "
+        "RETURN a.entity_id"
+    )
+    signature = semantic_signature(query)
+    optional_branch = next(
+        item for item in signature["branch_topology"]
+        if item["branch_kind"] == "optional"
+    )
+    assert "node:REPO[0]" not in optional_branch["introduced_roles"]
+
+
+def test_semantic_signature_unrelated_later_match_does_not_change_optional_provenance() -> None:
+    optional_before_unrelated = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "MATCH (x:ExternalResource) RETURN a.entity_id, x.entity_id"
+    )
+    unrelated_before_optional = (
+        "MATCH (x:ExternalResource) MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "RETURN a.entity_id, x.entity_id"
+    )
+
+    signature = semantic_signature(optional_before_unrelated)
+    optional_branch = next(
+        item for item in signature["branch_topology"]
+        if item["branch_kind"] == "optional"
+    )
+    assert "node:REPO[0]" in optional_branch["introduced_roles"]
+    assert not any(role.startswith("downstream:") for role in optional_branch["dependency_roles"])
+    assert compare_semantic_signatures(
+        optional_before_unrelated, unrelated_before_optional
+    )["match"]
+
+
+def test_semantic_signature_later_mandatory_where_consumes_optional_node_and_relationship_aliases() -> None:
+    query = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[r:REFERENCE]->(a:Repo) "
+        "MATCH (x:ExternalResource)-[rx:REFERENCE]->(e:Entity) "
+        "WHERE a.entity_id = x.entity_id AND r.source_event_time IS NOT NULL "
+        "RETURN a.entity_id, x.entity_id"
+    )
+    clauses = _bounded_clause_model(query)
+    provenance = _clause_binding_provenance(clauses)
+    optional_provenance = provenance["by_clause"][1]
+    assert optional_provenance["introduced_here"] == {"a", "r"}
+    assert provenance["first_binding"]["a"] == {
+        "clause_index": 1,
+        "clause_kind": "optional",
+    }
+    assert provenance["first_binding"]["r"] == {
+        "clause_index": 1,
+        "clause_kind": "optional",
+    }
+
+    signature = semantic_signature(query)
+    optional_branch = next(
+        item for item in signature["branch_topology"]
+        if item["branch_kind"] == "optional"
+    )
+    assert "downstream:node:REPO[0]" in optional_branch["dependency_roles"]
+    assert any(
+        role.startswith("downstream:rel:optional:")
+        for role in optional_branch["dependency_roles"]
+    )
+    mandatory_path_role = next(
+        path["role"] for path in signature["paths"] if path["branch_kind"] == "match"
+    )
+    mandatory_predicate = next(
+        item for item in signature["predicate_boolean_structure"]
+        if item["branch_kind"] == "match"
+    )
+    assert mandatory_predicate["owner"] == mandatory_path_role
+    assert "node:REPO[0].entity_id" in mandatory_predicate["structure"]
+    assert "source_event_time is not null" in mandatory_predicate["structure"]
+
+
+def test_semantic_signature_alias_rename_preserves_optional_first_binding() -> None:
+    original = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[r:REFERENCE]->(a:Repo) "
+        "MATCH (a)-[:REFERENCE]->(x:ExternalResource) "
+        "RETURN a.entity_id, x.entity_id"
+    )
+    renamed = (
+        "MATCH (source:Actor) "
+        "OPTIONAL MATCH (source)-[edge:REFERENCE]->(repository:Repo) "
+        "MATCH (repository)-[:REFERENCE]->(resource:ExternalResource) "
+        "RETURN repository.entity_id, resource.entity_id"
+    )
+    original_provenance = _clause_binding_provenance(_bounded_clause_model(original))
+    renamed_provenance = _clause_binding_provenance(_bounded_clause_model(renamed))
+    assert original_provenance["first_binding"]["a"]["clause_kind"] == "optional"
+    assert renamed_provenance["first_binding"]["repository"]["clause_kind"] == "optional"
+    assert (
+        original_provenance["first_binding"]["a"]["clause_index"]
+        == renamed_provenance["first_binding"]["repository"]["clause_index"]
+    )
+    assert compare_semantic_signatures(renamed, original)["match"]
+
+
+def test_semantic_signature_binds_consecutive_optional_where_to_immediate_clause() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "WHERE rb.service_rel_type = 'B' RETURN a.entity_id, b.entity_id"
+    )
+    moved_clause = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "WHERE rb.service_rel_type = 'B' RETURN a.entity_id, b.entity_id"
+    )
+    assert not compare_semantic_signatures(moved_clause, reference)["match"]
+
+
+def test_semantic_signature_keeps_immediate_optional_owner_when_where_references_earlier_branch() -> None:
+    query = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "WHERE ra.service_rel_type = 'A' RETURN a.entity_id, b.entity_id"
+    )
+    signature = semantic_signature(query)
+    predicates = signature["predicate_boolean_structure"]
+    assert len(predicates) == 2
+    assert predicates[0]["structure"] == ""
+    assert "node:REPO[0]" in predicates[1]["structure"]
+    assert predicates[1]["owner"].endswith("node:REPO[1][0]")
+
+
+def test_semantic_signature_terminal_return_relationship_use_does_not_order_optional_siblings() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "RETURN ra.source_event_time, rb.source_event_time"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "RETURN rb.source_event_time, ra.source_event_time"
+    )
+    assert compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_terminal_order_by_relationship_use_does_not_order_optional_siblings() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "RETURN a.entity_id, b.entity_id ORDER BY ra.source_event_time"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "RETURN b.entity_id, a.entity_id ORDER BY rb.source_event_time"
+    )
+    assert compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_preserves_later_optional_where_dependency_on_relationship_alias() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "WHERE ra.service_rel_type = 'A' RETURN a.entity_id, b.entity_id"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "WHERE rb.service_rel_type = 'A' RETURN a.entity_id, b.entity_id"
+    )
+    assert not compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_does_not_treat_property_key_as_optional_alias_reference() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(state:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "WHERE rb.state = 'OPEN' "
+        "RETURN state.entity_id, b.entity_id"
+    )
+    renamed = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "WHERE rb.state = 'OPEN' "
+        "RETURN a.entity_id, b.entity_id"
+    )
+    result = compare_semantic_signatures(renamed, reference)
+    assert result["match"]
+    assert all(not item["dependency_roles"] for item in result["reference"]["branch_topology"])
+
+
+def test_semantic_signature_preserves_node_alias_dependency_in_later_where() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "WHERE a.entity_id = b.entity_id "
+        "RETURN a.entity_id, b.entity_id"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "WHERE a.entity_id = b.entity_id "
+        "RETURN a.entity_id, b.entity_id"
+    )
+    result = compare_semantic_signatures(reordered, reference)
+    assert not result["match"]
+    assert any(item["dependency_roles"] for item in result["reference"]["branch_topology"])
+
+
+def test_semantic_signature_preserves_relationship_alias_dependency_in_later_where() -> None:
+    query = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "WHERE ra.service_rel_type = 'MENTIONS' "
+        "RETURN a.entity_id, b.entity_id"
+    )
+    signature = semantic_signature(query)
+    assert any(item["dependency_roles"] for item in signature["branch_topology"])
+    predicates = signature["predicate_boolean_structure"]
+    assert len(predicates) == 2
+    assert predicates[0]["structure"] == ""
+    assert "service_rel_type = 'MENTIONS'" in predicates[1]["structure"]
+
+
+def test_expression_alias_reference_classifier_uses_variable_positions() -> None:
+    aliases = {"state", "rb", "ra", "type", "count"}
+    assert _expression_alias_references("rb.state = 'OPEN'", aliases) == {"rb"}
+    assert _expression_alias_references("rb . state = 'OPEN'", aliases) == {"rb"}
+    assert _expression_alias_references("ra IS NULL", aliases) == {"ra"}
+    assert _expression_alias_references("ra IS NOT NULL", aliases) == {"ra"}
+    assert _expression_alias_references("type(ra)", aliases) == {"ra"}
+    assert _expression_alias_references("count(ra)", aliases) == {"ra"}
+    assert _expression_alias_references("{state: rb}", aliases) == {"rb"}
+    assert _expression_alias_references("note = 'state'", aliases) == set()
+    assert _expression_alias_references("$state = 'OPEN'", aliases) == set()
+    assert _expression_alias_references("estate = 'x'", {"state"}) == set()
+
+
+def test_semantic_signature_stabilizes_same_label_optional_sibling_identity() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) WHERE ra.service_rel_type = 'A' "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) WHERE rb.service_rel_type = 'B' "
+        "RETURN a.entity_id, b.entity_id"
+    )
+    reordered = (
+        "MATCH (source:Actor) "
+        "OPTIONAL MATCH (source)-[right_rel:REFERENCE]->(right:Repo) WHERE right_rel.service_rel_type = 'B' "
+        "OPTIONAL MATCH (source)-[left_rel:REFERENCE]->(left:Repo) WHERE left_rel.service_rel_type = 'A' "
+        "RETURN left.entity_id, right.entity_id"
+    )
+    assert compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_same_label_predicate_assignment_is_not_erased() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) WHERE ra.service_rel_type = 'A' "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) WHERE rb.service_rel_type = 'B' "
+        "RETURN a.entity_id, b.entity_id"
+    )
+    swapped_predicates = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) WHERE ra.service_rel_type = 'B' "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) WHERE rb.service_rel_type = 'A' "
+        "RETURN a.entity_id, b.entity_id"
+    )
+    assert not compare_semantic_signatures(swapped_predicates, reference)["match"]
+
+
+def test_semantic_signature_same_label_alias_rename_is_invariant() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) WHERE ra.service_rel_type = 'A' "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) WHERE rb.service_rel_type = 'B' "
+        "RETURN a.entity_id, b.entity_id"
+    )
+    renamed = (
+        "MATCH (source:Actor) "
+        "OPTIONAL MATCH (source)-[first_rel:REFERENCE]->(first:Repo) WHERE first_rel.service_rel_type = 'A' "
+        "OPTIONAL MATCH (source)-[second_rel:REFERENCE]->(second:Repo) WHERE second_rel.service_rel_type = 'B' "
+        "RETURN first.entity_id, second.entity_id"
+    )
+    assert compare_semantic_signatures(renamed, reference)["match"]
+
+
+def test_semantic_signature_preserves_identical_same_label_optional_multiplicity() -> None:
+    two_siblings = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) RETURN a.entity_id, b.entity_id"
+    )
+    one_sibling = "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) RETURN a.entity_id"
+    assert not compare_semantic_signatures(two_siblings, one_sibling)["match"]
+
+
+def test_semantic_signature_preserves_constraint_after_starts_with() -> None:
+    open_state = (
+        "MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH 'PR_156018#' "
+        "AND pr.state = 'OPEN' RETURN pr.entity_id"
+    )
+    closed_state = open_state.replace("'OPEN'", "'CLOSED'")
+    result = compare_semantic_signatures(closed_state, open_state)
+    assert not result["match"]
+    structure = result["reference"]["predicate_boolean_structure"][0]["structure"]
+    assert "starts with 'PR_156018#'" in structure
+    assert "state = 'OPEN'" in structure
+
+
+def test_semantic_signature_normalizes_starts_with_keyword_presentation() -> None:
+    spaced = (
+        "MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH 'PR_156018#' "
+        "AND pr.state = 'OPEN' RETURN pr.entity_id"
+    )
+    varied = (
+        "match (pr:PullRequest) where pr.entity_id starts    with 'PR_156018#' "
+        "and pr.state = 'OPEN' return pr.entity_id"
+    )
+    assert compare_semantic_signatures(varied, spaced)["match"]
+
+
+def test_semantic_signature_preserves_constraint_after_ends_with() -> None:
+    open_state = (
+        "MATCH (n:Entity) WHERE n.name ENDS WITH '.md' "
+        "AND n.state = 'OPEN' RETURN n.entity_id"
+    )
+    closed_state = open_state.replace("'OPEN'", "'CLOSED'")
+    result = compare_semantic_signatures(closed_state, open_state)
+    assert not result["match"]
+    structure = result["reference"]["predicate_boolean_structure"][0]["structure"]
+    assert "ends with '.md'" in structure
+    assert "state = 'OPEN'" in structure
+
+
+def test_semantic_signature_normalizes_ends_with_presentation_but_not_literals() -> None:
+    reference = (
+        "MATCH (n:Entity) WHERE n.name ENDS WITH '.md' "
+        "AND n.state = 'OPEN' RETURN n.entity_id"
+    )
+    varied = (
+        "match (n:Entity) where n.name ends   with '.md' "
+        "and n.state = 'OPEN' return n.entity_id"
+    )
+    changed_literal = reference.replace("'.md'", "'.txt'")
+    assert compare_semantic_signatures(varied, reference)["match"]
+    assert not compare_semantic_signatures(changed_literal, reference)["match"]
+
+
+def test_semantic_signature_standalone_with_still_terminates_clause() -> None:
+    query = (
+        "MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH 'PR_1' "
+        "AND pr.state = 'OPEN' WITH pr "
+        "MATCH (pr)-[:REFERENCE]->(repo:Repo) RETURN repo.entity_id"
+    )
+    signature = semantic_signature(query)
+    match_predicates = [
+        item for item in signature["predicate_boolean_structure"]
+        if item["branch_kind"] == "match"
+    ]
+    assert len(match_predicates) == 1
+    assert "state = 'OPEN'" in match_predicates[0]["structure"]
+    assert "with pr" not in match_predicates[0]["structure"]
+
+
+def test_semantic_signature_ends_with_then_standalone_with() -> None:
+    query = (
+        "MATCH (n:Entity) WHERE n.name ENDS WITH '.md' "
+        "AND n.state = 'OPEN' WITH n RETURN n.entity_id"
+    )
+    clauses = _bounded_clause_model(query)
+    assert len(clauses) == 1
+    assert clauses[0]["where_body"] == (
+        "n.name ENDS WITH '.md' AND n.state = 'OPEN'"
+    )
+    assert clauses[0]["end"] == query.index("WITH n")
+
+    signature = semantic_signature(query)
+    assert "state = 'OPEN'" in signature["predicate_boolean_structure"][0]["structure"]
+    assert "with n" not in signature["predicate_boolean_structure"][0]["structure"]
+
+
+def test_semantic_signature_ignores_clause_keyword_inside_literal() -> None:
+    open_state = (
+        "MATCH (pr:PullRequest) WHERE pr.note = 'STARTS WITH marker' "
+        "AND pr.state = 'OPEN' RETURN pr.entity_id"
+    )
+    closed_state = open_state.replace("'OPEN'", "'CLOSED'")
+    result = compare_semantic_signatures(closed_state, open_state)
+    assert not result["match"]
+    structure = result["reference"]["predicate_boolean_structure"][0]["structure"]
+    assert "note = 'STARTS WITH marker'" in structure
+    assert "state = 'OPEN'" in structure
+
+
+def test_semantic_signature_ignores_ends_with_inside_quoted_literal() -> None:
+    query = (
+        "MATCH (n:Entity) WHERE n.note = 'ENDS WITH .md' "
+        "AND n.state = 'OPEN' RETURN n.entity_id"
+    )
+    signature = semantic_signature(query)
+    structure = signature["predicate_boolean_structure"][0]["structure"]
+    assert "note = 'ENDS WITH .md'" in structure
+    assert "state = 'OPEN'" in structure
+
+
+def test_semantic_signature_does_not_create_match_clause_from_literal() -> None:
+    clauses = _bounded_clause_model(
+        "MATCH (pr:PullRequest) WHERE pr.note = 'MATCH (fake:Repo) OPTIONAL MATCH' "
+        "RETURN pr.entity_id"
+    )
+    assert len(clauses) == 1
+    assert clauses[0]["node_aliases"] == {"pr"}
+
+
+def test_semantic_signature_does_not_treat_where_word_in_property_literal_as_clause() -> None:
+    query = (
+        "MATCH (pr:PullRequest {note: 'WHERE marker'}) "
+        "WHERE pr.state = 'OPEN' RETURN pr.entity_id"
+    )
+    signature = semantic_signature(query)
+    assert len(signature["predicate_boolean_structure"]) == 1
+    assert "state = 'OPEN'" in signature["predicate_boolean_structure"][0]["structure"]
+
+
+def test_semantic_signature_terminal_projection_scanner_ignores_clause_words_in_literal() -> None:
+    query = (
+        "MATCH (pr:PullRequest) WHERE pr.note = 'WITH RETURN ORDER BY LIMIT MATCH' "
+        "RETURN pr.entity_id ORDER BY pr.entity_id LIMIT 20"
+    )
+    signature = semantic_signature(query)
+    assert signature["target_projection"] == ["node:PULLREQUEST[0].entity_id"]
+    assert signature["sort_keys"] == ["node:PULLREQUEST[0].entity_id"]
+    assert signature["limit"] == 20
+
+
+def test_semantic_signature_canonicalizes_tied_optional_siblings_by_terminal_usage() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) "
+        "RETURN a.entity_id, b.name"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "RETURN a.entity_id, b.name"
+    )
+    assert compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_canonicalizes_tied_same_predicate_optional_siblings() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) WHERE ra.service_rel_type = 'A' "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) WHERE rb.service_rel_type = 'A' "
+        "RETURN a.entity_id, b.name"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) WHERE rb.service_rel_type = 'A' "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) WHERE ra.service_rel_type = 'A' "
+        "RETURN a.entity_id, b.name"
+    )
+    assert compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_canonicalizes_alias_renamed_tied_optional_siblings() -> None:
+    reference = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) RETURN a.entity_id, b.name"
+    )
+    renamed = (
+        "MATCH (source:Actor) OPTIONAL MATCH (source)-[:REFERENCE]->(first_repo:Repo) "
+        "OPTIONAL MATCH (source)-[:REFERENCE]->(second_repo:Repo) "
+        "RETURN first_repo.entity_id, second_repo.name"
+    )
+    assert compare_semantic_signatures(renamed, reference)["match"]
+
+
+def test_semantic_signature_keeps_tied_optional_projection_semantics_sensitive() -> None:
+    first = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) RETURN a.entity_id, b.name"
+    )
+    changed_projection = first.replace(
+        "RETURN a.entity_id, b.name", "RETURN a.name, b.entity_id"
+    )
+    assert not compare_semantic_signatures(changed_projection, first)["match"]
+
+
+def test_semantic_signature_uses_order_by_to_identify_tied_branch_without_dependency() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "RETURN s.entity_id ORDER BY rb.source_event_time DESC"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "RETURN s.entity_id ORDER BY rb.source_event_time DESC"
+    )
+    result = compare_semantic_signatures(reordered, reference)
+    assert result["match"]
+    assert all(not item["dependency_roles"] for item in result["reference"]["branch_topology"])
+
+
+def test_semantic_signature_retains_order_by_property_sensitivity_for_tied_siblings() -> None:
+    first = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "RETURN s.entity_id ORDER BY rb.source_event_time DESC"
+    )
+    changed_sort = first.replace("rb.source_event_time", "rb.entity_id")
+    assert not compare_semantic_signatures(changed_sort, first)["match"]
+
+
+def test_semantic_signature_canonicalizes_unused_tied_siblings_independent_of_order() -> None:
+    reference = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) RETURN s.entity_id"
+    )
+    reordered = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) RETURN s.entity_id"
+    )
+    assert compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_strips_repeated_redundant_outer_parentheses() -> None:
+    atomic = "MATCH (r:REFERENCE) WHERE r.service_rel_type = 'REFERENCES' RETURN r.entity_id"
+    wrapped = "MATCH (r:REFERENCE) WHERE ((r.service_rel_type = 'REFERENCES')) RETURN r.entity_id"
+    assert compare_semantic_signatures(wrapped, atomic)["match"]
+
+
+def test_semantic_signature_strips_outer_parentheses_around_whole_or_only() -> None:
+    plain = "MATCH (r:REFERENCE) WHERE r.a = 'A' OR r.b = 'B' RETURN r.entity_id"
+    wrapped = "MATCH (r:REFERENCE) WHERE (r.a = 'A' OR r.b = 'B') RETURN r.entity_id"
+    assert compare_semantic_signatures(wrapped, plain)["match"]
+
+
+def test_semantic_signature_preserves_meaningful_boolean_grouping() -> None:
+    grouped = "MATCH (r:REFERENCE) WHERE r.a = 'A' AND (r.b = 'B' OR r.c = 'C') RETURN r.entity_id"
+    redistributed = "MATCH (r:REFERENCE) WHERE (r.a = 'A' AND r.b = 'B') OR r.c = 'C' RETURN r.entity_id"
+    assert not compare_semantic_signatures(redistributed, grouped)["match"]
+
+
+def test_semantic_signature_preserves_parentheses_in_literals_and_bounded_lists() -> None:
+    with_parentheses = (
+        "MATCH (r:REFERENCE) WHERE r.service_rel_type IN ['A(B)', 'C'] "
+        "RETURN count(r.entity_id)"
+    )
+    changed_literal = (
+        "MATCH (r:REFERENCE) WHERE r.service_rel_type IN ['AB', 'C'] "
+        "RETURN count(r.entity_id)"
+    )
+    assert not compare_semantic_signatures(with_parentheses, changed_literal)["match"]
 
 
 def test_semantic_signature_preserves_inline_property_key_case() -> None:
