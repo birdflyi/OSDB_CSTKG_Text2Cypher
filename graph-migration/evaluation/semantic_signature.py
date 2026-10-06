@@ -303,19 +303,60 @@ def _canonical_boolean_expression(
     return " and ".join(sorted(canonical_terms))
 
 
-def _aliases_in_text(value: str, aliases: set[str]) -> set[str]:
-    """Return bounded alias references outside quoted literals."""
+def _identifier_tokens_outside_literals(value: str) -> list[tuple[str, int, int]]:
+    """Tokenize bounded identifiers while preserving spelling and positions."""
+
+    tokens: list[tuple[str, int, int]] = []
+    index = 0
+    while index < len(value):
+        char = value[index]
+        if char == "'":
+            index += 1
+            while index < len(value):
+                if value[index] == "'":
+                    if index + 1 < len(value) and value[index + 1] == "'":
+                        index += 2
+                        continue
+                    index += 1
+                    break
+                index += 1
+            continue
+        if char.isalpha() or char == "_":
+            start = index
+            index += 1
+            while index < len(value) and (value[index].isalnum() or value[index] == "_"):
+                index += 1
+            tokens.append((value[start:index], start, index))
+            continue
+        index += 1
+    return tokens
+
+
+def _expression_alias_references(value: str, aliases: set[str]) -> set[str]:
+    """Find alias tokens in bounded expression positions, not key/name slots."""
 
     if not value or not aliases:
         return set()
-    segments = re.split(r"('(?:[^']|'')*')", value)
     found: set[str] = set()
-    for index, segment in enumerate(segments):
-        if index % 2:
+    for identifier, start, end in _identifier_tokens_outside_literals(value):
+        if identifier not in aliases:
             continue
-        for alias in aliases:
-            if re.search(rf"\b{re.escape(alias)}\b", segment):
-                found.add(alias)
+
+        previous = start - 1
+        while previous >= 0 and value[previous].isspace():
+            previous -= 1
+        following = end
+        while following < len(value) and value[following].isspace():
+            following += 1
+
+        # A token following a dot is a property key; a token before a colon is
+        # a map/property key; and a token before '(' occupies function-name
+        # position. Parameters are not variable aliases either.
+        if previous >= 0 and value[previous] in {".", "$"}:
+            continue
+        if following < len(value) and value[following] in {":", "("}:
+            continue
+        found.add(identifier)
     return found
 
 
@@ -443,7 +484,10 @@ def _optional_terminal_usage_key(
         body_end = following[1] if following else len(text)
         body = text[body_start:body_end].strip()
         for item_index, expression in enumerate(_split_top_level(body)):
-            if not (_aliases_in_text(expression, group_aliases) & (own_node_aliases | own_relationship_aliases)):
+            if not (
+                _expression_alias_references(expression, group_aliases)
+                & (own_node_aliases | own_relationship_aliases)
+            ):
                 continue
             normalized = _replace_usage_aliases(
                 expression,
@@ -592,7 +636,11 @@ def _stable_optional_units(
 
     # Build raw units before assigning occurrence-sensitive roles.
     units: list[dict[str, Any]] = []
-    known_aliases = set(node_records)
+    known_aliases = set(node_records) | {
+        str(record["alias"])
+        for record in relationship_records
+        if record.get("alias")
+    }
     for clause in optional_clauses:
         records = list(clause["relationship_records"])
         node_aliases = set(clause["node_aliases"])
@@ -616,6 +664,7 @@ def _stable_optional_units(
                 "introduced_aliases": set(),
             }
         )
+    optional_aliases = set().union(*(item["aliases_defined"] for item in units))
 
     # Immediate ownership and dependency aliases are based only on clause
     # pattern/WHERE content.  A WHERE referring to an earlier alias remains
@@ -623,10 +672,13 @@ def _stable_optional_units(
     prior_optional_aliases: set[str] = set()
     for unit in units:
         clause = unit["clause"]
-        used = _aliases_in_text(
-            str(clause.get("pattern", "")) + " " + str(unit.get("where_body", "")),
-            known_aliases | set().union(*(item["aliases_defined"] for item in units)),
+        pattern_aliases = set(clause.get("node_aliases", set())) | set(
+            clause.get("relationship_aliases", set())
         )
+        expression_aliases = _expression_alias_references(
+            str(unit.get("where_body", "")), known_aliases | optional_aliases
+        )
+        used = pattern_aliases | expression_aliases
         unit["dependency_aliases"] = used & prior_optional_aliases
         unit["introduced_aliases"] = (
             set(unit["aliases_defined"]) - mandatory_aliases - prior_optional_aliases
@@ -644,8 +696,13 @@ def _stable_optional_units(
         for later in clauses:
             if int(later["index"]) <= clause_index:
                 continue
-            later_text = str(later.get("pattern", "")) + " " + str(later.get("where_body", ""))
-            consumed = _aliases_in_text(later_text, introduced)
+            later_pattern_aliases = set(later.get("node_aliases", set())) | set(
+                later.get("relationship_aliases", set())
+            )
+            consumed = later_pattern_aliases & introduced
+            consumed.update(
+                _expression_alias_references(str(later.get("where_body", "")), introduced)
+            )
             if consumed:
                 unit["downstream_aliases"].update(consumed)
 
@@ -862,32 +919,26 @@ def _optional_branch_units(
 
     seen_node_aliases: set[str] = set(initially_bound_aliases or set())
     prior_optional_introduced_nodes: set[str] = set()
-
-    def alias_used_outside_literals(value: str, alias: str) -> bool:
-        segments = re.split(r"('(?:[^']|'')*')", value)
-        return any(
-            index % 2 == 0
-            and re.search(rf"\b{re.escape(alias)}\b", segment)
-            for index, segment in enumerate(segments)
-        )
+    bounded_clauses = _bounded_clause_model(cypher)
 
     def downstream_relationship_dependency(record: dict[str, Any]) -> bool:
         alias = str(record.get("alias") or "")
         if not alias:
             return False
-        clause_match = re.search(
-            r"\b(?:OPTIONAL\s+MATCH|MATCH|RETURN|WITH|UNWIND|ORDER\s+BY|LIMIT)\b",
-            cypher[int(record.get("match_end", record["match_start"])) :],
-            flags=re.IGNORECASE,
-        )
-        if clause_match is None:
-            return False
-        later_start = int(record.get("match_end", record["match_start"])) + clause_match.start()
-        suffix = cypher[later_start:]
-        # The current bounded grammar has no relationship-variable flow
-        # contract. Keep a conservative marker if a later clause actually
-        # consumes the alias, while ignoring its own attached WHERE body.
-        return later_start < len(cypher) and alias_used_outside_literals(suffix, alias)
+        clause_index = int(record.get("clause_index", -1))
+        for later in bounded_clauses:
+            if int(later["index"]) <= clause_index:
+                continue
+            pattern_aliases = set(later.get("node_aliases", set())) | set(
+                later.get("relationship_aliases", set())
+            )
+            if alias in pattern_aliases:
+                return True
+            if alias in _expression_alias_references(
+                str(later.get("where_body", "")), {alias}
+            ):
+                return True
+        return False
 
     for record in relationship_records:
         node_aliases = {
@@ -1261,7 +1312,7 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         referenced_relationships = sorted(
             relationship_roles[alias]
             for alias in relationship_roles
-            if alias in _aliases_in_text(body, set(relationship_roles))
+            if alias in _expression_alias_references(body, set(relationship_roles))
         )
         owner_roles = referenced_relationships or sorted(record["role"] for record in records)
         if not owner_roles:

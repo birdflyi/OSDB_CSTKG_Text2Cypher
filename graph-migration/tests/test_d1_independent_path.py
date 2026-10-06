@@ -15,6 +15,7 @@ from runners.independent_controlled_pipeline import (
 )
 from evaluation.semantic_signature import (
     _bounded_clause_model,
+    _expression_alias_references,
     compare_semantic_signatures,
     semantic_signature,
 )
@@ -799,6 +800,76 @@ def test_semantic_signature_preserves_later_optional_where_dependency_on_relatio
         "WHERE rb.service_rel_type = 'A' RETURN a.entity_id, b.entity_id"
     )
     assert not compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_does_not_treat_property_key_as_optional_alias_reference() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(state:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "WHERE rb.state = 'OPEN' "
+        "RETURN state.entity_id, b.entity_id"
+    )
+    renamed = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "WHERE rb.state = 'OPEN' "
+        "RETURN a.entity_id, b.entity_id"
+    )
+    result = compare_semantic_signatures(renamed, reference)
+    assert result["match"]
+    assert all(not item["dependency_roles"] for item in result["reference"]["branch_topology"])
+
+
+def test_semantic_signature_preserves_node_alias_dependency_in_later_where() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "WHERE a.entity_id = b.entity_id "
+        "RETURN a.entity_id, b.entity_id"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "WHERE a.entity_id = b.entity_id "
+        "RETURN a.entity_id, b.entity_id"
+    )
+    result = compare_semantic_signatures(reordered, reference)
+    assert not result["match"]
+    assert any(item["dependency_roles"] for item in result["reference"]["branch_topology"])
+
+
+def test_semantic_signature_preserves_relationship_alias_dependency_in_later_where() -> None:
+    query = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "WHERE ra.service_rel_type = 'MENTIONS' "
+        "RETURN a.entity_id, b.entity_id"
+    )
+    signature = semantic_signature(query)
+    assert any(item["dependency_roles"] for item in signature["branch_topology"])
+    predicates = signature["predicate_boolean_structure"]
+    assert len(predicates) == 2
+    assert predicates[0]["structure"] == ""
+    assert "service_rel_type = 'MENTIONS'" in predicates[1]["structure"]
+
+
+def test_expression_alias_reference_classifier_uses_variable_positions() -> None:
+    aliases = {"state", "rb", "ra", "type", "count"}
+    assert _expression_alias_references("rb.state = 'OPEN'", aliases) == {"rb"}
+    assert _expression_alias_references("rb . state = 'OPEN'", aliases) == {"rb"}
+    assert _expression_alias_references("ra IS NULL", aliases) == {"ra"}
+    assert _expression_alias_references("ra IS NOT NULL", aliases) == {"ra"}
+    assert _expression_alias_references("type(ra)", aliases) == {"ra"}
+    assert _expression_alias_references("count(ra)", aliases) == {"ra"}
+    assert _expression_alias_references("{state: rb}", aliases) == {"rb"}
+    assert _expression_alias_references("note = 'state'", aliases) == set()
+    assert _expression_alias_references("$state = 'OPEN'", aliases) == set()
+    assert _expression_alias_references("estate = 'x'", {"state"}) == set()
 
 
 def test_semantic_signature_stabilizes_same_label_optional_sibling_identity() -> None:
