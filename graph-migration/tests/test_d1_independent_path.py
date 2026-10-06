@@ -883,6 +883,33 @@ def test_semantic_signature_normalizes_starts_with_keyword_presentation() -> Non
     assert compare_semantic_signatures(varied, spaced)["match"]
 
 
+def test_semantic_signature_preserves_constraint_after_ends_with() -> None:
+    open_state = (
+        "MATCH (n:Entity) WHERE n.name ENDS WITH '.md' "
+        "AND n.state = 'OPEN' RETURN n.entity_id"
+    )
+    closed_state = open_state.replace("'OPEN'", "'CLOSED'")
+    result = compare_semantic_signatures(closed_state, open_state)
+    assert not result["match"]
+    structure = result["reference"]["predicate_boolean_structure"][0]["structure"]
+    assert "ends with '.md'" in structure
+    assert "state = 'OPEN'" in structure
+
+
+def test_semantic_signature_normalizes_ends_with_presentation_but_not_literals() -> None:
+    reference = (
+        "MATCH (n:Entity) WHERE n.name ENDS WITH '.md' "
+        "AND n.state = 'OPEN' RETURN n.entity_id"
+    )
+    varied = (
+        "match (n:Entity) where n.name ends   with '.md' "
+        "and n.state = 'OPEN' return n.entity_id"
+    )
+    changed_literal = reference.replace("'.md'", "'.txt'")
+    assert compare_semantic_signatures(varied, reference)["match"]
+    assert not compare_semantic_signatures(changed_literal, reference)["match"]
+
+
 def test_semantic_signature_standalone_with_still_terminates_clause() -> None:
     query = (
         "MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH 'PR_1' "
@@ -899,6 +926,23 @@ def test_semantic_signature_standalone_with_still_terminates_clause() -> None:
     assert "with pr" not in match_predicates[0]["structure"]
 
 
+def test_semantic_signature_ends_with_then_standalone_with() -> None:
+    query = (
+        "MATCH (n:Entity) WHERE n.name ENDS WITH '.md' "
+        "AND n.state = 'OPEN' WITH n RETURN n.entity_id"
+    )
+    clauses = _bounded_clause_model(query)
+    assert len(clauses) == 1
+    assert clauses[0]["where_body"] == (
+        "n.name ENDS WITH '.md' AND n.state = 'OPEN'"
+    )
+    assert clauses[0]["end"] == query.index("WITH n")
+
+    signature = semantic_signature(query)
+    assert "state = 'OPEN'" in signature["predicate_boolean_structure"][0]["structure"]
+    assert "with n" not in signature["predicate_boolean_structure"][0]["structure"]
+
+
 def test_semantic_signature_ignores_clause_keyword_inside_literal() -> None:
     open_state = (
         "MATCH (pr:PullRequest) WHERE pr.note = 'STARTS WITH marker' "
@@ -909,6 +953,17 @@ def test_semantic_signature_ignores_clause_keyword_inside_literal() -> None:
     assert not result["match"]
     structure = result["reference"]["predicate_boolean_structure"][0]["structure"]
     assert "note = 'STARTS WITH marker'" in structure
+    assert "state = 'OPEN'" in structure
+
+
+def test_semantic_signature_ignores_ends_with_inside_quoted_literal() -> None:
+    query = (
+        "MATCH (n:Entity) WHERE n.note = 'ENDS WITH .md' "
+        "AND n.state = 'OPEN' RETURN n.entity_id"
+    )
+    signature = semantic_signature(query)
+    structure = signature["predicate_boolean_structure"][0]["structure"]
+    assert "note = 'ENDS WITH .md'" in structure
     assert "state = 'OPEN'" in structure
 
 

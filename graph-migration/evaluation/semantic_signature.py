@@ -45,9 +45,10 @@ TIME_PATTERN = re.compile(
 )
 AGGREGATION_PATTERN = re.compile(r"\b(count|max|min|collect|sum|avg)\s*\(", re.IGNORECASE)
 KNOWN_EXPRESSION_TOKENS = re.compile(
-    r"\b(COUNT|MAX|MIN|COLLECT|SUM|AVG|DISTINCT|AS|ASC|DESC|AND|OR|NOT|IN|STARTS|WITH|IS|NULL)\b",
+    r"\b(COUNT|MAX|MIN|COLLECT|SUM|AVG|DISTINCT|AS|ASC|DESC|AND|OR|NOT|IN|STARTS|ENDS|WITH|IS|NULL)\b",
     re.IGNORECASE,
 )
+NON_CLAUSE_WITH_PREFIXES = {"STARTS", "ENDS"}
 
 
 def _split_top_level(text: str) -> list[str]:
@@ -352,9 +353,9 @@ def _terminal_clause_tokens(
 ) -> list[tuple[str, int, int]]:
     """Find supported terminal/query-clause keywords outside literals.
 
-    The bounded scanner distinguishes the `WITH` in `STARTS WITH` from a
-    standalone Cypher WITH clause. It intentionally recognizes only the
-    keyword surface needed by this evaluator.
+    The bounded scanner distinguishes the `WITH` in supported `STARTS WITH`
+    and `ENDS WITH` string operators from a standalone Cypher WITH clause. It
+    intentionally recognizes only the keyword surface needed by this evaluator.
     """
 
     limit = len(value) if end is None else min(end, len(value))
@@ -364,7 +365,7 @@ def _terminal_clause_tokens(
         if word in {"RETURN", "UNWIND", "LIMIT"}:
             clauses.append((word, token_start, token_end))
         elif word == "WITH":
-            if index and tokens[index - 1][0] == "STARTS":
+            if index and tokens[index - 1][0] in NON_CLAUSE_WITH_PREFIXES:
                 continue
             clauses.append(("WITH", token_start, token_end))
         elif word == "ORDER" and index + 1 < len(tokens) and tokens[index + 1][0] == "BY":
