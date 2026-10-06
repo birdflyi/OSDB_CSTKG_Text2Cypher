@@ -13,7 +13,11 @@ from runners.independent_controlled_pipeline import (
     parse_nl_to_ir,
     select_template,
 )
-from evaluation.semantic_signature import compare_semantic_signatures, semantic_signature
+from evaluation.semantic_signature import (
+    _bounded_clause_model,
+    compare_semantic_signatures,
+    semantic_signature,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -852,6 +856,186 @@ def test_semantic_signature_preserves_identical_same_label_optional_multiplicity
     )
     one_sibling = "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) RETURN a.entity_id"
     assert not compare_semantic_signatures(two_siblings, one_sibling)["match"]
+
+
+def test_semantic_signature_preserves_constraint_after_starts_with() -> None:
+    open_state = (
+        "MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH 'PR_156018#' "
+        "AND pr.state = 'OPEN' RETURN pr.entity_id"
+    )
+    closed_state = open_state.replace("'OPEN'", "'CLOSED'")
+    result = compare_semantic_signatures(closed_state, open_state)
+    assert not result["match"]
+    structure = result["reference"]["predicate_boolean_structure"][0]["structure"]
+    assert "starts with 'PR_156018#'" in structure
+    assert "state = 'OPEN'" in structure
+
+
+def test_semantic_signature_normalizes_starts_with_keyword_presentation() -> None:
+    spaced = (
+        "MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH 'PR_156018#' "
+        "AND pr.state = 'OPEN' RETURN pr.entity_id"
+    )
+    varied = (
+        "match (pr:PullRequest) where pr.entity_id starts    with 'PR_156018#' "
+        "and pr.state = 'OPEN' return pr.entity_id"
+    )
+    assert compare_semantic_signatures(varied, spaced)["match"]
+
+
+def test_semantic_signature_standalone_with_still_terminates_clause() -> None:
+    query = (
+        "MATCH (pr:PullRequest) WHERE pr.entity_id STARTS WITH 'PR_1' "
+        "AND pr.state = 'OPEN' WITH pr "
+        "MATCH (pr)-[:REFERENCE]->(repo:Repo) RETURN repo.entity_id"
+    )
+    signature = semantic_signature(query)
+    match_predicates = [
+        item for item in signature["predicate_boolean_structure"]
+        if item["branch_kind"] == "match"
+    ]
+    assert len(match_predicates) == 1
+    assert "state = 'OPEN'" in match_predicates[0]["structure"]
+    assert "with pr" not in match_predicates[0]["structure"]
+
+
+def test_semantic_signature_ignores_clause_keyword_inside_literal() -> None:
+    open_state = (
+        "MATCH (pr:PullRequest) WHERE pr.note = 'STARTS WITH marker' "
+        "AND pr.state = 'OPEN' RETURN pr.entity_id"
+    )
+    closed_state = open_state.replace("'OPEN'", "'CLOSED'")
+    result = compare_semantic_signatures(closed_state, open_state)
+    assert not result["match"]
+    structure = result["reference"]["predicate_boolean_structure"][0]["structure"]
+    assert "note = 'STARTS WITH marker'" in structure
+    assert "state = 'OPEN'" in structure
+
+
+def test_semantic_signature_does_not_create_match_clause_from_literal() -> None:
+    clauses = _bounded_clause_model(
+        "MATCH (pr:PullRequest) WHERE pr.note = 'MATCH (fake:Repo) OPTIONAL MATCH' "
+        "RETURN pr.entity_id"
+    )
+    assert len(clauses) == 1
+    assert clauses[0]["node_aliases"] == {"pr"}
+
+
+def test_semantic_signature_does_not_treat_where_word_in_property_literal_as_clause() -> None:
+    query = (
+        "MATCH (pr:PullRequest {note: 'WHERE marker'}) "
+        "WHERE pr.state = 'OPEN' RETURN pr.entity_id"
+    )
+    signature = semantic_signature(query)
+    assert len(signature["predicate_boolean_structure"]) == 1
+    assert "state = 'OPEN'" in signature["predicate_boolean_structure"][0]["structure"]
+
+
+def test_semantic_signature_terminal_projection_scanner_ignores_clause_words_in_literal() -> None:
+    query = (
+        "MATCH (pr:PullRequest) WHERE pr.note = 'WITH RETURN ORDER BY LIMIT MATCH' "
+        "RETURN pr.entity_id ORDER BY pr.entity_id LIMIT 20"
+    )
+    signature = semantic_signature(query)
+    assert signature["target_projection"] == ["node:PULLREQUEST[0].entity_id"]
+    assert signature["sort_keys"] == ["node:PULLREQUEST[0].entity_id"]
+    assert signature["limit"] == 20
+
+
+def test_semantic_signature_canonicalizes_tied_optional_siblings_by_terminal_usage() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) "
+        "RETURN a.entity_id, b.name"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "RETURN a.entity_id, b.name"
+    )
+    assert compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_canonicalizes_tied_same_predicate_optional_siblings() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) WHERE ra.service_rel_type = 'A' "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) WHERE rb.service_rel_type = 'A' "
+        "RETURN a.entity_id, b.name"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) WHERE rb.service_rel_type = 'A' "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) WHERE ra.service_rel_type = 'A' "
+        "RETURN a.entity_id, b.name"
+    )
+    assert compare_semantic_signatures(reordered, reference)["match"]
+
+
+def test_semantic_signature_canonicalizes_alias_renamed_tied_optional_siblings() -> None:
+    reference = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) RETURN a.entity_id, b.name"
+    )
+    renamed = (
+        "MATCH (source:Actor) OPTIONAL MATCH (source)-[:REFERENCE]->(first_repo:Repo) "
+        "OPTIONAL MATCH (source)-[:REFERENCE]->(second_repo:Repo) "
+        "RETURN first_repo.entity_id, second_repo.name"
+    )
+    assert compare_semantic_signatures(renamed, reference)["match"]
+
+
+def test_semantic_signature_keeps_tied_optional_projection_semantics_sensitive() -> None:
+    first = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) RETURN a.entity_id, b.name"
+    )
+    changed_projection = first.replace(
+        "RETURN a.entity_id, b.name", "RETURN a.name, b.entity_id"
+    )
+    assert not compare_semantic_signatures(changed_projection, first)["match"]
+
+
+def test_semantic_signature_uses_order_by_to_identify_tied_branch_without_dependency() -> None:
+    reference = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "RETURN s.entity_id ORDER BY rb.source_event_time DESC"
+    )
+    reordered = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "RETURN s.entity_id ORDER BY rb.source_event_time DESC"
+    )
+    result = compare_semantic_signatures(reordered, reference)
+    assert result["match"]
+    assert all(not item["dependency_roles"] for item in result["reference"]["branch_topology"])
+
+
+def test_semantic_signature_retains_order_by_property_sensitivity_for_tied_siblings() -> None:
+    first = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[ra:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[rb:REFERENCE]->(b:Repo) "
+        "RETURN s.entity_id ORDER BY rb.source_event_time DESC"
+    )
+    changed_sort = first.replace("rb.source_event_time", "rb.entity_id")
+    assert not compare_semantic_signatures(changed_sort, first)["match"]
+
+
+def test_semantic_signature_canonicalizes_unused_tied_siblings_independent_of_order() -> None:
+    reference = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) RETURN s.entity_id"
+    )
+    reordered = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(b:Repo) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) RETURN s.entity_id"
+    )
+    assert compare_semantic_signatures(reordered, reference)["match"]
 
 
 def test_semantic_signature_strips_repeated_redundant_outer_parentheses() -> None:

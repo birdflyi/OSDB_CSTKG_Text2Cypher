@@ -43,7 +43,6 @@ TIME_PATTERN = re.compile(
     r"(?P<operator>>=|<=|>|<)\s*'(?P<value>[^']+)'",
     re.IGNORECASE,
 )
-LIMIT_PATTERN = re.compile(r"\bLIMIT\s+(\d+)\b", re.IGNORECASE)
 AGGREGATION_PATTERN = re.compile(r"\b(count|max|min|collect|sum|avg)\s*\(", re.IGNORECASE)
 KNOWN_EXPRESSION_TOKENS = re.compile(
     r"\b(COUNT|MAX|MIN|COLLECT|SUM|AVG|DISTINCT|AS|ASC|DESC|AND|OR|NOT|IN|STARTS|WITH|IS|NULL)\b",
@@ -319,6 +318,143 @@ def _aliases_in_text(value: str, aliases: set[str]) -> set[str]:
     return found
 
 
+def _cypher_keyword_tokens(value: str) -> list[tuple[str, int, int]]:
+    """Tokenize bounded keywords while ignoring single-quoted literals."""
+
+    tokens: list[tuple[str, int, int]] = []
+    index = 0
+    while index < len(value):
+        char = value[index]
+        if char == "'":
+            index += 1
+            while index < len(value):
+                if value[index] == "'":
+                    if index + 1 < len(value) and value[index + 1] == "'":
+                        index += 2
+                        continue
+                    index += 1
+                    break
+                index += 1
+            continue
+        if char.isalpha() or char == "_":
+            start = index
+            index += 1
+            while index < len(value) and (value[index].isalnum() or value[index] == "_"):
+                index += 1
+            tokens.append((value[start:index].upper(), start, index))
+            continue
+        index += 1
+    return tokens
+
+
+def _terminal_clause_tokens(
+    value: str, start: int = 0, end: int | None = None
+) -> list[tuple[str, int, int]]:
+    """Find supported terminal/query-clause keywords outside literals.
+
+    The bounded scanner distinguishes the `WITH` in `STARTS WITH` from a
+    standalone Cypher WITH clause. It intentionally recognizes only the
+    keyword surface needed by this evaluator.
+    """
+
+    limit = len(value) if end is None else min(end, len(value))
+    tokens = [token for token in _cypher_keyword_tokens(value) if start <= token[1] < limit]
+    clauses: list[tuple[str, int, int]] = []
+    for index, (word, token_start, token_end) in enumerate(tokens):
+        if word in {"RETURN", "UNWIND", "LIMIT"}:
+            clauses.append((word, token_start, token_end))
+        elif word == "WITH":
+            if index and tokens[index - 1][0] == "STARTS":
+                continue
+            clauses.append(("WITH", token_start, token_end))
+        elif word == "ORDER" and index + 1 < len(tokens) and tokens[index + 1][0] == "BY":
+            clauses.append(("ORDER BY", token_start, tokens[index + 1][2]))
+    return clauses
+
+
+def _replace_usage_aliases(
+    expression: str,
+    node_aliases: set[str],
+    relationship_aliases: set[str],
+    own_node_aliases: set[str],
+    own_relationship_aliases: set[str],
+) -> str:
+    """Normalize aliases in a terminal expression to SELF/OTHER markers."""
+
+    aliases = sorted(node_aliases | relationship_aliases, key=len, reverse=True)
+    segments: list[str] = []
+    start = 0
+    for match in re.finditer(r"'(?:[^']|'')*'", expression):
+        segments.append(expression[start:match.start()])
+        segments.append(match.group(0))
+        start = match.end()
+    segments.append(expression[start:])
+    for index in range(0, len(segments), 2):
+        segment = segments[index]
+        for alias in aliases:
+            if alias in node_aliases:
+                marker = "SELF_NODE" if alias in own_node_aliases else "OTHER_NODE"
+            else:
+                marker = "SELF_REL" if alias in own_relationship_aliases else "OTHER_REL"
+            segment = re.sub(
+                rf"\b{re.escape(alias)}\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)",
+                lambda match, role=marker: f"{role}.{match.group(1)}",
+                segment,
+            )
+            segment = re.sub(
+                rf"(?<![A-Za-z0-9_.]){re.escape(alias)}(?![A-Za-z0-9_])",
+                marker,
+                segment,
+            )
+        segments[index] = segment
+    return _normalize_expression_surface("".join(segments))
+
+
+def _optional_terminal_usage_key(
+    text: str,
+    unit: dict[str, Any],
+    tied_group: list[dict[str, Any]],
+) -> tuple[tuple[str, int, str], ...]:
+    """Describe a tied branch's alias-normalized terminal uses, not dependencies."""
+
+    group_node_aliases = set().union(
+        *(set(item["introduced_aliases"]) & set(item["node_aliases"]) for item in tied_group)
+    )
+    group_relationship_aliases = set().union(
+        *(set(item["introduced_aliases"]) & set(item["relationship_aliases"]) for item in tied_group)
+    )
+    own_node_aliases = set(unit["introduced_aliases"]) & set(unit["node_aliases"])
+    own_relationship_aliases = set(unit["introduced_aliases"]) & set(unit["relationship_aliases"])
+    group_aliases = group_node_aliases | group_relationship_aliases
+    if not group_aliases:
+        return ()
+
+    terminals = _terminal_clause_tokens(text)
+    usage: list[tuple[str, int, str]] = []
+    for terminal_index, (kind, clause_start, clause_end) in enumerate(terminals):
+        if kind not in {"RETURN", "ORDER BY"}:
+            continue
+        body_start = clause_end
+        following = next(
+            (item for item in terminals[terminal_index + 1:] if item[1] >= body_start),
+            None,
+        )
+        body_end = following[1] if following else len(text)
+        body = text[body_start:body_end].strip()
+        for item_index, expression in enumerate(_split_top_level(body)):
+            if not (_aliases_in_text(expression, group_aliases) & (own_node_aliases | own_relationship_aliases)):
+                continue
+            normalized = _replace_usage_aliases(
+                expression,
+                group_node_aliases,
+                group_relationship_aliases,
+                own_node_aliases,
+                own_relationship_aliases,
+            )
+            usage.append((kind, item_index, normalized))
+    return tuple(usage)
+
+
 def _bounded_clause_model(text: str) -> list[dict[str, Any]]:
     """Parse the small MATCH/OPTIONAL MATCH clause surface used by D1.2a.
 
@@ -328,43 +464,53 @@ def _bounded_clause_model(text: str) -> list[dict[str, Any]]:
     WHERE may reference an alias introduced by an earlier branch.
     """
 
-    clause_matches = list(
-        re.finditer(r"\b(?:OPTIONAL\s+)?MATCH\b", text, flags=re.IGNORECASE)
-    )
-    terminal_pattern = re.compile(
-        r"\b(?:RETURN|WITH|UNWIND|ORDER\s+BY|LIMIT)\b", flags=re.IGNORECASE
-    )
+    keyword_tokens = _cypher_keyword_tokens(text)
+    clause_matches: list[tuple[str, int, int]] = []
+    for index, (word, token_start, token_end) in enumerate(keyword_tokens):
+        if word != "MATCH":
+            continue
+        if (
+            index
+            and keyword_tokens[index - 1][0] == "OPTIONAL"
+            and text[keyword_tokens[index - 1][2]:token_start].isspace()
+        ):
+            clause_matches.append(("optional", keyword_tokens[index - 1][1], token_end))
+        else:
+            clause_matches.append(("match", token_start, token_end))
     clauses: list[dict[str, Any]] = []
-    for index, match in enumerate(clause_matches):
+    for index, (kind, clause_start, clause_keyword_end) in enumerate(clause_matches):
         next_clause = (
-            clause_matches[index + 1].start()
+            clause_matches[index + 1][1]
             if index + 1 < len(clause_matches)
             else len(text)
         )
-        terminal = terminal_pattern.search(text, match.end(), next_clause)
-        clause_end = terminal.start() if terminal else next_clause
-        where_match = re.compile(
-            r"\bWHERE\b(?P<body>.*)", flags=re.IGNORECASE | re.DOTALL
-        ).search(text, match.end(), clause_end)
-        pattern_end = where_match.start() if where_match else clause_end
-        pattern = text[match.end():pattern_end].strip()
-        where_body = where_match.group("body").strip() if where_match else ""
+        terminals = _terminal_clause_tokens(text, clause_keyword_end, next_clause)
+        terminal = terminals[0] if terminals else None
+        clause_end = terminal[1] if terminal else next_clause
+        where_token = next(
+            (
+                token
+                for token in _cypher_keyword_tokens(text)
+                if token[0] == "WHERE"
+                and clause_keyword_end <= token[1] < clause_end
+            ),
+            None,
+        )
+        pattern_end = where_token[1] if where_token else clause_end
+        pattern = text[clause_keyword_end:pattern_end].strip()
+        where_body = text[where_token[2]:clause_end].strip() if where_token else ""
         clauses.append(
             {
                 "index": index,
-                "kind": (
-                    "optional"
-                    if match.group(0).upper().startswith("OPTIONAL")
-                    else "match"
-                ),
-                "start": match.start(),
+                "kind": kind,
+                "start": clause_start,
                 "end": clause_end,
-                "pattern_start": match.end(),
+                "pattern_start": clause_keyword_end,
                 "pattern_end": pattern_end,
                 "pattern": pattern,
-                "where_start": where_match.start() if where_match else None,
+                "where_start": where_token[1] if where_token else None,
                 "where_body": where_body,
-                "where_end": where_match.end() if where_match else None,
+                "where_end": clause_end if where_token else None,
                 "node_aliases": {
                     item.group("alias") for item in NODE_PATTERN.finditer(pattern)
                 },
@@ -521,11 +667,29 @@ def _stable_optional_units(
         )
         unit["stable_key"] = (path_key, str(unit["predicate_key"]))
 
+    tied_groups: defaultdict[tuple[Any, ...], list[dict[str, Any]]] = defaultdict(list)
+    for unit in units:
+        tied_groups[unit["stable_key"]].append(unit)
+    for tied_group in tied_groups.values():
+        for unit in tied_group:
+            unit["usage_key"] = _optional_terminal_usage_key(text, unit, tied_group)
+
     all_independent = all(
         not unit["dependency_aliases"] and not unit["downstream_aliases"]
         for unit in units
     )
-    ordered_units = sorted(units, key=lambda unit: unit["stable_key"]) if all_independent else units
+    if all_independent:
+        # Usage distinguishes otherwise tied branches when their terminal
+        # projection/sort roles are observably different. Exact key ties form
+        # an equivalence multiset: their aliases have identical terminal usage
+        # (or no terminal usage), so assigning the group-local multiplicity
+        # ordinals in either internal traversal order cannot change the final
+        # signature. Clause order is never used as a semantic tie-breaker.
+        ordered_units = sorted(
+            units, key=lambda unit: (unit["stable_key"], unit["usage_key"])
+        )
+    else:
+        ordered_units = units
 
     # Assign mandatory roles first, then optional siblings in canonical order.
     node_roles = dict(mandatory_node_roles)
@@ -811,16 +975,19 @@ def _return_projection_context(
     node_roles: dict[str, str],
     relationship_roles: dict[str, str],
 ) -> tuple[list[str], dict[str, str]]:
-    match = re.search(
-        r"\bRETURN\b(?P<body>.*?)(?=\bORDER\s+BY\b|\bLIMIT\b|$)",
-        cypher,
-        flags=re.IGNORECASE | re.DOTALL,
-    )
-    if not match:
+    terminals = _terminal_clause_tokens(cypher)
+    return_clause = next((item for item in terminals if item[0] == "RETURN"), None)
+    if return_clause is None:
         return [], {}
+    next_clause = next(
+        (item for item in terminals if item[1] >= return_clause[2]),
+        None,
+    )
+    body_end = next_clause[1] if next_clause else len(cypher)
+    body = cypher[return_clause[2]:body_end]
     output: list[str] = []
     projection_aliases: dict[str, str] = {}
-    for item in _split_top_level(match.group("body")):
+    for item in _split_top_level(body):
         alias_match = re.match(
             r"(?P<expression>.*?)\s+AS\s+(?P<alias>[A-Za-z_][A-Za-z0-9_]*)\s*$",
             item,
@@ -1164,15 +1331,19 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         for unit in optional_units
     ]
 
-    order_match = re.search(
-        r"\bORDER\s+BY\s+(?P<body>.*?)(?=\bLIMIT\b|$)",
-        text,
-        flags=re.IGNORECASE,
-    )
     sort_keys: list[str] = []
     _, projection_aliases = _return_projection_context(text, node_roles, relationship_roles)
-    if order_match:
-        for item in _split_top_level(order_match.group("body")):
+    order_clause = next(
+        (item for item in _terminal_clause_tokens(text) if item[0] == "ORDER BY"),
+        None,
+    )
+    if order_clause:
+        next_clause = next(
+            (item for item in _terminal_clause_tokens(text) if item[1] >= order_clause[2]),
+            None,
+        )
+        body_end = next_clause[1] if next_clause else len(text)
+        for item in _split_top_level(text[order_clause[2]:body_end]):
             sort_keys.append(
                 _canonical_sort_expression(
                     item, node_roles, relationship_roles, projection_aliases
@@ -1200,7 +1371,15 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         "aggregation_expressions": _aggregation_expressions(text, node_roles, relationship_roles),
         "sort_keys": sort_keys,
         "optional_match_count": len(optional_units),
-        "limit": int(LIMIT_PATTERN.search(text).group(1)) if LIMIT_PATTERN.search(text) else None,
+        "limit": (
+            int(limit_match.group(1))
+            if (limit_clause := next(
+                (item for item in _terminal_clause_tokens(text) if item[0] == "LIMIT"),
+                None,
+            ))
+            and (limit_match := re.match(r"\s+(\d+)\b", text[limit_clause[2]:]))
+            else None
+        ),
         "node_roles": sorted(
             [
                 {"node_role": node_roles[alias], "label": str(node_records[alias]["label"]).upper()}
