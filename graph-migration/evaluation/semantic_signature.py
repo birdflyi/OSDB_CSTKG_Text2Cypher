@@ -570,6 +570,42 @@ def _bounded_clause_model(text: str) -> list[dict[str, Any]]:
     return clauses
 
 
+def _clause_binding_provenance(
+    clauses: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Track first binding by clause order for the bounded MATCH grammar.
+
+    Structural roles may still be canonicalized from query-global mandatory
+    context, but binding provenance is temporal: a later MATCH cannot make an
+    alias appear pre-bound at an earlier OPTIONAL MATCH.
+    """
+
+    bound_aliases: set[str] = set()
+    by_clause: dict[int, dict[str, set[str]]] = {}
+    first_binding: dict[str, dict[str, Any]] = {}
+    for clause in clauses:
+        clause_index = int(clause["index"])
+        clause_kind = str(clause["kind"])
+        clause_aliases = set(clause.get("node_aliases", set())) | set(
+            clause.get("relationship_aliases", set())
+        )
+        bound_before = set(bound_aliases)
+        introduced_here = clause_aliases - bound_before
+        for alias in introduced_here:
+            first_binding[alias] = {
+                "clause_index": clause_index,
+                "clause_kind": clause_kind,
+            }
+        bound_after = bound_before | clause_aliases
+        by_clause[clause_index] = {
+            "bound_before": bound_before,
+            "introduced_here": introduced_here,
+            "bound_after": bound_after,
+        }
+        bound_aliases = bound_after
+    return {"by_clause": by_clause, "first_binding": first_binding}
+
+
 def _branch_predicate_key(
     unit: dict[str, Any],
     node_roles: dict[str, str],
@@ -616,7 +652,6 @@ def _stable_optional_units(
     relationship_records: list[dict[str, Any]],
     node_records: dict[str, dict[str, Any]],
     mandatory_node_roles: dict[str, str],
-    mandatory_aliases: set[str],
 ) -> tuple[list[dict[str, Any]], dict[str, str], dict[str, str], list[dict[str, Any]]]:
     """Build clause-owned OPTIONAL units and assign stable final roles.
 
@@ -627,6 +662,7 @@ def _stable_optional_units(
     """
 
     optional_clauses = [clause for clause in clauses if clause["kind"] == "optional"]
+    binding_provenance = _clause_binding_provenance(clauses)["by_clause"]
     for clause in clauses:
         clause["relationship_records"] = [
             record
@@ -681,7 +717,8 @@ def _stable_optional_units(
         used = pattern_aliases | expression_aliases
         unit["dependency_aliases"] = used & prior_optional_aliases
         unit["introduced_aliases"] = (
-            set(unit["aliases_defined"]) - mandatory_aliases - prior_optional_aliases
+            set(binding_provenance[int(unit["clause_index"])]["introduced_here"])
+            & set(unit["aliases_defined"])
         )
         prior_optional_aliases.update(unit["introduced_aliases"])
 
@@ -1206,7 +1243,9 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
             }
         )
 
-    mandatory_aliases = set().union(
+    # This query-global set exists only to establish stable structural roles.
+    # OPTIONAL introduction/dependency uses clause-local provenance below.
+    mandatory_role_anchor_aliases = set().union(
         *(set(clause["node_aliases"]) for clause in clauses if clause["kind"] == "match")
     )
 
@@ -1222,7 +1261,7 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         for alias in node_records
     }
     context_by_alias: dict[str, tuple[Any, ...]] = {}
-    for alias in mandatory_aliases:
+    for alias in mandatory_role_anchor_aliases:
         contexts: list[tuple[str, str, str]] = []
         for record in mandatory_records:
             if alias == record["source_alias"]:
@@ -1243,7 +1282,7 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
                 )
         context_by_alias[alias] = tuple(sorted(contexts))
     mandatory_alias_order = sorted(
-        mandatory_aliases,
+        mandatory_role_anchor_aliases,
         key=lambda alias: (
             str(node_records.get(alias, {}).get("label", "")).upper() or "_",
             context_by_alias.get(alias, ()),
@@ -1265,7 +1304,6 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
         relationship_records,
         node_records,
         mandatory_node_roles,
-        mandatory_aliases,
     )
 
     node_property_bindings = [
@@ -1309,10 +1347,30 @@ def semantic_signature(cypher: str) -> dict[str, Any]:
             continue
         records = clause.get("relationship_records", [])
         body = str(clause["where_body"])
+        clause_relationship_aliases = {
+            str(record["alias"])
+            for record in records
+            if record.get("alias")
+        }
+        referenced_aliases = _expression_alias_references(body, set(relationship_roles))
+        optional_relationship_aliases = {
+            str(record["alias"])
+            for record in relationship_records
+            if record.get("alias") and record["branch_kind"] == "optional"
+        }
+        if referenced_aliases & optional_relationship_aliases:
+            # A later mandatory WHERE may consume a relationship introduced
+            # by an earlier OPTIONAL, but that dependency must not steal
+            # ownership from the immediately preceding mandatory clause.
+            owner_aliases = referenced_aliases & clause_relationship_aliases
+        else:
+            # Preserve the established canonicalization for mandatory-only
+            # predicates, including independent mandatory-MATCH reordering.
+            owner_aliases = referenced_aliases
         referenced_relationships = sorted(
             relationship_roles[alias]
-            for alias in relationship_roles
-            if alias in _expression_alias_references(body, set(relationship_roles))
+            for alias in owner_aliases
+            if alias in relationship_roles
         )
         owner_roles = referenced_relationships or sorted(record["role"] for record in records)
         if not owner_roles:

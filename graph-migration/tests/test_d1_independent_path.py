@@ -15,6 +15,7 @@ from runners.independent_controlled_pipeline import (
 )
 from evaluation.semantic_signature import (
     _bounded_clause_model,
+    _clause_binding_provenance,
     _expression_alias_references,
     compare_semantic_signatures,
     semantic_signature,
@@ -721,6 +722,138 @@ def test_semantic_signature_preserves_real_optional_relationship_dependency() ->
     )
     assert compare_semantic_signatures(renamed, first)["match"]
     assert not compare_semantic_signatures(anonymous_rewrite, first)["match"]
+
+
+def test_semantic_signature_later_match_does_not_retroactively_bind_optional_alias() -> None:
+    optional_first = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "MATCH (a)-[:REFERENCE]->(x:ExternalResource) "
+        "RETURN a.entity_id, x.entity_id"
+    )
+    mandatory_first = (
+        "MATCH (s:Actor) "
+        "MATCH (a:Repo)-[:REFERENCE]->(x:ExternalResource) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a) "
+        "RETURN a.entity_id, x.entity_id"
+    )
+
+    result = compare_semantic_signatures(optional_first, mandatory_first)
+    assert not result["match"]
+    optional_branch = next(
+        item for item in result["generated"]["branch_topology"]
+        if item["branch_kind"] == "optional"
+    )
+    assert "node:REPO[0]" in optional_branch["introduced_roles"]
+    assert "downstream:node:REPO[0]" in optional_branch["dependency_roles"]
+    mandatory_first_branch = next(
+        item for item in result["reference"]["branch_topology"]
+        if item["branch_kind"] == "optional"
+    )
+    assert "node:REPO[0]" not in mandatory_first_branch["introduced_roles"]
+
+
+def test_semantic_signature_earlier_mandatory_binding_suppresses_optional_introduction() -> None:
+    query = (
+        "MATCH (a:Repo) MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a) "
+        "RETURN a.entity_id"
+    )
+    signature = semantic_signature(query)
+    optional_branch = next(
+        item for item in signature["branch_topology"]
+        if item["branch_kind"] == "optional"
+    )
+    assert "node:REPO[0]" not in optional_branch["introduced_roles"]
+
+
+def test_semantic_signature_unrelated_later_match_does_not_change_optional_provenance() -> None:
+    optional_before_unrelated = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "MATCH (x:ExternalResource) RETURN a.entity_id, x.entity_id"
+    )
+    unrelated_before_optional = (
+        "MATCH (x:ExternalResource) MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[:REFERENCE]->(a:Repo) "
+        "RETURN a.entity_id, x.entity_id"
+    )
+
+    signature = semantic_signature(optional_before_unrelated)
+    optional_branch = next(
+        item for item in signature["branch_topology"]
+        if item["branch_kind"] == "optional"
+    )
+    assert "node:REPO[0]" in optional_branch["introduced_roles"]
+    assert not any(role.startswith("downstream:") for role in optional_branch["dependency_roles"])
+    assert compare_semantic_signatures(
+        optional_before_unrelated, unrelated_before_optional
+    )["match"]
+
+
+def test_semantic_signature_later_mandatory_where_consumes_optional_node_and_relationship_aliases() -> None:
+    query = (
+        "MATCH (s:Actor) "
+        "OPTIONAL MATCH (s)-[r:REFERENCE]->(a:Repo) "
+        "MATCH (x:ExternalResource)-[rx:REFERENCE]->(e:Entity) "
+        "WHERE a.entity_id = x.entity_id AND r.source_event_time IS NOT NULL "
+        "RETURN a.entity_id, x.entity_id"
+    )
+    clauses = _bounded_clause_model(query)
+    provenance = _clause_binding_provenance(clauses)
+    optional_provenance = provenance["by_clause"][1]
+    assert optional_provenance["introduced_here"] == {"a", "r"}
+    assert provenance["first_binding"]["a"] == {
+        "clause_index": 1,
+        "clause_kind": "optional",
+    }
+    assert provenance["first_binding"]["r"] == {
+        "clause_index": 1,
+        "clause_kind": "optional",
+    }
+
+    signature = semantic_signature(query)
+    optional_branch = next(
+        item for item in signature["branch_topology"]
+        if item["branch_kind"] == "optional"
+    )
+    assert "downstream:node:REPO[0]" in optional_branch["dependency_roles"]
+    assert any(
+        role.startswith("downstream:rel:optional:")
+        for role in optional_branch["dependency_roles"]
+    )
+    mandatory_path_role = next(
+        path["role"] for path in signature["paths"] if path["branch_kind"] == "match"
+    )
+    mandatory_predicate = next(
+        item for item in signature["predicate_boolean_structure"]
+        if item["branch_kind"] == "match"
+    )
+    assert mandatory_predicate["owner"] == mandatory_path_role
+    assert "node:REPO[0].entity_id" in mandatory_predicate["structure"]
+    assert "source_event_time is not null" in mandatory_predicate["structure"]
+
+
+def test_semantic_signature_alias_rename_preserves_optional_first_binding() -> None:
+    original = (
+        "MATCH (s:Actor) OPTIONAL MATCH (s)-[r:REFERENCE]->(a:Repo) "
+        "MATCH (a)-[:REFERENCE]->(x:ExternalResource) "
+        "RETURN a.entity_id, x.entity_id"
+    )
+    renamed = (
+        "MATCH (source:Actor) "
+        "OPTIONAL MATCH (source)-[edge:REFERENCE]->(repository:Repo) "
+        "MATCH (repository)-[:REFERENCE]->(resource:ExternalResource) "
+        "RETURN repository.entity_id, resource.entity_id"
+    )
+    original_provenance = _clause_binding_provenance(_bounded_clause_model(original))
+    renamed_provenance = _clause_binding_provenance(_bounded_clause_model(renamed))
+    assert original_provenance["first_binding"]["a"]["clause_kind"] == "optional"
+    assert renamed_provenance["first_binding"]["repository"]["clause_kind"] == "optional"
+    assert (
+        original_provenance["first_binding"]["a"]["clause_index"]
+        == renamed_provenance["first_binding"]["repository"]["clause_index"]
+    )
+    assert compare_semantic_signatures(renamed, original)["match"]
 
 
 def test_semantic_signature_binds_consecutive_optional_where_to_immediate_clause() -> None:
