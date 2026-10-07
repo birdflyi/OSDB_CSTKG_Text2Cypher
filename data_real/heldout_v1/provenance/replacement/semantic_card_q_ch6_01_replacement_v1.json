@@ -1,0 +1,31 @@
+{
+  "intent_id": "intent_q_ch6_01",
+  "source_query_id": "q_ch6_01",
+  "split": "abstention",
+  "language": "en",
+  "requested_semantics": {
+    "source_entity_kind": [
+      "PullRequest"
+    ],
+    "target_entity_kind": [
+      "Issue"
+    ],
+    "target_anchor": "I_156018#12095",
+    "requested_relation": "RESOLVES",
+    "projection_requirements": [
+      "resolving pull-request identifier",
+      "resolution event time"
+    ],
+    "sort_requirements": [
+      {
+        "field_semantics": "resolution event time",
+        "order": "ascending"
+      }
+    ],
+    "time_filter": null,
+    "limit": 25
+  },
+  "boundary_reason": "RESOLVES is a placeholder relation outside the frozen executable native contract; the request remains pending/abstention and must not be represented as materialized executable graph support.",
+  "expected_behavior": "ABSTAIN_OR_PENDING",
+  "must_not_be_misrepresented_as_supported": true
+}

@@ -1,0 +1,49 @@
+{
+  "version": "d1_2b_contamination_audit_v2",
+  "supersedes": "data_real/heldout_v1_review/contamination_audit_v1.json",
+  "status": "COMPLETED_TEXT_ONLY",
+  "primary_candidate_set": "data_real/heldout_v1_review/heldout_candidates_raw_v1.jsonl",
+  "primary_candidate_sha256": "021198dba2b35c059a5b985e05c3d099d96a81cf0c9aee0dd2e7617e250a4749",
+  "candidate_count": 45,
+  "exclusion_corpus": {
+    "original_pilot_nl_count": 15,
+    "known_review_adversarial_example_count": 10,
+    "attempt_1_rejected_candidate_count": 3,
+    "attempt_2_rejected_candidate_count": 6,
+    "raw_entry_count": 34,
+    "unique_source_text_count": 33,
+    "attempt_2_raw_body_available": true,
+    "attempt_2_artifact": "data_real/heldout_v1_review/authoring_raw/claude_abstention_reauthor_contaminated_attempt_v1.jsonl",
+    "attempt_2_artifact_sha256": "aa9de8bac7ed4f7e7fa6180c2cdd226f2eddcea2f676cbf1fcdc0c6d85db5715",
+    "attempt_2_status": "EXCLUDED_SESSION_CONTAMINATION",
+    "attempt_2_merged_into_primary": false
+  },
+  "method": {
+    "unicode_normalization": "NFKC",
+    "case_normalization": "case-fold/lowercase",
+    "punctuation_normalization": "punctuation to spaces",
+    "whitespace_normalization": "collapse whitespace",
+    "exact_duplicate_rule": "normalized exact duplicate with original pilot NL is HARD_FAIL",
+    "token_jaccard_threshold": 0.65,
+    "character_ngram": "5-gram",
+    "character_ngram_jaccard_threshold": 0.55,
+    "near_duplicate_rule": "REVIEW_FLAG only; not an automatic scientific failure",
+    "shared_identifiers_and_domain_terms": "allowed unless surrounding wording is substantively copied",
+    "thresholds_changed_after_attempt_2_comparison": false
+  },
+  "results": {
+    "normalized_exact_duplicate_matches": [],
+    "hard_fail_count": 0,
+    "near_duplicate_review_flags": [],
+    "review_flag_count": 0,
+    "manual_adjudication": "No flagged pairs required manual adjudication. No primary candidate NL was rewritten or replaced."
+  },
+  "implementation_boundary": {
+    "parser_run": false,
+    "generator_run": false,
+    "evaluator_run": false,
+    "repair_run": false,
+    "neo4j_run": false,
+    "performance_metric": false
+  }
+}

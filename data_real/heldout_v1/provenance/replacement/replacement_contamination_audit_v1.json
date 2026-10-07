@@ -1,0 +1,105 @@
+{
+  "version": "d1_2b_replacement_contamination_audit_v1",
+  "status": "COMPLETED_TEXT_ONLY",
+  "candidate": {
+    "path": "data_real/heldout_v1_review/replacement_raw/claude_q_ch6_v3_replacement_raw_v1.jsonl",
+    "sha256": "3bd705d221bae878462769f77699f0f8099b5e1135616724a1410ac27779d5c",
+    "intent_id": "intent_q_ch6_01",
+    "variant_id": "V3R1",
+    "split": "abstention",
+    "replaces_raw_item": "ho_q_ch6_01_V3",
+    "replacement_trigger": "PRE_EVALUATION_SEMANTIC_FIDELITY",
+    "system_outcome_observed": false
+  },
+  "exclusion_corpus": {
+    "original_pilot_nl_count": 15,
+    "known_review_adversarial_example_count": 10,
+    "attempt_1_rejected_candidate_count": 3,
+    "attempt_2_rejected_candidate_count": 6,
+    "rejected_original_raw_item_count": 1,
+    "raw_entry_count": 35,
+    "unique_source_text_count": 35,
+    "sources": [
+      {
+        "category": "original_pilot_nl",
+        "path": "data_real/pilot_queries/queries_pilot.jsonl",
+        "count": 15
+      },
+      {
+        "category": "known_review_adversarial",
+        "path": "graph-migration/tests/test_d1_independent_path.py",
+        "count": 10,
+        "selection": "documented D1.1/D1.2a development and review regression request texts",
+        "source_ids": [
+          "test_semantic_ir_routes_external_link_count_to_narrow_aggregation",
+          "test_narrow_external_link_aggregation_is_lexically_independent",
+          "test_unconsumed_count_does_not_route_to_reference_object_template",
+          "test_unconsumed_time_does_not_route_to_timeless_reference_template",
+          "test_explicit_projection_is_rejected_by_incompatible_template_contract",
+          "test_extra_explicit_target_class_cannot_be_dropped",
+          "test_multiple_actor_ids_abstain_instead_of_dropping_an_actor",
+          "test_entity_constraint_coverage_abstains_on_unrelated_direct_pr",
+          "test_entity_constraint_coverage_allows_matching_repo_entailment",
+          "test_entity_constraint_coverage_does_not_reverse_entail_specific_pr"
+        ]
+      },
+      {
+        "category": "attempt_1_rejected_abstention",
+        "path": "temp_solution_discussion/claude_blind_authoring_raw_attempt_v1_full.txt",
+        "count": 3,
+        "selection": "q_ch5_01 candidates rejected for card underspecification"
+      },
+      {
+        "category": "attempt_2_contaminated_abstention",
+        "path": "data_real/heldout_v1_review/authoring_raw/claude_abstention_reauthor_contaminated_attempt_v1.jsonl",
+        "count": 6,
+        "sha256": "aa9de8bac7ed4f7e7fa6180c2cdd226f2eddcea2f676cbf1fcdc0c6d85db5715"
+      },
+      {
+        "category": "rejected_original_raw_item",
+        "source_id": "ho_q_ch6_01_V3",
+        "path": "data_real/heldout_v1_review/heldout_candidates_raw_v1.jsonl",
+        "count": 1
+      }
+    ]
+  },
+  "method": {
+    "unicode_normalization": "NFKC",
+    "case_normalization": "case-fold/lowercase",
+    "punctuation_normalization": "punctuation to spaces",
+    "whitespace_normalization": "collapse whitespace",
+    "exact_duplicate_rule": "normalized exact duplicate with original pilot NL is HARD_FAIL",
+    "token_jaccard_threshold": 0.65,
+    "character_ngram": "5-gram",
+    "character_ngram_jaccard_threshold": 0.55,
+    "near_duplicate_rule": "REVIEW_FLAG only; not an automatic scientific failure",
+    "shared_identifiers_and_domain_terms": "allowed unless surrounding wording is substantively copied",
+    "thresholds_changed_after_comparison": false
+  },
+  "results": {
+    "normalized_exact_duplicate_matches": [],
+    "near_duplicate_review_flags": [],
+    "threshold_crossing_pairs": [],
+    "hard_fail_count": 0,
+    "review_flag_count": 0,
+    "maximum_token_jaccard_observed": {
+      "value": 0.367347,
+      "category": "attempt_2_contaminated_abstention",
+      "source_id": "attempt2_4"
+    },
+    "maximum_character_5gram_jaccard_observed": {
+      "value": 0.260116,
+      "category": "rejected_original_raw_item",
+      "source_id": "ho_q_ch6_01_V3"
+    },
+    "manual_adjudication": "No flagged pairs required manual adjudication. The replacement NL was not rewritten."
+  },
+  "implementation_boundary": {
+    "parser_run": false,
+    "generator_run": false,
+    "evaluator_run": false,
+    "repair_run": false,
+    "neo4j_run": false,
+    "performance_metric": false
+  }
+}
