@@ -1,0 +1,107 @@
+{
+  "version": "d1_2b_semantic_fidelity_adjudication_v1",
+  "external_review": {
+    "raw_path": "data_real/heldout_v1_review/review_raw/semantic_fidelity_review_results_v1.jsonl",
+    "sha256": "bd4a206967dc48c60589d906eb9fd07f6973f212e46b3b4c2c7064102d9882f8",
+    "review_record_count": 45,
+    "reviewer_pass_count": 45,
+    "reviewer_fail_count": 0,
+    "reviewer_ambiguity_note_count": 11
+  },
+  "controller_summary": {
+    "controller_accepted_without_replacement": 44,
+    "controller_replacement_required": 1,
+    "replacement_item": "ho_q_ch6_01_V3",
+    "replacement_reason": "possible invented per-PR de-duplication/cardinality semantics",
+    "replacement_before_evaluation": true,
+    "replacement_triggered_by_system_performance": false,
+    "system_outcome_observed": false
+  },
+  "ambiguity_note_adjudications": [
+    {
+      "review_item_id": "ho_q_l1_02_V3",
+      "reviewer_verdict": "PASS",
+      "ambiguity_note": "\"Fall under the PR_156018 prefix\" is looser than \"begins with\", but it is applied to pull request IDs, so it reads as an identifier-prefix scope rather than repository membership.",
+      "controller_disposition": "PASS_WITH_NONBLOCKING_NOTE"
+    },
+    {
+      "review_item_id": "ho_q_l2_01_V1",
+      "reviewer_verdict": "PASS",
+      "ambiguity_note": "The date is attached to comments \"made on\" the issue, which reads as the commenting event on the Issue rather than the comment-to-Actor relation; ownership is implied rather than stated outright.",
+      "controller_disposition": "PASS_WITH_NONBLOCKING_NOTE"
+    },
+    {
+      "review_item_id": "ho_q_l2_01_V2",
+      "reviewer_verdict": "PASS",
+      "ambiguity_note": "\"Authored\" stands in for the OPENED_BY relation of the comment; the date is attached to comments \"posted to\" the issue, i.e. the commenting event.",
+      "controller_disposition": "PASS_WITH_NONBLOCKING_NOTE"
+    },
+    {
+      "review_item_id": "ho_q_l2_01_V3",
+      "reviewer_verdict": "PASS",
+      "ambiguity_note": "\"Created\" stands in for the OPENED_BY relation of the comment; time ownership is stated explicitly.",
+      "controller_disposition": "PASS_WITH_NONBLOCKING_NOTE"
+    },
+    {
+      "review_item_id": "ho_q_l2_02_V3",
+      "reviewer_verdict": "PASS",
+      "ambiguity_note": "\"Link domain\" does not spell out the registrable (eTLD+1) granularity, but it still identifies the domain field of the link.",
+      "controller_disposition": "PASS_WITH_NONBLOCKING_NOTE"
+    },
+    {
+      "review_item_id": "ho_q_l3_03_V3",
+      "reviewer_verdict": "PASS",
+      "ambiguity_note": "\"Domain\" does not spell out the registrable (eTLD+1) granularity; \"total number of links\" keeps link-level counting.",
+      "controller_disposition": "PASS_WITH_NONBLOCKING_NOTE"
+    },
+    {
+      "review_item_id": "ho_q_l4_02_V3",
+      "reviewer_verdict": "PASS",
+      "ambiguity_note": "\"The 50 most recent commit references\" expresses descending reference-time ordering plus limit 50, not a time-window filter.",
+      "controller_disposition": "PASS_WITH_NONBLOCKING_NOTE"
+    },
+    {
+      "review_item_id": "ho_q_l4_03_V2",
+      "reviewer_verdict": "PASS",
+      "ambiguity_note": "\"Attached to reviews\" stands in for COMMENTED_ON_REVIEW; the meaning stays unambiguous.",
+      "controller_disposition": "PASS_WITH_NONBLOCKING_NOTE"
+    },
+    {
+      "review_item_id": "ho_q_comp_01_V1",
+      "reviewer_verdict": "PASS",
+      "ambiguity_note": "The absence of a date restriction on the Actor branch is implicit (the date is stated only for the external links) rather than explicit.",
+      "controller_disposition": "PASS_WITH_NONBLOCKING_NOTE"
+    },
+    {
+      "review_item_id": "ho_q_ch5_01_V2",
+      "reviewer_verdict": "PASS",
+      "ambiguity_note": "\"Share a coupling relationship with\" is direction-neutral phrasing; R_156018 remains the anchored repository and the other repositories are the returned targets.",
+      "controller_disposition": "PASS_WITH_NONBLOCKING_NOTE"
+    },
+    {
+      "review_item_id": "ho_q_ch6_01_V3",
+      "reviewer_verdict": "PASS",
+      "ambiguity_note": "\"One entry per resolving pull request\" could be read as implying per-PR de-duplication, which the card does not request; read as a description of row shape, it is consistent. \"Timeline\" adds no time filter.",
+      "controller_disposition": "FAIL_REPLACE_PRE_EVALUATION",
+      "controller_reason_code": "POSSIBLE_INVENTED_PER_PR_CARDINALITY"
+    }
+  ],
+  "raw_candidate_set": {
+    "path": "data_real/heldout_v1_review/heldout_candidates_raw_v1.jsonl",
+    "sha256": "021198dba2b35c059a5b985e05c3d099d96a81cf0c9aee0dd2e7617e250a4749",
+    "changed": false,
+    "status": "AUTHORING_PROVENANCE_BASELINE_WITH_ONE_PRE_EVAL_FIDELITY_REJECTION"
+  },
+  "execution_boundary": {
+    "parser_run": false,
+    "generator_run": false,
+    "evaluator_run": false,
+    "repair_run": false,
+    "neo4j_run": false,
+    "generator_tuning": false,
+    "evaluator_tuning": false,
+    "semantic_card_changed": false,
+    "template_changed": false,
+    "remote_push": false
+  }
+}
