@@ -1,0 +1,23 @@
+{
+  "stage": "D1.2c pre-run harness freeze",
+  "dataset_tag": "ch7-d1-2b-heldout-freeze",
+  "dataset_commit": "432227d9b0bc418fd5a44b5fb4f616a66ac09b50",
+  "queries_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+  "gold_sha256": "d04f2ce061327d25357d3b9f6479d54a76608071aba65e80a29aa760ac351be7",
+  "manifest_sha256": "aaa5769a500a1f771675ee301018965e390098ea7403e8cb812b1446d4f7126d",
+  "frozen_files": {
+    "graph-migration/runners/independent_controlled_pipeline.py": "0f567bbfbfb1828889d663b97bd2e2b5832e78c88b8a5d50340ade0c0a1c07da",
+    "graph-migration/repair/gold_blind_repair.py": "9c7a8125e4d01557c351fe4e553640e33bba4979b6c12094720f7f863fee436b",
+    "graph-migration/evaluation/semantic_signature.py": "b8575c6cc99849ebfa59064b9d5da931fd8cd7354d52ab51661c45ffdeed0713",
+    "data_real/pilot_queries/independent_template_pack_v4.yaml": "c57d05cb42989f0a406a3e48a4fb6f3dda822121b0db17bb1f72e5be91f66d8f",
+    "data_real/pilot_queries/schema_metadata.yaml": "d3e0ee543e603a3b545c406c4fd3b7275c779c9d4c64617b2edaa0c7a2f2d201"
+  },
+  "generation_boundary": {
+    "input_fields": ["id", "nl_query"],
+    "gold_loaded": false,
+    "reference_cypher_visible": false,
+    "semantic_review_visible": false,
+    "contamination_audit_visible": false
+  },
+  "one_shot_policy": true
+}
