@@ -55,7 +55,7 @@
   ],
   "semantic_card_provenance": {
     "executable_card_path": "data_real/heldout_v1_authoring/semantic_cards_executable_v1.jsonl",
-    "executable_card_sha256": "9fff221b8a82be8283f56e4fc42b3d1ea7627f9eb753f0e6eb6d7fad3aeadb72",
+    "executable_card_sha256": "3bdb0b721c446f0c97442b302a4fcf5583be6cfc501808a2177aa9e32cbbe366",
     "abstention_card_path": "data_real/heldout_v1_authoring/semantic_cards_abstention_v2.jsonl",
     "abstention_card_sha256": "69c7b263523410c2cd69f5769828b2013794a4a25b5f89b55bc0cdb512839ffd",
     "authoring_protocol_sha256": "1caf043e73e799eba8bfe807297a3dba0d8160c1ff42a8b9754e12f51d9ee3b3"
