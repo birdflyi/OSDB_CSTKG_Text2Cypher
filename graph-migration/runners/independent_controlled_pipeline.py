@@ -376,18 +376,34 @@ def _extract_typed_entity_scopes(text: str) -> list[EntityScope]:
         ):
             return True
         if re.search(
-            r"not\s+(?:start|begin)(?:s|ing)?\s+with\s*$",
+            r"not\s+(?:start(?:s|ing)?|begin(?:s|ning)?)\s+with\s*$",
             before,
             re.IGNORECASE,
         ):
             return True
         # Command-level negation is scoped only to a nearby typed ID phrase;
         # this is deliberately not a global ``not in text`` test.
+        if re.search(
+            r"\b(?:excluding|omit|omitting|without)\s+(?:(?:the|these|those)\s+)?"
+            r"(?:ids?|identifiers?)\s+(?:that\s+)?"
+            r"(?:start(?:s|ing)?|begin(?:s|ning)?)\s+with\s*$",
+            before,
+            re.IGNORECASE,
+        ):
+            return True
+        if re.search(
+            r"\b(?:excluding|omit|omitting|without)\s+(?:issues?|pull\s+requests?)\s+"
+            r"whose\s+(?:ids?|identifiers?)\s+"
+            r"(?:start(?:s|ing)?|begin(?:s|ning)?)\s+with\s*$",
+            before,
+            re.IGNORECASE,
+        ):
+            return True
         return bool(
             re.search(
                 r"(?:^|[.!?;])\s*(?:exclude|omit)\b[^.!?;]{0,150}"
                 r"\b(?:ids?|identifiers?)\s+(?:that\s+)?"
-                r"(?:start|begin)(?:s|ing)?\s+with\s*$",
+                r"(?:start(?:s|ing)?|begin(?:s|ning)?)\s+with\s*$",
                 before,
                 re.IGNORECASE,
             )
@@ -1077,10 +1093,16 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
     if ir.projection_distinct and re.search(
         r"\b(?:return|show|list|display|give)\s+distinct\b", text, re.I
     ):
-        # In the bounded leading-list grammar, DISTINCT scopes the projection
-        # tuple; it is not redundantly copied onto its first item.
-        for item in ir.projection_items:
-            item.distinct = False
+        # A leading DISTINCT scopes the whole tuple.  Only the first item may
+        # have inherited that cue from its local look-behind; preserve any
+        # later independent ``unique/distinct`` item requirement.
+        leading = re.search(
+            r"\b(?:return|show|list|display|give)\s+distinct\b", text, re.I
+        )
+        if leading and ir.projection_items:
+            first = ir.projection_items[0]
+            if first.distinct and first.source_span[0] >= leading.end():
+                first.distinct = False
     if any(item.property == "url_domain_etld1" for item in ir.projection_items):
         ir.projection["property"] = "url_domain_etld1"
         _append_provenance(ir, "projection", "bounded_role_projection_rule")
