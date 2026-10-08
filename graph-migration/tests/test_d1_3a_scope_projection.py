@@ -365,6 +365,91 @@ def test_local_distinct_phrase_is_not_promoted_to_tuple_scope() -> None:
     assert not ir.projection_distinct
 
 
+def test_ids_of_entity_phrase_binds_distinctness_to_the_named_item() -> None:
+    cases = [
+        ("return the distinct IDs of actors it mentions", True),
+        ("return unique identifiers of actors", True),
+        ("return IDs of actors", False),
+        ("return distinct actor IDs", True),
+    ]
+    for query, expected_distinct in cases:
+        ir = parse_nl_to_ir("synthetic", query)
+        assert not ir.projection_distinct, query
+        assert [(item.label, item.property, item.distinct) for item in ir.projection_items] == [
+            ("Actor", "entity_id", expected_distinct)
+        ], query
+
+
+def test_ids_of_entity_distinctness_is_local_in_a_multi_column_request() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "return distinct IDs of actors and resource IDs"
+    )
+    assert not ir.projection_distinct
+    assert [(item.label, item.distinct) for item in ir.projection_items] == [
+        ("Actor", True),
+        ("ExternalResource", False),
+    ]
+
+
+def test_aggregate_distinct_actor_ids_does_not_create_projection_item() -> None:
+    ir = parse_nl_to_ir("synthetic", "count distinct actor IDs")
+    assert not ir.projection_distinct
+    assert ir.projection_items == []
+    assert ir.aggregation == [
+        {
+            "function": "count",
+            "field": "Actor.entity_id",
+            "distinct": True,
+            "provenance": "aggregate_argument_distinct_from_nl",
+        }
+    ]
+
+
+def test_composite_source_anchor_suppresses_contained_nouns_from_projection() -> None:
+    cases = [
+        (
+            "Show issue comment IC_900001#12 and tell me which actors it mentions",
+            "IssueComment",
+            [("Actor", "entity_id")],
+        ),
+        (
+            "Show pull request review PRR_900001#7 and list actors involved",
+            "PullRequestReview",
+            [("Actor", "entity_id")],
+        ),
+        (
+            "Show pull request review comment PRRC_900001#9 and list actors mentioned",
+            "PullRequestReviewComment",
+            [("Actor", "entity_id")],
+        ),
+    ]
+    for query, source_label, expected_projection in cases:
+        ir = parse_nl_to_ir("synthetic", query)
+        assert ir.source_entity["entity_label"] == source_label, query
+        assert [(item.label, item.property) for item in ir.projection_items] == expected_projection, query
+
+
+def test_explicit_source_label_projection_after_composite_anchor_remains_eligible() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic",
+        "Show issue comment IC_900001#12 and return issue IDs.",
+    )
+    assert ir.source_entity["entity_label"] == "IssueComment"
+    assert [(item.label, item.property) for item in ir.projection_items] == [
+        ("Issue", "entity_id")
+    ]
+
+
+def test_simple_source_anchor_case_remains_valid() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "Show issue I_880002#77 and tell me who opened it"
+    )
+    assert ir.source_entity["entity_label"] == "Issue"
+    assert [(item.label, item.property) for item in ir.projection_items] == [
+        ("Actor", "entity_id")
+    ]
+
+
 def test_skeleton_distinct_scope_is_read_from_return_prefix_only() -> None:
     assert _return_has_tuple_distinct("MATCH (a:Actor) RETURN DISTINCT a.entity_id, a.name")
     assert not _return_has_tuple_distinct(

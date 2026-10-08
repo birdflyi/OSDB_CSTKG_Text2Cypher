@@ -390,14 +390,33 @@ def _source_anchor_noun_occurrences(
         if item.get("provenance") == "canonical_id_from_nl"
     ]
     anchored: set[tuple[int, int, str]] = set()
-    for start, end, label in nouns:
-        for anchor_label, span in canonical_anchors:
-            if anchor_label != label or len(span) != 2 or int(span[0]) < end:
-                continue
-            if text[end:int(span[0])].strip():
-                continue
-            anchored.add((start, end, label))
-            break
+    for anchor_label, span in canonical_anchors:
+        if len(span) != 2:
+            continue
+        anchor_start = int(span[0])
+        typed_spans = [
+            (start, end, label)
+            for start, end, label in nouns
+            if label == anchor_label
+            and end <= anchor_start
+            and not text[end:anchor_start].strip()
+        ]
+        if not typed_spans:
+            continue
+
+        # Prefer the longest canonical typed noun phrase, then suppress only
+        # noun matches wholly contained by that source-introduction span.
+        # This prevents e.g. Issue inside IssueComment from being re-read as
+        # an output cue while preserving an explicit Issue projection later.
+        source_start, source_end, _ = min(
+            typed_spans,
+            key=lambda item: (-(item[1] - item[0]), item[0]),
+        )
+        anchored.update(
+            noun
+            for noun in nouns
+            if source_start <= noun[0] and noun[1] <= source_end
+        )
     return anchored
 
 
@@ -412,6 +431,17 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
 
     def has_item_distinct_cue(start: int) -> bool:
         return bool(re.search(r"\b(?:distinct|unique)\s+(?:the\s+)?$", text[max(0, start - 24):start], re.I))
+
+    def has_ids_of_item_distinct_cue(start: int) -> bool:
+        prefix = text[max(0, start - 64):start]
+        return bool(
+            re.search(
+                r"\b(?:distinct|unique)\s+(?:(?:the|entity)\s+)*"
+                r"(?:ids?|identifiers?)\s+of\s+(?:the\s+)?$",
+                prefix,
+                re.I,
+            )
+        )
 
     nullable = bool(
         re.search(r"\b(?:optional|if\s+any|where\s+they\s+exist|where\s+it\s+exists|"
@@ -471,7 +501,12 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
                 continue
             prefix = text[max(0, match.start() - 48):match.start()]
             if re.search(r"\b(?:ids?|identifiers?)\s+of\s+(?:the\s+)?$", prefix, re.I):
-                add(label, match.start(), match.end(), distinct=has_item_distinct_cue(match.start()))
+                add(
+                    label,
+                    match.start(),
+                    match.end(),
+                    distinct=has_ids_of_item_distinct_cue(match.start()),
+                )
 
     # A question/list cue can itself name the requested entity role even when
     # the wording says “which objects?” and later refers to “their IDs”.
@@ -528,7 +563,11 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
             preceding = [item for item in nouns if item[1] <= generic_ids.start()]
             if preceding:
                 start, end, label = preceding[-1]
-                add(label, start, end)
+                if not any(
+                    span_start <= start < span_end
+                    for span_start, span_end in aggregate_argument_spans
+                ):
+                    add(label, start, end)
 
     candidates.sort(key=lambda item: (item.source_span[0], item.source_span[1], item.label or ""))
     return candidates
@@ -596,6 +635,15 @@ def _projection_tuple_distinct_from_text(text: str, items: list[ProjectionItem])
     # DISTINCT or explicit local-only modifier in the second item.
     leading_distinct = re.search(r"\b(?:return|show|list|display|give)\s+distinct\b", text, re.I)
     if not leading_distinct or len(items) < 2 or _aggregate_distinct_argument_spans(text):
+        return False
+    # In ``return distinct IDs of actors and resource IDs``, the bounded
+    # ``distinct IDs of <entity>`` phrase scopes to its named item, not the
+    # whole multi-column tuple.
+    if re.match(
+        r"\s+(?:(?:the|entity)\s+)*(?:ids?|identifiers?)\s+of\s+(?:the\s+)?",
+        text[leading_distinct.end():],
+        re.I,
+    ):
         return False
     second_start = items[1].source_span[0] if items[1].source_span else len(text)
     between_items = text[leading_distinct.end():second_start]
