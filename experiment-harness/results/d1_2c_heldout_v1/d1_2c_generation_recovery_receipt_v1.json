@@ -1,0 +1,18 @@
+{
+  "run_id": "d1_2c_heldout_v1_first_run",
+  "dataset_tag": "ch7-d1-2b-heldout-freeze",
+  "dataset_commit": "432227d9b0bc418fd5a44b5fb4f616a66ac09b50",
+  "harness_commit": "69eb9b818ccab7b4965c1b6fdc5f45ff50885c65",
+  "original_generation_receipt_written": false,
+  "receipt_failure_reason": "Path.write_text newline argument incompatible with runtime",
+  "raw_generation_completed": true,
+  "processed_rows": 45,
+  "raw_trace_sha256": "9df9e576460f77d4c8d6fa9bd9a6b65b9eece83cd6837ec1e828027ba2604334",
+  "id_metadata_defect": true,
+  "raw_trace_ids_blank": true,
+  "reconciliation_method": "exact frozen nl_query bijection",
+  "generation_rerun": false,
+  "generation_output_modified": false,
+  "trace_salvage_status": "PENDING_GOLD_GATED_EVALUATION",
+  "recovery_artifact_is_original_receipt": false
+}

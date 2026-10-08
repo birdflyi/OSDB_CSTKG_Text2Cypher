@@ -1,0 +1,251 @@
+{
+  "run_id": "d1_2c_heldout_v1_first_run",
+  "dataset_tag": "ch7-d1-2b-heldout-freeze",
+  "dataset_commit": "432227d9b0bc418fd5a44b5fb4f616a66ac09b50",
+  "harness_commit": "69eb9b818ccab7b4965c1b6fdc5f45ff50885c65",
+  "RAW_TRACE_ROWS": 45,
+  "RECONCILED_ROWS": 45,
+  "RAW_TRACE_SHA256": "9df9e576460f77d4c8d6fa9bd9a6b65b9eece83cd6837ec1e828027ba2604334",
+  "RECONCILIATION_MAP_SHA256": "30e7e8d0d965d8d645b50b78ce8429275479d3a2ac8380ac330f444c2d3a01a8",
+  "EXACT_NL_BIJECTION": true,
+  "TRACE_ORDER_MATCH": true,
+  "REQUEST_ID_BEHAVIORAL_DEPENDENCY": false,
+  "BLANK_ID_GENERATION_SEMANTICS_IMPACT": false,
+  "TRACE_SALVAGEABLE": true,
+  "REQUEST_ID_BEHAVIORAL_AUDIT_LOCATIONS": [
+    "graph-migration/runners/independent_controlled_pipeline.py:82,124 dataclass fields",
+    "graph-migration/runners/independent_controlled_pipeline.py:367-370 parse_nl_to_ir stores request_id only in IR",
+    "graph-migration/runners/independent_controlled_pipeline.py:1151-1180 passes request_id through result construction only",
+    "graph-migration/repair/gold_blind_repair.py: no request_id references"
+  ],
+  "NO_PREVIEW_RULE_VIOLATED": true,
+  "PREVIEW_INFLUENCE_CLASSIFICATION": "NO_EVIDENCE_OF_CHANGE",
+  "PRISTINE_BLIND_HELDOUT_PROTOCOL": false,
+  "GENERATION_RERUN": false,
+  "CORE_IMPLEMENTATION_CHANGED": false,
+  "DATASET_CHANGED": false,
+  "NEO4J_RUN": false,
+  "D1_2C_V1_GENERATION": "FIRST_RUN_COMPLETED_WITH_METADATA_DEFECT",
+  "D1_2C_V1_GENERATION_RERUN": "NO",
+  "D1_2C_V1_METRICS": "RECOVERED_FROM_IMMUTABLE_FIRST_RUN_TRACE",
+  "TRACE_LEVEL_BOUNDED_STATUS_COUNTS": {
+    "BOUNDED_PARSED": 29,
+    "ABSTAIN_UNALIGNED_ENTITY": 12,
+    "ABSTAIN_PLACEHOLDER": 4
+  },
+  "TRACE_LEVEL_FAILURE_STAGE_COUNTS": {
+    "": 4,
+    "template_selection_or_abstention": 41
+  },
+  "POST_REPAIR_RENDERED_TRACE_COUNT": 4,
+  "REPAIR_TRIGGERED_TRACE_COUNT": 0,
+  "REPAIR_CHANGED_TRACE_COUNT": 0,
+  "N_EXECUTABLE": 39,
+  "N_ABSTENTION": 6,
+  "N": 45,
+  "EXECUTABLE_RENDERED_COUNT": 4,
+  "EXECUTABLE_STATIC_VALID_COUNT": 4,
+  "EXECUTABLE_SIGNATURE_MATCH_COUNT": 4,
+  "EXECUTABLE_SEMANTIC_SUCCESS_COUNT": 4,
+  "CORRECT_ABSTENTION_COUNT": 6,
+  "CONTROLLED_OUTCOME_CORRECT_COUNT": 10,
+  "FALSE_ABSTENTION_COUNT": 35,
+  "SLOT_RENDER_FAILURE_COUNT": 0,
+  "DIAGNOSABLE_STATIC_FAILURE_COUNT": 0,
+  "UNDETECTED_SEMANTIC_ERROR_COUNT": 0,
+  "OOB_EXECUTION_ATTEMPT_COUNT": 0,
+  "OOB_STATIC_VALID_EXECUTION_COUNT": 0,
+  "REPAIR_TRIGGER_COUNT": 0,
+  "REPAIR_CHANGED_COUNT": 0,
+  "REPAIR_POST_STATIC_VALID_COUNT": 0,
+  "REPAIR_POST_SEMANTIC_SUCCESS_COUNT": 0,
+  "EXECUTABLE_FAMILIES_3_OF_3": 0,
+  "ABSTENTION_FAMILIES_3_OF_3": 2,
+  "EXECUTABLE_FAMILY_BREAKDOWN": {
+    "intent_q_comp_01": {
+      "denominator": 3,
+      "correct_count": 0,
+      "three_of_three": false,
+      "variants": {
+        "V1": "FALSE_ABSTENTION",
+        "V2": "FALSE_ABSTENTION",
+        "V3": "FALSE_ABSTENTION"
+      }
+    },
+    "intent_q_l1_01": {
+      "denominator": 3,
+      "correct_count": 2,
+      "three_of_three": false,
+      "variants": {
+        "V1": "SUCCESS",
+        "V2": "SUCCESS",
+        "V3": "FALSE_ABSTENTION"
+      }
+    },
+    "intent_q_l1_02": {
+      "denominator": 3,
+      "correct_count": 0,
+      "three_of_three": false,
+      "variants": {
+        "V1": "FALSE_ABSTENTION",
+        "V2": "FALSE_ABSTENTION",
+        "V3": "FALSE_ABSTENTION"
+      }
+    },
+    "intent_q_l1_03": {
+      "denominator": 3,
+      "correct_count": 1,
+      "three_of_three": false,
+      "variants": {
+        "V1": "FALSE_ABSTENTION",
+        "V2": "SUCCESS",
+        "V3": "FALSE_ABSTENTION"
+      }
+    },
+    "intent_q_l2_01": {
+      "denominator": 3,
+      "correct_count": 0,
+      "three_of_three": false,
+      "variants": {
+        "V1": "FALSE_ABSTENTION",
+        "V2": "FALSE_ABSTENTION",
+        "V3": "FALSE_ABSTENTION"
+      }
+    },
+    "intent_q_l2_02": {
+      "denominator": 3,
+      "correct_count": 0,
+      "three_of_three": false,
+      "variants": {
+        "V1": "FALSE_ABSTENTION",
+        "V2": "FALSE_ABSTENTION",
+        "V3": "FALSE_ABSTENTION"
+      }
+    },
+    "intent_q_l2_03": {
+      "denominator": 3,
+      "correct_count": 1,
+      "three_of_three": false,
+      "variants": {
+        "V1": "SUCCESS",
+        "V2": "FALSE_ABSTENTION",
+        "V3": "FALSE_ABSTENTION"
+      }
+    },
+    "intent_q_l3_01": {
+      "denominator": 3,
+      "correct_count": 0,
+      "three_of_three": false,
+      "variants": {
+        "V1": "FALSE_ABSTENTION",
+        "V2": "FALSE_ABSTENTION",
+        "V3": "FALSE_ABSTENTION"
+      }
+    },
+    "intent_q_l3_02": {
+      "denominator": 3,
+      "correct_count": 0,
+      "three_of_three": false,
+      "variants": {
+        "V1": "FALSE_ABSTENTION",
+        "V2": "FALSE_ABSTENTION",
+        "V3": "FALSE_ABSTENTION"
+      }
+    },
+    "intent_q_l3_03": {
+      "denominator": 3,
+      "correct_count": 0,
+      "three_of_three": false,
+      "variants": {
+        "V1": "FALSE_ABSTENTION",
+        "V2": "FALSE_ABSTENTION",
+        "V3": "FALSE_ABSTENTION"
+      }
+    },
+    "intent_q_l4_01": {
+      "denominator": 3,
+      "correct_count": 0,
+      "three_of_three": false,
+      "variants": {
+        "V1": "FALSE_ABSTENTION",
+        "V2": "FALSE_ABSTENTION",
+        "V3": "FALSE_ABSTENTION"
+      }
+    },
+    "intent_q_l4_02": {
+      "denominator": 3,
+      "correct_count": 0,
+      "three_of_three": false,
+      "variants": {
+        "V1": "FALSE_ABSTENTION",
+        "V2": "FALSE_ABSTENTION",
+        "V3": "FALSE_ABSTENTION"
+      }
+    },
+    "intent_q_l4_03": {
+      "denominator": 3,
+      "correct_count": 0,
+      "three_of_three": false,
+      "variants": {
+        "V1": "FALSE_ABSTENTION",
+        "V2": "FALSE_ABSTENTION",
+        "V3": "FALSE_ABSTENTION"
+      }
+    }
+  },
+  "ABSTENTION_FAMILY_BREAKDOWN": {
+    "intent_q_ch5_01": {
+      "denominator": 3,
+      "correct_count": 3,
+      "three_of_three": true,
+      "variants": {
+        "V1": "CORRECT_ABSTENTION",
+        "V2": "CORRECT_ABSTENTION",
+        "V3": "CORRECT_ABSTENTION"
+      }
+    },
+    "intent_q_ch6_01": {
+      "denominator": 3,
+      "correct_count": 3,
+      "three_of_three": true,
+      "variants": {
+        "V1": "CORRECT_ABSTENTION",
+        "V2": "CORRECT_ABSTENTION",
+        "V3": "CORRECT_ABSTENTION"
+      }
+    }
+  },
+  "VARIANT_BREAKDOWN": {
+    "V1": {
+      "CORRECT_ABSTENTION": 2,
+      "FALSE_ABSTENTION": 11,
+      "SUCCESS": 2
+    },
+    "V2": {
+      "CORRECT_ABSTENTION": 2,
+      "FALSE_ABSTENTION": 11,
+      "SUCCESS": 2
+    },
+    "V3": {
+      "CORRECT_ABSTENTION": 2,
+      "FALSE_ABSTENTION": 13
+    }
+  },
+  "FAILURE_TAXONOMY_COUNTS": {
+    "CORRECT_ABSTENTION": 6,
+    "FALSE_ABSTENTION": 35,
+    "SUCCESS": 4
+  },
+  "REFERENCE_CORRECTION_COUNT": 3,
+  "SEMANTIC_SIGNATURE_VERSION": "v2_role_aware_bounded",
+  "SEMANTIC_SIGNATURE_SCOPE": "bounded_current_contract_grammar",
+  "OTHER_GENERATION_FAILURE_COUNT": 0,
+  "OTHER_BOUNDARY_FAILURE_COUNT": 0,
+  "RECOVERED_EVALUATION_ROWS_SHA256": "cc15c59d9a35b1902acc4366b7aead1ca845b39168eb9effe06178a5faee9519",
+  "SOURCE_REFERENCE_KIND_COUNTS": {
+    "KNOWN_PLACEHOLDER_BOUNDARY": 6,
+    "CORRECTED_EVALUATION_REFERENCE": 3,
+    "HISTORICAL_REFERENCE": 36
+  },
+  "REPORTING_CORRECTION": "POST_RUN_PROVENANCE_ONLY_NO_GENERATION_OR_METRIC_CHANGE"
+}

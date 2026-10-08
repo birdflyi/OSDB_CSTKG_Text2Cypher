@@ -1,0 +1,22 @@
+# D1.2c v1 Incident Adjudication Checkpoint
+
+```text
+RAW_TRACE_SHA256 = 9df9e576460f77d4c8d6fa9bd9a6b65b9eece83cd6837ec1e828027ba2604334
+RAW_TRACE_COUNT = 45
+EXACT_NL_BIJECTION = YES
+TRACE_ORDER_MATCH = YES
+REQUEST_ID_BEHAVIORAL_DEPENDENCY = NO
+REQUEST_ID_BEHAVIORAL_AUDIT = pipeline dataclass/provenance storage only; no parser, selector, renderer, validator, or repair branch reads request_id
+BLANK_ID_GENERATION_SEMANTICS_IMPACT = NO
+TRACE_SALVAGEABLE = YES
+NO_PREVIEW_RULE_VIOLATED = YES
+PREVIEW_INFLUENCE_CLASSIFICATION = NO_EVIDENCE_OF_CHANGE
+PRISTINE_BLIND_HELDOUT_PROTOCOL = NO
+GENERATION_RERUN = NO
+CORE_IMPLEMENTATION_CHANGED = NO
+DATASET_CHANGED = NO
+NEO4J_RUN = NO
+RECOMMENDED_NEXT_STATE = KEEP_V1_AS_FIRST_RUN_DIAGNOSTIC
+```
+
+The original raw trace remains immutable. This checkpoint records a metadata/provenance recovery and post-run evaluation only.
