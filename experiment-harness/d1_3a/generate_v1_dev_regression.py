@@ -88,6 +88,7 @@ def main() -> int:
     parser.add_argument("--templates", type=Path, default=DEFAULT_TEMPLATES)
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--artifact-version", choices=("v1", "v2"), default="v1")
     args = parser.parse_args()
 
     requests = _requests(args.queries)
@@ -99,7 +100,7 @@ def main() -> int:
         for item in requests
     ]
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    trace_path = args.output_dir / "d1_3a_v1_dev_generation_traces_v1.jsonl"
+    trace_path = args.output_dir / f"d1_3a_v1_dev_generation_traces_{args.artifact_version}.jsonl"
     with trace_path.open("w", encoding="utf-8", newline="\n") as handle:
         for row in traces:
             handle.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
@@ -112,6 +113,7 @@ def main() -> int:
         "template_pack_path": str(args.templates.relative_to(ROOT)).replace("\\", "/"),
         "template_pack_sha256": _sha256(args.templates),
         "generation_input_rows": len(requests),
+        "artifact_version": args.artifact_version,
         "generation_input_fields": ["id", "nl_query"],
         "evaluation_annotations_loaded": False,
         "gold_or_reference_cypher_loaded": False,
@@ -119,7 +121,7 @@ def main() -> int:
         "generation_trace_path": str(trace_path.relative_to(ROOT)).replace("\\", "/"),
         "generation_trace_sha256": _sha256(trace_path),
     }
-    with (args.output_dir / "d1_3a_v1_dev_generation_receipt_v1.json").open(
+    with (args.output_dir / f"d1_3a_v1_dev_generation_receipt_{args.artifact_version}.json").open(
         "w", encoding="utf-8", newline="\n"
     ) as handle:
         handle.write(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n")

@@ -14,16 +14,24 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "graph-migration"))
 EVALUATOR_PATH = ROOT / "experiment-harness" / "d1_2c" / "evaluate_heldout_v1.py"
-DEFAULT_TRACES = ROOT / "experiment-harness" / "results" / "d1_3a_v1_dev_regression" / "d1_3a_v1_dev_generation_traces_v1.jsonl"
+DEFAULT_TRACE_DIR = ROOT / "experiment-harness" / "results" / "d1_3a_v1_dev_regression"
 DEFAULT_GOLD = ROOT / "data_real" / "heldout_v1" / "heldout_gold_v1.jsonl"
 DEFAULT_FROZEN_ROWS = ROOT / "experiment-harness" / "results" / "d1_2c_heldout_v1" / "d1_2c_v1_recovered_evaluation_rows_v2.jsonl"
-DEFAULT_OUTPUT = ROOT / "experiment-harness" / "results" / "d1_3a_v1_dev_regression"
+DEFAULT_OUTPUT = DEFAULT_TRACE_DIR
 BASELINE = {
     "EXECUTABLE_SEMANTIC_SUCCESS": 4,
     "N_EXECUTABLE": 39,
     "KNOWN_BOUNDARY_ABSTENTION": 6,
     "N_ABSTENTION": 6,
     "FALSE_ABSTENTION": 35,
+    "UNDETECTED_SEMANTIC_ERROR": 0,
+}
+PRE_FIX_D1_3A = {
+    "EXECUTABLE_SEMANTIC_SUCCESS": 12,
+    "N_EXECUTABLE": 39,
+    "KNOWN_BOUNDARY_ABSTENTION": 6,
+    "N_ABSTENTION": 6,
+    "FALSE_ABSTENTION": 27,
     "UNDETECTED_SEMANTIC_ERROR": 0,
 }
 
@@ -88,15 +96,25 @@ def evaluate(traces: list[dict[str, Any]], gold_rows: list[dict[str, Any]]) -> t
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--traces", type=Path, default=DEFAULT_TRACES)
+    parser.add_argument("--traces", type=Path)
     parser.add_argument("--gold", type=Path, default=DEFAULT_GOLD)
     parser.add_argument("--frozen-rows", type=Path, default=DEFAULT_FROZEN_ROWS)
+    parser.add_argument(
+        "--pre-fix-rows",
+        type=Path,
+        default=DEFAULT_TRACE_DIR / "d1_3a_v1_dev_evaluation_rows_v1.jsonl",
+    )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--artifact-version", choices=("v1", "v2"), default="v1")
     args = parser.parse_args()
-    rows, summary = evaluate(_load_jsonl(args.traces), _load_jsonl(args.gold))
+    traces_path = args.traces or (
+        DEFAULT_TRACE_DIR / f"d1_3a_v1_dev_generation_traces_{args.artifact_version}.jsonl"
+    )
+    rows, summary = evaluate(_load_jsonl(traces_path), _load_jsonl(args.gold))
     frozen_rows = {str(item.get("heldout_id") or ""): item for item in _load_jsonl(args.frozen_rows)}
+    pre_fix_rows = {str(item.get("heldout_id") or ""): item for item in _load_jsonl(args.pre_fix_rows)}
     current_rows = {str(item.get("heldout_id") or ""): item for item in rows}
-    if set(frozen_rows) != set(current_rows):
+    if set(frozen_rows) != set(current_rows) or set(pre_fix_rows) != set(current_rows):
         raise ValueError("frozen v1 recovered rows do not align with the development trace set")
     rc1_moved = [
         item_id
@@ -113,13 +131,14 @@ def main() -> int:
         and current_rows[item_id].get("selected_template")
     ]
     previous_success_ids = {
-        item_id for item_id, item in frozen_rows.items() if item.get("classification") == "SUCCESS"
+        item_id for item_id, item in pre_fix_rows.items() if item.get("classification") == "SUCCESS"
     }
     regressed_previous_success = [
         item_id for item_id in sorted(previous_success_ids) if current_rows[item_id].get("classification") != "SUCCESS"
     ]
     regression = {
         "BASELINE": BASELINE,
+        "PRE_FIX_D1_3A": PRE_FIX_D1_3A,
         "D1_3A": {
             "EXECUTABLE_SEMANTIC_SUCCESS": summary["EXECUTABLE_SEMANTIC_SUCCESS_COUNT"],
             "N_EXECUTABLE": summary["N_EXECUTABLE"],
@@ -133,6 +152,12 @@ def main() -> int:
             "KNOWN_BOUNDARY_ABSTENTION": summary["CORRECT_ABSTENTION_COUNT"] - BASELINE["KNOWN_BOUNDARY_ABSTENTION"],
             "FALSE_ABSTENTION": summary["FALSE_ABSTENTION_COUNT"] - BASELINE["FALSE_ABSTENTION"],
             "UNDETECTED_SEMANTIC_ERROR": summary["UNDETECTED_SEMANTIC_ERROR_COUNT"] - BASELINE["UNDETECTED_SEMANTIC_ERROR"],
+        },
+        "DELTA_VS_PRE_FIX_D1_3A": {
+            "EXECUTABLE_SEMANTIC_SUCCESS": summary["EXECUTABLE_SEMANTIC_SUCCESS_COUNT"] - PRE_FIX_D1_3A["EXECUTABLE_SEMANTIC_SUCCESS"],
+            "KNOWN_BOUNDARY_ABSTENTION": summary["CORRECT_ABSTENTION_COUNT"] - PRE_FIX_D1_3A["KNOWN_BOUNDARY_ABSTENTION"],
+            "FALSE_ABSTENTION": summary["FALSE_ABSTENTION_COUNT"] - PRE_FIX_D1_3A["FALSE_ABSTENTION"],
+            "UNDETECTED_SEMANTIC_ERROR": summary["UNDETECTED_SEMANTIC_ERROR_COUNT"] - PRE_FIX_D1_3A["UNDETECTED_SEMANTIC_ERROR"],
         },
         "RC1_SCOPE_PREFIX_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": rc1_moved,
         "RC3_TARGET_ROLE_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": rc3_moved,
@@ -149,14 +174,17 @@ def main() -> int:
         "NEO4J_RUN": False,
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    rows_path = args.output_dir / "d1_3a_v1_dev_evaluation_rows_v1.jsonl"
+    rows_path = args.output_dir / f"d1_3a_v1_dev_evaluation_rows_{args.artifact_version}.jsonl"
     with rows_path.open("w", encoding="utf-8", newline="\n") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
     summary.update(
         {
+            "artifact_version": args.artifact_version,
             "FROZEN_BASELINE_METRICS": BASELINE,
+            "PRE_FIX_D1_3A_METRICS": PRE_FIX_D1_3A,
             "DELTA_VS_FROZEN_BASELINE": regression["DELTA"],
+            "DELTA_VS_PRE_FIX_D1_3A": regression["DELTA_VS_PRE_FIX_D1_3A"],
             "RC1_SCOPE_PREFIX_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": rc1_moved,
             "RC3_TARGET_ROLE_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": rc3_moved,
             "PREVIOUS_SUCCESS_REGRESSION_COUNT": len(regressed_previous_success),
@@ -165,13 +193,13 @@ def main() -> int:
             "V1_ROLE": "DEVELOPMENT_DIAGNOSTIC",
             "V2_REQUIRED_AFTER_TUNING": True,
             "V2_CONSTRUCTED": False,
-            "generation_trace_sha256": _sha256(args.traces),
+            "generation_trace_sha256": _sha256(traces_path),
             "evaluation_rows_sha256": _sha256(rows_path),
             "frozen_baseline_rows_sha256": _sha256(args.frozen_rows),
             "gold_dataset_sha256": _sha256(args.gold),
         }
     )
-    with (args.output_dir / "d1_3a_v1_dev_summary_v1.json").open(
+    with (args.output_dir / f"d1_3a_v1_dev_summary_{args.artifact_version}.json").open(
         "w", encoding="utf-8", newline="\n"
     ) as handle:
         handle.write(json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
@@ -181,8 +209,10 @@ def main() -> int:
         "Role: `DEVELOPMENT_REGRESSION / NOT_HELDOUT`. This diagnostic run is post-tuning development evidence only; it does not estimate generalization. A separately authored independent v2 remains required after tuning.",
         "",
         f"Frozen baseline: {BASELINE}",
+        f"Pre-fix D1.3a: {PRE_FIX_D1_3A}",
         f"D1.3a metrics: {regression['D1_3A']}",
         f"Delta: {regression['DELTA']}",
+        f"Delta vs pre-fix D1.3a: {regression['DELTA_VS_PRE_FIX_D1_3A']}",
         "",
         f"RC1 rows moved past the old failure layer: {len(rc1_moved)}.",
         f"RC3 rows moved past the old failure layer: {len(rc3_moved)}.",
@@ -191,7 +221,12 @@ def main() -> int:
         "",
         "The interpretation is static-only. No Neo4j runtime or held-out v2 construction/inspection occurred.",
     ]
-    with (args.output_dir / "d1_3a_v1_dev_delta_vs_frozen_baseline_v1.md").open(
+    delta_name = (
+        "d1_3a_v1_dev_delta_vs_frozen_baseline_v1.md"
+        if args.artifact_version == "v1"
+        else "d1_3a_v1_dev_delta_review_fix_v2.md"
+    )
+    with (args.output_dir / delta_name).open(
         "w", encoding="utf-8", newline="\n"
     ) as handle:
         handle.write("\n".join(delta) + "\n")

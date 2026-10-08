@@ -9,6 +9,8 @@ sys.path.insert(0, str(ROOT / "graph-migration"))
 
 from runners.independent_controlled_pipeline import (  # noqa: E402
     IndependentTemplate,
+    ScopeSlotConflictError,
+    _slot_values,
     audit_ir_constraint_coverage,
     generate_independent,
     load_independent_schema,
@@ -181,6 +183,101 @@ def test_typed_prefix_without_compatible_template_slot_abstains() -> None:
     coverage = audit_ir_constraint_coverage(ir, uncovered)
     assert not coverage["accepted"]
     assert coverage["entity_scopes"]["unconsumed"]
+
+
+def test_multiple_distinct_issue_prefixes_for_one_slot_abstain() -> None:
+    result = _generate("Show issues whose ID starts with I_880002 or I_880003.")
+    assert len(result.ir.entity_scopes) == 2
+    assert result.template_id is None
+    assert result.rendered_cypher is None
+    candidate_coverage = result.validation["selection"]["candidate_ir_constraint_coverage"]
+    issue_coverage = candidate_coverage["indv5_issue_prefix_list"]["entity_scopes"]
+    assert issue_coverage["slot_conflicts"][0]["reason_code"] == (
+        "MULTIPLE_DISTINCT_VALUES_FOR_SINGULAR_SCOPE_SLOT"
+    )
+    assert len(issue_coverage["unconsumed"]) == 2
+
+
+def test_multiple_distinct_pull_request_prefixes_do_not_render_last_value() -> None:
+    result = _generate(
+        "Show pull requests whose ID starts with PR_900001 or PR_900002."
+    )
+    assert len(result.ir.entity_scopes) == 2
+    assert result.rendered_cypher is None
+    assert result.template_id is None
+    assert "PR_900001" not in (result.rendered_cypher or "")
+    assert "PR_900002" not in (result.rendered_cypher or "")
+    pr_coverage = result.validation["selection"]["candidate_ir_constraint_coverage"][
+        "indv4_repo_pull_request_filter"
+    ]["entity_scopes"]
+    assert pr_coverage["slot_conflicts"][0]["reason_code"] == (
+        "MULTIPLE_DISTINCT_VALUES_FOR_SINGULAR_SCOPE_SLOT"
+    )
+    assert len(pr_coverage["unconsumed"]) == 2
+
+
+def test_repeated_identical_scope_values_deduplicate_without_conflict() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic",
+        "Show issues whose ID starts with I_880002 and IDs start with I_880002.",
+    )
+    assert len(ir.entity_scopes) == 2
+    template = next(item for item in _templates() if item.template_id == "indv5_issue_prefix_list")
+    coverage = audit_ir_constraint_coverage(ir, template)
+    assert coverage["accepted"]
+    assert len(coverage["entity_scopes"]["consumed"]) == 2
+    assert not coverage["entity_scopes"]["slot_conflicts"]
+    values = _slot_values(ir, template)
+    assert values["issue_scope_prefix"] == "I_880002"
+
+
+def test_scope_materialization_guard_raises_on_distinct_values_for_one_slot() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic",
+        "Show issues whose ID starts with I_880002 or I_880003.",
+    )
+    template = next(item for item in _templates() if item.template_id == "indv5_issue_prefix_list")
+    try:
+        _slot_values(ir, template)
+    except ScopeSlotConflictError as exc:
+        assert exc.reason_code == "MULTIPLE_DISTINCT_VALUES_FOR_SINGULAR_SCOPE_SLOT"
+        assert exc.slot == "issue_scope_prefix"
+    else:
+        raise AssertionError("multi-value singular scope slot should fail closed")
+
+
+def test_canonical_source_introduction_noun_is_not_an_output_projection() -> None:
+    result = _generate("Show issue I_880002#77 and tell me who opened it.")
+    assert result.ir.source_entity["entity_label"] == "Issue"
+    assert result.template_id == "indv4_issue_opened_by"
+    assert [(item.label, item.property) for item in result.ir.projection_items] == [
+        ("Actor", "entity_id")
+    ]
+    assert "RETURN a.entity_id" in result.rendered_cypher
+    assert "RETURN i.entity_id" not in result.rendered_cypher
+
+
+def test_canonical_pull_request_source_is_not_projected_with_linked_resources() -> None:
+    result = _generate(
+        "Display pull request PR_900001#12 and give the linked resource IDs."
+    )
+    assert result.ir.source_entity["entity_label"] == "PullRequest"
+    assert [(item.label, item.property) for item in result.ir.projection_items] == [
+        ("ExternalResource", "entity_id")
+    ]
+    assert result.ir.target_labels == ["ExternalResource"]
+    # Current contracts would add an unrequested column, so fail closed rather
+    # than leaking the source noun into the requested output.
+    assert result.rendered_cypher is None
+
+
+def test_explicit_id_projection_for_source_label_remains_represented() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "Show issue ID I_880002#77 and return the issue ID."
+    )
+    assert [(item.label, item.property) for item in ir.projection_items] == [
+        ("Issue", "entity_id")
+    ]
 
 
 def test_projection_order_mismatch_is_rejected() -> None:

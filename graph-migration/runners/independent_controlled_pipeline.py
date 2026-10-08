@@ -129,6 +129,17 @@ class ProjectionItem:
     function: str | None = None
 
 
+class ScopeSlotConflictError(ValueError):
+    """Raised when distinct explicit scope values target one singular slot."""
+
+    reason_code = "MULTIPLE_DISTINCT_VALUES_FOR_SINGULAR_SCOPE_SLOT"
+
+    def __init__(self, slot: str, values: list[tuple[str, str, str, str]]) -> None:
+        self.slot = slot
+        self.values = values
+        super().__init__(f"{self.reason_code}: {slot} cannot consume {len(values)} distinct values")
+
+
 @dataclass
 class ControlledQueryIR:
     request_id: str
@@ -327,9 +338,37 @@ def _entity_noun_occurrences(text: str) -> list[tuple[int, int, str]]:
     return sorted(found)
 
 
+def _source_anchor_noun_occurrences(
+    text: str, nouns: list[tuple[int, int, str]]
+) -> set[tuple[int, int, str]]:
+    """Find entity nouns that structurally introduce a canonical source ID.
+
+    Only a direct ``<entity noun> <canonical-id>`` span is treated as a source
+    introduction. Explicit ID/identifier wording between the noun and anchor
+    remains eligible to express a requested projection.
+    """
+    mentions, _ = _extract_entity_mentions(text)
+    canonical_anchors = [
+        (str(item.get("entity_label") or ""), item.get("span", []))
+        for item in mentions
+        if item.get("provenance") == "canonical_id_from_nl"
+    ]
+    anchored: set[tuple[int, int, str]] = set()
+    for start, end, label in nouns:
+        for anchor_label, span in canonical_anchors:
+            if anchor_label != label or len(span) != 2 or int(span[0]) < end:
+                continue
+            if text[end:int(span[0])].strip():
+                continue
+            anchored.add((start, end, label))
+            break
+    return anchored
+
+
 def _projection_items_from_text(text: str) -> list[ProjectionItem]:
     lower = text.lower()
     nouns = _entity_noun_occurrences(text)
+    source_anchor_nouns = _source_anchor_noun_occurrences(text, nouns)
     nullable = bool(
         re.search(r"\b(?:optional|if\s+any|where\s+they\s+exist|where\s+it\s+exists|"
                   r"neither\s+is\s+required|empty\s+when\s+missing)\b", lower)
@@ -378,6 +417,8 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
     # the wording says “which objects?” and later refers to “their IDs”.
     output_nouns: list[tuple[int, int, str]] = []
     for start, end, label in nouns:
+        if (start, end, label) in source_anchor_nouns:
+            continue
         prefix = lower[max(0, start - 24):start]
         if (
             re.search(r"\b(?:which|what|list|show|return|give|display)\s+(?:me\s+)?(?:the\s+)?(?:involved|mentioned|referenced|linked)?\s*$", prefix)
@@ -1065,6 +1106,82 @@ def _time_bound_consumed(skeleton: str, token: str) -> bool:
     )
 
 
+def _compatible_scope_slots(scope: EntityScope, template: IndependentTemplate) -> list[str]:
+    """Return singular template slots whose typed predicate consumes scope."""
+    matching_slots = {
+        str(item.get("slot"))
+        for item in template.scope_slots
+        if item.get("label") == scope.label
+        and item.get("property") == scope.property
+        and item.get("operator") == scope.operator
+        and item.get("slot")
+    }
+    if not matching_slots:
+        return []
+    aliases = [
+        alias
+        for alias, label in _skeleton_label_aliases(template.skeleton).items()
+        if label == scope.label
+    ]
+    operator_pattern = r"\s+".join(re.escape(part) for part in scope.operator.split("_"))
+    template_slots = _template_slot_names(template)
+    return sorted(
+        slot
+        for slot in matching_slots
+        if slot in template_slots
+        and any(
+            re.search(
+                rf"\b{re.escape(alias)}\.{re.escape(scope.property)}\s+{operator_pattern}\s+\${re.escape(slot)}\b",
+                template.skeleton,
+                flags=re.IGNORECASE,
+            )
+            for alias in aliases
+        )
+    )
+
+
+def _scope_slot_analysis(
+    ir: ControlledQueryIR, template: IndependentTemplate
+) -> tuple[dict[str, list[EntityScope]], dict[str, EntityScope], list[dict[str, Any]]]:
+    """Group explicit scopes by slot and identify non-representable conflicts."""
+    groups: dict[str, list[EntityScope]] = {}
+    unassigned: list[dict[str, Any]] = []
+    for scope in ir.entity_scopes:
+        slots = _compatible_scope_slots(scope, template)
+        if len(slots) == 1:
+            groups.setdefault(slots[0], []).append(scope)
+        else:
+            unassigned.append(
+                {
+                    **asdict(scope),
+                    "reason_code": "NO_COMPATIBLE_TYPED_SCOPE_SLOT"
+                    if not slots
+                    else "AMBIGUOUS_TYPED_SCOPE_SLOT",
+                }
+            )
+
+    assignments: dict[str, EntityScope] = {}
+    conflicts: list[dict[str, Any]] = []
+    for slot, scopes in groups.items():
+        distinct: dict[tuple[str, str, str, str], EntityScope] = {}
+        for scope in scopes:
+            semantic_value = (scope.label, scope.property, scope.operator, scope.value)
+            distinct.setdefault(semantic_value, scope)
+        if len(distinct) > 1:
+            conflicts.append(
+                {
+                    "slot": slot,
+                    "reason_code": ScopeSlotConflictError.reason_code,
+                    "distinct_values": [list(value) for value in distinct],
+                    "scopes": [asdict(scope) for scope in scopes],
+                }
+            )
+        else:
+            # Repeated equivalent constraints are one semantic assignment.
+            assignments[slot] = next(iter(distinct.values()))
+    return groups, assignments, [*unassigned, *conflicts]
+
+
 def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTemplate) -> dict[str, Any]:
     """Audit every explicit bounded IR constraint against one template.
 
@@ -1156,36 +1273,44 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
     ]
 
     requested_scopes = [asdict(item) for item in ir.entity_scopes]
-    scope_consumers = {
-        (str(item.get("label")), str(item.get("property")), str(item.get("operator"))): str(item.get("slot"))
-        for item in template.scope_slots
-    }
     consumed_scopes: list[dict[str, Any]] = []
     unconsumed_scopes: list[dict[str, Any]] = []
-    skeleton_aliases = _skeleton_label_aliases(template.skeleton)
-    for scope in requested_scopes:
-        key = (str(scope["label"]), str(scope["property"]), str(scope["operator"]))
-        slot = scope_consumers.get(key)
-        compatible_aliases = [
-            alias for alias, label in skeleton_aliases.items() if label == scope["label"]
-        ]
-        operator_pattern = r"\s+".join(re.escape(part) for part in str(scope["operator"]).split("_"))
-        expression_consumed = bool(
-            slot
-            and any(
-                re.search(
-                    rf"\b{re.escape(alias)}\.{re.escape(str(scope['property']))}\s+{operator_pattern}\s+\${re.escape(slot)}\b",
-                    template.skeleton,
-                    flags=re.IGNORECASE,
-                )
-                for alias in compatible_aliases
+    scope_groups, scope_assignments, scope_slot_conflicts = _scope_slot_analysis(ir, template)
+    conflict_by_slot = {str(item["slot"]): item for item in scope_slot_conflicts if item.get("slot")}
+    for scope_item, scope in zip(requested_scopes, ir.entity_scopes):
+        slots = _compatible_scope_slots(scope, template)
+        if len(slots) != 1:
+            reason_code = next(
+                (
+                    str(item["reason_code"])
+                    for item in scope_slot_conflicts
+                    if item.get("source_span") == scope_item.get("source_span")
+                ),
+                "NO_COMPATIBLE_TYPED_SCOPE_SLOT" if not slots else "AMBIGUOUS_TYPED_SCOPE_SLOT",
             )
-        )
-        if slot and slot in _template_slot_names(template) and expression_consumed:
-            consumed_scopes.append({**scope, "status": "CONSUMED_BY_SELECTED_CONTRACT", "slot": slot})
-        else:
             unconsumed_scopes.append(
-                {**scope, "status": "ABSTAIN_WITH_TYPED_UNCONSUMED_REASON", "reason": "no compatible typed scope slot"}
+                {
+                    **scope_item,
+                    "status": "ABSTAIN_WITH_TYPED_UNCONSUMED_REASON",
+                    "reason_code": reason_code,
+                    "reason": "no unique compatible typed scope slot",
+                }
+            )
+            continue
+        slot = slots[0]
+        if slot in conflict_by_slot:
+            unconsumed_scopes.append(
+                {
+                    **scope_item,
+                    "status": "ABSTAIN_WITH_TYPED_UNCONSUMED_REASON",
+                    "slot": slot,
+                    "reason_code": ScopeSlotConflictError.reason_code,
+                    "reason": "multiple distinct explicit values target one singular scope slot",
+                }
+            )
+        elif slot in scope_assignments:
+            consumed_scopes.append(
+                {**scope_item, "status": "CONSUMED_BY_SELECTED_CONTRACT", "slot": slot}
             )
 
     requested_projection_items = [asdict(item) for item in ir.projection_items]
@@ -1341,6 +1466,8 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
             "requested": requested_scopes,
             "consumed": consumed_scopes,
             "unconsumed": unconsumed_scopes,
+            "slot_conflicts": scope_slot_conflicts,
+            "slot_group_count": len(scope_groups),
         },
         "sort": {
             "requested": explicit_sorts,
@@ -1599,19 +1726,18 @@ def _slot_values(ir: ControlledQueryIR, template: IndependentTemplate) -> dict[s
                 "commit_base_prefix": prefixes.get("Commit"),
             }
         )
-    for scope in ir.entity_scopes:
-        consumer = next(
-            (
-                item
-                for item in template.scope_slots
-                if item.get("label") == scope.label
-                and item.get("property") == scope.property
-                and item.get("operator") == scope.operator
-            ),
-            None,
-        )
-        if consumer and consumer.get("slot"):
-            values[str(consumer["slot"])] = scope.value
+    _, scope_assignments, scope_issues = _scope_slot_analysis(ir, template)
+    conflicts = [
+        item
+        for item in scope_issues
+        if item.get("reason_code") == ScopeSlotConflictError.reason_code
+    ]
+    if conflicts:
+        conflict = conflicts[0]
+        semantic_values = [tuple(str(part) for part in item) for item in conflict["distinct_values"]]
+        raise ScopeSlotConflictError(str(conflict["slot"]), semantic_values)
+    for slot, scope in scope_assignments.items():
+        values[slot] = scope.value
     return {k: v for k, v in values.items() if v is not None}
 
 
