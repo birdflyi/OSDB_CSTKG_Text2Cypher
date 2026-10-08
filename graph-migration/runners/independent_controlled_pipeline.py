@@ -83,6 +83,7 @@ LIMIT_PATTERN = re.compile(r"\b(?:top|limit)\s+(\d+)\b", re.IGNORECASE)
 UNNORMALIZED_LIMIT_PATTERNS = [
     re.compile(r"\b(?:up\s+to|at\s+most|no\s+more\s+than|limited\s+to|capped\s+at)\s+(\d+)\s*(?:rows?|results?|entries?|domains?)\b", re.I),
     re.compile(r"\b(\d+)\s*(?:rows?|results?|entries?|domains?)\s+(?:max(?:imum)?|at\s+most)\b", re.I),
+    re.compile(r"\b(?:limit\s+to|stop\s+at)\s+(\d+)\s*(?:rows?|results?|entries?)?\b", re.I),
 ]
 
 ENTITY_SLOT_BY_LABEL = {

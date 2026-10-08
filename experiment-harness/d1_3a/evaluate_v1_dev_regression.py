@@ -35,7 +35,7 @@ BASELINE = {
     "FALSE_ABSTENTION": 35,
     "UNDETECTED_SEMANTIC_ERROR": 0,
 }
-PRE_FIX_D1_3A = {
+EXPECTED_DEFAULT_PRE_FIX_V1_METRICS = {
     "EXECUTABLE_SEMANTIC_SUCCESS": 12,
     "N_EXECUTABLE": 39,
     "KNOWN_BOUNDARY_ABSTENTION": 6,
@@ -43,6 +43,55 @@ PRE_FIX_D1_3A = {
     "FALSE_ABSTENTION": 27,
     "UNDETECTED_SEMANTIC_ERROR": 0,
 }
+
+_VALID_EXPECTED_BEHAVIORS = {"EXECUTABLE", "ABSTAIN", "ABSTAIN_OR_PENDING"}
+_VALID_CLASSIFICATIONS = {
+    "SUCCESS",
+    "CORRECT_ABSTENTION",
+    "FALSE_ABSTENTION",
+    "OTHER_GENERATION_FAILURE",
+    "SLOT_RENDER_FAILURE",
+    "DIAGNOSABLE_STATIC_FAILURE",
+    "UNDETECTED_SEMANTIC_ERROR",
+    "OOB_STATIC_VALID_EXECUTION",
+    "OOB_EXECUTION_ATTEMPT",
+    "OTHER_BOUNDARY_FAILURE",
+}
+
+
+def metrics_from_evaluation_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
+    """Derive comparison metrics from one selected evaluation-row artifact."""
+    if not rows:
+        raise ValueError("evaluation rows artifact is empty")
+    for index, row in enumerate(rows):
+        expected = row.get("expected_behavior")
+        classification = row.get("classification")
+        if expected not in _VALID_EXPECTED_BEHAVIORS:
+            raise ValueError(
+                f"evaluation row {index} has invalid expected_behavior: {expected!r}"
+            )
+        if classification not in _VALID_CLASSIFICATIONS:
+            raise ValueError(
+                f"evaluation row {index} has invalid or missing classification: {classification!r}"
+            )
+    executable = [row for row in rows if row["expected_behavior"] == "EXECUTABLE"]
+    abstentions = [row for row in rows if row["expected_behavior"] != "EXECUTABLE"]
+    return {
+        "EXECUTABLE_SEMANTIC_SUCCESS": sum(
+            row["classification"] == "SUCCESS" for row in executable
+        ),
+        "N_EXECUTABLE": len(executable),
+        "KNOWN_BOUNDARY_ABSTENTION": sum(
+            row["classification"] == "CORRECT_ABSTENTION" for row in abstentions
+        ),
+        "N_ABSTENTION": len(abstentions),
+        "FALSE_ABSTENTION": sum(
+            row["classification"] == "FALSE_ABSTENTION" for row in executable
+        ),
+        "UNDETECTED_SEMANTIC_ERROR": sum(
+            row["classification"] == "UNDETECTED_SEMANTIC_ERROR" for row in executable
+        ),
+    }
 
 
 def _load_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -204,9 +253,10 @@ def main() -> int:
     regressed_previous_success = [
         item_id for item_id in sorted(previous_success_ids) if current_rows[item_id].get("classification") != "SUCCESS"
     ]
+    pre_fix_metrics = metrics_from_evaluation_rows(list(pre_fix_rows.values()))
     regression = {
         "BASELINE": BASELINE,
-        "PRE_FIX_D1_3A": PRE_FIX_D1_3A,
+        "PRE_FIX_D1_3A": pre_fix_metrics,
         "D1_3A": {
             "EXECUTABLE_SEMANTIC_SUCCESS": summary["EXECUTABLE_SEMANTIC_SUCCESS_COUNT"],
             "N_EXECUTABLE": summary["N_EXECUTABLE"],
@@ -222,10 +272,10 @@ def main() -> int:
             "UNDETECTED_SEMANTIC_ERROR": summary["UNDETECTED_SEMANTIC_ERROR_COUNT"] - BASELINE["UNDETECTED_SEMANTIC_ERROR"],
         },
         "DELTA_VS_PRE_FIX_D1_3A": {
-            "EXECUTABLE_SEMANTIC_SUCCESS": summary["EXECUTABLE_SEMANTIC_SUCCESS_COUNT"] - PRE_FIX_D1_3A["EXECUTABLE_SEMANTIC_SUCCESS"],
-            "KNOWN_BOUNDARY_ABSTENTION": summary["CORRECT_ABSTENTION_COUNT"] - PRE_FIX_D1_3A["KNOWN_BOUNDARY_ABSTENTION"],
-            "FALSE_ABSTENTION": summary["FALSE_ABSTENTION_COUNT"] - PRE_FIX_D1_3A["FALSE_ABSTENTION"],
-            "UNDETECTED_SEMANTIC_ERROR": summary["UNDETECTED_SEMANTIC_ERROR_COUNT"] - PRE_FIX_D1_3A["UNDETECTED_SEMANTIC_ERROR"],
+            "EXECUTABLE_SEMANTIC_SUCCESS": summary["EXECUTABLE_SEMANTIC_SUCCESS_COUNT"] - pre_fix_metrics["EXECUTABLE_SEMANTIC_SUCCESS"],
+            "KNOWN_BOUNDARY_ABSTENTION": summary["CORRECT_ABSTENTION_COUNT"] - pre_fix_metrics["KNOWN_BOUNDARY_ABSTENTION"],
+            "FALSE_ABSTENTION": summary["FALSE_ABSTENTION_COUNT"] - pre_fix_metrics["FALSE_ABSTENTION"],
+            "UNDETECTED_SEMANTIC_ERROR": summary["UNDETECTED_SEMANTIC_ERROR_COUNT"] - pre_fix_metrics["UNDETECTED_SEMANTIC_ERROR"],
         },
         "RC1_SCOPE_PREFIX_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": rc1_moved,
         "RC3_TARGET_ROLE_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": rc3_moved,
@@ -249,7 +299,7 @@ def main() -> int:
         {
             "artifact_version": args.artifact_version,
             "FROZEN_BASELINE_METRICS": BASELINE,
-            "PRE_FIX_D1_3A_METRICS": PRE_FIX_D1_3A,
+            "PRE_FIX_D1_3A_METRICS": pre_fix_metrics,
             "DELTA_VS_FROZEN_BASELINE": regression["DELTA"],
             "DELTA_VS_PRE_FIX_D1_3A": regression["DELTA_VS_PRE_FIX_D1_3A"],
             "RC1_SCOPE_PREFIX_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": rc1_moved,
@@ -277,7 +327,7 @@ def main() -> int:
         "Role: `DEVELOPMENT_REGRESSION / NOT_HELDOUT`. This diagnostic run is post-tuning development evidence only; it does not estimate generalization. A separately authored independent v2 remains required after tuning.",
         "",
         f"Frozen baseline: {BASELINE}",
-        f"Pre-fix D1.3a: {PRE_FIX_D1_3A}",
+        f"Pre-fix D1.3a (selected artifact): {pre_fix_metrics}",
         f"D1.3a metrics: {regression['D1_3A']}",
         f"Delta: {regression['DELTA']}",
         f"Delta vs pre-fix D1.3a: {regression['DELTA_VS_PRE_FIX_D1_3A']}",

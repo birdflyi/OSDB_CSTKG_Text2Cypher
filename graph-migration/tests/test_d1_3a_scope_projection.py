@@ -744,6 +744,55 @@ def test_unrecognized_limit_equal_to_contract_default_is_entailed() -> None:
     assert coverage["contract_default_entailed_values"] == [25]
 
 
+def test_limit_to_phrase_is_captured_and_does_not_use_default_limit() -> None:
+    result = _generate(
+        "For pull request PR_900001#12, show the linked resource ID and domain, limit to 10 results."
+    )
+    assert result.ir.unnormalized_limit_values == [10]
+    assert result.template_id is None
+    assert result.rendered_cypher is None
+    assert result.validation["selection"]["reason"] == "unconsumed IR constraint"
+
+
+def test_stop_at_phrase_is_captured_and_fails_closed_against_default_limit() -> None:
+    result = _generate(
+        "For pull request PR_900001#12, show the linked resource ID and domain, stop at 10."
+    )
+    assert result.ir.unnormalized_limit_values == [10]
+    assert result.template_id is None
+    assert result.rendered_cypher is None
+
+
+def test_limit_to_contract_default_is_entailed_without_duplicate_explicit_limit() -> None:
+    result = _generate(
+        "For pull request PR_900001#12, show the linked resource ID and domain, limit to 25 results."
+    )
+    assert result.template_id == "indv5_reference_external_id_domain"
+    assert result.ir.explicit_limit is None
+    coverage = result.validation["selection"]["ir_constraint_coverage"]["limit"]
+    assert coverage["unnormalized_explicit_values"] == [25]
+    assert coverage["contract_default_entailed_values"] == [25]
+    assert "LIMIT 25" in result.rendered_cypher
+
+
+def test_existing_explicit_limit_and_default_limit_behavior_remain_unchanged() -> None:
+    explicit = _generate(
+        "For pull request PR_900001#12, show the linked resource ID and domain, limit 10."
+    )
+    assert explicit.ir.explicit_limit == 10
+    assert explicit.ir.unnormalized_limit_values == []
+    assert explicit.template_id == "indv5_reference_external_id_domain"
+    assert "LIMIT 10" in explicit.rendered_cypher
+
+    defaulted = _generate(
+        "For pull request PR_900001#12, show the linked resource ID and domain."
+    )
+    assert defaulted.ir.explicit_limit is None
+    assert defaulted.ir.unnormalized_limit_values == []
+    assert defaulted.template_id == "indv5_reference_external_id_domain"
+    assert "LIMIT 25" in defaulted.rendered_cypher
+
+
 def test_production_scope_projection_files_have_no_heldout_literals_or_id_routing() -> None:
     production = "\n".join(
         path.read_text(encoding="utf-8")
