@@ -1,0 +1,64 @@
+{
+  "run_id": "d1_3a_v1_development_regression",
+  "evaluation_role": "DEVELOPMENT_REGRESSION",
+  "heldout_role": "NOT_HELDOUT",
+  "N": 45,
+  "N_EXECUTABLE": 39,
+  "N_ABSTENTION": 6,
+  "EXECUTABLE_SEMANTIC_SUCCESS_COUNT": 12,
+  "CORRECT_ABSTENTION_COUNT": 6,
+  "FALSE_ABSTENTION_COUNT": 27,
+  "UNDETECTED_SEMANTIC_ERROR_COUNT": 0,
+  "FAILURE_TAXONOMY_COUNTS": {
+    "CORRECT_ABSTENTION": 6,
+    "FALSE_ABSTENTION": 27,
+    "SUCCESS": 12
+  },
+  "SEMANTIC_SIGNATURE_SCOPE": "static_bounded_current_contract_grammar",
+  "NEO4J_RUN": false,
+  "FROZEN_BASELINE_METRICS": {
+    "EXECUTABLE_SEMANTIC_SUCCESS": 4,
+    "N_EXECUTABLE": 39,
+    "KNOWN_BOUNDARY_ABSTENTION": 6,
+    "N_ABSTENTION": 6,
+    "FALSE_ABSTENTION": 35,
+    "UNDETECTED_SEMANTIC_ERROR": 0
+  },
+  "DELTA_VS_FROZEN_BASELINE": {
+    "EXECUTABLE_SEMANTIC_SUCCESS": 8,
+    "KNOWN_BOUNDARY_ABSTENTION": 0,
+    "FALSE_ABSTENTION": -8,
+    "UNDETECTED_SEMANTIC_ERROR": 0
+  },
+  "RC1_SCOPE_PREFIX_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": [
+    "ho_q_l1_02_V1",
+    "ho_q_l1_02_V2",
+    "ho_q_l1_02_V3",
+    "ho_q_l4_02_V1",
+    "ho_q_l4_02_V3"
+  ],
+  "RC3_TARGET_ROLE_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": [
+    "ho_q_l1_02_V1",
+    "ho_q_l1_02_V2",
+    "ho_q_l1_02_V3",
+    "ho_q_l1_03_V3",
+    "ho_q_l2_03_V2",
+    "ho_q_l4_02_V1",
+    "ho_q_l4_02_V3",
+    "ho_q_l4_03_V2"
+  ],
+  "PREVIOUS_SUCCESS_REGRESSION_COUNT": 0,
+  "PREVIOUS_SUCCESS_REGRESSION_IDS": [],
+  "SAFETY_GATES": {
+    "KNOWN_BOUNDARY_ABSTENTION_6_OF_6": true,
+    "UNDETECTED_SEMANTIC_ERROR_ZERO": true,
+    "PREVIOUSLY_SUCCESSFUL_EXECUTABLES_NO_REGRESSION": true
+  },
+  "V1_ROLE": "DEVELOPMENT_DIAGNOSTIC",
+  "V2_REQUIRED_AFTER_TUNING": true,
+  "V2_CONSTRUCTED": false,
+  "generation_trace_sha256": "2ffda642ad5963ceb10e4d2de86cf6a0f74043ebdb406437cd7e7775554e1c47",
+  "evaluation_rows_sha256": "db26ff5cc8e295fe2adf2e29df80ff9e2c2dbd87feb1fc2466c74e0b55d30f8c",
+  "frozen_baseline_rows_sha256": "cc15c59d9a35b1902acc4366b7aead1ca845b39168eb9effe06178a5faee9519",
+  "gold_dataset_sha256": "d04f2ce061327d25357d3b9f6479d54a76608071aba65e80a29aa760ac351be7"
+}

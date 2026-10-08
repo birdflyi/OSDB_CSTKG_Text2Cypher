@@ -44,17 +44,46 @@ LABEL_FROM_PREFIX = {
     "C": "Commit",
 }
 
+TYPED_PREFIX_LABELS = {"PR": "PullRequest", "I": "Issue"}
+TYPED_PREFIX_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9_])(?P<prefix>PR|I)_(?P<number>\d+)(?![A-Za-z0-9_#@])",
+    re.IGNORECASE,
+)
+PREFIX_SCOPE_CUE = re.compile(
+    r"\b(?:prefix|starts?\s+with|begins?\s+with|starting\s+with|beginning\s+with|"
+    r"whose\s+(?:entity\s+)?(?:ids?|identifiers?)|(?:ids?|identifiers?)\s+(?:that\s+)?"
+    r"(?:start|begin)|scope(?:d)?\s+to)\b",
+    re.IGNORECASE,
+)
+
+ENTITY_NOUN_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
+    ("PullRequestReviewComment", re.compile(r"\bpull\s+request\s+review\s+comments?\b|\breview\s+comments?\b", re.I)),
+    ("PullRequestReview", re.compile(r"\bpull\s+request\s+reviews?\b|\breviews?\b", re.I)),
+    ("IssueComment", re.compile(r"\bissue\s+comments?\b", re.I)),
+    ("ExternalResource", re.compile(r"\b(?:external[- ]|outside\s+|linked\s+)?resources?\b", re.I)),
+    ("UnknownObject", re.compile(r"\bunknown(?:[- ,]+(?:type|untyped))?\s+objects?\b|\buntyped(?:,?\s+unknown)?\s+objects?\b|\breferenced\s+objects?\b|\bobjects?\b", re.I)),
+    ("PullRequest", re.compile(r"\bpull\s+requests?\b|\bprs?\b", re.I)),
+    ("Issue", re.compile(r"\bissues?\b", re.I)),
+    ("Actor", re.compile(r"\bactors?\b|\busers?\b|\bpeople\b", re.I)),
+    ("Commit", re.compile(r"\bcommits?\b", re.I)),
+    ("Repo", re.compile(r"\brepositories\b|\brepos?\b", re.I)),
+]
+
 SERVICE_LEXICON = {
     "OPENED_BY": ("opened", "open", "opened by", "owner"),
     "REFERENCES": ("referenced", "references", "reference", "referencing", "objects are referenced"),
     "MENTIONS": ("mentioned", "mentions", "mention"),
-    "LINKS_TO": ("external link", "external links", "links to", "linked to", "link to"),
+    "LINKS_TO": ("external link", "external links", "links to", "linked to", "linked resource", "link to"),
 }
 
 TOKEN_PATTERN = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)")
 DATE_PATTERN = re.compile(r"\b(20\d{2}-\d{2}-\d{2})\b")
 YEAR_PATTERN = re.compile(r"\b(20\d{2}|2100)\b")
 LIMIT_PATTERN = re.compile(r"\b(?:top|limit)\s+(\d+)\b", re.IGNORECASE)
+UNNORMALIZED_LIMIT_PATTERNS = [
+    re.compile(r"\b(?:up\s+to|at\s+most|no\s+more\s+than|limited\s+to|capped\s+at)\s+(\d+)\s*(?:rows?|results?|entries?|domains?)\b", re.I),
+    re.compile(r"\b(\d+)\s*(?:rows?|results?|entries?|domains?)\s+(?:max(?:imum)?|at\s+most)\b", re.I),
+]
 
 ENTITY_SLOT_BY_LABEL = {
     "Issue": "issue_entity_id",
@@ -78,19 +107,45 @@ class IRField:
 
 
 @dataclass
+class EntityScope:
+    label: str
+    property: str
+    operator: str
+    value: str
+    provenance: str
+    source_span: list[int]
+
+
+@dataclass
+class ProjectionItem:
+    role: str
+    label: str | None
+    property: str
+    distinct: bool = False
+    nullable: bool = False
+    alias: str | None = None
+    provenance: str = "bounded_projection_rule"
+    source_span: list[int] = field(default_factory=list)
+    function: str | None = None
+
+
+@dataclass
 class ControlledQueryIR:
     request_id: str
     nl_query: str
     entity_mentions: list[dict[str, Any]] = field(default_factory=list)
     aligned_entities: list[dict[str, Any]] = field(default_factory=list)
+    entity_scopes: list[EntityScope] = field(default_factory=list)
     relation_semantics: list[dict[str, Any]] = field(default_factory=list)
     repo_scope: dict[str, Any] | None = None
     time_range: dict[str, Any] | None = None
     projection: dict[str, Any] = field(default_factory=dict)
+    projection_items: list[ProjectionItem] = field(default_factory=list)
     aggregation: list[dict[str, Any]] = field(default_factory=list)
     sort: list[dict[str, Any]] = field(default_factory=list)
     limit: int | None = None
     explicit_limit: int | None = None
+    unnormalized_limit_values: list[int] = field(default_factory=list)
     source_entity: dict[str, Any] | None = None
     target_labels: list[str] = field(default_factory=list)
     target_label_provenance: dict[str, str] = field(default_factory=dict)
@@ -117,6 +172,8 @@ class IndependentTemplate:
     repo_scope_policy: list[dict[str, Any]]
     selection: dict[str, Any] = field(default_factory=dict)
     default_limit: int | None = None
+    scope_slots: list[dict[str, Any]] = field(default_factory=list)
+    projection_contract: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -135,7 +192,50 @@ class IndependentGenerationResult:
 
 
 def load_independent_templates(path: str | Path) -> list[IndependentTemplate]:
-    payload = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    template_path = Path(path)
+    payload = yaml.safe_load(template_path.read_text(encoding="utf-8")) or {}
+    if isinstance(payload, dict) and payload.get("extends"):
+        base_path = template_path.parent / str(payload["extends"])
+        base_templates = load_independent_templates(base_path)
+        contracts = payload.get("template_contracts", {})
+        contracts = contracts if isinstance(contracts, dict) else {}
+        extended: list[IndependentTemplate] = []
+        for template in base_templates:
+            contract = contracts.get(template.template_id, {})
+            contract = contract if isinstance(contract, dict) else {}
+            selection = {**template.selection, **(contract.get("selection", {}) or {})}
+            extended.append(
+                IndependentTemplate(
+                    **{
+                        **asdict(template),
+                        "selection": selection,
+                        "scope_slots": [x for x in contract.get("scope_slots", []) if isinstance(x, dict)],
+                        "projection_contract": [
+                            x for x in contract.get("projection_contract", []) if isinstance(x, dict)
+                        ],
+                    }
+                )
+            )
+        for item in payload.get("templates", []) if isinstance(payload.get("templates"), list) else []:
+            if not isinstance(item, dict) or not str(item.get("template_id") or "").strip():
+                continue
+            extended.append(
+                IndependentTemplate(
+                    template_id=str(item["template_id"]).strip(),
+                    family=str(item.get("family") or "").strip(),
+                    intent=str(item.get("intent") or "").strip(),
+                    skeleton=str(item.get("cypher_skeleton") or "").strip(),
+                    required_slots=[x for x in item.get("required_slots", []) if isinstance(x, dict)],
+                    constraints=item.get("constraints", {}) if isinstance(item.get("constraints"), dict) else {},
+                    property_whitelist=item.get("property_whitelist", {}) if isinstance(item.get("property_whitelist"), dict) else {},
+                    repo_scope_policy=[x for x in item.get("repo_scope_policy", []) if isinstance(x, dict)],
+                    selection=item.get("selection", {}) if isinstance(item.get("selection"), dict) else {},
+                    default_limit=int(item["default_limit"]) if item.get("default_limit") is not None else None,
+                    scope_slots=[x for x in item.get("scope_slots", []) if isinstance(x, dict)],
+                    projection_contract=[x for x in item.get("projection_contract", []) if isinstance(x, dict)],
+                )
+            )
+        return extended
     out: list[IndependentTemplate] = []
     for item in payload.get("templates", []) if isinstance(payload, dict) else []:
         if not isinstance(item, dict):
@@ -157,6 +257,8 @@ def load_independent_templates(path: str | Path) -> list[IndependentTemplate]:
                 repo_scope_policy=[x for x in item.get("repo_scope_policy", []) if isinstance(x, dict)],
                 selection=item.get("selection", {}) if isinstance(item.get("selection"), dict) else {},
                 default_limit=int(item["default_limit"]) if item.get("default_limit") is not None else None,
+                scope_slots=[x for x in item.get("scope_slots", []) if isinstance(x, dict)],
+                projection_contract=[x for x in item.get("projection_contract", []) if isinstance(x, dict)],
             )
         )
     return out
@@ -193,6 +295,140 @@ def _entity_label_for_id(entity_id: str) -> str | None:
         if entity_id.startswith(prefix + "_"):
             return label
     return None
+
+
+def _extract_typed_entity_scopes(text: str) -> list[EntityScope]:
+    scopes: list[EntityScope] = []
+    for match in TYPED_PREFIX_PATTERN.finditer(text):
+        left = max(0, match.start() - 72)
+        right = min(len(text), match.end() + 72)
+        context = text[left:right]
+        if not PREFIX_SCOPE_CUE.search(context):
+            continue
+        prefix = match.group("prefix").upper()
+        scopes.append(
+            EntityScope(
+                label=TYPED_PREFIX_LABELS[prefix],
+                property="entity_id",
+                operator="STARTS_WITH",
+                value=f"{prefix}_{match.group('number')}",
+                provenance="typed_prefix_scope_from_nl",
+                source_span=[match.start(), match.end()],
+            )
+        )
+    return scopes
+
+
+def _entity_noun_occurrences(text: str) -> list[tuple[int, int, str]]:
+    found: list[tuple[int, int, str]] = []
+    for label, pattern in ENTITY_NOUN_PATTERNS:
+        for match in pattern.finditer(text):
+            found.append((match.start(), match.end(), label))
+    return sorted(found)
+
+
+def _projection_items_from_text(text: str) -> list[ProjectionItem]:
+    lower = text.lower()
+    nouns = _entity_noun_occurrences(text)
+    nullable = bool(
+        re.search(r"\b(?:optional|if\s+any|where\s+they\s+exist|where\s+it\s+exists|"
+                  r"neither\s+is\s+required|empty\s+when\s+missing)\b", lower)
+    )
+    distinct = bool(re.search(r"\b(?:distinct|unique|once|only\s+once|de-duplicated)\b", lower))
+    candidates: list[ProjectionItem] = []
+
+    def add(label: str, start: int, end: int, *, property_name: str = "entity_id", role: str = "target_entity") -> None:
+        if any(item.label == label and item.property == property_name for item in candidates):
+            return
+        candidates.append(
+            ProjectionItem(
+                role=role,
+                label=label,
+                property=property_name,
+                distinct=distinct,
+                nullable=nullable,
+                provenance="bounded_role_projection_rule",
+                source_span=[start, end],
+            )
+        )
+
+    # An explicitly named entity followed by ID/identifier is the strongest
+    # bounded projection cue; it is independent of the source anchor.
+    for label, pattern in ENTITY_NOUN_PATTERNS:
+        for match in pattern.finditer(text):
+            tail = text[match.end():match.end() + 52]
+            id_cue = re.match(
+                r"\s*(?:'s\s+)?(?:whose\s+)?(?:entity\s+)?(?:ids?|identifiers?)\b",
+                tail,
+                re.I,
+            ) or re.match(r"\s+(?:whose|with)\s+(?:entity\s+)?(?:ids?|identifiers?)\b", tail, re.I)
+            if id_cue:
+                cue_start = match.end() + id_cue.start()
+                cue_end = match.end() + id_cue.end()
+                add(label, cue_start, cue_end)
+
+    # “IDs of <entity>” and equivalent possessives preserve natural column order.
+    for label, pattern in ENTITY_NOUN_PATTERNS:
+        for match in pattern.finditer(text):
+            prefix = text[max(0, match.start() - 48):match.start()]
+            if re.search(r"\b(?:ids?|identifiers?)\s+of\s+(?:the\s+)?$", prefix, re.I):
+                add(label, match.start(), match.end())
+
+    # A question/list cue can itself name the requested entity role even when
+    # the wording says “which objects?” and later refers to “their IDs”.
+    output_nouns: list[tuple[int, int, str]] = []
+    for start, end, label in nouns:
+        prefix = lower[max(0, start - 24):start]
+        if (
+            re.search(r"\b(?:which|what|list|show|return|give|display)\s+(?:me\s+)?(?:the\s+)?(?:involved|mentioned|referenced|linked)?\s*$", prefix)
+            or re.search(r"\b(?:and|or)\s+(?:involved|mentioned|referenced|linked)\s*$", prefix)
+            or (label == "UnknownObject" and re.search(r"\band\s*$", prefix))
+        ):
+            output_nouns.append((start, end, label))
+            if re.search(r"\b(?:which|what)\s+(?:unknown(?:[- ]type)?\s+|untyped\s+)?objects?\s*$", prefix):
+                label = "UnknownObject"
+            add(label, start, end)
+
+    # Pronouns such as “their IDs” bind to the nearest preceding typed noun;
+    # this does not fall back to the source noun when a later target is named.
+    for match in re.finditer(r"\b(?:their|these|those)\s+(?:entity\s+)?(?:ids?|identifiers?)\b", text, re.I):
+        preceding = [item for item in nouns if item[1] <= match.start()]
+        if preceding:
+            start, end, label = preceding[-1]
+            add(label, start, end)
+
+    # A bare “who” is a role cue for Actor, but only when it asks for a result.
+    who = re.search(r"\bwho\b", text, re.I)
+    if who and not any(item.label == "Actor" for item in candidates):
+        add("Actor", who.start(), who.end())
+
+    # Domain is a property projection, distinct from the resource-ID column.
+    for match in re.finditer(r"\b(?:registrable\s+|site\s+)?domain\b", text, re.I):
+        if not any(item.property == "url_domain_etld1" for item in candidates):
+            candidates.append(
+                ProjectionItem(
+                    role="entity_property",
+                    label="ExternalResource",
+                    property="url_domain_etld1",
+                    distinct=distinct,
+                    nullable=nullable,
+                    provenance="bounded_property_projection_rule",
+                    source_span=[match.start(), match.end()],
+                )
+            )
+
+    # If a typed output noun is followed later by a generic “IDs” reference,
+    # consume that role without reusing an earlier source entity.
+    if not candidates:
+        generic_ids = re.search(r"\b(?:ids?|identifiers?)\b", text, re.I)
+        if generic_ids:
+            preceding = [item for item in nouns if item[1] <= generic_ids.start()]
+            if preceding:
+                start, end, label = preceding[-1]
+                add(label, start, end)
+
+    candidates.sort(key=lambda item: (item.source_span[0], item.source_span[1], item.label or ""))
+    return candidates
 
 
 def _extract_entity_mentions(text: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -304,20 +540,28 @@ def _infer_intent_key(text: str, relation_semantics: list[str], ir: ControlledQu
         return "narrow_domain_aggregation"
     if "mentioned repos" in lower and "external links" in lower:
         return "actor_multi_target_reference"
-    if "mention actor" in lower and "also link" in lower and ir.repo_scope and "LINKS_TO" in semantic_set:
+    has_pull_request_scope = any(scope.label == "PullRequest" for scope in ir.entity_scopes)
+    has_issue_scope = any(scope.label == "Issue" for scope in ir.entity_scopes)
+    if "mention actor" in lower and "also link" in lower and (ir.repo_scope or has_pull_request_scope) and "LINKS_TO" in semantic_set:
         return "repo_actor_external_lower_bound"
     if "review comment" in lower and "reference" in lower and "COMMENTED_ON_REVIEW" in semantic_set:
         return "review_reference"
     if "issue" in lower and "comment" in lower and "commit" in lower and "REFERENCES" in semantic_set:
         return "issue_comment_commit"
-    if "pr" in lower and "referenced objects" in lower and ir.repo_scope and ir.time_range:
+    if "pr" in lower and "referenced objects" in lower and (ir.repo_scope or has_pull_request_scope) and ir.time_range:
         return "repo_pr_reference_window"
+    if has_issue_scope and "issue" in lower and "comment" in lower and "commit" in lower and "REFERENCES" in semantic_set:
+        return "issue_comment_commit"
     if "commented on issue" in lower or ("actors" in lower and "commented on issue" in lower):
         return "issue_comment_actor"
     if "opened" in lower and "issue" in lower and "OPENED_BY" in semantic_set:
         return "issue_opened_by"
+    if has_issue_scope and not semantic_set:
+        return "issue_prefix_filter"
+    if has_pull_request_scope and not semantic_set:
+        return "repo_pull_request_filter"
     if (
-        "external links" in lower
+        ("external links" in lower or "ExternalResource" in ir.target_labels)
         and ("pull request" in lower or re.search(r"\bpr\b", lower))
         and "LINKS_TO" in semantic_set
         and not ir.aggregation
@@ -327,7 +571,7 @@ def _infer_intent_key(text: str, relation_semantics: list[str], ir: ControlledQu
         return "typed_reference_object"
     if "actors" in lower and "issue comment" in lower and "MENTIONS" in semantic_set:
         return "typed_reference_actor"
-    if "PullRequest" in ir.target_labels and ir.repo_scope and not semantic_set:
+    if "PullRequest" in ir.target_labels and (ir.repo_scope or has_pull_request_scope) and not semantic_set:
         return "repo_pull_request_filter"
     return "unknown"
 
@@ -368,6 +612,9 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
     text = str(nl_query or "").strip()
     lower = text.lower()
     ir = ControlledQueryIR(request_id=request_id, nl_query=text)
+    ir.entity_scopes = _extract_typed_entity_scopes(text)
+    for scope in ir.entity_scopes:
+        _append_provenance(ir, "entity_scopes", scope.provenance)
     mentions, aligned = _extract_entity_mentions(text)
     for label, cue in [
         ("Issue", "issue"),
@@ -471,6 +718,11 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
 
     limit_match = LIMIT_PATTERN.search(text)
     ir.explicit_limit = int(limit_match.group(1)) if limit_match else None
+    ir.unnormalized_limit_values = [
+        int(match.group(1))
+        for pattern in UNNORMALIZED_LIMIT_PATTERNS
+        for match in pattern.finditer(text)
+    ]
     ir.limit = ir.explicit_limit
     _append_provenance(ir, "limit", "explicit_limit_from_nl" if limit_match else "template_contract_default")
 
@@ -493,7 +745,16 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
         ir.sort = [{"field": "source_event_time", "order": "asc", "provenance": "explicit_sort_from_nl"}]
         _append_provenance(ir, "sort", "bounded_semantic_rule")
 
-    ir.target_labels, ir.target_label_provenance = _infer_target_labels_with_provenance(text, aligned)
+    ir.projection_items = _projection_items_from_text(text)
+    if any(item.property == "url_domain_etld1" for item in ir.projection_items):
+        ir.projection["property"] = "url_domain_etld1"
+        _append_provenance(ir, "projection", "bounded_role_projection_rule")
+    projected_labels = list(dict.fromkeys(item.label for item in ir.projection_items if item.label))
+    if projected_labels:
+        ir.target_labels = projected_labels
+        ir.target_label_provenance = {label: "explicit_target_from_nl" for label in projected_labels}
+    else:
+        ir.target_labels, ir.target_label_provenance = _infer_target_labels_with_provenance(text, aligned)
     source_entity = None
     canonical = [x for x in aligned if x.get("entity_id")]
     if canonical:
@@ -515,7 +776,7 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
     elif len(actor_ids) > 1:
         ir.bounded_status = "ABSTAIN_MULTIPLE_ACTOR_IDS"
         ir.abstention_reason = "current actor-targeted contract supports one canonical actor slot"
-    elif not aligned:
+    elif not aligned and not ir.entity_scopes:
         ir.bounded_status = "ABSTAIN_UNALIGNED_ENTITY"
         ir.abstention_reason = "no canonical or alignable entity mention"
     else:
@@ -727,6 +988,71 @@ def _skeleton_label_aliases(skeleton: str) -> dict[str, str]:
     }
 
 
+def _projection_contract_order_matches_skeleton(
+    template: IndependentTemplate, return_clause: str
+) -> bool:
+    expressions: list[str] = []
+    expression_start = 0
+    depth = 0
+    for index, char in enumerate(return_clause):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth = max(0, depth - 1)
+        elif char == "," and depth == 0:
+            expressions.append(return_clause[expression_start:index].strip())
+            expression_start = index + 1
+    if return_clause[expression_start:].strip():
+        expressions.append(return_clause[expression_start:].strip())
+
+    aliases_by_label: dict[str, list[str]] = {}
+    for alias, label in _skeleton_label_aliases(template.skeleton).items():
+        aliases_by_label.setdefault(label, []).append(alias)
+    positions: list[int] = []
+    matched_expression_indices: set[int] = set()
+    for item in template.projection_contract:
+        label = str(item.get("label") or "")
+        property_name = str(item.get("property") or "entity_id")
+        function = str(item.get("function") or "").lower()
+        matching_indices: list[int] = []
+        for index, expression in enumerate(expressions):
+            if index in matched_expression_indices:
+                continue
+            if function:
+                if not re.search(rf"\b{re.escape(function)}\s*\(", expression, re.I):
+                    continue
+                if property_name == "*":
+                    if not re.search(rf"\b{re.escape(function)}\s*\(\s*(?:DISTINCT\s+)?\*\s*\)", expression, re.I):
+                        continue
+                elif not re.search(rf"\b{re.escape(property_name)}\b", expression, re.I):
+                    continue
+                if item.get("distinct") and not re.search(r"\bDISTINCT\b", expression, re.I):
+                    continue
+                matching_indices.append(index)
+                continue
+            property_matches = bool(re.search(rf"\b[A-Za-z_]\w*\.{re.escape(property_name)}\b", expression))
+            if not property_matches:
+                continue
+            if property_name == "url_domain_etld1":
+                matching_indices.append(index)
+                continue
+            if any(
+                re.search(rf"\b{re.escape(alias)}\.{re.escape(property_name)}\b", expression)
+                for alias in aliases_by_label.get(label, [])
+            ):
+                if item.get("distinct") and not (
+                    re.search(r"\bDISTINCT\b", expression, re.I)
+                    or re.match(r"^\s*DISTINCT\b", return_clause, re.I)
+                ):
+                    continue
+                matching_indices.append(index)
+        if not matching_indices:
+            return False
+        matched_expression_indices.add(matching_indices[0])
+        positions.append(matching_indices[0])
+    return positions == sorted(positions) and len(matched_expression_indices) == len(expressions)
+
+
 def _time_bound_consumed(skeleton: str, token: str) -> bool:
     if token not in skeleton:
         return False
@@ -829,6 +1155,112 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
         if property_name not in consumed_projection
     ]
 
+    requested_scopes = [asdict(item) for item in ir.entity_scopes]
+    scope_consumers = {
+        (str(item.get("label")), str(item.get("property")), str(item.get("operator"))): str(item.get("slot"))
+        for item in template.scope_slots
+    }
+    consumed_scopes: list[dict[str, Any]] = []
+    unconsumed_scopes: list[dict[str, Any]] = []
+    skeleton_aliases = _skeleton_label_aliases(template.skeleton)
+    for scope in requested_scopes:
+        key = (str(scope["label"]), str(scope["property"]), str(scope["operator"]))
+        slot = scope_consumers.get(key)
+        compatible_aliases = [
+            alias for alias, label in skeleton_aliases.items() if label == scope["label"]
+        ]
+        operator_pattern = r"\s+".join(re.escape(part) for part in str(scope["operator"]).split("_"))
+        expression_consumed = bool(
+            slot
+            and any(
+                re.search(
+                    rf"\b{re.escape(alias)}\.{re.escape(str(scope['property']))}\s+{operator_pattern}\s+\${re.escape(slot)}\b",
+                    template.skeleton,
+                    flags=re.IGNORECASE,
+                )
+                for alias in compatible_aliases
+            )
+        )
+        if slot and slot in _template_slot_names(template) and expression_consumed:
+            consumed_scopes.append({**scope, "status": "CONSUMED_BY_SELECTED_CONTRACT", "slot": slot})
+        else:
+            unconsumed_scopes.append(
+                {**scope, "status": "ABSTAIN_WITH_TYPED_UNCONSUMED_REASON", "reason": "no compatible typed scope slot"}
+            )
+
+    requested_projection_items = [asdict(item) for item in ir.projection_items]
+    contract_projection = template.projection_contract
+    consumed_projection_items: list[dict[str, Any]] = []
+    unconsumed_projection_items: list[dict[str, Any]] = []
+    projection_contract_available = bool(contract_projection)
+    unmatched_contract_projection = [dict(item) for item in contract_projection]
+    remaining_contract_indices = list(range(len(contract_projection)))
+    consumed_contract_indices: list[int] = []
+    if projection_contract_available:
+        for requested in requested_projection_items:
+            match_index = next(
+                (
+                    index
+                    for index, contract in enumerate(unmatched_contract_projection)
+                    if str(contract.get("label") or "") == str(requested.get("label") or "")
+                    and str(contract.get("property") or "entity_id") == str(requested.get("property") or "entity_id")
+                    and str(contract.get("role") or requested.get("role")) == str(requested.get("role"))
+                    and (not requested.get("distinct") or bool(contract.get("distinct")))
+                    and (not requested.get("nullable") or bool(contract.get("nullable")))
+                ),
+                None,
+            )
+            if match_index is None:
+                unconsumed_projection_items.append(
+                    {**requested, "status": "ABSTAIN_WITH_TYPED_UNCONSUMED_REASON", "reason": "no compatible ordered projection contract item"}
+                )
+            else:
+                contract_item = unmatched_contract_projection.pop(match_index)
+                consumed_contract_indices.append(remaining_contract_indices.pop(match_index))
+                consumed_projection_items.append(
+                    {**requested, "status": "CONSUMED_BY_SELECTED_CONTRACT", "contract_item": contract_item}
+                )
+        if unmatched_contract_projection:
+            # A contract may contain additional columns only when explicitly
+            # marked as entailed by its family-level semantics.
+            unjustified = [item for item in unmatched_contract_projection if not item.get("entailed")]
+            if unjustified:
+                unconsumed_projection_items.extend(
+                    {
+                        "label": item.get("label"),
+                        "property": item.get("property", "entity_id"),
+                        "status": "ABSTAIN_WITH_TYPED_UNCONSUMED_REASON",
+                        "reason": "template would add an unrequested projection item",
+                    }
+                    for item in unjustified
+                )
+    elif requested_projection_items:
+        # v4 compatibility: the ordered RETURN expressions themselves are the
+        # legacy contract. D1.3a's v5 pack makes that contract explicit and
+        # additionally checks for unrequested columns.
+        alias_labels = _skeleton_label_aliases(template.skeleton)
+        return_aliases = set(re.findall(r"\b([A-Za-z_]\w*)\.", return_clause))
+        selection_targets = {str(value) for value in template.selection.get("target_labels", [])}
+        for requested in requested_projection_items:
+            label = str(requested.get("label") or "")
+            property_name = str(requested.get("property") or "entity_id")
+            property_matches = bool(re.search(rf"\b[A-Za-z_]\w*\.{re.escape(property_name)}\b", return_clause))
+            label_matches = any(alias_labels.get(alias) == label for alias in return_aliases)
+            if property_name == "url_domain_etld1":
+                label_matches = label_matches or label in selection_targets
+            if property_matches and label_matches:
+                consumed_projection_items.append(
+                    {**requested, "status": "CONSUMED_BY_SELECTED_CONTRACT", "contract_item": "legacy_return_expression"}
+                )
+            else:
+                unconsumed_projection_items.append(
+                    {**requested, "status": "ABSTAIN_WITH_TYPED_UNCONSUMED_REASON", "reason": "legacy RETURN expression does not expose requested role/property"}
+                )
+    projection_order_matches = (
+        consumed_contract_indices == sorted(consumed_contract_indices)
+        and (not projection_contract_available or _projection_contract_order_matches_skeleton(template, return_clause))
+    )
+
     explicit_sorts = [
         item for item in ir.sort if item.get("provenance") == "explicit_sort_from_nl"
     ]
@@ -849,6 +1281,11 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
     explicit_limit = ir.explicit_limit
     limit_consumed = explicit_limit is None or bool(re.search(r"\bLIMIT\s+\d+\b", skeleton, flags=re.IGNORECASE))
     limit_unconsumed = [] if limit_consumed else [{"limit": explicit_limit, "reason": "template has no LIMIT contract"}]
+    unnormalized_limit_unconsumed = [
+        {"limit": value, "reason": "unsupported explicit cardinality phrase does not match the template default"}
+        for value in ir.unnormalized_limit_values
+        if ir.explicit_limit != value and template.default_limit != value
+    ]
 
     accepted = bool(
         entity["accepted"]
@@ -857,8 +1294,12 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
         and not time_unconsumed
         and not unconsumed_aggregations
         and not unconsumed_projection
+        and not unconsumed_scopes
+        and not unconsumed_projection_items
+        and projection_order_matches
         and not unconsumed_sorts
         and not limit_unconsumed
+        and not unnormalized_limit_unconsumed
     )
     return {
         "accepted": accepted,
@@ -890,6 +1331,16 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
             "requested": requested_projection,
             "consumed": consumed_projection,
             "unconsumed": unconsumed_projection,
+            "requested_items": requested_projection_items,
+            "consumed_items": consumed_projection_items,
+            "unconsumed_items": unconsumed_projection_items,
+            "ordered_contract_available": projection_contract_available,
+            "order_preserved": projection_order_matches,
+        },
+        "entity_scopes": {
+            "requested": requested_scopes,
+            "consumed": consumed_scopes,
+            "unconsumed": unconsumed_scopes,
         },
         "sort": {
             "requested": explicit_sorts,
@@ -903,6 +1354,12 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
             "explicit": explicit_limit,
             "consumed": limit_consumed,
             "unconsumed": limit_unconsumed,
+            "unnormalized_explicit_values": ir.unnormalized_limit_values,
+            "unnormalized_unconsumed": unnormalized_limit_unconsumed,
+            "contract_default_entailed_values": [
+                value for value in ir.unnormalized_limit_values if template.default_limit == value
+                and ir.explicit_limit in {None, value}
+            ],
         },
         "reasons": (
             (["entity constraint coverage failed"] if not entity["accepted"] else [])
@@ -911,8 +1368,11 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
             + (["unconsumed time bound"] if time_unconsumed else [])
             + (["unconsumed aggregation"] if unconsumed_aggregations else [])
             + (["unconsumed projection"] if unconsumed_projection else [])
+            + (["unconsumed typed entity scope"] if unconsumed_scopes else [])
+            + (["unconsumed ordered projection item"] if unconsumed_projection_items else [])
             + (["unconsumed explicit sort"] if unconsumed_sorts else [])
             + (["unconsumed explicit limit"] if limit_unconsumed else [])
+            + (["unsupported explicit cardinality conflicts with template default"] if unnormalized_limit_unconsumed else [])
         ),
     }
 
@@ -937,7 +1397,17 @@ def _template_score(
         expected_intent = str(selection.get("intent_key") or "")
         if expected_intent and expected_intent != ir.intent_key:
             return -100, [f"intent mismatch: expected {expected_intent}, observed {ir.intent_key}"]
-        if selection.get("requires_repo_scope") and not ir.repo_scope:
+        has_contract_scope = any(
+            scope.label in {"PullRequest", "Issue"}
+            and any(
+                item.get("label") == scope.label
+                and item.get("property") == scope.property
+                and item.get("operator") == scope.operator
+                for item in template.scope_slots
+            )
+            for scope in ir.entity_scopes
+        )
+        if selection.get("requires_repo_scope") and not ir.repo_scope and not has_contract_scope:
             return -100, ["missing repo scope"]
         if selection.get("requires_time_start") and not (ir.time_range and ir.time_range.get("start")):
             return -100, ["missing time start"]
@@ -1041,8 +1511,11 @@ def select_template(ir: ControlledQueryIR, templates: list[IndependentTemplate])
             or item["time"]["unconsumed"]
             or item["aggregation"]["unconsumed"]
             or item["projection"]["unconsumed"]
+            or item["projection"].get("unconsumed_items")
+            or item.get("entity_scopes", {}).get("unconsumed")
             or item["sort"]["unconsumed"]
             or item["limit"]["unconsumed"]
+            or item["limit"].get("unnormalized_unconsumed")
             for item in coverage_by_template.values()
         )
         reason = (
@@ -1126,6 +1599,19 @@ def _slot_values(ir: ControlledQueryIR, template: IndependentTemplate) -> dict[s
                 "commit_base_prefix": prefixes.get("Commit"),
             }
         )
+    for scope in ir.entity_scopes:
+        consumer = next(
+            (
+                item
+                for item in template.scope_slots
+                if item.get("label") == scope.label
+                and item.get("property") == scope.property
+                and item.get("operator") == scope.operator
+            ),
+            None,
+        )
+        if consumer and consumer.get("slot"):
+            values[str(consumer["slot"])] = scope.value
     return {k: v for k, v in values.items() if v is not None}
 
 

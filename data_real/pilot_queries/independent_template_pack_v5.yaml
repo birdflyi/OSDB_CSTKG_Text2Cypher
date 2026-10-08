@@ -1,0 +1,112 @@
+template_pack_version: independent_template_pack_v5
+purpose: typed_scope_and_ordered_projection_contracts_for_d1_3a
+extends: independent_template_pack_v4.yaml
+rationale: >-
+  D1.3a adds explicit typed prefix-scope slots and ordered role/property
+  projection contracts without editing the frozen v4 pack. Existing template
+  skeletons remain authoritative; v5 declares which typed constraints each
+  skeleton consumes and whether a projection is nullable, distinct, or
+  contract-entailed.
+template_contracts:
+  indv4_issue_opened_by:
+    projection_contract:
+      - {role: target_entity, label: Actor, property: entity_id}
+  indv4_repo_pull_request_filter:
+    scope_slots:
+      - {label: PullRequest, property: entity_id, operator: STARTS_WITH, slot: pr_base_prefix}
+    projection_contract:
+      - {role: target_entity, label: PullRequest, property: entity_id}
+  indv4_reference_object:
+    projection_contract:
+      - {role: target_entity, label: UnknownObject, property: entity_id}
+  indv4_reference_external_property:
+    projection_contract:
+      - {role: entity_property, label: ExternalResource, property: url_domain_etld1}
+      - {role: target_entity, label: ExternalResource, property: entity_id}
+  indv4_reference_actor:
+    projection_contract:
+      - {role: target_entity, label: Actor, property: entity_id}
+  indv4_issue_comment_actor:
+    projection_contract:
+      - {role: target_entity, label: Actor, property: entity_id, distinct: true, entailed: true}
+  indv4_repo_pr_reference_window:
+    scope_slots:
+      - {label: PullRequest, property: entity_id, operator: STARTS_WITH, slot: pr_base_prefix}
+    projection_contract:
+      - {role: target_entity, label: PullRequest, property: entity_id}
+      - {role: target_entity, label: UnknownObject, property: entity_id}
+  indv4_actor_multi_target_reference:
+    projection_contract:
+      - {role: target_entity, label: Repo, property: entity_id, nullable: true}
+      - {role: target_entity, label: ExternalResource, property: entity_id, nullable: true}
+  indv4_narrow_domain_aggregation:
+    projection_contract:
+      - {role: entity_property, label: ExternalResource, property: url_domain_etld1}
+      - {role: aggregate, label: null, property: '*', function: count, entailed: true}
+  indv4_repo_actor_external_lower_bound:
+    scope_slots:
+      - {label: PullRequest, property: entity_id, operator: STARTS_WITH, slot: pr_base_prefix}
+    projection_contract:
+      - {role: target_entity, label: PullRequest, property: entity_id}
+      - {role: entity_property, label: ExternalResource, property: url_domain_etld1}
+  indv4_issue_comment_commit:
+    scope_slots:
+      - {label: Issue, property: entity_id, operator: STARTS_WITH, slot: issue_base_prefix}
+    projection_contract:
+      - {role: target_entity, label: Issue, property: entity_id}
+      - {role: target_entity, label: Commit, property: entity_id}
+  indv4_review_reference:
+    projection_contract:
+      - {role: target_entity, label: Actor, property: entity_id, distinct: true, entailed: true}
+  indv4_comprehensive_external_actor_aggregation:
+    scope_slots:
+      - {label: PullRequest, property: entity_id, operator: STARTS_WITH, slot: pr_base_prefix}
+    projection_contract:
+      - {role: entity_property, label: ExternalResource, property: url_domain_etld1}
+      - {role: target_entity, label: Actor, property: entity_id, distinct: true, entailed: true}
+      - {role: aggregate, label: null, property: source_event_time, function: max, entailed: true}
+      - {role: aggregate, label: PullRequest, property: entity_id, function: count, distinct: true, entailed: true}
+templates:
+  - template_id: indv5_reference_external_id_domain
+    family: OneHopRef
+    intent: Typed external-resource identifier followed by link domain.
+    default_limit: 25
+    selection:
+      intent_key: typed_reference_external_property
+      target_labels: [ExternalResource]
+    cypher_skeleton: |
+      MATCH (pr:PullRequest {entity_id: $pr_entity_id})-[rel:REFERENCE]->(e:ExternalResource)
+      WHERE rel.service_rel_type = 'LINKS_TO'
+      RETURN e.entity_id, rel.url_domain_etld1 LIMIT 25
+    required_slots:
+      - name: pr_entity_id
+        type: EntityIdSlot
+    projection_contract:
+      - {role: target_entity, label: ExternalResource, property: entity_id}
+      - {role: entity_property, label: ExternalResource, property: url_domain_etld1}
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: [LINKS_TO]
+      hop_limit: 1
+  - template_id: indv5_issue_prefix_list
+    family: EntityFilter
+    intent: Issue ID prefix listing.
+    default_limit: 25
+    selection:
+      intent_key: issue_prefix_filter
+      target_labels: [Issue]
+    cypher_skeleton: |
+      MATCH (i:Issue)
+      WHERE i.entity_id STARTS WITH $issue_scope_prefix
+      RETURN i.entity_id LIMIT 25
+    required_slots:
+      - name: issue_scope_prefix
+        type: TypedEntityPrefixScopeSlot
+    scope_slots:
+      - {label: Issue, property: entity_id, operator: STARTS_WITH, slot: issue_scope_prefix}
+    projection_contract:
+      - {role: target_entity, label: Issue, property: entity_id}
+    constraints:
+      native_rel_types_allowed: [EVENT_ACTION, REFERENCE]
+      service_rel_types_allowed: []
+      hop_limit: 0
