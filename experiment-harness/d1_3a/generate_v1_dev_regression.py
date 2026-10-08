@@ -27,6 +27,8 @@ from artifact_safety import (  # noqa: E402
 )
 from input_provenance import (  # noqa: E402
     canonical_project_path,
+    canonical_tracked_worktree_gate,
+    git_byte_implementation_provenance,
     git_byte_input_provenance,
     named_input_provenance,
 )
@@ -40,6 +42,17 @@ DEFAULT_QUERIES = ROOT / "data_real" / "heldout_v1" / "heldout_queries_v1.jsonl"
 DEFAULT_TEMPLATES = ROOT / "data_real" / "pilot_queries" / "independent_template_pack_v5.yaml"
 DEFAULT_SCHEMA = ROOT / "data_real" / "pilot_queries" / "schema_metadata.yaml"
 DEFAULT_OUTPUT = ROOT / "experiment-harness" / "results" / "d1_3a_v1_dev_regression"
+
+GENERATION_IMPLEMENTATION_RELATIVE_PATHS = (
+    "experiment-harness/d1_3a/generate_v1_dev_regression.py",
+    "experiment-harness/d1_3a/input_provenance.py",
+    "experiment-harness/d1_3a/template_provenance.py",
+    "experiment-harness/d1_3a/artifact_safety.py",
+    "graph-migration/runners/independent_controlled_pipeline.py",
+    "graph-migration/repair/gold_blind_repair.py",
+    "graph-migration/validators/pilot_cypher_validator.py",
+    "graph-migration/normalizers/derived_slot_builder.py",
+)
 
 
 def _sha256(path: Path) -> str:
@@ -117,6 +130,45 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
+    canonical_gate = {
+        "canonical_source_commit": None,
+        "canonical_tracked_worktree_clean": "NOT_REQUESTED",
+    }
+    canonical_inputs = {
+        "source_commit": None,
+        "canonical_git_byte_verification": "NOT_REQUESTED",
+        "tracked_input_provenance": [],
+        "runtime_implementation_provenance": [],
+    }
+    if args.require_canonical_git_byte_verification:
+        canonical_gate = canonical_tracked_worktree_gate(ROOT)
+        implementation_inputs = {
+            path: ROOT / path for path in GENERATION_IMPLEMENTATION_RELATIVE_PATHS
+        }
+        implementation = git_byte_implementation_provenance(
+            implementation_inputs, ROOT, source_commit=canonical_gate["canonical_source_commit"]
+        )
+        canonical_inputs = git_byte_input_provenance(
+            {
+                "queries": args.queries,
+                "schema": args.schema,
+                "template_pack": args.templates,
+                **{
+                    f"template_dependency_{index}": ROOT / record["path"]
+                    for index, record in enumerate(
+                        template_dependency_closure(args.templates, ROOT)
+                    )
+                },
+            },
+            ROOT,
+            source_commit=canonical_gate["canonical_source_commit"],
+        )
+        canonical_inputs["runtime_implementation_provenance"] = implementation[
+            "runtime_implementation_provenance"
+        ]
+        canonical_inputs["canonical_tracked_worktree_clean"] = canonical_gate[
+            "canonical_tracked_worktree_clean"
+        ]
     trace_path = args.output_dir / f"d1_3a_v1_dev_generation_traces_{args.artifact_version}.jsonl"
     receipt_path = args.output_dir / f"d1_3a_v1_dev_generation_receipt_{args.artifact_version}.json"
     ensure_output_paths_available(
@@ -132,21 +184,8 @@ def main() -> int:
         f"template_dependency_{index}": ROOT / record["path"]
         for index, record in enumerate(dependency_records)
     }
-    canonical_inputs = {
-        "source_commit": None,
-        "canonical_git_byte_verification": "NOT_REQUESTED",
-        "tracked_input_provenance": [],
-    }
-    if args.require_canonical_git_byte_verification:
-        canonical_inputs = git_byte_input_provenance(
-            {
-                "queries": args.queries,
-                "schema": args.schema,
-                "template_pack": args.templates,
-                **dependency_inputs,
-            },
-            ROOT,
-        )
+    if not args.require_canonical_git_byte_verification:
+        canonical_inputs["canonical_tracked_worktree_clean"] = "NOT_REQUESTED"
     direct_inputs = named_input_provenance(
         {"queries": args.queries, "schema": args.schema}, ROOT
     )
@@ -180,7 +219,13 @@ def main() -> int:
         "repair_mode": "gold_blind_runtime_diagnosis_and_independent_ir_only",
         "canonical_source_commit": canonical_inputs["source_commit"],
         "canonical_git_byte_verification": canonical_inputs["canonical_git_byte_verification"],
+        "canonical_tracked_worktree_clean": canonical_inputs.get(
+            "canonical_tracked_worktree_clean", canonical_gate["canonical_tracked_worktree_clean"]
+        ),
         "tracked_input_provenance": canonical_inputs["tracked_input_provenance"],
+        "runtime_implementation_provenance": canonical_inputs[
+            "runtime_implementation_provenance"
+        ],
         "generation_trace_path": canonical_project_path(trace_path, ROOT),
         "generation_trace_sha256": _sha256(trace_path),
     }

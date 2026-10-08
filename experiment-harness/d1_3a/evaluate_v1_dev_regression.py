@@ -16,6 +16,8 @@ from artifact_safety import (  # noqa: E402
     ensure_output_paths_available,
 )
 from input_provenance import (  # noqa: E402
+    canonical_tracked_worktree_gate,
+    git_byte_implementation_provenance,
     git_byte_input_provenance,
     named_input_provenance,
 )
@@ -27,6 +29,12 @@ DEFAULT_TRACE_DIR = ROOT / "experiment-harness" / "results" / "d1_3a_v1_dev_regr
 DEFAULT_GOLD = ROOT / "data_real" / "heldout_v1" / "heldout_gold_v1.jsonl"
 DEFAULT_FROZEN_ROWS = ROOT / "experiment-harness" / "results" / "d1_2c_heldout_v1" / "d1_2c_v1_recovered_evaluation_rows_v2.jsonl"
 DEFAULT_OUTPUT = DEFAULT_TRACE_DIR
+EVALUATION_IMPLEMENTATION_RELATIVE_PATHS = (
+    "experiment-harness/d1_3a/evaluate_v1_dev_regression.py",
+    "experiment-harness/d1_3a/input_provenance.py",
+    "experiment-harness/d1_3a/artifact_safety.py",
+    "experiment-harness/d1_2c/evaluate_heldout_v1.py",
+)
 BASELINE = {
     "EXECUTABLE_SEMANTIC_SUCCESS": 4,
     "N_EXECUTABLE": 39,
@@ -184,6 +192,42 @@ def evaluate(
 
 def main() -> int:
     args = build_parser().parse_args()
+    canonical_gate = {
+        "canonical_source_commit": None,
+        "canonical_tracked_worktree_clean": "NOT_REQUESTED",
+    }
+    canonical_inputs = {
+        "source_commit": None,
+        "canonical_git_byte_verification": "NOT_REQUESTED",
+        "tracked_input_provenance": [],
+        "runtime_implementation_provenance": [],
+    }
+    if args.require_canonical_git_byte_verification:
+        canonical_gate = canonical_tracked_worktree_gate(ROOT)
+        implementation = git_byte_implementation_provenance(
+            {
+                path: ROOT / path
+                for path in EVALUATION_IMPLEMENTATION_RELATIVE_PATHS
+            },
+            ROOT,
+            source_commit=canonical_gate["canonical_source_commit"],
+        )
+        canonical_inputs = git_byte_input_provenance(
+            {
+                "gold": args.gold,
+                "frozen_baseline_rows": args.frozen_rows,
+                "pre_fix_rows": args.pre_fix_rows,
+                "evaluator": EVALUATOR_PATH,
+            },
+            ROOT,
+            source_commit=canonical_gate["canonical_source_commit"],
+        )
+        canonical_inputs["runtime_implementation_provenance"] = implementation[
+            "runtime_implementation_provenance"
+        ]
+        canonical_inputs["canonical_tracked_worktree_clean"] = canonical_gate[
+            "canonical_tracked_worktree_clean"
+        ]
     rows_path = args.output_dir / f"d1_3a_v1_dev_evaluation_rows_{args.artifact_version}.jsonl"
     summary_path = args.output_dir / f"d1_3a_v1_dev_summary_{args.artifact_version}.json"
     delta_name = (
@@ -210,21 +254,6 @@ def main() -> int:
         },
         ROOT,
     )
-    canonical_inputs = {
-        "source_commit": None,
-        "canonical_git_byte_verification": "NOT_REQUESTED",
-        "tracked_input_provenance": [],
-    }
-    if args.require_canonical_git_byte_verification:
-        canonical_inputs = git_byte_input_provenance(
-            {
-                "gold": args.gold,
-                "frozen_baseline_rows": args.frozen_rows,
-                "pre_fix_rows": args.pre_fix_rows,
-                "evaluator": EVALUATOR_PATH,
-            },
-            ROOT,
-        )
     rows, summary = evaluate(
         _load_jsonl(traces_path), _load_jsonl(args.gold), input_provenance=direct_inputs
     )
@@ -316,7 +345,13 @@ def main() -> int:
             "gold_dataset_sha256": _sha256(args.gold),
             "canonical_source_commit": canonical_inputs["source_commit"],
             "canonical_git_byte_verification": canonical_inputs["canonical_git_byte_verification"],
+            "canonical_tracked_worktree_clean": canonical_inputs.get(
+                "canonical_tracked_worktree_clean", canonical_gate["canonical_tracked_worktree_clean"]
+            ),
             "tracked_input_provenance": canonical_inputs["tracked_input_provenance"],
+            "runtime_implementation_provenance": canonical_inputs[
+                "runtime_implementation_provenance"
+            ],
         }
     )
     with summary_path.open("w", encoding="utf-8", newline="\n") as handle:

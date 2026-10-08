@@ -23,12 +23,12 @@ from validators.pilot_cypher_validator import (
 
 
 ENTITY_PATTERNS: list[tuple[str, str, re.Pattern[str]]] = [
-    ("PullRequestReviewComment", "PRRC", re.compile(r"(?<![A-Za-z0-9_])PRRC_\d+#[^\s,.;!?]+")),
-    ("PullRequestReview", "PRR", re.compile(r"(?<![A-Za-z0-9_])PRR_\d+#[^\s,.;!?]+")),
-    ("IssueComment", "IC", re.compile(r"(?<![A-Za-z0-9_])IC_\d+#[^\s,.;!?]+")),
-    ("PullRequest", "PR", re.compile(r"(?<![A-Za-z0-9_])PR_\d+#[^\s,.;!?]+")),
-    ("Issue", "I", re.compile(r"(?<![A-Za-z0-9_])I_\d+#[^\s,.;!?]+")),
-    ("Commit", "C", re.compile(r"(?<![A-Za-z0-9_])C_\d+[@#][^\s,.;!?]+")),
+    ("PullRequestReviewComment", "PRRC", re.compile(r"(?<![A-Za-z0-9_])PRRC_\d+#[^\s,.;!?)[\]}]+")),
+    ("PullRequestReview", "PRR", re.compile(r"(?<![A-Za-z0-9_])PRR_\d+#[^\s,.;!?)[\]}]+")),
+    ("IssueComment", "IC", re.compile(r"(?<![A-Za-z0-9_])IC_\d+#[^\s,.;!?)[\]}]+")),
+    ("PullRequest", "PR", re.compile(r"(?<![A-Za-z0-9_])PR_\d+#[^\s,.;!?)[\]}]+")),
+    ("Issue", "I", re.compile(r"(?<![A-Za-z0-9_])I_\d+#[^\s,.;!?)[\]}]+")),
+    ("Commit", "C", re.compile(r"(?<![A-Za-z0-9_])C_\d+[@#][^\s,.;!?)[\]}]+")),
     ("Repo", "R", re.compile(r"(?<![A-Za-z0-9_])R_\d+(?![A-Za-z0-9_])")),
     ("Actor", "A", re.compile(r"(?<![A-Za-z0-9_])A_\d+(?![A-Za-z0-9_])")),
 ]
@@ -360,6 +360,39 @@ def _entity_label_for_id(entity_id: str) -> str | None:
 
 
 def _extract_typed_entity_scopes(text: str) -> list[EntityScope]:
+    def negated_prefix_scope(match: re.Match[str]) -> bool:
+        """Recognize only the bounded negations of this scope grammar."""
+        before = text[max(0, match.start() - 180) : match.start()]
+        if re.search(
+            r"(?:do|does|did)\s+not\s+(?:start|begin)(?:s|ing)?\s+with\s*$",
+            before,
+            re.IGNORECASE,
+        ):
+            return True
+        if re.search(
+            r"(?:do|does|did)n['’]t\s+(?:start|begin)(?:s|ing)?\s+with\s*$",
+            before,
+            re.IGNORECASE,
+        ):
+            return True
+        if re.search(
+            r"not\s+(?:start|begin)(?:s|ing)?\s+with\s*$",
+            before,
+            re.IGNORECASE,
+        ):
+            return True
+        # Command-level negation is scoped only to a nearby typed ID phrase;
+        # this is deliberately not a global ``not in text`` test.
+        return bool(
+            re.search(
+                r"(?:^|[.!?;])\s*(?:exclude|omit)\b[^.!?;]{0,150}"
+                r"\b(?:ids?|identifiers?)\s+(?:that\s+)?"
+                r"(?:start|begin)(?:s|ing)?\s+with\s*$",
+                before,
+                re.IGNORECASE,
+            )
+        )
+
     scopes: list[EntityScope] = []
     for match in TYPED_PREFIX_PATTERN.finditer(text):
         left = max(0, match.start() - 72)
@@ -368,13 +401,18 @@ def _extract_typed_entity_scopes(text: str) -> list[EntityScope]:
         if not PREFIX_SCOPE_CUE.search(context):
             continue
         prefix = match.group("prefix").upper()
+        negated = negated_prefix_scope(match)
         scopes.append(
             EntityScope(
                 label=TYPED_PREFIX_LABELS[prefix],
                 property="entity_id",
-                operator="STARTS_WITH",
+                operator="NOT_STARTS_WITH" if negated else "STARTS_WITH",
                 value=f"{prefix}_{match.group('number')}",
-                provenance="typed_prefix_scope_from_nl",
+                provenance=(
+                    "negated_typed_prefix_scope_from_nl"
+                    if negated
+                    else "typed_prefix_scope_from_nl"
+                ),
                 source_span=[match.start(), match.end()],
             )
         )
@@ -414,7 +452,7 @@ def _source_anchor_noun_occurrences(
             for start, end, label in nouns
             if label == anchor_label
             and end <= anchor_start
-            and not text[end:anchor_start].strip()
+            and _source_anchor_gap_is_structural(text, end, anchor_start)
         ]
         if not typed_spans:
             continue
@@ -433,6 +471,14 @@ def _source_anchor_noun_occurrences(
             if source_start <= noun[0] and noun[1] <= source_end
         )
     return anchored
+
+
+def _source_anchor_gap_is_structural(text: str, noun_end: int, anchor_start: int) -> bool:
+    """Accept bounded punctuation, but never lexical words, before an ID."""
+    gap = text[noun_end:anchor_start]
+    if not gap:
+        return True
+    return re.fullmatch(r"[\s:([{\-]+", gap) is not None
 
 
 def _projection_items_from_text(text: str) -> list[ProjectionItem]:
@@ -1420,6 +1466,8 @@ def _time_bound_consumed(skeleton: str, token: str) -> bool:
 
 def _compatible_scope_slots(scope: EntityScope, template: IndependentTemplate) -> list[str]:
     """Return singular template slots whose typed predicate consumes scope."""
+    if scope.operator == "NOT_STARTS_WITH":
+        return []
     matching_slots = {
         str(item.get("slot"))
         for item in template.scope_slots
@@ -1466,7 +1514,9 @@ def _scope_slot_analysis(
             unassigned.append(
                 {
                     **asdict(scope),
-                    "reason_code": "NO_COMPATIBLE_TYPED_SCOPE_SLOT"
+                    "reason_code": "UNSUPPORTED_NEGATED_TYPED_SCOPE_OPERATOR"
+                    if scope.operator == "NOT_STARTS_WITH"
+                    else "NO_COMPATIBLE_TYPED_SCOPE_SLOT"
                     if not slots
                     else "AMBIGUOUS_TYPED_SCOPE_SLOT",
                 }
@@ -1634,14 +1684,24 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
                     for item in scope_slot_conflicts
                     if item.get("source_span") == scope_item.get("source_span")
                 ),
-                "NO_COMPATIBLE_TYPED_SCOPE_SLOT" if not slots else "AMBIGUOUS_TYPED_SCOPE_SLOT",
+                (
+                    "UNSUPPORTED_NEGATED_TYPED_SCOPE_OPERATOR"
+                    if scope.operator == "NOT_STARTS_WITH"
+                    else "NO_COMPATIBLE_TYPED_SCOPE_SLOT"
+                    if not slots
+                    else "AMBIGUOUS_TYPED_SCOPE_SLOT"
+                ),
             )
             unconsumed_scopes.append(
                 {
                     **scope_item,
                     "status": "ABSTAIN_WITH_TYPED_UNCONSUMED_REASON",
                     "reason_code": reason_code,
-                    "reason": "no unique compatible typed scope slot",
+                    "reason": (
+                        "negative typed scope operator is not supported by the template contract"
+                        if scope.operator == "NOT_STARTS_WITH"
+                        else "no unique compatible typed scope slot"
+                    ),
                 }
             )
             continue
