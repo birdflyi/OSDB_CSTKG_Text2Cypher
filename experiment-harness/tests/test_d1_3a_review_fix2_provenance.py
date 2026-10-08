@@ -55,25 +55,51 @@ def test_generator_and_evaluator_default_to_v2_namespace() -> None:
     ) == "v2"
 
 
-def test_existing_outputs_fail_closed_and_remain_byte_identical(tmp_path: Path) -> None:
-    target = tmp_path / "d1_3a_v1_dev_generation_traces_v3.jsonl"
-    original = b"pre-existing development evidence\n"
+@pytest.mark.parametrize("version", ["v1", "v4", "v99"])
+def test_existing_canonical_artifacts_are_immutable_for_any_version(
+    tmp_path: Path, version: str
+) -> None:
+    canonical_dir = tmp_path / "results" / "d1_3a_v1_dev_regression"
+    canonical_dir.mkdir(parents=True)
+    target = canonical_dir / f"d1_3a_v1_dev_generation_traces_{version}.jsonl"
+    original = b"pre-existing canonical development evidence\n"
     target.write_bytes(original)
-    with pytest.raises(FileExistsError):
-        ensure_output_paths_available([target], artifact_version="v3")
-    assert target.read_bytes() == original
-    with pytest.raises(FileExistsError, match="protected v2"):
-        ensure_output_paths_available([target], artifact_version="v2", allow_overwrite=True)
-    with pytest.raises(FileExistsError, match="protected v3"):
-        ensure_output_paths_available([target], artifact_version="v3", allow_overwrite=True)
+
+    with pytest.raises(FileExistsError, match="append-only canonical"):
+        ensure_output_paths_available(
+            [target],
+            artifact_version=version,
+            allow_overwrite=True,
+            canonical_evidence_dir=canonical_dir,
+        )
     assert target.read_bytes() == original
 
 
-def test_explicit_new_version_path_can_be_written(tmp_path: Path) -> None:
-    target = tmp_path / "d1_3a_v1_dev_generation_traces_v4.jsonl"
-    ensure_output_paths_available([target], artifact_version="v4")
+def test_canonical_v5_can_be_written_once_but_not_overwritten(tmp_path: Path) -> None:
+    canonical_dir = tmp_path / "results" / "d1_3a_v1_dev_regression"
+    canonical_dir.mkdir(parents=True)
+    target = canonical_dir / "d1_3a_v1_dev_generation_traces_v5.jsonl"
+    ensure_output_paths_available(
+        [target], artifact_version="v5", canonical_evidence_dir=canonical_dir
+    )
     target.write_text("new development artifact\n", encoding="utf-8")
     assert target.read_text(encoding="utf-8") == "new development artifact\n"
+    with pytest.raises(FileExistsError, match="append-only canonical"):
+        ensure_output_paths_available(
+            [target], artifact_version="v5", allow_overwrite=True,
+            canonical_evidence_dir=canonical_dir,
+        )
+
+
+def test_development_override_remains_available_only_outside_canonical_dir(tmp_path: Path) -> None:
+    canonical_dir = tmp_path / "results" / "d1_3a_v1_dev_regression"
+    temporary = tmp_path / "synthetic" / "artifact.jsonl"
+    temporary.parent.mkdir(parents=True)
+    temporary.write_text("old synthetic artifact\n", encoding="utf-8")
+    ensure_output_paths_available(
+        [temporary], artifact_version="v99", allow_overwrite=True,
+        canonical_evidence_dir=canonical_dir,
+    )
 
 
 def test_project_v5_template_dependency_closure_is_stable_and_complete() -> None:

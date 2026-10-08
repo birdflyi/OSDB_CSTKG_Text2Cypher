@@ -98,7 +98,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--artifact-version", default=DEFAULT_ARTIFACT_VERSION)
-    parser.add_argument("--allow-overwrite-development-artifact", action="store_true")
+    parser.add_argument(
+        "--allow-overwrite-development-artifact",
+        action="store_true",
+        help="allow overwriting existing non-canonical synthetic/temp outputs only; canonical D1.3a evidence is always append-only",
+    )
     return parser
 
 

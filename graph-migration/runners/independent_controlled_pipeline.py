@@ -216,19 +216,38 @@ def load_independent_templates(path: str | Path) -> list[IndependentTemplate]:
         for template in base_templates:
             contract = contracts.get(template.template_id, {})
             contract = contract if isinstance(contract, dict) else {}
-            selection = {**template.selection, **(contract.get("selection", {}) or {})}
+            selection_override = contract.get("selection")
+            selection = {
+                **template.selection,
+                **(selection_override if isinstance(selection_override, dict) else {}),
+            }
+            projection_options_override = contract.get("projection_options")
+            projection_options = {
+                **template.projection_options,
+                **(
+                    projection_options_override
+                    if isinstance(projection_options_override, dict)
+                    else {}
+                ),
+            }
+            scope_slots = (
+                [x for x in contract.get("scope_slots", []) if isinstance(x, dict)]
+                if "scope_slots" in contract
+                else template.scope_slots
+            )
+            projection_contract = (
+                [x for x in contract.get("projection_contract", []) if isinstance(x, dict)]
+                if "projection_contract" in contract
+                else template.projection_contract
+            )
             extended.append(
                 IndependentTemplate(
                     **{
                         **asdict(template),
                         "selection": selection,
-                        "scope_slots": [x for x in contract.get("scope_slots", []) if isinstance(x, dict)],
-                        "projection_contract": [
-                            x for x in contract.get("projection_contract", []) if isinstance(x, dict)
-                        ],
-                        "projection_options": contract.get("projection_options", {})
-                        if isinstance(contract.get("projection_options"), dict)
-                        else {},
+                        "scope_slots": scope_slots,
+                        "projection_contract": projection_contract,
+                        "projection_options": projection_options,
                     }
                 )
             )
@@ -254,6 +273,9 @@ def load_independent_templates(path: str | Path) -> list[IndependentTemplate]:
                     else {},
                 )
             )
+        template_ids = [template.template_id for template in extended]
+        if len(template_ids) != len(set(template_ids)):
+            raise ValueError(f"duplicate template_id in layered pack {template_path}")
         return extended
     out: list[IndependentTemplate] = []
     for item in payload.get("templates", []) if isinstance(payload, dict) else []:
@@ -283,6 +305,9 @@ def load_independent_templates(path: str | Path) -> list[IndependentTemplate]:
                 else {},
             )
         )
+    template_ids = [template.template_id for template in out]
+    if len(template_ids) != len(set(template_ids)):
+        raise ValueError(f"duplicate template_id in pack {template_path}")
     return out
 
 
