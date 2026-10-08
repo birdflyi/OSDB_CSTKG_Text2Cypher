@@ -15,7 +15,10 @@ from artifact_safety import (  # noqa: E402
     DEFAULT_ARTIFACT_VERSION,
     ensure_output_paths_available,
 )
-from input_provenance import named_input_provenance  # noqa: E402
+from input_provenance import (  # noqa: E402
+    git_byte_input_provenance,
+    named_input_provenance,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "graph-migration"))
@@ -75,6 +78,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-overwrite-development-artifact",
         action="store_true",
         help="allow overwriting existing non-canonical synthetic/temp outputs only; canonical D1.3a evidence is always append-only",
+    )
+    parser.add_argument(
+        "--require-canonical-git-byte-verification",
+        action="store_true",
+        help="require every tracked evaluation input to match its exact Git blob bytes",
     )
     return parser
 
@@ -153,6 +161,21 @@ def main() -> int:
         },
         ROOT,
     )
+    canonical_inputs = {
+        "source_commit": None,
+        "canonical_git_byte_verification": "NOT_REQUESTED",
+        "tracked_input_provenance": [],
+    }
+    if args.require_canonical_git_byte_verification:
+        canonical_inputs = git_byte_input_provenance(
+            {
+                "gold": args.gold,
+                "frozen_baseline_rows": args.frozen_rows,
+                "pre_fix_rows": args.pre_fix_rows,
+                "evaluator": EVALUATOR_PATH,
+            },
+            ROOT,
+        )
     rows, summary = evaluate(
         _load_jsonl(traces_path), _load_jsonl(args.gold), input_provenance=direct_inputs
     )
@@ -241,6 +264,9 @@ def main() -> int:
             "evaluation_rows_sha256": _sha256(rows_path),
             "frozen_baseline_rows_sha256": _sha256(args.frozen_rows),
             "gold_dataset_sha256": _sha256(args.gold),
+            "canonical_source_commit": canonical_inputs["source_commit"],
+            "canonical_git_byte_verification": canonical_inputs["canonical_git_byte_verification"],
+            "tracked_input_provenance": canonical_inputs["tracked_input_provenance"],
         }
     )
     with summary_path.open("w", encoding="utf-8", newline="\n") as handle:

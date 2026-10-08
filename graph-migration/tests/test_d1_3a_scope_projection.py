@@ -440,6 +440,96 @@ def test_single_column_distinct_remains_item_local() -> None:
     assert coverage["projection"]["tuple_distinct"]["accepted"]
 
 
+def test_single_column_return_distinct_entails_item_distinct_without_contract_flag() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "For issue I_880002#77, return distinct Actor IDs of its opener."
+    )
+    template = next(item for item in _templates() if item.template_id == "indv4_issue_opened_by")
+    candidate = replace(
+        template,
+        skeleton=template.skeleton.replace("RETURN a.entity_id", "RETURN DISTINCT a.entity_id"),
+        projection_contract=[{**template.projection_contract[0], "distinct": False}],
+    )
+    coverage = audit_ir_constraint_coverage(ir, candidate)
+    assert coverage["accepted"]
+    assert coverage["projection"]["consumed_items"][0]["status"] == "CONSUMED_BY_SELECTED_CONTRACT"
+
+
+def test_multi_column_return_distinct_does_not_entail_single_item_distinct() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "For issue I_880002#77, return distinct Actor IDs of its opener."
+    )
+    template = next(item for item in _templates() if item.template_id == "indv4_issue_opened_by")
+    candidate = replace(
+        template,
+        skeleton=template.skeleton.replace(
+            "RETURN a.entity_id", "RETURN DISTINCT a.entity_id, a.name"
+        ),
+        projection_contract=[{**template.projection_contract[0], "distinct": False}],
+    )
+    coverage = audit_ir_constraint_coverage(ir, candidate)
+    assert not coverage["accepted"]
+    assert coverage["projection"]["unconsumed_items"]
+
+
+def test_aggregation_parser_preserves_ordinary_and_distinct_counts() -> None:
+    ordinary = parse_nl_to_ir("synthetic", "Count all links.")
+    distinct = parse_nl_to_ir("synthetic", "Count distinct pull request IDs.")
+    mixed = parse_nl_to_ir(
+        "synthetic", "Count all links and count distinct pull request IDs."
+    )
+    assert ordinary.aggregation == [
+        {"function": "count", "field": "*", "provenance": "bounded_semantic_rule"}
+    ]
+    assert distinct.aggregation == [
+        {
+            "function": "count",
+            "field": "PullRequest.entity_id",
+            "distinct": True,
+            "provenance": "aggregate_argument_distinct_from_nl",
+        }
+    ]
+    assert mixed.aggregation == [
+        {"function": "count", "field": "*", "provenance": "bounded_semantic_rule"},
+        {
+            "function": "count",
+            "field": "PullRequest.entity_id",
+            "distinct": True,
+            "provenance": "aggregate_argument_distinct_from_nl",
+        },
+    ]
+
+
+def test_mixed_count_request_does_not_treat_distinct_count_as_ordinary_count() -> None:
+    query = (
+        "For repo R_900001 in 2024, show comprehensive domain aggregation for involved actors; "
+        "return distinct actor IDs and count all links and count distinct pull request IDs."
+    )
+    ir = parse_nl_to_ir("synthetic", query)
+    template = next(
+        item for item in _templates()
+        if item.template_id == "indv4_comprehensive_external_actor_aggregation"
+    )
+    only_distinct = audit_ir_constraint_coverage(ir, template)["aggregation"]
+    assert only_distinct["consumed"] == [ir.aggregation[1]]
+    assert only_distinct["unconsumed"] == [
+        {**ir.aggregation[0], "distinct": False, "reason": "requested aggregate function is absent from the template skeleton"}
+    ]
+
+    both = replace(
+        template,
+        skeleton=template.skeleton.replace(
+            "count(DISTINCT pr.entity_id) AS pr_count",
+            "count(*) AS all_links, count(DISTINCT pr.entity_id) AS pr_count",
+        ),
+    )
+    both_coverage = audit_ir_constraint_coverage(ir, both)["aggregation"]
+    assert [item["function"] for item in both_coverage["consumed"]] == ["count", "count"]
+    assert both_coverage["consumed"][0]["field"] == "*"
+    assert both_coverage["consumed"][1]["field"] == "PullRequest.entity_id"
+    assert not both_coverage["unconsumed"]
+
+
 def test_projection_order_mismatch_is_rejected() -> None:
     ir = parse_nl_to_ir(
         "synthetic",

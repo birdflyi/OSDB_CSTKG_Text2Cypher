@@ -25,7 +25,11 @@ from artifact_safety import (  # noqa: E402
     DEFAULT_ARTIFACT_VERSION,
     ensure_output_paths_available,
 )
-from input_provenance import canonical_project_path, named_input_provenance  # noqa: E402
+from input_provenance import (  # noqa: E402
+    canonical_project_path,
+    git_byte_input_provenance,
+    named_input_provenance,
+)
 from template_provenance import (  # noqa: E402
     resolved_template_bundle_sha256,
     template_dependency_closure,
@@ -103,6 +107,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="allow overwriting existing non-canonical synthetic/temp outputs only; canonical D1.3a evidence is always append-only",
     )
+    parser.add_argument(
+        "--require-canonical-git-byte-verification",
+        action="store_true",
+        help="require every tracked generation input to match its exact Git blob bytes",
+    )
     return parser
 
 
@@ -119,6 +128,25 @@ def main() -> int:
     requests = _requests(args.queries)
     templates = load_independent_templates(args.templates)
     dependency_records = template_dependency_closure(args.templates, ROOT)
+    dependency_inputs = {
+        f"template_dependency_{index}": ROOT / record["path"]
+        for index, record in enumerate(dependency_records)
+    }
+    canonical_inputs = {
+        "source_commit": None,
+        "canonical_git_byte_verification": "NOT_REQUESTED",
+        "tracked_input_provenance": [],
+    }
+    if args.require_canonical_git_byte_verification:
+        canonical_inputs = git_byte_input_provenance(
+            {
+                "queries": args.queries,
+                "schema": args.schema,
+                "template_pack": args.templates,
+                **dependency_inputs,
+            },
+            ROOT,
+        )
     direct_inputs = named_input_provenance(
         {"queries": args.queries, "schema": args.schema}, ROOT
     )
@@ -150,6 +178,9 @@ def main() -> int:
         "evaluation_annotations_loaded": False,
         "gold_or_reference_cypher_loaded": False,
         "repair_mode": "gold_blind_runtime_diagnosis_and_independent_ir_only",
+        "canonical_source_commit": canonical_inputs["source_commit"],
+        "canonical_git_byte_verification": canonical_inputs["canonical_git_byte_verification"],
+        "tracked_input_provenance": canonical_inputs["tracked_input_provenance"],
         "generation_trace_path": canonical_project_path(trace_path, ROOT),
         "generation_trace_sha256": _sha256(trace_path),
     }

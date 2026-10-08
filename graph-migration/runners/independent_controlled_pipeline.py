@@ -571,6 +571,16 @@ def _parse_aggregate_distinct(text: str) -> list[dict[str, Any]]:
     return found
 
 
+def _ordinary_count_requested(text: str) -> bool:
+    """Detect a count requirement while excluding count-distinct phrases."""
+    for match in re.finditer(r"\bcount\b", text, re.IGNORECASE):
+        tail = text[match.end():match.end() + 40]
+        if re.match(r"\s+(?:of\s+)?distinct\b", tail, re.IGNORECASE):
+            continue
+        return True
+    return False
+
+
 def _projection_tuple_distinct_from_text(text: str, items: list[ProjectionItem]) -> bool:
     """Infer only whole-result cues; bare/local DISTINCT is not tuple DISTINCT."""
     if re.search(
@@ -889,14 +899,20 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
     ir.limit = ir.explicit_limit
     _append_provenance(ir, "limit", "explicit_limit_from_nl" if limit_match else "template_contract_default")
 
-    if any(word in lower for word in ["count", "group by", "by domain"]):
+    ordinary_count_requested = _ordinary_count_requested(text)
+    implicit_grouping_count = any(word in lower for word in ["group by", "by domain"])
+    if ordinary_count_requested:
         ir.aggregation = [{"function": "count", "field": "*", "provenance": "bounded_semantic_rule"}]
         _append_provenance(ir, "aggregation", "bounded_semantic_rule")
+    elif implicit_grouping_count:
+        ir.aggregation = [{"function": "count", "field": "*", "provenance": "implicit_grouping_aggregation"}]
+        _append_provenance(ir, "aggregation", "implicit_grouping_aggregation")
     aggregate_distinct = _parse_aggregate_distinct(text)
     if aggregate_distinct:
-        ir.aggregation = [
-            item for item in ir.aggregation if str(item.get("function") or "").lower() != "count"
-        ] + aggregate_distinct
+        ir.aggregation.extend(
+            item for item in aggregate_distinct
+            if item not in ir.aggregation
+        )
         _append_provenance(ir, "aggregation", "aggregate_argument_distinct_from_nl")
     if "latest interaction time" in lower:
         ir.aggregation.append(
@@ -1157,6 +1173,64 @@ def _return_has_tuple_distinct(skeleton: str) -> bool:
     return bool(re.match(r"\s*DISTINCT\b", _return_clause(skeleton), re.IGNORECASE))
 
 
+def _split_return_expressions(body: str) -> list[str]:
+    """Split a RETURN body on commas outside parentheses and quoted strings."""
+    expressions: list[str] = []
+    start = 0
+    depth = 0
+    quote: str | None = None
+    escaped = False
+    for index, char in enumerate(body):
+        if quote:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = None
+            continue
+        if char in {"'", '"'}:
+            quote = char
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth = max(0, depth - 1)
+        elif char == "," and depth == 0:
+            expressions.append(body[start:index].strip())
+            start = index + 1
+    tail = body[start:].strip()
+    if tail:
+        expressions.append(tail)
+    return expressions
+
+
+def _single_column_return_distinct_entails_item(
+    skeleton: str, requested: dict[str, Any]
+) -> bool:
+    """Allow item DISTINCT only for a one-expression top-level RETURN."""
+    if not requested.get("distinct") or not _return_has_tuple_distinct(skeleton):
+        return False
+    expressions = _split_return_expressions(
+        re.sub(r"^\s*DISTINCT\b", "", _return_clause(skeleton), flags=re.IGNORECASE)
+    )
+    if len(expressions) != 1:
+        return False
+    expression = re.sub(
+        r"\s+AS\s+[A-Za-z_][A-Za-z0-9_]*\s*$", "", expressions[0], flags=re.IGNORECASE
+    ).strip()
+    match = re.fullmatch(
+        r"(?P<alias>[A-Za-z_][A-Za-z0-9_]*)\.(?P<property>[A-Za-z_][A-Za-z0-9_]*)",
+        expression,
+    )
+    if not match:
+        return False
+    aliases = _skeleton_label_aliases(skeleton)
+    return (
+        aliases.get(match.group("alias")) == str(requested.get("label") or "")
+        and match.group("property") == str(requested.get("property") or "entity_id")
+    )
+
+
 def _service_semantics_in_skeleton(skeleton: str) -> set[str]:
     semantics = set(re.findall(r"service_rel_type\s*=\s*'([^']+)'", skeleton, flags=re.IGNORECASE))
     for group in re.findall(r"service_rel_type\s+IN\s*\[([^\]]+)\]", skeleton, flags=re.IGNORECASE):
@@ -1407,14 +1481,21 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
         field = str(item.get("field") or "")
         if function not in aggregate_functions:
             return False
-        if field in {"", "*"}:
-            field_matches = True
-        else:
-            field_matches = any(
-                candidate_function.lower() == function
-                and aggregate_field_matches(field, expression)
-                for candidate_function, expression in aggregate_matches
-            )
+        if item.get("provenance") == "implicit_grouping_aggregation":
+            return True
+        def candidate_matches(expression: str, *, require_distinct: bool) -> bool:
+            has_distinct = bool(re.search(r"\bDISTINCT\b", expression, re.I))
+            if has_distinct != require_distinct:
+                return False
+            if field in {"", "*"}:
+                return bool(re.fullmatch(r"\s*(?:DISTINCT\s+)?\*\s*", expression, re.I))
+            return aggregate_field_matches(field, expression)
+
+        field_matches = any(
+            candidate_function.lower() == function
+            and candidate_matches(expression, require_distinct=bool(item.get("distinct")))
+            for candidate_function, expression in aggregate_matches
+        )
         if not field_matches:
             return False
         if item.get("distinct"):
@@ -1501,7 +1582,11 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
                     if str(contract.get("label") or "") == str(requested.get("label") or "")
                     and str(contract.get("property") or "entity_id") == str(requested.get("property") or "entity_id")
                     and str(contract.get("role") or requested.get("role")) == str(requested.get("role"))
-                    and (not requested.get("distinct") or bool(contract.get("distinct")))
+                    and (
+                        not requested.get("distinct")
+                        or bool(contract.get("distinct"))
+                        or _single_column_return_distinct_entails_item(template.skeleton, requested)
+                    )
                     and (not requested.get("nullable") or bool(contract.get("nullable")))
                 ),
                 None,
@@ -1544,7 +1629,11 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
             label_matches = any(alias_labels.get(alias) == label for alias in return_aliases)
             if property_name == "url_domain_etld1":
                 label_matches = label_matches or label in selection_targets
-            if property_matches and label_matches:
+            distinct_matches = (
+                not requested.get("distinct")
+                or _single_column_return_distinct_entails_item(template.skeleton, requested)
+            )
+            if property_matches and label_matches and distinct_matches:
                 consumed_projection_items.append(
                     {**requested, "status": "CONSUMED_BY_SELECTED_CONTRACT", "contract_item": "legacy_return_expression"}
                 )
@@ -1565,11 +1654,21 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
     contract_entailed_tuple_distinct = contract_tuple_distinct and bool(
         projection_options.get("entailed")
     )
+    single_column_item_distinct = (
+        len(requested_projection_items) == 1
+        and _single_column_return_distinct_entails_item(skeleton, requested_projection_items[0])
+    )
     if ir.projection_distinct:
         projection_distinct_compatible = return_tuple_distinct or contract_tuple_distinct
         projection_distinct_reason = None if projection_distinct_compatible else (
             "requested tuple DISTINCT is absent from RETURN and projection contract"
         )
+    elif single_column_item_distinct:
+        # A one-expression RETURN DISTINCT proves uniqueness of that requested
+        # item, but does not establish tuple DISTINCT semantics for a wider
+        # projection contract.
+        projection_distinct_compatible = True
+        projection_distinct_reason = "single-column RETURN DISTINCT entails requested item uniqueness"
     elif return_tuple_distinct and not projection_contract_available:
         # Pre-v5 packs used the whole skeleton as their implicit contract.
         # Preserve that frozen compatibility path; once an explicit ordered
