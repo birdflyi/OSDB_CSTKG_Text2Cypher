@@ -380,21 +380,42 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
     lower = text.lower()
     nouns = _entity_noun_occurrences(text)
     source_anchor_nouns = _source_anchor_noun_occurrences(text, nouns)
+    aggregate_argument_spans = _aggregate_distinct_argument_spans(text)
+
+    def is_aggregate_argument(match: re.Match[str]) -> bool:
+        return any(start <= match.start() < end for start, end in aggregate_argument_spans)
+
+    def has_item_distinct_cue(start: int) -> bool:
+        return bool(re.search(r"\b(?:distinct|unique)\s+(?:the\s+)?$", text[max(0, start - 24):start], re.I))
+
     nullable = bool(
         re.search(r"\b(?:optional|if\s+any|where\s+they\s+exist|where\s+it\s+exists|"
                   r"neither\s+is\s+required|empty\s+when\s+missing)\b", lower)
     )
     candidates: list[ProjectionItem] = []
 
-    def add(label: str, start: int, end: int, *, property_name: str = "entity_id", role: str = "target_entity") -> None:
-        if any(item.label == label and item.property == property_name for item in candidates):
+    def add(
+        label: str,
+        start: int,
+        end: int,
+        *,
+        property_name: str = "entity_id",
+        role: str = "target_entity",
+        distinct: bool = False,
+    ) -> None:
+        existing = next(
+            (item for item in candidates if item.label == label and item.property == property_name),
+            None,
+        )
+        if existing is not None:
+            existing.distinct = existing.distinct or distinct
             return
         candidates.append(
             ProjectionItem(
                 role=role,
                 label=label,
                 property=property_name,
-                distinct=False,
+                distinct=distinct,
                 nullable=nullable,
                 provenance="bounded_role_projection_rule",
                 source_span=[start, end],
@@ -405,6 +426,8 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
     # bounded projection cue; it is independent of the source anchor.
     for label, pattern in ENTITY_NOUN_PATTERNS:
         for match in pattern.finditer(text):
+            if is_aggregate_argument(match):
+                continue
             tail = text[match.end():match.end() + 52]
             id_cue = re.match(
                 r"\s*(?:'s\s+)?(?:whose\s+)?(?:entity\s+)?(?:ids?|identifiers?)\b",
@@ -414,31 +437,35 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
             if id_cue:
                 cue_start = match.end() + id_cue.start()
                 cue_end = match.end() + id_cue.end()
-                add(label, cue_start, cue_end)
+                add(label, cue_start, cue_end, distinct=has_item_distinct_cue(match.start()))
 
     # “IDs of <entity>” and equivalent possessives preserve natural column order.
     for label, pattern in ENTITY_NOUN_PATTERNS:
         for match in pattern.finditer(text):
+            if is_aggregate_argument(match):
+                continue
             prefix = text[max(0, match.start() - 48):match.start()]
             if re.search(r"\b(?:ids?|identifiers?)\s+of\s+(?:the\s+)?$", prefix, re.I):
-                add(label, match.start(), match.end())
+                add(label, match.start(), match.end(), distinct=has_item_distinct_cue(match.start()))
 
     # A question/list cue can itself name the requested entity role even when
     # the wording says “which objects?” and later refers to “their IDs”.
     output_nouns: list[tuple[int, int, str]] = []
     for start, end, label in nouns:
+        if any(span_start <= start < span_end for span_start, span_end in aggregate_argument_spans):
+            continue
         if (start, end, label) in source_anchor_nouns:
             continue
         prefix = lower[max(0, start - 24):start]
         if (
-            re.search(r"\b(?:which|what|list|show|return|give|display)\s+(?:me\s+)?(?:the\s+)?(?:involved|mentioned|referenced|linked)?\s*$", prefix)
+            re.search(r"\b(?:which|what|list|show|return|give|display)\s+(?:me\s+)?(?:the\s+)?(?:distinct|unique\s+)?(?:involved|mentioned|referenced|linked)?\s*$", prefix)
             or re.search(r"\b(?:and|or)\s+(?:involved|mentioned|referenced|linked)\s*$", prefix)
             or (label == "UnknownObject" and re.search(r"\band\s*$", prefix))
         ):
             output_nouns.append((start, end, label))
             if re.search(r"\b(?:which|what)\s+(?:unknown(?:[- ]type)?\s+|untyped\s+)?objects?\s*$", prefix):
                 label = "UnknownObject"
-            add(label, start, end)
+            add(label, start, end, distinct=has_item_distinct_cue(start))
 
     # Pronouns such as “their IDs” bind to the nearest preceding typed noun;
     # this does not fall back to the source noun when a later target is named.
@@ -482,16 +509,64 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
     return candidates
 
 
-def _projection_tuple_distinct_from_text(text: str) -> bool:
-    """Parse row/tuple-level uniqueness separately from projection columns."""
-    return bool(
-        re.search(
-            r"\b(?:distinct|unique\s+combinations?|unique\s+rows?|"
-            r"de-duplicated\s+rows?|deduplicated\s+rows?)\b",
+def _aggregate_distinct_argument_spans(text: str) -> list[tuple[int, int]]:
+    target = r"(?:pull\s+requests?|prs?|issues?|repos?(?:itories)?|actors?|users?|commits?|external\s+resources?)"
+    pattern = re.compile(
+        rf"\bcount\s+(?:of\s+)?distinct\s+(?P<target>{target})"
+        r"(?:\s+(?:entity\s+)?(?:ids?|identifiers?))?\b",
+        re.IGNORECASE,
+    )
+    return [(match.start("target"), match.end()) for match in pattern.finditer(text)]
+
+
+def _parse_aggregate_distinct(text: str) -> list[dict[str, Any]]:
+    labels = (
+        ("PullRequest", r"pull\s+requests?|prs?"),
+        ("Issue", r"issues?"),
+        ("Repo", r"repos?(?:itories)?"),
+        ("Actor", r"actors?|users?"),
+        ("Commit", r"commits?"),
+        ("ExternalResource", r"external\s+resources?"),
+    )
+    found: list[dict[str, Any]] = []
+    for label, pattern in labels:
+        if re.search(
+            rf"\bcount\s+(?:of\s+)?distinct\s+(?:{pattern})\b",
             text,
             re.IGNORECASE,
-        )
-    )
+        ):
+            found.append(
+                {
+                    "function": "count",
+                    "field": f"{label}.entity_id",
+                    "distinct": True,
+                    "provenance": "aggregate_argument_distinct_from_nl",
+                }
+            )
+    return found
+
+
+def _projection_tuple_distinct_from_text(text: str, items: list[ProjectionItem]) -> bool:
+    """Infer only whole-result cues; bare/local DISTINCT is not tuple DISTINCT."""
+    if re.search(
+        r"\b(?:distinct\s+(?:result\s+)?rows?|unique\s+(?:rows?|combinations?|pairs?|tuples?)|"
+        r"deduplicate\s+(?:the\s+)?(?:result\s+)?rows?|de-duplicate\s+(?:the\s+)?(?:result\s+)?rows?)\b",
+        text,
+        re.IGNORECASE,
+    ):
+        return True
+
+    # A leading `return distinct X and Y` is accepted only when it clearly
+    # scopes over two requested projection items, with no aggregate-local
+    # DISTINCT or explicit local-only modifier in the second item.
+    leading_distinct = re.search(r"\b(?:return|show|list|display|give)\s+distinct\b", text, re.I)
+    if not leading_distinct or len(items) < 2 or _aggregate_distinct_argument_spans(text):
+        return False
+    second_start = items[1].source_span[0] if items[1].source_span else len(text)
+    between_items = text[leading_distinct.end():second_start]
+    if re.search(r"\bordinary\b", between_items, re.I):
+        return False
+    return True
 
 
 def _extract_entity_mentions(text: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -792,6 +867,12 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
     if any(word in lower for word in ["count", "group by", "by domain"]):
         ir.aggregation = [{"function": "count", "field": "*", "provenance": "bounded_semantic_rule"}]
         _append_provenance(ir, "aggregation", "bounded_semantic_rule")
+    aggregate_distinct = _parse_aggregate_distinct(text)
+    if aggregate_distinct:
+        ir.aggregation = [
+            item for item in ir.aggregation if str(item.get("function") or "").lower() != "count"
+        ] + aggregate_distinct
+        _append_provenance(ir, "aggregation", "aggregate_argument_distinct_from_nl")
     if "latest interaction time" in lower:
         ir.aggregation.append(
             {"function": "max", "field": "source_event_time", "provenance": "aggregation_latest_projection"}
@@ -809,7 +890,14 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
         _append_provenance(ir, "sort", "bounded_semantic_rule")
 
     ir.projection_items = _projection_items_from_text(text)
-    ir.projection_distinct = _projection_tuple_distinct_from_text(text)
+    ir.projection_distinct = _projection_tuple_distinct_from_text(text, ir.projection_items)
+    if ir.projection_distinct and re.search(
+        r"\b(?:return|show|list|display|give)\s+distinct\b", text, re.I
+    ):
+        # In the bounded leading-list grammar, DISTINCT scopes the projection
+        # tuple; it is not redundantly copied onto its first item.
+        for item in ir.projection_items:
+            item.distinct = False
     if any(item.property == "url_domain_etld1" for item in ir.projection_items):
         ir.projection["property"] = "url_domain_etld1"
         _append_provenance(ir, "projection", "bounded_role_projection_rule")
@@ -1038,6 +1126,12 @@ def _return_clause(skeleton: str) -> str:
     return match.group(1) if match else ""
 
 
+def _return_has_tuple_distinct(skeleton: str) -> bool:
+    # _return_clause starts immediately after RETURN. A leading DISTINCT is
+    # tuple-level; DISTINCT nested inside an aggregate expression is local.
+    return bool(re.match(r"\s*DISTINCT\b", _return_clause(skeleton), re.IGNORECASE))
+
+
 def _service_semantics_in_skeleton(skeleton: str) -> set[str]:
     semantics = set(re.findall(r"service_rel_type\s*=\s*'([^']+)'", skeleton, flags=re.IGNORECASE))
     for group in re.findall(r"service_rel_type\s+IN\s*\[([^\]]+)\]", skeleton, flags=re.IGNORECASE):
@@ -1256,7 +1350,12 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
         time_unconsumed.append({"bound": "end", "value": requested_time["end"], "reason": "end bound is not rendered by a time predicate"})
 
     requested_aggregations = [
-        {"function": str(item.get("function") or "").lower(), "field": item.get("field"), "provenance": item.get("provenance")}
+        {
+            "function": str(item.get("function") or "").lower(),
+            "field": item.get("field"),
+            "distinct": bool(item.get("distinct")),
+            "provenance": item.get("provenance"),
+        }
         for item in ir.aggregation
         if item.get("function")
     ]
@@ -1264,6 +1363,19 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
         r"\b(count|collect|max|min|sum|avg)\s*\(([^)]*)\)", skeleton, flags=re.IGNORECASE
     )
     aggregate_functions = {function.lower() for function, _ in aggregate_matches}
+    aggregate_aliases = _skeleton_label_aliases(skeleton)
+
+    def aggregate_field_matches(field: str, expression: str) -> bool:
+        if re.search(rf"\b{re.escape(field)}\b", expression):
+            return True
+        if "." not in field:
+            return False
+        label, property_name = field.split(".", 1)
+        return any(
+            re.search(rf"\b{re.escape(alias)}\.{re.escape(property_name)}\b", expression)
+            for alias, candidate_label in aggregate_aliases.items()
+            if candidate_label == label
+        )
 
     def aggregate_compatible(item: dict[str, Any]) -> bool:
         function = item["function"]
@@ -1271,12 +1383,23 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
         if function not in aggregate_functions:
             return False
         if field in {"", "*"}:
-            return True
-        return any(
-            candidate_function.lower() == function
-            and re.search(rf"\b{re.escape(field)}\b", expression)
-            for candidate_function, expression in aggregate_matches
-        )
+            field_matches = True
+        else:
+            field_matches = any(
+                candidate_function.lower() == function
+                and aggregate_field_matches(field, expression)
+                for candidate_function, expression in aggregate_matches
+            )
+        if not field_matches:
+            return False
+        if item.get("distinct"):
+            return any(
+                candidate_function.lower() == function
+                and re.search(r"\bDISTINCT\b", expression, re.I)
+                and (field in {"", "*"} or aggregate_field_matches(field, expression))
+                for candidate_function, expression in aggregate_matches
+            )
+        return True
 
     consumed_aggregations = [item for item in requested_aggregations if aggregate_compatible(item)]
     unconsumed_aggregations = [
@@ -1409,7 +1532,7 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
         and (not projection_contract_available or _projection_contract_order_matches_skeleton(template, return_clause))
     )
     projection_options = template.projection_options or {}
-    return_tuple_distinct = bool(re.match(r"\s*DISTINCT\b", return_clause, re.IGNORECASE))
+    return_tuple_distinct = _return_has_tuple_distinct(skeleton)
     contract_tuple_distinct = bool(
         projection_options.get("distinct")
         and str(projection_options.get("distinct_scope") or "").lower() == "tuple"

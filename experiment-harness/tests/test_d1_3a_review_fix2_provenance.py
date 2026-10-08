@@ -64,6 +64,8 @@ def test_existing_outputs_fail_closed_and_remain_byte_identical(tmp_path: Path) 
     assert target.read_bytes() == original
     with pytest.raises(FileExistsError, match="protected v2"):
         ensure_output_paths_available([target], artifact_version="v2", allow_overwrite=True)
+    with pytest.raises(FileExistsError, match="protected v3"):
+        ensure_output_paths_available([target], artifact_version="v3", allow_overwrite=True)
     assert target.read_bytes() == original
 
 

@@ -11,6 +11,9 @@ from runners.independent_controlled_pipeline import (  # noqa: E402
     IndependentTemplate,
     ScopeSlotConflictError,
     _slot_values,
+    _projection_contract_order_matches_skeleton,
+    _return_has_tuple_distinct,
+    _return_clause,
     audit_ir_constraint_coverage,
     generate_independent,
     load_independent_schema,
@@ -302,6 +305,76 @@ def test_tuple_distinct_request_is_separate_from_projection_item_flags() -> None
     assert result.validation["selection"]["ir_constraint_coverage"]["projection"]["order_preserved"]
 
 
+def test_item_and_aggregate_distinct_do_not_become_tuple_distinct() -> None:
+    query = "return distinct actor IDs and count distinct pull request IDs"
+    ir = parse_nl_to_ir("synthetic", query)
+    assert not ir.projection_distinct
+    assert [(item.label, item.distinct) for item in ir.projection_items] == [("Actor", True)]
+    assert ir.aggregation == [
+        {
+            "function": "count",
+            "field": "PullRequest.entity_id",
+            "distinct": True,
+            "provenance": "aggregate_argument_distinct_from_nl",
+        }
+    ]
+
+    full_query = (
+        "For repo R_900001 in 2024, show comprehensive domain aggregation for involved actors; "
+        "return distinct actor IDs and count distinct pull request IDs."
+    )
+    full_ir = parse_nl_to_ir("synthetic", full_query)
+    template = next(
+        item for item in _templates()
+        if item.template_id == "indv4_comprehensive_external_actor_aggregation"
+    )
+    coverage = audit_ir_constraint_coverage(full_ir, template)
+    assert coverage["aggregation"]["consumed"] == full_ir.aggregation
+    assert not coverage["projection"]["tuple_distinct"]["requested"]
+    assert _projection_contract_order_matches_skeleton(
+        template, _return_clause(template.skeleton)
+    )
+
+
+def test_item_distinct_does_not_leak_to_an_ordinary_projection_item() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "return distinct actor IDs and ordinary external resource IDs"
+    )
+    assert not ir.projection_distinct
+    assert [(item.label, item.distinct) for item in ir.projection_items] == [
+        ("Actor", True),
+        ("ExternalResource", False),
+    ]
+
+
+def test_unique_combinations_is_an_explicit_tuple_distinct_cue() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "return unique combinations of repo ID and resource ID"
+    )
+    assert ir.projection_distinct
+    assert [(item.label, item.distinct) for item in ir.projection_items] == [
+        ("Repo", False),
+        ("ExternalResource", False),
+    ]
+
+
+def test_local_distinct_phrase_is_not_promoted_to_tuple_scope() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "Show distinct actor IDs alongside the ordinary external resource IDs."
+    )
+    assert not ir.projection_distinct
+
+
+def test_skeleton_distinct_scope_is_read_from_return_prefix_only() -> None:
+    assert _return_has_tuple_distinct("MATCH (a:Actor) RETURN DISTINCT a.entity_id, a.name")
+    assert not _return_has_tuple_distinct(
+        "MATCH (a:Actor) RETURN collect(DISTINCT a.entity_id) AS actors"
+    )
+    assert _return_has_tuple_distinct(
+        "MATCH (a:Actor) RETURN DISTINCT collect(DISTINCT a.entity_id) AS actors"
+    )
+
+
 def test_entailed_tuple_distinct_contract_adjudicates_unmarked_request() -> None:
     query = (
         "For actor A_900001, return repo IDs and external resource IDs "
@@ -344,21 +417,26 @@ def test_tuple_distinct_request_abstains_without_return_or_compatible_contract()
     assert not coverage["projection"]["tuple_distinct"]["accepted"]
 
 
-def test_single_column_distinct_is_projection_level_not_item_level() -> None:
+def test_single_column_distinct_remains_item_local() -> None:
     ir = parse_nl_to_ir(
         "synthetic", "For issue I_880002#77, return distinct Actor IDs of its opener."
     )
-    assert ir.projection_distinct
+    assert not ir.projection_distinct
     assert len(ir.projection_items) == 1
-    assert ir.projection_items[0].distinct is False
+    assert ir.projection_items[0].distinct is True
 
     template = next(item for item in _templates() if item.template_id == "indv4_issue_opened_by")
     with_distinct = replace(
         template,
         skeleton=template.skeleton.replace("RETURN a.entity_id", "RETURN DISTINCT a.entity_id"),
+        projection_contract=[
+            {**template.projection_contract[0], "distinct": True, "entailed": True}
+        ],
+        projection_options={"distinct": True, "distinct_scope": "tuple", "entailed": True},
     )
     coverage = audit_ir_constraint_coverage(ir, with_distinct)
     assert coverage["accepted"]
+    assert not coverage["projection"]["tuple_distinct"]["requested"]
     assert coverage["projection"]["tuple_distinct"]["accepted"]
 
 

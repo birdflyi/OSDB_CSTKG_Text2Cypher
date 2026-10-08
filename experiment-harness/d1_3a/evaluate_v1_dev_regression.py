@@ -15,6 +15,7 @@ from artifact_safety import (  # noqa: E402
     DEFAULT_ARTIFACT_VERSION,
     ensure_output_paths_available,
 )
+from input_provenance import named_input_provenance  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "graph-migration"))
@@ -74,7 +75,11 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def evaluate(traces: list[dict[str, Any]], gold_rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def evaluate(
+    traces: list[dict[str, Any]],
+    gold_rows: list[dict[str, Any]],
+    input_provenance: dict[str, str] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     evaluator = _load_frozen_evaluator()
     by_trace = {str(item.get("heldout_id") or ""): item for item in traces}
     by_gold = {str(item.get("heldout_id") or ""): item for item in gold_rows}
@@ -112,6 +117,7 @@ def evaluate(traces: list[dict[str, Any]], gold_rows: list[dict[str, Any]]) -> t
         "SEMANTIC_SIGNATURE_SCOPE": "static_bounded_current_contract_grammar",
         "NEO4J_RUN": False,
     }
+    summary.update(input_provenance or {})
     return rows, summary
 
 
@@ -133,7 +139,19 @@ def main() -> int:
     traces_path = args.traces or (
         DEFAULT_TRACE_DIR / f"d1_3a_v1_dev_generation_traces_{args.artifact_version}.jsonl"
     )
-    rows, summary = evaluate(_load_jsonl(traces_path), _load_jsonl(args.gold))
+    direct_inputs = named_input_provenance(
+        {
+            "generation_traces": traces_path,
+            "gold": args.gold,
+            "frozen_baseline_rows": args.frozen_rows,
+            "pre_fix_rows": args.pre_fix_rows,
+            "evaluator": EVALUATOR_PATH,
+        },
+        ROOT,
+    )
+    rows, summary = evaluate(
+        _load_jsonl(traces_path), _load_jsonl(args.gold), input_provenance=direct_inputs
+    )
     frozen_rows = {str(item.get("heldout_id") or ""): item for item in _load_jsonl(args.frozen_rows)}
     pre_fix_rows = {str(item.get("heldout_id") or ""): item for item in _load_jsonl(args.pre_fix_rows)}
     current_rows = {str(item.get("heldout_id") or ""): item for item in rows}

@@ -8,7 +8,7 @@ from typing import Iterable
 
 
 DEFAULT_ARTIFACT_VERSION = "v2"
-PROTECTED_ARTIFACT_VERSIONS = {"v1", "v2"}
+PROTECTED_ARTIFACT_VERSIONS = {"v1", "v2", "v3"}
 
 
 def validate_artifact_version(value: str) -> str:
@@ -20,7 +20,7 @@ def validate_artifact_version(value: str) -> str:
 def ensure_output_paths_available(
     paths: Iterable[Path], *, artifact_version: str, allow_overwrite: bool = False
 ) -> None:
-    """Refuse existing artifacts; committed v1/v2 are immutable even by override."""
+    """Refuse existing artifacts; frozen v1/v2/v3 are immutable even by override."""
     version = validate_artifact_version(artifact_version)
     existing = [path for path in paths if path.exists()]
     if not existing:

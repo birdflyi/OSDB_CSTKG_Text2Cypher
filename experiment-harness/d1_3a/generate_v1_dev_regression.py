@@ -25,6 +25,7 @@ from artifact_safety import (  # noqa: E402
     DEFAULT_ARTIFACT_VERSION,
     ensure_output_paths_available,
 )
+from input_provenance import canonical_project_path, named_input_provenance  # noqa: E402
 from template_provenance import (  # noqa: E402
     resolved_template_bundle_sha256,
     template_dependency_closure,
@@ -114,6 +115,9 @@ def main() -> int:
     requests = _requests(args.queries)
     templates = load_independent_templates(args.templates)
     dependency_records = template_dependency_closure(args.templates, ROOT)
+    direct_inputs = named_input_provenance(
+        {"queries": args.queries, "schema": args.schema}, ROOT
+    )
     template_map = {item.template_id: item for item in templates}
     schema = load_independent_schema(args.schema)
     traces = [
@@ -128,9 +132,11 @@ def main() -> int:
         "run_id": "d1_3a_v1_development_regression",
         "evaluation_role": "DEVELOPMENT_REGRESSION",
         "heldout_role": "NOT_HELDOUT",
-        "queries_path": str(args.queries.relative_to(ROOT)).replace("\\", "/"),
-        "queries_sha256": _sha256(args.queries),
-        "template_pack_path": str(args.templates.relative_to(ROOT)).replace("\\", "/"),
+        "queries_path": direct_inputs["queries_path"],
+        "queries_sha256": direct_inputs["queries_sha256"],
+        "schema_path": direct_inputs["schema_path"],
+        "schema_sha256": direct_inputs["schema_sha256"],
+        "template_pack_path": canonical_project_path(args.templates, ROOT),
         "template_pack_sha256": _sha256(args.templates),
         "template_dependency_hashes": dependency_records,
         "resolved_template_bundle_sha256": resolved_template_bundle_sha256(dependency_records),
@@ -140,7 +146,7 @@ def main() -> int:
         "evaluation_annotations_loaded": False,
         "gold_or_reference_cypher_loaded": False,
         "repair_mode": "gold_blind_runtime_diagnosis_and_independent_ir_only",
-        "generation_trace_path": str(trace_path.relative_to(ROOT)).replace("\\", "/"),
+        "generation_trace_path": canonical_project_path(trace_path, ROOT),
         "generation_trace_sha256": _sha256(trace_path),
     }
     with receipt_path.open(

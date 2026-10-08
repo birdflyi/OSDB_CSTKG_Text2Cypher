@@ -1,0 +1,33 @@
+{
+  "run_id": "d1_3a_v1_development_regression",
+  "evaluation_role": "DEVELOPMENT_REGRESSION",
+  "heldout_role": "NOT_HELDOUT",
+  "queries_path": "data_real/heldout_v1/heldout_queries_v1.jsonl",
+  "queries_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+  "schema_path": "data_real/pilot_queries/schema_metadata.yaml",
+  "schema_sha256": "d213ff4981c1c93fd581c6095e0710cdb9cfd8dccba15b3bee363962b09c907d",
+  "template_pack_path": "data_real/pilot_queries/independent_template_pack_v5.yaml",
+  "template_pack_sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b",
+  "template_dependency_hashes": [
+    {
+      "path": "data_real/pilot_queries/independent_template_pack_v4.yaml",
+      "sha256": "7e38cb8ccac24cd93695b25b131cbe0e188b93dfba89316eb032288a6e5c47cd"
+    },
+    {
+      "path": "data_real/pilot_queries/independent_template_pack_v5.yaml",
+      "sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b"
+    }
+  ],
+  "resolved_template_bundle_sha256": "63a4eadb23a9345bb9097c1f84c000375181a2dd104619930f6dc60fc3e05ddd",
+  "generation_input_rows": 45,
+  "artifact_version": "v4",
+  "generation_input_fields": [
+    "id",
+    "nl_query"
+  ],
+  "evaluation_annotations_loaded": false,
+  "gold_or_reference_cypher_loaded": false,
+  "repair_mode": "gold_blind_runtime_diagnosis_and_independent_ir_only",
+  "generation_trace_path": "experiment-harness/results/d1_3a_v1_dev_regression/d1_3a_v1_dev_generation_traces_v4.jsonl",
+  "generation_trace_sha256": "45a25c183e00b4fee70dd4e4a18f6e045b3252556fe5ff41606379cb8c74539d"
+}
