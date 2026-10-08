@@ -1,0 +1,12 @@
+{
+  "run_id": "d1_2c_heldout_v1_first_run",
+  "dataset_tag": "ch7-d1-2b-heldout-freeze",
+  "dataset_commit": "432227d9b0bc418fd5a44b5fb4f616a66ac09b50",
+  "harness_commit": "69eb9b818ccab7b4965c1b6fdc5f45ff50885c65",
+  "queries_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+  "gold_not_loaded": true,
+  "generation_started_after_harness_freeze": true,
+  "generation_input_fields": ["id", "nl_query"],
+  "generation_scope": "all_45_rows_exactly_once",
+  "created_at": "2026-10-08T00:00:00+08:00"
+}
