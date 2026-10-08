@@ -11,6 +11,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from artifact_safety import (  # noqa: E402
+    DEFAULT_ARTIFACT_VERSION,
+    ensure_output_paths_available,
+)
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "graph-migration"))
 EVALUATOR_PATH = ROOT / "experiment-harness" / "d1_2c" / "evaluate_heldout_v1.py"
@@ -51,6 +56,22 @@ def _load_frozen_evaluator():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--traces", type=Path)
+    parser.add_argument("--gold", type=Path, default=DEFAULT_GOLD)
+    parser.add_argument("--frozen-rows", type=Path, default=DEFAULT_FROZEN_ROWS)
+    parser.add_argument(
+        "--pre-fix-rows",
+        type=Path,
+        default=DEFAULT_TRACE_DIR / "d1_3a_v1_dev_evaluation_rows_v1.jsonl",
+    )
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--artifact-version", default=DEFAULT_ARTIFACT_VERSION)
+    parser.add_argument("--allow-overwrite-development-artifact", action="store_true")
+    return parser
 
 
 def evaluate(traces: list[dict[str, Any]], gold_rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -95,18 +116,20 @@ def evaluate(traces: list[dict[str, Any]], gold_rows: list[dict[str, Any]]) -> t
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--traces", type=Path)
-    parser.add_argument("--gold", type=Path, default=DEFAULT_GOLD)
-    parser.add_argument("--frozen-rows", type=Path, default=DEFAULT_FROZEN_ROWS)
-    parser.add_argument(
-        "--pre-fix-rows",
-        type=Path,
-        default=DEFAULT_TRACE_DIR / "d1_3a_v1_dev_evaluation_rows_v1.jsonl",
+    args = build_parser().parse_args()
+    rows_path = args.output_dir / f"d1_3a_v1_dev_evaluation_rows_{args.artifact_version}.jsonl"
+    summary_path = args.output_dir / f"d1_3a_v1_dev_summary_{args.artifact_version}.json"
+    delta_name = (
+        "d1_3a_v1_dev_delta_vs_frozen_baseline_v1.md"
+        if args.artifact_version == "v1"
+        else f"d1_3a_v1_dev_delta_review_fix_{args.artifact_version}.md"
     )
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--artifact-version", choices=("v1", "v2"), default="v1")
-    args = parser.parse_args()
+    delta_path = args.output_dir / delta_name
+    ensure_output_paths_available(
+        [rows_path, summary_path, delta_path],
+        artifact_version=args.artifact_version,
+        allow_overwrite=args.allow_overwrite_development_artifact,
+    )
     traces_path = args.traces or (
         DEFAULT_TRACE_DIR / f"d1_3a_v1_dev_generation_traces_{args.artifact_version}.jsonl"
     )
@@ -174,7 +197,6 @@ def main() -> int:
         "NEO4J_RUN": False,
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    rows_path = args.output_dir / f"d1_3a_v1_dev_evaluation_rows_{args.artifact_version}.jsonl"
     with rows_path.open("w", encoding="utf-8", newline="\n") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
@@ -199,9 +221,7 @@ def main() -> int:
             "gold_dataset_sha256": _sha256(args.gold),
         }
     )
-    with (args.output_dir / f"d1_3a_v1_dev_summary_{args.artifact_version}.json").open(
-        "w", encoding="utf-8", newline="\n"
-    ) as handle:
+    with summary_path.open("w", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
     delta = [
         "# D1.3a v1 Development Regression",
@@ -221,14 +241,7 @@ def main() -> int:
         "",
         "The interpretation is static-only. No Neo4j runtime or held-out v2 construction/inspection occurred.",
     ]
-    delta_name = (
-        "d1_3a_v1_dev_delta_vs_frozen_baseline_v1.md"
-        if args.artifact_version == "v1"
-        else "d1_3a_v1_dev_delta_review_fix_v2.md"
-    )
-    with (args.output_dir / delta_name).open(
-        "w", encoding="utf-8", newline="\n"
-    ) as handle:
+    with delta_path.open("w", encoding="utf-8", newline="\n") as handle:
         handle.write("\n".join(delta) + "\n")
     return 0 if all(regression["SAFETY_GATES"].values()) else 2
 

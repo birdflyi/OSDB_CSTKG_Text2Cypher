@@ -152,6 +152,7 @@ class ControlledQueryIR:
     time_range: dict[str, Any] | None = None
     projection: dict[str, Any] = field(default_factory=dict)
     projection_items: list[ProjectionItem] = field(default_factory=list)
+    projection_distinct: bool = False
     aggregation: list[dict[str, Any]] = field(default_factory=list)
     sort: list[dict[str, Any]] = field(default_factory=list)
     limit: int | None = None
@@ -185,6 +186,7 @@ class IndependentTemplate:
     default_limit: int | None = None
     scope_slots: list[dict[str, Any]] = field(default_factory=list)
     projection_contract: list[dict[str, Any]] = field(default_factory=list)
+    projection_options: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -224,6 +226,9 @@ def load_independent_templates(path: str | Path) -> list[IndependentTemplate]:
                         "projection_contract": [
                             x for x in contract.get("projection_contract", []) if isinstance(x, dict)
                         ],
+                        "projection_options": contract.get("projection_options", {})
+                        if isinstance(contract.get("projection_options"), dict)
+                        else {},
                     }
                 )
             )
@@ -244,6 +249,9 @@ def load_independent_templates(path: str | Path) -> list[IndependentTemplate]:
                     default_limit=int(item["default_limit"]) if item.get("default_limit") is not None else None,
                     scope_slots=[x for x in item.get("scope_slots", []) if isinstance(x, dict)],
                     projection_contract=[x for x in item.get("projection_contract", []) if isinstance(x, dict)],
+                    projection_options=item.get("projection_options", {})
+                    if isinstance(item.get("projection_options"), dict)
+                    else {},
                 )
             )
         return extended
@@ -270,6 +278,9 @@ def load_independent_templates(path: str | Path) -> list[IndependentTemplate]:
                 default_limit=int(item["default_limit"]) if item.get("default_limit") is not None else None,
                 scope_slots=[x for x in item.get("scope_slots", []) if isinstance(x, dict)],
                 projection_contract=[x for x in item.get("projection_contract", []) if isinstance(x, dict)],
+                projection_options=item.get("projection_options", {})
+                if isinstance(item.get("projection_options"), dict)
+                else {},
             )
         )
     return out
@@ -373,7 +384,6 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
         re.search(r"\b(?:optional|if\s+any|where\s+they\s+exist|where\s+it\s+exists|"
                   r"neither\s+is\s+required|empty\s+when\s+missing)\b", lower)
     )
-    distinct = bool(re.search(r"\b(?:distinct|unique|once|only\s+once|de-duplicated)\b", lower))
     candidates: list[ProjectionItem] = []
 
     def add(label: str, start: int, end: int, *, property_name: str = "entity_id", role: str = "target_entity") -> None:
@@ -384,7 +394,7 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
                 role=role,
                 label=label,
                 property=property_name,
-                distinct=distinct,
+                distinct=False,
                 nullable=nullable,
                 provenance="bounded_role_projection_rule",
                 source_span=[start, end],
@@ -451,7 +461,7 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
                     role="entity_property",
                     label="ExternalResource",
                     property="url_domain_etld1",
-                    distinct=distinct,
+                    distinct=False,
                     nullable=nullable,
                     provenance="bounded_property_projection_rule",
                     source_span=[match.start(), match.end()],
@@ -470,6 +480,18 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
 
     candidates.sort(key=lambda item: (item.source_span[0], item.source_span[1], item.label or ""))
     return candidates
+
+
+def _projection_tuple_distinct_from_text(text: str) -> bool:
+    """Parse row/tuple-level uniqueness separately from projection columns."""
+    return bool(
+        re.search(
+            r"\b(?:distinct|unique\s+combinations?|unique\s+rows?|"
+            r"de-duplicated\s+rows?|deduplicated\s+rows?)\b",
+            text,
+            re.IGNORECASE,
+        )
+    )
 
 
 def _extract_entity_mentions(text: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -787,6 +809,7 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
         _append_provenance(ir, "sort", "bounded_semantic_rule")
 
     ir.projection_items = _projection_items_from_text(text)
+    ir.projection_distinct = _projection_tuple_distinct_from_text(text)
     if any(item.property == "url_domain_etld1" for item in ir.projection_items):
         ir.projection["property"] = "url_domain_etld1"
         _append_provenance(ir, "projection", "bounded_role_projection_rule")
@@ -1385,6 +1408,35 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
         consumed_contract_indices == sorted(consumed_contract_indices)
         and (not projection_contract_available or _projection_contract_order_matches_skeleton(template, return_clause))
     )
+    projection_options = template.projection_options or {}
+    return_tuple_distinct = bool(re.match(r"\s*DISTINCT\b", return_clause, re.IGNORECASE))
+    contract_tuple_distinct = bool(
+        projection_options.get("distinct")
+        and str(projection_options.get("distinct_scope") or "").lower() == "tuple"
+    )
+    contract_entailed_tuple_distinct = contract_tuple_distinct and bool(
+        projection_options.get("entailed")
+    )
+    if ir.projection_distinct:
+        projection_distinct_compatible = return_tuple_distinct or contract_tuple_distinct
+        projection_distinct_reason = None if projection_distinct_compatible else (
+            "requested tuple DISTINCT is absent from RETURN and projection contract"
+        )
+    elif return_tuple_distinct and not projection_contract_available:
+        # Pre-v5 packs used the whole skeleton as their implicit contract.
+        # Preserve that frozen compatibility path; once an explicit ordered
+        # projection contract exists, a default tuple DISTINCT must be
+        # separately declared as entailed in projection_options.
+        projection_distinct_compatible = True
+        projection_distinct_reason = "legacy skeleton contract (no ordered projection contract)"
+    elif return_tuple_distinct:
+        projection_distinct_compatible = contract_entailed_tuple_distinct
+        projection_distinct_reason = None if projection_distinct_compatible else (
+            "template adds tuple DISTINCT without an entailed projection contract"
+        )
+    else:
+        projection_distinct_compatible = True
+        projection_distinct_reason = None
 
     explicit_sorts = [
         item for item in ir.sort if item.get("provenance") == "explicit_sort_from_nl"
@@ -1422,6 +1474,7 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
         and not unconsumed_scopes
         and not unconsumed_projection_items
         and projection_order_matches
+        and projection_distinct_compatible
         and not unconsumed_sorts
         and not limit_unconsumed
         and not unnormalized_limit_unconsumed
@@ -1461,6 +1514,14 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
             "unconsumed_items": unconsumed_projection_items,
             "ordered_contract_available": projection_contract_available,
             "order_preserved": projection_order_matches,
+            "tuple_distinct": {
+                "requested": ir.projection_distinct,
+                "return_clause_distinct": return_tuple_distinct,
+                "contract_guarantees_tuple_distinct": contract_tuple_distinct,
+                "contract_allows_implicit_tuple_distinct": contract_entailed_tuple_distinct,
+                "accepted": projection_distinct_compatible,
+                "reason": projection_distinct_reason,
+            },
         },
         "entity_scopes": {
             "requested": requested_scopes,
@@ -1497,6 +1558,7 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
             + (["unconsumed projection"] if unconsumed_projection else [])
             + (["unconsumed typed entity scope"] if unconsumed_scopes else [])
             + (["unconsumed ordered projection item"] if unconsumed_projection_items else [])
+            + (["incompatible tuple DISTINCT semantics"] if not projection_distinct_compatible else [])
             + (["unconsumed explicit sort"] if unconsumed_sorts else [])
             + (["unconsumed explicit limit"] if limit_unconsumed else [])
             + (["unsupported explicit cardinality conflicts with template default"] if unnormalized_limit_unconsumed else [])

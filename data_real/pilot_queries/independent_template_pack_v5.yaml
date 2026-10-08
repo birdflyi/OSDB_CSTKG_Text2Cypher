@@ -27,8 +27,12 @@ template_contracts:
     projection_contract:
       - {role: target_entity, label: Actor, property: entity_id}
   indv4_issue_comment_actor:
+    projection_options:
+      distinct: true
+      distinct_scope: tuple
+      entailed: true
     projection_contract:
-      - {role: target_entity, label: Actor, property: entity_id, distinct: true, entailed: true}
+      - {role: target_entity, label: Actor, property: entity_id}
   indv4_repo_pr_reference_window:
     scope_slots:
       - {label: PullRequest, property: entity_id, operator: STARTS_WITH, slot: pr_base_prefix}
@@ -36,6 +40,10 @@ template_contracts:
       - {role: target_entity, label: PullRequest, property: entity_id}
       - {role: target_entity, label: UnknownObject, property: entity_id}
   indv4_actor_multi_target_reference:
+    projection_options:
+      distinct: true
+      distinct_scope: tuple
+      entailed: true
     projection_contract:
       - {role: target_entity, label: Repo, property: entity_id, nullable: true}
       - {role: target_entity, label: ExternalResource, property: entity_id, nullable: true}
@@ -56,8 +64,12 @@ template_contracts:
       - {role: target_entity, label: Issue, property: entity_id}
       - {role: target_entity, label: Commit, property: entity_id}
   indv4_review_reference:
+    projection_options:
+      distinct: true
+      distinct_scope: tuple
+      entailed: true
     projection_contract:
-      - {role: target_entity, label: Actor, property: entity_id, distinct: true, entailed: true}
+      - {role: target_entity, label: Actor, property: entity_id}
   indv4_comprehensive_external_actor_aggregation:
     scope_slots:
       - {label: PullRequest, property: entity_id, operator: STARTS_WITH, slot: pr_base_prefix}

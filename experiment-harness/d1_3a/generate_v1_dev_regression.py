@@ -21,6 +21,14 @@ from runners.independent_controlled_pipeline import (  # noqa: E402
     load_independent_templates,
 )
 from repair.gold_blind_repair import repair_gold_blind  # noqa: E402
+from artifact_safety import (  # noqa: E402
+    DEFAULT_ARTIFACT_VERSION,
+    ensure_output_paths_available,
+)
+from template_provenance import (  # noqa: E402
+    resolved_template_bundle_sha256,
+    template_dependency_closure,
+)
 
 
 DEFAULT_QUERIES = ROOT / "data_real" / "heldout_v1" / "heldout_queries_v1.jsonl"
@@ -82,17 +90,30 @@ def _trace(result: IndependentGenerationResult, schema: Any, templates: dict[str
     }
 
 
-def main() -> int:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--queries", type=Path, default=DEFAULT_QUERIES)
     parser.add_argument("--templates", type=Path, default=DEFAULT_TEMPLATES)
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--artifact-version", choices=("v1", "v2"), default="v1")
-    args = parser.parse_args()
+    parser.add_argument("--artifact-version", default=DEFAULT_ARTIFACT_VERSION)
+    parser.add_argument("--allow-overwrite-development-artifact", action="store_true")
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    trace_path = args.output_dir / f"d1_3a_v1_dev_generation_traces_{args.artifact_version}.jsonl"
+    receipt_path = args.output_dir / f"d1_3a_v1_dev_generation_receipt_{args.artifact_version}.json"
+    ensure_output_paths_available(
+        [trace_path, receipt_path],
+        artifact_version=args.artifact_version,
+        allow_overwrite=args.allow_overwrite_development_artifact,
+    )
 
     requests = _requests(args.queries)
     templates = load_independent_templates(args.templates)
+    dependency_records = template_dependency_closure(args.templates, ROOT)
     template_map = {item.template_id: item for item in templates}
     schema = load_independent_schema(args.schema)
     traces = [
@@ -100,7 +121,6 @@ def main() -> int:
         for item in requests
     ]
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    trace_path = args.output_dir / f"d1_3a_v1_dev_generation_traces_{args.artifact_version}.jsonl"
     with trace_path.open("w", encoding="utf-8", newline="\n") as handle:
         for row in traces:
             handle.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
@@ -112,6 +132,8 @@ def main() -> int:
         "queries_sha256": _sha256(args.queries),
         "template_pack_path": str(args.templates.relative_to(ROOT)).replace("\\", "/"),
         "template_pack_sha256": _sha256(args.templates),
+        "template_dependency_hashes": dependency_records,
+        "resolved_template_bundle_sha256": resolved_template_bundle_sha256(dependency_records),
         "generation_input_rows": len(requests),
         "artifact_version": args.artifact_version,
         "generation_input_fields": ["id", "nl_query"],
@@ -121,7 +143,7 @@ def main() -> int:
         "generation_trace_path": str(trace_path.relative_to(ROOT)).replace("\\", "/"),
         "generation_trace_sha256": _sha256(trace_path),
     }
-    with (args.output_dir / f"d1_3a_v1_dev_generation_receipt_{args.artifact_version}.json").open(
+    with receipt_path.open(
         "w", encoding="utf-8", newline="\n"
     ) as handle:
         handle.write(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n")

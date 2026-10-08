@@ -280,6 +280,88 @@ def test_explicit_id_projection_for_source_label_remains_represented() -> None:
     ]
 
 
+def test_tuple_distinct_request_is_separate_from_projection_item_flags() -> None:
+    query = (
+        "For actor A_900001, return distinct repo IDs and external resource IDs "
+        "from mentioned repos and external links, if any."
+    )
+    result = _generate(query)
+    assert result.template_id == "indv4_actor_multi_target_reference"
+    assert result.ir.projection_distinct
+    assert [(item.label, item.property, item.distinct) for item in result.ir.projection_items] == [
+        ("Repo", "entity_id", False),
+        ("ExternalResource", "entity_id", False),
+    ]
+    distinct_audit = result.validation["selection"]["ir_constraint_coverage"]["projection"][
+        "tuple_distinct"
+    ]
+    assert distinct_audit["requested"]
+    assert distinct_audit["return_clause_distinct"]
+    assert distinct_audit["accepted"]
+    assert "RETURN DISTINCT repo.entity_id, e.entity_id" in result.rendered_cypher
+    assert result.validation["selection"]["ir_constraint_coverage"]["projection"]["order_preserved"]
+
+
+def test_entailed_tuple_distinct_contract_adjudicates_unmarked_request() -> None:
+    query = (
+        "For actor A_900001, return repo IDs and external resource IDs "
+        "from mentioned repos and external links, if any."
+    )
+    result = _generate(query)
+    assert result.template_id == "indv4_actor_multi_target_reference"
+    assert not result.ir.projection_distinct
+    coverage = result.validation["selection"]["ir_constraint_coverage"]["projection"]["tuple_distinct"]
+    assert coverage["return_clause_distinct"]
+    assert coverage["contract_allows_implicit_tuple_distinct"]
+    assert coverage["accepted"]
+
+    ir = parse_nl_to_ir("synthetic", query)
+    template = next(
+        item for item in _templates() if item.template_id == "indv4_actor_multi_target_reference"
+    )
+    without_entailment = replace(template, projection_options={})
+    rejected = audit_ir_constraint_coverage(ir, without_entailment)
+    assert not rejected["accepted"]
+    assert not rejected["projection"]["tuple_distinct"]["accepted"]
+
+
+def test_tuple_distinct_request_abstains_without_return_or_compatible_contract() -> None:
+    query = (
+        "For actor A_900001, return distinct repo IDs and external resource IDs "
+        "from mentioned repos and external links, if any."
+    )
+    ir = parse_nl_to_ir("synthetic", query)
+    template = next(
+        item for item in _templates() if item.template_id == "indv4_actor_multi_target_reference"
+    )
+    incompatible = replace(
+        template,
+        skeleton=template.skeleton.replace("RETURN DISTINCT", "RETURN"),
+        projection_options={},
+    )
+    coverage = audit_ir_constraint_coverage(ir, incompatible)
+    assert not coverage["accepted"]
+    assert not coverage["projection"]["tuple_distinct"]["accepted"]
+
+
+def test_single_column_distinct_is_projection_level_not_item_level() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "For issue I_880002#77, return distinct Actor IDs of its opener."
+    )
+    assert ir.projection_distinct
+    assert len(ir.projection_items) == 1
+    assert ir.projection_items[0].distinct is False
+
+    template = next(item for item in _templates() if item.template_id == "indv4_issue_opened_by")
+    with_distinct = replace(
+        template,
+        skeleton=template.skeleton.replace("RETURN a.entity_id", "RETURN DISTINCT a.entity_id"),
+    )
+    coverage = audit_ir_constraint_coverage(ir, with_distinct)
+    assert coverage["accepted"]
+    assert coverage["projection"]["tuple_distinct"]["accepted"]
+
+
 def test_projection_order_mismatch_is_rejected() -> None:
     ir = parse_nl_to_ir(
         "synthetic",
