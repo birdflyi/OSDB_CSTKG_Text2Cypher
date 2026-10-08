@@ -204,12 +204,26 @@ class IndependentGenerationResult:
         return asdict(self)
 
 
-def load_independent_templates(path: str | Path) -> list[IndependentTemplate]:
+def load_independent_templates(
+    path: str | Path, _active_paths: tuple[Path, ...] = ()
+) -> list[IndependentTemplate]:
     template_path = Path(path)
+    resolved_path = template_path.resolve()
+    if resolved_path in _active_paths:
+        chain = " -> ".join(str(item) for item in (*_active_paths, resolved_path))
+        raise ValueError(f"template dependency cycle detected: {chain}")
+    active_paths = (*_active_paths, resolved_path)
     payload = yaml.safe_load(template_path.read_text(encoding="utf-8")) or {}
-    if isinstance(payload, dict) and payload.get("extends"):
-        base_path = template_path.parent / str(payload["extends"])
-        base_templates = load_independent_templates(base_path)
+    extends = payload.get("extends") if isinstance(payload, dict) else None
+    if isinstance(extends, list):
+        raise ValueError("MULTIPLE_TEMPLATE_BASES_NOT_SUPPORTED")
+    if extends is not None and not isinstance(extends, str):
+        raise ValueError("INVALID_TEMPLATE_EXTENDS: expected a single path string")
+    if isinstance(extends, str) and not extends.strip():
+        raise ValueError("INVALID_TEMPLATE_EXTENDS: expected a non-empty path string")
+    if isinstance(payload, dict) and extends:
+        base_path = template_path.parent / extends
+        base_templates = load_independent_templates(base_path, active_paths)
         contracts = payload.get("template_contracts", {})
         contracts = contracts if isinstance(contracts, dict) else {}
         extended: list[IndependentTemplate] = []
@@ -443,6 +457,23 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
             )
         )
 
+    def parse_post_noun_id_projection_cue(
+        match: re.Match[str],
+    ) -> tuple[bool, bool, tuple[int, int] | None]:
+        """Parse a bounded possessive/uniqueness/identifier phrase after a noun."""
+        tail = text[match.end():match.end() + 64]
+        cue = re.match(
+            r"\s*(?:(?:'s)|')?\s*(?:(?P<distinct>distinct|unique)\s+)?"
+            r"(?:entity\s+)?(?P<identifier>ids?|identifiers?)\b",
+            tail,
+            re.I,
+        )
+        if not cue:
+            return False, False, None
+        start = match.end() + cue.start()
+        end = match.end() + cue.end()
+        return True, bool(cue.group("distinct")), (start, end)
+
     nullable = bool(
         re.search(r"\b(?:optional|if\s+any|where\s+they\s+exist|where\s+it\s+exists|"
                   r"neither\s+is\s+required|empty\s+when\s+missing)\b", lower)
@@ -483,16 +514,24 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
         for match in pattern.finditer(text):
             if is_aggregate_argument(match):
                 continue
-            tail = text[match.end():match.end() + 52]
-            id_cue = re.match(
-                r"\s*(?:'s\s+)?(?:whose\s+)?(?:entity\s+)?(?:ids?|identifiers?)\b",
-                tail,
-                re.I,
-            ) or re.match(r"\s+(?:whose|with)\s+(?:entity\s+)?(?:ids?|identifiers?)\b", tail, re.I)
-            if id_cue:
-                cue_start = match.end() + id_cue.start()
-                cue_end = match.end() + id_cue.end()
-                add(label, cue_start, cue_end, distinct=has_item_distinct_cue(match.start()))
+            matched, post_noun_distinct, cue_span = parse_post_noun_id_projection_cue(match)
+            if not matched:
+                tail = text[match.end():match.end() + 52]
+                id_cue = re.match(
+                    r"\s+(?:whose|with)\s+(?:entity\s+)?(?:ids?|identifiers?)\b",
+                    tail,
+                    re.I,
+                )
+                if id_cue:
+                    cue_span = (match.end() + id_cue.start(), match.end() + id_cue.end())
+                    matched = True
+            if matched and cue_span:
+                add(
+                    label,
+                    cue_span[0],
+                    cue_span[1],
+                    distinct=post_noun_distinct or has_item_distinct_cue(match.start()),
+                )
 
     # “IDs of <entity>” and equivalent possessives preserve natural column order.
     for label, pattern in ENTITY_NOUN_PATTERNS:
@@ -536,12 +575,15 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
             add(label, start, end)
 
     # A bare “who” is a role cue for Actor, but only when it asks for a result.
-    who = re.search(r"\bwho\b", text, re.I)
+    who = re.search(r"\b(?:who|whoever)\b", text, re.I)
     if who and not any(item.label == "Actor" for item in candidates):
         add("Actor", who.start(), who.end())
 
     # Domain is a property projection, distinct from the resource-ID column.
-    for match in re.finditer(r"\b(?:registrable\s+|site\s+)?domain\b", text, re.I):
+    for match in re.finditer(r"\b(?:registrable\s+|site\s+)?domains?\b", text, re.I):
+        preceding_text = lower[max(0, match.start() - 24):match.start()]
+        if re.search(r"\b(?:external|outside)\s+$", preceding_text):
+            continue
         if not any(item.property == "url_domain_etld1" for item in candidates):
             candidates.append(
                 ProjectionItem(
@@ -560,14 +602,19 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
     if not candidates:
         generic_ids = re.search(r"\b(?:ids?|identifiers?)\b", text, re.I)
         if generic_ids:
-            preceding = [item for item in nouns if item[1] <= generic_ids.start()]
+            preceding = [
+                item
+                for item in nouns
+                if item[1] <= generic_ids.start()
+                and item not in source_anchor_nouns
+                and not any(
+                    span_start <= item[0] < span_end
+                    for span_start, span_end in aggregate_argument_spans
+                )
+            ]
             if preceding:
                 start, end, label = preceding[-1]
-                if not any(
-                    span_start <= start < span_end
-                    for span_start, span_end in aggregate_argument_spans
-                ):
-                    add(label, start, end)
+                add(label, start, end)
 
     candidates.sort(key=lambda item: (item.source_span[0], item.source_span[1], item.label or ""))
     return candidates

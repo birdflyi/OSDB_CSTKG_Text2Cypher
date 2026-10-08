@@ -1,8 +1,8 @@
 # D1.3a PR #6 Review-Fix 6 Checkpoint
 
-Date: 2026-10-08  
-PR: #6  
-Branch: `feat/ch7-d1-3a-scope-projection-ir`  
+Date: 2026-10-08
+PR: #6
+Branch: `feat/ch7-d1-3a-scope-projection-ir`
 Pre-fix6 head: `66ea47724486275b14dd4dfccfa91774a335e44f`
 
 ## Review findings and fixes
@@ -98,5 +98,14 @@ V2_CONSTRUCTED = NO
 NEO4J_RUN = NO
 ```
 
-`git diff --check = PASS`. This checkpoint does not promote the v1 development
-diagnostic to held-out evidence.
+```text
+POST_COMMIT_DIFF_CHECK_PRE_CORRECTION =
+3 trailing-whitespace warnings in this checkpoint only
+PRE_CORRECTION_FIX6_CHECKPOINT_BLOB_SHA = 873db92dfc700eb79bc5d2ab08d94559ec798a0a
+SEMANTIC_OR_EVIDENCE_CONTENT_CHANGED = NO
+FINAL_DIFF_CHECK_AFTER_CORRECTION = PASS
+```
+
+The three formatting-only trailing spaces were removed. No semantic code,
+metrics, or evidence artifact content changed. This checkpoint does not promote
+the v1 development diagnostic to held-out evidence.

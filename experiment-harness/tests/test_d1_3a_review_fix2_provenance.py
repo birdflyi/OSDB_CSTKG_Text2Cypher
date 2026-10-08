@@ -12,6 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 D1_3A_DIR = ROOT / "experiment-harness" / "d1_3a"
+GRAPH_ROOT = ROOT / "graph-migration"
 sys.path.insert(0, str(D1_3A_DIR))
 
 from artifact_safety import (  # noqa: E402
@@ -138,6 +139,40 @@ def test_template_dependency_cycles_and_missing_files_fail_clearly(tmp_path: Pat
 
     with pytest.raises(FileNotFoundError, match="does not exist"):
         template_dependency_closure(tmp_path / "missing.yaml", tmp_path)
+
+
+def test_template_provenance_rejects_list_valued_extends(tmp_path: Path) -> None:
+    (tmp_path / "base_a.yaml").write_text("templates: []\n", encoding="utf-8")
+    (tmp_path / "base_b.yaml").write_text("templates: []\n", encoding="utf-8")
+    top = tmp_path / "top.yaml"
+    top.write_text("extends:\n  - base_a.yaml\n  - base_b.yaml\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="MULTIPLE_TEMPLATE_BASES_NOT_SUPPORTED"):
+        template_dependency_closure(top, tmp_path)
+
+
+def test_template_provenance_and_runtime_loader_share_single_base_policy(tmp_path: Path) -> None:
+    (tmp_path / "base.yaml").write_text("templates: []\n", encoding="utf-8")
+    top = tmp_path / "top.yaml"
+    top.write_text("extends: [base.yaml, base.yaml]\ntemplates: []\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="MULTIPLE_TEMPLATE_BASES_NOT_SUPPORTED"):
+        template_dependency_closure(top, tmp_path)
+
+    code = (
+        "import sys; "
+        f"sys.path.insert(0, {str(GRAPH_ROOT)!r}); "
+        "from runners.independent_controlled_pipeline import load_independent_templates; "
+        f"load_independent_templates({str(top)!r})"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "MULTIPLE_TEMPLATE_BASES_NOT_SUPPORTED" in result.stderr
 
 
 def test_bundle_hash_uses_canonical_records_with_relative_paths() -> None:

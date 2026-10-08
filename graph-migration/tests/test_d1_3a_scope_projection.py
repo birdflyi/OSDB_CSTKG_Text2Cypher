@@ -114,6 +114,34 @@ def test_identifier_then_domain_uses_compatible_ordered_contract() -> None:
     assert "RETURN e.entity_id, rel.url_domain_etld1" in result.rendered_cypher
 
 
+def test_plural_domains_are_projected_after_resource_ids_in_requested_order() -> None:
+    result = _generate(
+        "For pull request PR_900001#12, show the resource IDs and domains of external links."
+    )
+    assert [(item.label, item.property) for item in result.ir.projection_items] == [
+        ("ExternalResource", "entity_id"),
+        ("ExternalResource", "url_domain_etld1"),
+    ]
+    assert result.validation["selection"]["ir_constraint_coverage"]["projection"][
+        "order_preserved"
+    ]
+
+
+def test_registrable_domains_plural_maps_to_external_resource_domain_property() -> None:
+    ir = parse_nl_to_ir("synthetic", "show registrable domains")
+    assert [(item.label, item.property) for item in ir.projection_items] == [
+        ("ExternalResource", "url_domain_etld1")
+    ]
+
+
+def test_external_domains_as_link_targets_are_not_domain_property_requests() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic",
+        "Find PRs that link to external domains after 2023-06-01.",
+    )
+    assert not any(item.property == "url_domain_etld1" for item in ir.projection_items)
+
+
 def test_bare_numeric_fragment_is_not_a_typed_scope() -> None:
     ir = parse_nl_to_ir("synthetic", "Show objects whose IDs start with 900001.")
     assert not ir.entity_scopes
@@ -443,6 +471,76 @@ def test_explicit_source_label_projection_after_composite_anchor_remains_eligibl
 def test_simple_source_anchor_case_remains_valid() -> None:
     ir = parse_nl_to_ir(
         "synthetic", "Show issue I_880002#77 and tell me who opened it"
+    )
+    assert ir.source_entity["entity_label"] == "Issue"
+    assert [(item.label, item.property) for item in ir.projection_items] == [
+        ("Actor", "entity_id")
+    ]
+
+
+def test_possessive_identifier_phrases_preserve_item_distinctness() -> None:
+    cases = [
+        ("return the actors' distinct IDs it mentions", True),
+        ("return actors' unique identifiers", True),
+        ("return the actor's distinct IDs", True),
+        ("return actors' IDs", False),
+        ("return distinct actor IDs", True),
+        ("return distinct IDs of actors", True),
+    ]
+    for query, expected_distinct in cases:
+        ir = parse_nl_to_ir("synthetic", query)
+        assert not ir.projection_distinct, query
+        assert [(item.label, item.distinct) for item in ir.projection_items] == [
+            ("Actor", expected_distinct)
+        ], query
+
+
+def test_possessive_item_distinct_does_not_leak_to_second_projection() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "return actors' distinct IDs and ordinary resource IDs"
+    )
+    assert not ir.projection_distinct
+    assert [(item.label, item.distinct) for item in ir.projection_items] == [
+        ("Actor", True),
+        ("ExternalResource", False),
+    ]
+
+
+def test_aggregate_distinct_possessive_phrase_does_not_create_projection() -> None:
+    ir = parse_nl_to_ir("synthetic", "count distinct actor IDs")
+    assert ir.projection_items == []
+    assert ir.aggregation[0]["distinct"] is True
+
+
+def test_whoever_requests_actor_for_source_issue_opened_by() -> None:
+    result = _generate("For issue I_880002#77, show the ID of whoever opened it.")
+    assert result.ir.source_entity["entity_id"] == "I_880002#77"
+    assert [(item.label, item.property) for item in result.ir.projection_items] == [
+        ("Actor", "entity_id")
+    ]
+    assert result.template_id == "indv4_issue_opened_by"
+    assert "RETURN a.entity_id" in (result.rendered_cypher or "")
+    assert "RETURN i.entity_id" not in (result.rendered_cypher or "")
+
+
+def test_generic_id_fallback_never_reuses_simple_source_anchor() -> None:
+    result = _generate("For issue I_880002#77, show the ID.")
+    assert result.ir.source_entity["entity_label"] == "Issue"
+    assert result.ir.projection_items == []
+    assert result.rendered_cypher is None
+
+
+def test_generic_id_fallback_never_reuses_embedded_composite_source_nouns() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "For issue comment IC_900001#12, show the ID."
+    )
+    assert ir.source_entity["entity_label"] == "IssueComment"
+    assert ir.projection_items == []
+
+
+def test_generic_id_fallback_can_bind_to_later_non_source_target_noun() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "For issue I_880002#77, actors. Show the IDs."
     )
     assert ir.source_entity["entity_label"] == "Issue"
     assert [(item.label, item.property) for item in ir.projection_items] == [

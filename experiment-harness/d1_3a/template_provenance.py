@@ -19,7 +19,7 @@ def template_dependency_closure(template_path: Path, project_root: Path) -> list
 
     `extends` paths are resolved relative to the declaring pack, matching the
     template loader. Records use project-root-relative POSIX paths and are
-    ordered dependency-first, preserving declaration order for multiple bases.
+    dependency-first. D1.3a supports a single base pack only.
     Cycles, missing files, and paths outside the project root fail closed.
     """
     root = project_root.resolve()
@@ -45,7 +45,16 @@ def template_dependency_closure(template_path: Path, project_root: Path) -> list
         payload: Any = yaml.safe_load(resolved.read_text(encoding="utf-8")) or {}
         if isinstance(payload, dict):
             extends = payload.get("extends")
-            refs = [extends] if isinstance(extends, str) else extends if isinstance(extends, list) else []
+            if isinstance(extends, list):
+                raise ValueError("MULTIPLE_TEMPLATE_BASES_NOT_SUPPORTED")
+            if extends is None:
+                refs = []
+            elif isinstance(extends, str):
+                if not extends.strip():
+                    raise ValueError("INVALID_TEMPLATE_EXTENDS: expected a non-empty path string")
+                refs = [extends]
+            else:
+                raise ValueError("INVALID_TEMPLATE_EXTENDS: expected a single path string")
             for ref in refs:
                 if not isinstance(ref, str) or not ref.strip():
                     raise ValueError(f"invalid template extends entry in {resolved}: {ref!r}")

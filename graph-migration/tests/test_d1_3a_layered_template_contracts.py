@@ -201,3 +201,42 @@ def test_layered_pack_rejects_duplicate_template_ids(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="duplicate template_id"):
         load_independent_templates(child)
+
+
+def test_runtime_loader_rejects_list_valued_extends(tmp_path: Path) -> None:
+    base_a = tmp_path / "base_a.yaml"
+    base_b = tmp_path / "base_b.yaml"
+    child = tmp_path / "child.yaml"
+    _write_pack(base_a, {"templates": []})
+    _write_pack(base_b, {"templates": []})
+    _write_pack(child, {"extends": [base_a.name, base_b.name], "templates": []})
+
+    with pytest.raises(ValueError, match="MULTIPLE_TEMPLATE_BASES_NOT_SUPPORTED"):
+        load_independent_templates(child)
+
+
+def test_runtime_loader_accepts_single_string_extends_and_three_layer_chain(tmp_path: Path) -> None:
+    base = tmp_path / "base.yaml"
+    middle = tmp_path / "middle.yaml"
+    top = tmp_path / "top.yaml"
+    _write_pack(base, {"templates": [_base_template()]})
+    _write_pack(middle, {"extends": base.name, "templates": []})
+    _write_pack(top, {"extends": middle.name, "templates": []})
+
+    assert _inherited(load_independent_templates(top)).template_id == INHERITED_ID
+
+
+def test_runtime_loader_accepts_pack_without_extends(tmp_path: Path) -> None:
+    pack = tmp_path / "standalone.yaml"
+    _write_pack(pack, {"templates": [_base_template()]})
+    assert _inherited(load_independent_templates(pack)).template_id == INHERITED_ID
+
+
+def test_runtime_loader_detects_single_base_cycles(tmp_path: Path) -> None:
+    a = tmp_path / "a.yaml"
+    b = tmp_path / "b.yaml"
+    _write_pack(a, {"extends": b.name, "templates": []})
+    _write_pack(b, {"extends": a.name, "templates": []})
+
+    with pytest.raises(ValueError, match="template dependency cycle detected"):
+        load_independent_templates(a)
