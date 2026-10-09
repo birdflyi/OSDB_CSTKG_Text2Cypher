@@ -399,6 +399,15 @@ def _extract_typed_entity_scopes(text: str) -> list[EntityScope]:
             re.IGNORECASE,
         ):
             return True
+        if re.search(
+            r"\b(?:except|but\s+not)\s+"
+            r"(?:(?:those|issues?|pull\s+requests?)\s+whose\s+)?"
+            r"(?:ids?|identifiers?)\s+(?:that\s+)?"
+            r"(?:start(?:s|ing)?|begin(?:s|ning)?)\s+with\s*$",
+            before,
+            re.IGNORECASE,
+        ):
+            return True
         return bool(
             re.search(
                 r"(?:^|[.!?;])\s*(?:exclude|omit)\b[^.!?;]{0,150}"
@@ -629,18 +638,40 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
                 label = "UnknownObject"
             add(label, start, end, distinct=has_item_distinct_cue(start))
 
-    # Pronouns such as “their IDs” bind to the nearest preceding typed noun;
-    # this does not fall back to the source noun when a later target is named.
-    for match in re.finditer(r"\b(?:their|these|those)\s+(?:entity\s+)?(?:ids?|identifiers?)\b", text, re.I):
-        preceding = [item for item in nouns if item[1] <= match.start()]
-        if preceding:
-            start, end, label = preceding[-1]
-            add(label, start, end)
-
     # A bare “who” is a role cue for Actor, but only when it asks for a result.
     who = re.search(r"\b(?:who|whoever)\b", text, re.I)
     if who and not any(item.label == "Actor" for item in candidates):
         add("Actor", who.start(), who.end())
+
+    # Bounded ID pronouns first reuse a unique, explicit ID projection that
+    # precedes the pronoun. Otherwise, only an output-cued noun (never a noun
+    # used solely to introduce a source anchor) may be an antecedent. Ambiguous
+    # multi-role wording remains unresolved rather than choosing arbitrarily.
+    for match in re.finditer(
+        r"\b(?:their|these|those)\s+(?:entity\s+)?(?:ids?|identifiers?)\b",
+        text,
+        re.I,
+    ):
+        established_roles = {
+            item.label
+            for item in candidates
+            if item.label
+            and item.property == "entity_id"
+            and item.source_span[0] < match.start()
+        }
+        if established_roles:
+            # A unique explicit output role takes priority. If multiple roles
+            # are already explicit, do not add a pronoun-derived projection.
+            continue
+        preceding_output_nouns = [
+            item
+            for item in output_nouns
+            if item[1] <= match.start() and item not in source_anchor_nouns
+        ]
+        output_roles = {item[2] for item in preceding_output_nouns}
+        if len(output_roles) == 1:
+            start, end, label = preceding_output_nouns[-1]
+            add(label, start, end)
 
     # Domain is a property projection, distinct from the resource-ID column.
     for match in re.finditer(r"\b(?:registrable\s+|site\s+)?domains?\b", text, re.I):
