@@ -60,7 +60,8 @@ _PREFIX_OPERATOR_SUFFIX = re.compile(
 )
 _PREFIX_TOKEN_SUFFIX = re.compile(r"^\s+prefix\b", re.IGNORECASE)
 _POST_TOKEN_NEGATION_CUE_SUFFIX = re.compile(
-    r"\b(?:excluding|exclude|omitting|omit|without|except|but\s+not)\s*$",
+    r"\b(?:excluding|exclude|omitting|omit|without|except|but\s+not)\s+"
+    r"(?:(?:the|this|that|these|those)\s+)?$",
     re.IGNORECASE,
 )
 _ENDS_WITH_OPERATOR_SUFFIX = re.compile(
@@ -467,6 +468,30 @@ def _detect_unsupported_explicit_constraints(
     fail-closed selection rather than being normalized into executable IR.
     """
     entries: list[dict[str, Any]] = []
+    # Negative typed-prefix operators are represented for audit visibility but
+    # are outside the executable template contract.  Keep them fail-closed;
+    # never allow a NOT_STARTS_WITH scope to fall through as a positive query.
+    for scope in ir.entity_scopes:
+        if scope.operator != "NOT_STARTS_WITH" or not scope.source_span:
+            continue
+        start, end = scope.source_span
+        before_scope = text[max(0, start - 100) : start]
+        if not re.search(
+            r"\b(?:excluding|exclude|omitting|omit|without|except|but\s+not)\s+"
+            r"(?:(?:the|this|that|these|those)\s+)?$",
+            before_scope,
+            re.IGNORECASE,
+        ):
+            continue
+        entries.append(
+            {
+                "kind": "unsupported_exclusion_surface",
+                "reason_code": UNSUPPORTED_EXPLICIT_CONSTRAINT_REASON,
+                "surface_text": text[max(0, start - 80) : end].strip(),
+                "source_span": [start, end],
+                "provenance": "unsupported_explicit_constraint_from_nl",
+            }
+        )
     entries.extend(
         _unsupported_constraint_entry(
             text,

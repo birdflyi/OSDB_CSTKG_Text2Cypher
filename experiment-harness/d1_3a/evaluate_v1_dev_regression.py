@@ -23,6 +23,7 @@ from input_provenance import (  # noqa: E402
     named_input_provenance,
 )
 from generation_receipt import verify_generation_trace_receipt  # noqa: E402
+from template_provenance import template_dependency_closure  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "graph-migration"))
@@ -31,11 +32,14 @@ DEFAULT_TRACE_DIR = ROOT / "experiment-harness" / "results" / "d1_3a_v1_dev_regr
 DEFAULT_EXPECTED_QUERIES = ROOT / "data_real" / "heldout_v1" / "heldout_queries_v1.jsonl"
 DEFAULT_GOLD = ROOT / "data_real" / "heldout_v1" / "heldout_gold_v1.jsonl"
 DEFAULT_FROZEN_ROWS = ROOT / "experiment-harness" / "results" / "d1_2c_heldout_v1" / "d1_2c_v1_recovered_evaluation_rows_v2.jsonl"
+DEFAULT_SCHEMA = ROOT / "data_real" / "pilot_queries" / "schema_metadata.yaml"
+DEFAULT_TEMPLATE_PACK = ROOT / "data_real" / "pilot_queries" / "independent_template_pack_v5.yaml"
 DEFAULT_OUTPUT = DEFAULT_TRACE_DIR
 EVALUATION_IMPLEMENTATION_RELATIVE_PATHS = (
     "experiment-harness/d1_3a/evaluate_v1_dev_regression.py",
     "experiment-harness/d1_3a/input_provenance.py",
     "experiment-harness/d1_3a/generation_receipt.py",
+    "experiment-harness/d1_3a/template_provenance.py",
     "experiment-harness/d1_3a/artifact_safety.py",
     "experiment-harness/d1_2c/evaluate_heldout_v1.py",
 )
@@ -340,9 +344,20 @@ def main() -> int:
             ROOT,
             source_commit=canonical_gate["canonical_source_commit"],
         )
+        contract_inputs = {
+            "schema": DEFAULT_SCHEMA,
+            "template_pack": DEFAULT_TEMPLATE_PACK,
+            **{
+                f"template_dependency_{index}": ROOT / record["path"]
+                for index, record in enumerate(
+                    template_dependency_closure(DEFAULT_TEMPLATE_PACK, ROOT)
+                )
+            },
+        }
         canonical_inputs = git_byte_input_provenance(
             {
                 "expected_queries": args.expected_queries,
+                **contract_inputs,
                 "gold": args.gold,
                 "frozen_baseline_rows": args.frozen_rows,
                 "pre_fix_rows": args.pre_fix_rows,
@@ -371,6 +386,8 @@ def main() -> int:
             artifact_version=args.artifact_version,
             canonical_source_commit=canonical_inputs["source_commit"],
             expected_queries_path=args.expected_queries if binding_requested else None,
+            expected_schema_path=DEFAULT_SCHEMA if canonical_mode else None,
+            expected_template_pack_path=DEFAULT_TEMPLATE_PACK if canonical_mode else None,
         )
     rows_path = args.output_dir / f"d1_3a_v1_dev_evaluation_rows_{args.artifact_version}.jsonl"
     summary_path = args.output_dir / f"d1_3a_v1_dev_summary_{args.artifact_version}.json"

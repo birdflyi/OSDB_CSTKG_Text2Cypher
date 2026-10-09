@@ -66,3 +66,22 @@ def test_trailing_exclusion_firewall_is_not_global_lexical_blacklist(query: str)
         item["kind"] == "unsupported_exclusion_surface"
         for item in ir.unsupported_explicit_constraints
     )
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "Show issues excluding the I_900001 prefix",
+        "Show issues without the I_900001 prefix",
+        "Show issues except the I_900001 prefix",
+        "Show issues omitting the I_900001 prefix",
+        "Show pull requests excluding the PR_900001 prefix",
+    ],
+)
+def test_adjacent_determiner_negation_is_preserved_and_fails_closed(query: str) -> None:
+    ir = parse_nl_to_ir("fix20", query)
+    result = generate_independent("fix20", query, TEMPLATES, SCHEMA)
+    assert ir.entity_scopes[0].operator == "NOT_STARTS_WITH"
+    assert ir.bounded_status == "ABSTAIN_UNSUPPORTED_EXPLICIT_CONSTRAINT"
+    assert result.template_id is None
+    assert result.rendered_cypher is None

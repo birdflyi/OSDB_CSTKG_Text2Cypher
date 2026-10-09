@@ -8,6 +8,10 @@ from pathlib import Path
 from typing import Any
 
 from input_provenance import canonical_project_path
+from template_provenance import (
+    resolved_template_bundle_sha256,
+    template_dependency_closure,
+)
 
 
 def _recorded_project_path(value: str, project_root: Path) -> str:
@@ -25,6 +29,8 @@ def verify_generation_trace_receipt(
     artifact_version: str,
     canonical_source_commit: str | None,
     expected_queries_path: Path | None = None,
+    expected_schema_path: Path | None = None,
+    expected_template_pack_path: Path | None = None,
 ) -> dict[str, Any]:
     """Fail closed unless a receipt authenticates the selected trace bytes.
 
@@ -129,6 +135,110 @@ def verify_generation_trace_receipt(
             "receipt_queries_path_sha_verification": "PASS",
         }
 
+    contract_binding: dict[str, Any] = {
+        "canonical_generation_contract_binding_verification": "NOT_REQUESTED",
+        "generation_receipt_schema_path": None,
+        "generation_receipt_schema_sha256": None,
+        "expected_schema_path": None,
+        "expected_schema_sha256": None,
+        "generation_receipt_template_pack_path": None,
+        "generation_receipt_template_pack_sha256": None,
+        "expected_template_pack_path": None,
+        "expected_template_pack_sha256": None,
+        "generation_receipt_template_dependency_hashes": None,
+        "expected_template_dependency_hashes": None,
+        "generation_receipt_resolved_template_bundle_sha256": None,
+        "expected_resolved_template_bundle_sha256": None,
+        "schema_path_verification": "NOT_REQUESTED",
+        "schema_sha256_verification": "NOT_REQUESTED",
+        "template_pack_path_verification": "NOT_REQUESTED",
+        "template_pack_sha256_verification": "NOT_REQUESTED",
+        "template_dependency_hashes_verification": "NOT_REQUESTED",
+        "resolved_template_bundle_sha256_verification": "NOT_REQUESTED",
+    }
+    if expected_schema_path is not None or expected_template_pack_path is not None:
+        if expected_schema_path is None or expected_template_pack_path is None:
+            raise ValueError("CANONICAL_GENERATION_CONTRACT_EXPECTATIONS_INCOMPLETE")
+        expected_schema_path = expected_schema_path.resolve()
+        expected_template_pack_path = expected_template_pack_path.resolve()
+        if not expected_schema_path.is_file():
+            raise ValueError("EXPECTED_SCHEMA_MISSING")
+        if not expected_template_pack_path.is_file():
+            raise ValueError("EXPECTED_TEMPLATE_PACK_MISSING")
+        expected_schema_project_path = canonical_project_path(expected_schema_path, project_root)
+        expected_template_project_path = canonical_project_path(expected_template_pack_path, project_root)
+        expected_schema_sha256 = hashlib.sha256(expected_schema_path.read_bytes()).hexdigest()
+        expected_template_sha256 = hashlib.sha256(expected_template_pack_path.read_bytes()).hexdigest()
+        recorded_schema_path = receipt.get("schema_path")
+        if not isinstance(recorded_schema_path, str) or not recorded_schema_path:
+            raise ValueError("GENERATION_RECEIPT_SCHEMA_PATH_MISSING")
+        if _recorded_project_path(recorded_schema_path, project_root) != expected_schema_project_path:
+            raise ValueError("GENERATION_RECEIPT_SCHEMA_PATH_MISMATCH")
+        if receipt.get("schema_sha256") != expected_schema_sha256:
+            raise ValueError("GENERATION_RECEIPT_SCHEMA_SHA256_MISMATCH")
+        recorded_template_path = receipt.get("template_pack_path")
+        if not isinstance(recorded_template_path, str) or not recorded_template_path:
+            raise ValueError("GENERATION_RECEIPT_TEMPLATE_PACK_PATH_MISSING")
+        if _recorded_project_path(recorded_template_path, project_root) != expected_template_project_path:
+            raise ValueError("GENERATION_RECEIPT_TEMPLATE_PACK_PATH_MISMATCH")
+        if receipt.get("template_pack_sha256") != expected_template_sha256:
+            raise ValueError("GENERATION_RECEIPT_TEMPLATE_PACK_SHA256_MISMATCH")
+        expected_dependencies = template_dependency_closure(expected_template_pack_path, project_root)
+        recorded_dependencies = receipt.get("template_dependency_hashes")
+        if recorded_dependencies != expected_dependencies:
+            raise ValueError("GENERATION_RECEIPT_TEMPLATE_DEPENDENCY_HASHES_MISMATCH")
+        expected_bundle_sha256 = resolved_template_bundle_sha256(expected_dependencies)
+        if receipt.get("resolved_template_bundle_sha256") != expected_bundle_sha256:
+            raise ValueError("GENERATION_RECEIPT_RESOLVED_TEMPLATE_BUNDLE_SHA256_MISMATCH")
+        tracked_provenance = receipt.get("tracked_input_provenance")
+        if not isinstance(tracked_provenance, list):
+            raise ValueError("GENERATION_RECEIPT_CONTRACT_PROVENANCE_MISSING")
+        provenance_by_name = {
+            item.get("name"): item
+            for item in tracked_provenance
+            if isinstance(item, dict)
+        }
+        expected_contract_records = [
+            ("schema", expected_schema_project_path, expected_schema_sha256),
+            ("template_pack", expected_template_project_path, expected_template_sha256),
+            *[
+                (f"template_dependency_{index}", item["path"], item["sha256"])
+                for index, item in enumerate(expected_dependencies)
+            ],
+        ]
+        for name, expected_path, expected_sha256 in expected_contract_records:
+            record = provenance_by_name.get(name)
+            if (
+                not isinstance(record, dict)
+                or record.get("path") != expected_path
+                or record.get("working_file_sha256") != expected_sha256
+                or record.get("git_blob_sha256") != expected_sha256
+                or record.get("bytes_match_git_blob") is not True
+                or record.get("source_commit") != receipt_source_commit
+            ):
+                raise ValueError(f"GENERATION_RECEIPT_CONTRACT_PROVENANCE_MISMATCH: {name}")
+        contract_binding = {
+            "canonical_generation_contract_binding_verification": "PASS",
+            "generation_receipt_schema_path": _recorded_project_path(recorded_schema_path, project_root),
+            "generation_receipt_schema_sha256": receipt.get("schema_sha256"),
+            "expected_schema_path": expected_schema_project_path,
+            "expected_schema_sha256": expected_schema_sha256,
+            "generation_receipt_template_pack_path": _recorded_project_path(recorded_template_path, project_root),
+            "generation_receipt_template_pack_sha256": receipt.get("template_pack_sha256"),
+            "expected_template_pack_path": expected_template_project_path,
+            "expected_template_pack_sha256": expected_template_sha256,
+            "generation_receipt_template_dependency_hashes": recorded_dependencies,
+            "expected_template_dependency_hashes": expected_dependencies,
+            "generation_receipt_resolved_template_bundle_sha256": receipt.get("resolved_template_bundle_sha256"),
+            "expected_resolved_template_bundle_sha256": expected_bundle_sha256,
+            "schema_path_verification": "PASS",
+            "schema_sha256_verification": "PASS",
+            "template_pack_path_verification": "PASS",
+            "template_pack_sha256_verification": "PASS",
+            "template_dependency_hashes_verification": "PASS",
+            "resolved_template_bundle_sha256_verification": "PASS",
+        }
+
     return {
         "generation_receipt_path": canonical_project_path(receipt_path, project_root),
         "generation_receipt_sha256": hashlib.sha256(receipt_path.read_bytes()).hexdigest(),
@@ -141,4 +251,5 @@ def verify_generation_trace_receipt(
             "gold_or_reference_cypher_loaded"
         ) is True,
         **query_binding,
+        **contract_binding,
     }
