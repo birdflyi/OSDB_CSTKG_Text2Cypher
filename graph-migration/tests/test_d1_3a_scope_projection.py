@@ -114,6 +114,56 @@ def test_identifier_then_domain_uses_compatible_ordered_contract() -> None:
     assert "RETURN e.entity_id, rel.url_domain_etld1" in result.rendered_cypher
 
 
+def test_unique_domain_item_distinctness_is_preserved_and_fails_closed() -> None:
+    cases = [
+        "For pull request PR_900001#12, return external resource IDs and unique domains of external links.",
+        "For pull request PR_900001#12, return external resource IDs and distinct registrable domains of external links.",
+    ]
+    for query in cases:
+        result = _generate(query)
+        assert [(item.label, item.property, item.distinct) for item in result.ir.projection_items] == [
+            ("ExternalResource", "entity_id", False),
+            ("ExternalResource", "url_domain_etld1", True),
+        ]
+        assert result.template_id is None
+        assert result.rendered_cypher is None
+        assert result.validation["selection"]["status"] == "abstain"
+
+
+def test_ordinary_domain_item_projection_remains_renderable() -> None:
+    result = _generate(
+        "For pull request PR_900001#12, return external resource IDs and domains of external links."
+    )
+    assert [(item.label, item.property, item.distinct) for item in result.ir.projection_items] == [
+        ("ExternalResource", "entity_id", False),
+        ("ExternalResource", "url_domain_etld1", False),
+    ]
+    assert result.template_id == "indv5_reference_external_id_domain"
+
+
+def test_unique_resource_id_does_not_mark_ordinary_domain_distinct() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "return unique external resource IDs and ordinary domains"
+    )
+    assert [(item.label, item.property, item.distinct) for item in ir.projection_items] == [
+        ("ExternalResource", "entity_id", True),
+        ("ExternalResource", "url_domain_etld1", False),
+    ]
+
+
+def test_count_distinct_domains_stays_aggregate_local() -> None:
+    ir = parse_nl_to_ir("synthetic", "count distinct domains")
+    assert ir.projection_items == []
+    assert ir.aggregation == [
+        {
+            "function": "count",
+            "field": "ExternalResource.url_domain_etld1",
+            "distinct": True,
+            "provenance": "aggregate_argument_distinct_from_nl",
+        }
+    ]
+
+
 def test_plural_domains_are_projected_after_resource_ids_in_requested_order() -> None:
     result = _generate(
         "For pull request PR_900001#12, show the resource IDs and domains of external links."
@@ -521,6 +571,38 @@ def test_whoever_requests_actor_for_source_issue_opened_by() -> None:
     assert result.template_id == "indv4_issue_opened_by"
     assert "RETURN a.entity_id" in (result.rendered_cypher or "")
     assert "RETURN i.entity_id" not in (result.rendered_cypher or "")
+
+
+def test_who_derived_id_item_uniqueness_is_preserved_and_fails_closed() -> None:
+    cases = [
+        "For issue I_880002#77, return unique IDs of whoever opened it.",
+        "For issue I_880002#77, return distinct identifiers of who opened it.",
+    ]
+    for query in cases:
+        result = _generate(query)
+        assert [(item.label, item.property, item.distinct) for item in result.ir.projection_items] == [
+            ("Actor", "entity_id", True)
+        ]
+        assert result.template_id is None
+        assert result.rendered_cypher is None
+        assert result.validation["selection"]["status"] == "abstain"
+
+
+def test_who_derived_ordinary_id_projection_remains_renderable() -> None:
+    result = _generate("For issue I_880002#77, return IDs of whoever opened it.")
+    assert [(item.label, item.property, item.distinct) for item in result.ir.projection_items] == [
+        ("Actor", "entity_id", False)
+    ]
+    assert result.template_id == "indv4_issue_opened_by"
+
+
+def test_unrelated_unique_word_does_not_fabricate_who_id_uniqueness() -> None:
+    ir = parse_nl_to_ir(
+        "synthetic", "For issue I_880002#77, return IDs of whoever opened it uniquely."
+    )
+    assert [(item.label, item.property, item.distinct) for item in ir.projection_items] == [
+        ("Actor", "entity_id", False)
+    ]
 
 
 def test_generic_id_fallback_never_reuses_simple_source_anchor() -> None:
