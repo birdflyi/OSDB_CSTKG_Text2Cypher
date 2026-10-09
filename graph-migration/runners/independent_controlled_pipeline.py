@@ -150,6 +150,7 @@ class ProjectionItem:
     provenance: str = "bounded_projection_rule"
     source_span: list[int] = field(default_factory=list)
     function: str | None = None
+    distinct_source_spans: list[list[int]] = field(default_factory=list)
 
 
 class ScopeSlotConflictError(ValueError):
@@ -453,6 +454,14 @@ def _extract_typed_entity_scopes(text: str) -> list[EntityScope]:
         ):
             return True
         if re.search(
+            r"\b(?:without|excluding|exclude|omitting|omit|except|but\s+not)\s+"
+            r"(?:(?:the|these|those)\s+)?"
+            r"(?:(?:issues?|pull\s+requests?)\s+)?prefix\s*$",
+            before,
+            re.IGNORECASE,
+        ):
+            return True
+        if re.search(
             r"\b(?:except|but\s+not)\s+"
             r"(?:(?:those|issues?|pull\s+requests?)\s+whose\s+)?"
             r"(?:ids?|identifiers?)\s+(?:that\s+)?"
@@ -628,23 +637,27 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
     def is_aggregate_argument(match: re.Match[str]) -> bool:
         return any(start <= match.start() < end for start, end in aggregate_argument_spans)
 
-    def has_item_uniqueness_cue(
+    def item_uniqueness_cue_span(
         start: int,
         *,
         bounded_item_phrase: str = r"(?:the\s+)?",
-    ) -> bool:
-        """Recognize a bounded uniqueness modifier governing this item occurrence."""
-        return bool(
-            re.search(
-                rf"\b(?:distinct|unique)\s+{bounded_item_phrase}$",
-                text[max(0, start - 64):start],
-                re.I,
-            )
+    ) -> list[int] | None:
+        """Return the lexical cue span governing this item occurrence."""
+        window_start = max(0, start - 64)
+        cue = re.search(
+            rf"\b(?P<cue>distinct|unique)\s+{bounded_item_phrase}$",
+            text[window_start:start],
+            re.I,
+        )
+        return (
+            [window_start + cue.start("cue"), window_start + cue.end("cue")]
+            if cue
+            else None
         )
 
     def parse_post_noun_id_projection_cue(
         match: re.Match[str],
-    ) -> tuple[bool, bool, tuple[int, int] | None]:
+    ) -> tuple[bool, list[int] | None, tuple[int, int] | None]:
         """Parse a bounded possessive/uniqueness/identifier phrase after a noun."""
         tail = text[match.end():match.end() + 64]
         cue = re.match(
@@ -654,10 +667,16 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
             re.I,
         )
         if not cue:
-            return False, False, None
+            return False, None, None
         start = match.end() + cue.start()
         end = match.end() + cue.end()
-        return True, bool(cue.group("distinct")), (start, end)
+        distinct_span = None
+        if cue.group("distinct"):
+            distinct_span = [
+                match.end() + cue.start("distinct"),
+                match.end() + cue.end("distinct"),
+            ]
+        return True, distinct_span, (start, end)
 
     nullable = bool(
         re.search(r"\b(?:optional|if\s+any|where\s+they\s+exist|where\s+it\s+exists|"
@@ -673,6 +692,7 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
         property_name: str = "entity_id",
         role: str = "target_entity",
         distinct: bool = False,
+        distinct_source_span: list[int] | None = None,
     ) -> None:
         existing = next(
             (item for item in candidates if item.label == label and item.property == property_name),
@@ -680,6 +700,8 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
         )
         if existing is not None:
             existing.distinct = existing.distinct or distinct
+            if distinct_source_span is not None and distinct_source_span not in existing.distinct_source_spans:
+                existing.distinct_source_spans.append(distinct_source_span)
             return
         candidates.append(
             ProjectionItem(
@@ -687,6 +709,9 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
                 label=label,
                 property=property_name,
                 distinct=distinct,
+                distinct_source_spans=(
+                    [distinct_source_span] if distinct_source_span is not None else []
+                ),
                 nullable=nullable,
                 provenance="bounded_role_projection_rule",
                 source_span=[start, end],
@@ -699,7 +724,7 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
         for match in pattern.finditer(text):
             if is_aggregate_argument(match):
                 continue
-            matched, post_noun_distinct, cue_span = parse_post_noun_id_projection_cue(match)
+            matched, post_noun_distinct_span, cue_span = parse_post_noun_id_projection_cue(match)
             if not matched:
                 tail = text[match.end():match.end() + 52]
                 id_cue = re.match(
@@ -715,7 +740,14 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
                     label,
                     cue_span[0],
                     cue_span[1],
-                    distinct=post_noun_distinct or has_item_uniqueness_cue(match.start()),
+                    distinct=bool(
+                        post_noun_distinct_span
+                        or item_uniqueness_cue_span(match.start())
+                    ),
+                    distinct_source_span=(
+                        post_noun_distinct_span
+                        or item_uniqueness_cue_span(match.start())
+                    ),
                 )
 
     # “IDs of <entity>” and equivalent possessives preserve natural column order.
@@ -729,7 +761,14 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
                     label,
                     match.start(),
                     match.end(),
-                    distinct=has_item_uniqueness_cue(
+                    distinct=bool(item_uniqueness_cue_span(
+                        match.start(),
+                        bounded_item_phrase=(
+                            r"(?:(?:the|entity)\s+)*(?:ids?|identifiers?)"
+                            r"\s+of\s+(?:the\s+)?"
+                        ),
+                    )),
+                    distinct_source_span=item_uniqueness_cue_span(
                         match.start(),
                         bounded_item_phrase=(
                             r"(?:(?:the|entity)\s+)*(?:ids?|identifiers?)"
@@ -741,10 +780,38 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
     # A question/list cue can itself name the requested entity role even when
     # the wording says “which objects?” and later refers to “their IDs”.
     output_nouns: list[tuple[int, int, str]] = []
+    property_noun_pattern = re.compile(
+        r"\b(?:(?:registrable|site)\s+)?domains?\b", re.I
+    )
+
+    def entity_noun_is_attributive_property_qualifier(
+        match: re.Match[str],
+    ) -> bool:
+        """Do not infer an entity-ID column from a noun modifying domain(s)."""
+        if parse_post_noun_id_projection_cue(match)[0]:
+            return False
+        return any(
+            re.fullmatch(r"\s+", text[match.end():property_match.start()])
+            for property_match in property_noun_pattern.finditer(text)
+            if property_match.start() >= match.end()
+        )
+
     for start, end, label in nouns:
         if any(span_start <= start < span_end for span_start, span_end in aggregate_argument_spans):
             continue
         if (start, end, label) in source_anchor_nouns:
+            continue
+        entity_match = next(
+            (
+                match
+                for noun_label, pattern in ENTITY_NOUN_PATTERNS
+                if noun_label == label
+                for match in pattern.finditer(text)
+                if match.start() == start and match.end() == end
+            ),
+            None,
+        )
+        if label == "ExternalResource" and entity_match and entity_noun_is_attributive_property_qualifier(entity_match):
             continue
         prefix = lower[max(0, start - 24):start]
         if (
@@ -755,19 +822,32 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
             output_nouns.append((start, end, label))
             if re.search(r"\b(?:which|what)\s+(?:unknown(?:[- ]type)?\s+|untyped\s+)?objects?\s*$", prefix):
                 label = "UnknownObject"
-            add(label, start, end, distinct=has_item_uniqueness_cue(start))
+            cue_span = item_uniqueness_cue_span(start)
+            add(
+                label,
+                start,
+                end,
+                distinct=cue_span is not None,
+                distinct_source_span=cue_span,
+            )
 
     # A bare “who” is a role cue for Actor, but only when it asks for a result.
     who = re.search(r"\b(?:who|whoever)\b", text, re.I)
     if who and not any(item.label == "Actor" for item in candidates):
-        actor_distinct = has_item_uniqueness_cue(
+        actor_distinct_span = item_uniqueness_cue_span(
             who.start(),
             bounded_item_phrase=(
                 r"(?:(?:the|entity)\s+)*(?:ids?|identifiers?)"
                 r"\s+of\s+(?:the\s+)?"
             ),
         )
-        add("Actor", who.start(), who.end(), distinct=actor_distinct)
+        add(
+            "Actor",
+            who.start(),
+            who.end(),
+            distinct=actor_distinct_span is not None,
+            distinct_source_span=actor_distinct_span,
+        )
 
     # Bounded ID pronouns first reuse a unique, explicit ID projection that
     # precedes the pronoun. Otherwise, only an output-cued noun (never a noun
@@ -800,22 +880,32 @@ def _projection_items_from_text(text: str) -> list[ProjectionItem]:
             add(label, start, end)
 
     # Domain is a property projection, distinct from the resource-ID column.
-    for match in re.finditer(r"\b(?:registrable\s+|site\s+)?domains?\b", text, re.I):
+    for match in property_noun_pattern.finditer(text):
         if is_aggregate_argument(match):
             continue
         preceding_text = lower[max(0, match.start() - 24):match.start()]
         if re.search(r"\b(?:external|outside)\s+$", preceding_text):
             continue
+        domain_distinct_span = item_uniqueness_cue_span(
+            match.start(),
+            bounded_item_phrase=(
+                r"(?:(?:external|outside)\s+)?resources?\s+"
+                r"(?:(?:registrable|site)\s+)?"
+            ),
+        ) or item_uniqueness_cue_span(match.start())
         if not any(item.property == "url_domain_etld1" for item in candidates):
             candidates.append(
                 ProjectionItem(
                     role="entity_property",
                     label="ExternalResource",
                     property="url_domain_etld1",
-                    distinct=has_item_uniqueness_cue(match.start()),
+                    distinct=domain_distinct_span is not None,
                     nullable=nullable,
                     provenance="bounded_property_projection_rule",
                     source_span=[match.start(), match.end()],
+                    distinct_source_spans=(
+                        [domain_distinct_span] if domain_distinct_span is not None else []
+                    ),
                 )
             )
 
@@ -1265,19 +1355,20 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
 
     ir.projection_items = _projection_items_from_text(text)
     ir.projection_distinct = _projection_tuple_distinct_from_text(text, ir.projection_items)
-    if ir.projection_distinct and re.search(
-        r"\b(?:return|show|list|display|give)\s+distinct\b", text, re.I
-    ):
-        # A leading DISTINCT scopes the whole tuple.  Only the first item may
-        # have inherited that cue from its local look-behind; preserve any
-        # later independent ``unique/distinct`` item requirement.
+    if ir.projection_distinct:
+        # Only remove item-local attribution when it points to the exact same
+        # lexical token that was reinterpreted as tuple-level DISTINCT.
         leading = re.search(
-            r"\b(?:return|show|list|display|give)\s+distinct\b", text, re.I
+            r"\b(?:return|show|list|display|give)\s+(?P<distinct>distinct)\b",
+            text,
+            re.I,
         )
         if leading and ir.projection_items:
             first = ir.projection_items[0]
-            if first.distinct and first.source_span[0] >= leading.end():
+            leading_cue_span = [leading.start("distinct"), leading.end("distinct")]
+            if first.distinct and first.distinct_source_spans == [leading_cue_span]:
                 first.distinct = False
+                first.distinct_source_spans = []
     if any(item.property == "url_domain_etld1" for item in ir.projection_items):
         ir.projection["property"] = "url_domain_etld1"
         _append_provenance(ir, "projection", "bounded_role_projection_rule")
