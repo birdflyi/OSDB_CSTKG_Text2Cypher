@@ -108,6 +108,37 @@ UNNORMALIZED_LIMIT_PATTERNS = [
     re.compile(r"\b(?:limit\s+to|stop\s+at)\s+(\d+)\s*(?:rows?|results?|entries?)?\b", re.I),
 ]
 
+UNSUPPORTED_EXPLICIT_CONSTRAINT_REASON = "UNSUPPORTED_EXPLICIT_NL_CONSTRAINT"
+_UNSUPPORTED_EXCLUSION_PATTERN = re.compile(
+    r"\b(?:other\s+than|apart\s+from)\s+(?:(?:the|these|those)\s+)?"
+    r"(?:(?:issues?|pull\s+requests?|prs?)\s+)?(?:those\s+)?whose\s+"
+    r"(?:entity\s+)?(?:ids?|identifiers?)\s+(?:that\s+)?"
+    r"(?:start|begin)(?:s|ing|ning)?\s+with\s+(?P<prefix>(?:I|PR)_\d+)\b"
+    r"|\bunless\s+(?:(?:the|those|their)\s+)?"
+    r"(?:(?:issues?|pull\s+requests?|prs?)\s+)?(?:whose\s+)?"
+    r"(?:entity\s+)?(?:ids?|identifiers?)\s+(?:that\s+)?"
+    r"(?:start|begin)(?:s|ing|ning)?\s+with\s+(?P<prefix_unless>(?:I|PR)_\d+)\b"
+    r"|\bbut\s+those\s+whose\s+(?:entity\s+)?(?:ids?|identifiers?)\s+"
+    r"(?:that\s+)?(?:start|begin)(?:s|ing|ning)?\s+with\s+(?P<prefix_but>(?:I|PR)_\d+)\b",
+    re.IGNORECASE,
+)
+_UNSUPPORTED_POSTFIX_UNIQUENESS_PATTERN = re.compile(
+    r"\b(?:without\s+duplicates|with\s+no\s+duplicates|no\s+duplicate\s+results?)\b",
+    re.IGNORECASE,
+)
+_UNSUPPORTED_CARDINALITY_PATTERN = re.compile(
+    r"\b(?:at\s+most|no\s+more\s+than|up\s+to|limited\s+to|capped\s+at)\s+"
+    r"(?P<limit>\d+)\s+(?P<noun>rows?|results?|entries?|domains?|"
+    r"people|persons?|actors?|users?|issues?|pull\s+requests?|prs?|"
+    r"comments?|reviews?|commits?|repos?|repositories|resources?|objects?)\b"
+    r"(?:\s+(?:IDs?|identifiers?))?"
+    r"|\b(?P<reverse_limit>\d+)\s+(?P<reverse_noun>rows?|results?|entries?|domains?|"
+    r"people|persons?|actors?|users?|issues?|pull\s+requests?|prs?|"
+    r"comments?|reviews?|commits?|repos?|repositories|resources?|objects?)\s+"
+    r"(?:max(?:imum)?|at\s+most)\b(?:\s+(?:IDs?|identifiers?))?",
+    re.IGNORECASE,
+)
+
 ENTITY_SLOT_BY_LABEL = {
     "Issue": "issue_entity_id",
     "PullRequest": "pr_entity_id",
@@ -218,6 +249,7 @@ class ControlledQueryIR:
     parser_confidence: float = 0.0
     bounded_status: str = "UNRESOLVED"
     abstention_reason: str | None = None
+    unsupported_explicit_constraints: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -400,6 +432,106 @@ def load_independent_schema(path: str | Path) -> StaticSchemaSpec:
 
 def _append_provenance(ir: ControlledQueryIR, field_name: str, value: str) -> None:
     ir.provenance.setdefault(field_name, []).append(value)
+
+
+def _unsupported_constraint_entry(
+    text: str,
+    match: re.Match[str],
+    *,
+    kind: str,
+) -> dict[str, Any]:
+    start, end = match.span()
+    return {
+        "kind": kind,
+        "reason_code": UNSUPPORTED_EXPLICIT_CONSTRAINT_REASON,
+        "surface_text": text[start:end].strip(),
+        "source_span": [start, end],
+        "provenance": "unsupported_explicit_constraint_from_nl",
+    }
+
+
+def _detect_unsupported_explicit_constraints(
+    text: str,
+    ir: ControlledQueryIR,
+) -> list[dict[str, Any]]:
+    """Record explicit constraints outside the frozen controlled grammar.
+
+    This detector is deliberately a safety boundary, not a semantic parser:
+    recognized surfaces are represented as unsupported metadata and force
+    fail-closed selection rather than being normalized into executable IR.
+    """
+    entries: list[dict[str, Any]] = []
+    entries.extend(
+        _unsupported_constraint_entry(
+            text,
+            match,
+            kind="unsupported_exclusion_surface",
+        )
+        for match in _UNSUPPORTED_EXCLUSION_PATTERN.finditer(text)
+    )
+
+    for match in _UNSUPPORTED_POSTFIX_UNIQUENESS_PATTERN.finditer(text):
+        sentence_start = max(
+            text.rfind(char, 0, match.start()) for char in ".!?;"
+        ) + 1
+        prefix = text[sentence_start : match.start()]
+        # Keep this local to output/result wording. A generic prose use such
+        # as "the process ran without duplicates" is not an output contract.
+        if not re.search(
+            r"\b(?:show|list|return|display|give|find|tell|which|what)\b",
+            prefix,
+            re.IGNORECASE,
+        ):
+            continue
+        if ir.projection_distinct or any(item.distinct for item in ir.projection_items):
+            continue
+        entries.append(
+            _unsupported_constraint_entry(
+                text,
+                match,
+                kind="unsupported_postfix_uniqueness_surface",
+            )
+        )
+
+    existing_limit_value_spans = {
+        match.span(1)
+        for pattern in UNNORMALIZED_LIMIT_PATTERNS
+        for match in pattern.finditer(text)
+    }
+    for match in _UNSUPPORTED_CARDINALITY_PATTERN.finditer(text):
+        number_group = "limit" if match.group("limit") else "reverse_limit"
+        # Preserve the already-frozen bounded limit forms. Those surfaces are
+        # handled by the existing limit contract audit (including its default
+        # entailment rule); this firewall closes the new entity-noun gap.
+        if match.span(number_group) in existing_limit_value_spans:
+            continue
+        # Existing controlled list contracts may phrase the cap before an
+        # entity noun and explicitly project its IDs (for example, "up to 25
+        # pull requests ... showing just their IDs"). Preserve that frozen
+        # contract; the unsafe case is an entity-noun cap with no declared ID
+        # projection that would otherwise inherit a template default.
+        if re.search(
+            r"\b(?:ids?|identifiers?)\b",
+            text[match.end() : match.end() + 80],
+            re.IGNORECASE,
+        ):
+            continue
+        entries.append(
+            _unsupported_constraint_entry(
+                text,
+                match,
+                kind="unsupported_cardinality_surface",
+            )
+        )
+
+    unique: list[dict[str, Any]] = []
+    seen: set[tuple[str, tuple[int, int]]] = set()
+    for entry in entries:
+        key = (str(entry["kind"]), tuple(entry["source_span"]))
+        if key not in seen:
+            seen.add(key)
+            unique.append(entry)
+    return unique
 
 
 def _entity_label_for_id(entity_id: str) -> str | None:
@@ -1378,6 +1510,9 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
         ir.target_label_provenance = {label: "explicit_target_from_nl" for label in projected_labels}
     else:
         ir.target_labels, ir.target_label_provenance = _infer_target_labels_with_provenance(text, aligned)
+    ir.unsupported_explicit_constraints = _detect_unsupported_explicit_constraints(text, ir)
+    if ir.unsupported_explicit_constraints:
+        _append_provenance(ir, "unsupported_explicit_constraints", "unsupported_explicit_constraint_from_nl")
     source_entity = None
     canonical = [x for x in aligned if x.get("entity_id")]
     if canonical:
@@ -1393,7 +1528,10 @@ def parse_nl_to_ir(request_id: str, nl_query: str) -> ControlledQueryIR:
         "projected_properties": [ir.projection["property"]] if ir.projection.get("property") else [],
     }
     ir.parser_confidence = 0.9 if aligned and relation_semantics else 0.65 if aligned else 0.35
-    if "COUPLES_WITH" in relation_semantics or "RESOLVES" in relation_semantics:
+    if ir.unsupported_explicit_constraints:
+        ir.bounded_status = "ABSTAIN_UNSUPPORTED_EXPLICIT_CONSTRAINT"
+        ir.abstention_reason = "unsupported explicit NL constraint"
+    elif "COUPLES_WITH" in relation_semantics or "RESOLVES" in relation_semantics:
         ir.bounded_status = "ABSTAIN_PLACEHOLDER"
         ir.abstention_reason = "placeholder relation is outside the executable native contract"
     elif len(actor_ids) > 1:
@@ -2209,14 +2347,27 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
     explicit_limit = ir.explicit_limit
     limit_consumed = explicit_limit is None or bool(re.search(r"\bLIMIT\s+\d+\b", skeleton, flags=re.IGNORECASE))
     limit_unconsumed = [] if limit_consumed else [{"limit": explicit_limit, "reason": "template has no LIMIT contract"}]
+    unsupported_cardinality_values = {
+        int(value)
+        for item in ir.unsupported_explicit_constraints
+        if item.get("kind") == "unsupported_cardinality_surface"
+        for value in re.findall(r"\d+", str(item.get("surface_text") or ""))
+    }
     unnormalized_limit_unconsumed = [
         {"limit": value, "reason": "unsupported explicit cardinality phrase does not match the template default"}
         for value in ir.unnormalized_limit_values
-        if ir.explicit_limit != value and template.default_limit != value
+        if ir.explicit_limit != value
+        and (template.default_limit != value or value in unsupported_cardinality_values)
     ]
+    unsupported_explicit_constraints = {
+        "requested": list(ir.unsupported_explicit_constraints),
+        "consumed": [],
+        "unconsumed": list(ir.unsupported_explicit_constraints),
+    }
 
     accepted = bool(
         entity["accepted"]
+        and not unsupported_explicit_constraints["unconsumed"]
         and not unconsumed_relations
         and not unconsumed_targets
         and not time_unconsumed
@@ -2232,6 +2383,7 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
     )
     return {
         "accepted": accepted,
+        "unsupported_explicit_constraints": unsupported_explicit_constraints,
         "entity": entity,
         "relation_semantics": {
             "requested": requested_relations,
@@ -2298,10 +2450,12 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
             "contract_default_entailed_values": [
                 value for value in ir.unnormalized_limit_values if template.default_limit == value
                 and ir.explicit_limit in {None, value}
+                and value not in unsupported_cardinality_values
             ],
         },
         "reasons": (
-            (["entity constraint coverage failed"] if not entity["accepted"] else [])
+            (["unsupported explicit NL constraint"] if unsupported_explicit_constraints["unconsumed"] else [])
+            + (["entity constraint coverage failed"] if not entity["accepted"] else [])
             + (["unconsumed relation semantics"] if unconsumed_relations else [])
             + (["unconsumed target labels"] if unconsumed_targets else [])
             + (["unconsumed time bound"] if time_unconsumed else [])
@@ -2445,7 +2599,8 @@ def select_template(ir: ControlledQueryIR, templates: list[IndependentTemplate])
             item["entity"]["conflicting"] for item in coverage_by_template.values()
         )
         has_unconsumed = any(
-            item["entity"]["unconsumed"]
+            item.get("unsupported_explicit_constraints", {}).get("unconsumed")
+            or item["entity"]["unconsumed"]
             or item["relation_semantics"]["unconsumed"]
             or item["target_labels"]["unconsumed"]
             or item["time"]["unconsumed"]
@@ -2459,7 +2614,9 @@ def select_template(ir: ControlledQueryIR, templates: list[IndependentTemplate])
             for item in coverage_by_template.values()
         )
         reason = (
-            "conflicting direct entity scope"
+            "unsupported explicit NL constraint"
+            if any(item.get("unsupported_explicit_constraints", {}).get("unconsumed") for item in coverage_by_template.values())
+            else "conflicting direct entity scope"
             if has_conflict
             else "unconsumed IR constraint"
             if has_unconsumed

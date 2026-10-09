@@ -822,6 +822,7 @@ def test_unrecognized_limit_equal_to_contract_default_is_entailed() -> None:
         "For pull request PR_900001#12, show the linked resource ID and domain, up to 25 results."
     )
     assert result.template_id == "indv5_reference_external_id_domain"
+    assert result.rendered_cypher is not None
     coverage = result.validation["selection"]["ir_constraint_coverage"]["limit"]
     assert coverage["contract_default_entailed_values"] == [25]
 

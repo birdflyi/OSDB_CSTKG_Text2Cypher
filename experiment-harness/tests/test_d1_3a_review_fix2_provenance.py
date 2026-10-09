@@ -103,6 +103,54 @@ def test_development_override_remains_available_only_outside_canonical_dir(tmp_p
     )
 
 
+@pytest.mark.parametrize(
+    "namespace",
+    [
+        "d1_3a_v1_dev_regression",
+        "d1_3a_v1_dev_regression_fix12_v13_retry",
+        "d1_3a_v1_dev_regression_fix15_v16",
+        "d1_3a_v1_dev_regression_fix16_v17",
+    ],
+)
+def test_all_versioned_d1_3a_evidence_namespaces_are_append_only(
+    tmp_path: Path, namespace: str
+) -> None:
+    results_root = tmp_path / "results"
+    target = results_root / namespace / "artifact.json"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"frozen evidence\n")
+
+    with pytest.raises(FileExistsError, match="append-only canonical"):
+        ensure_output_paths_available(
+            [target], artifact_version="v17", allow_overwrite=True, results_root=results_root
+        )
+    assert target.read_bytes() == b"frozen evidence\n"
+
+
+def test_first_write_in_new_versioned_namespace_is_allowed(tmp_path: Path) -> None:
+    results_root = tmp_path / "results"
+    target = results_root / "d1_3a_v1_dev_regression_fix16_v17" / "artifact.json"
+    ensure_output_paths_available(
+        [target], artifact_version="v17", allow_overwrite=True, results_root=results_root
+    )
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"first write\n")
+
+
+def test_existing_nonprotected_scratch_requires_override_but_allows_it(tmp_path: Path) -> None:
+    results_root = tmp_path / "results"
+    target = results_root / "scratch" / "artifact.json"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"scratch\n")
+    with pytest.raises(FileExistsError, match="without"):
+        ensure_output_paths_available(
+            [target], artifact_version="v17", results_root=results_root
+        )
+    ensure_output_paths_available(
+        [target], artifact_version="v17", allow_overwrite=True, results_root=results_root
+    )
+
+
 def test_project_v5_template_dependency_closure_is_stable_and_complete() -> None:
     pack = ROOT / "data_real" / "pilot_queries" / "independent_template_pack_v5.yaml"
     records = template_dependency_closure(pack, ROOT)
