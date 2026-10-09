@@ -58,11 +58,11 @@ def verify_generation_trace_receipt(
     if receipt.get("artifact_version") != artifact_version:
         raise ValueError("GENERATION_TRACE_RECEIPT_ARTIFACT_VERSION_MISMATCH")
 
-    expected_path = canonical_project_path(traces_path, project_root)
+    expected_trace_project_path = canonical_project_path(traces_path, project_root)
     recorded_path = receipt.get("generation_trace_path")
     if not isinstance(recorded_path, str) or not recorded_path:
         raise ValueError("GENERATION_TRACE_RECEIPT_TRACE_PATH_MISSING")
-    if _recorded_project_path(recorded_path, project_root) != expected_path:
+    if _recorded_project_path(recorded_path, project_root) != expected_trace_project_path:
         raise ValueError("GENERATION_TRACE_RECEIPT_TRACE_PATH_MISMATCH")
 
     if receipt.get("canonical_git_byte_verification") != "PASS":
@@ -105,17 +105,22 @@ def verify_generation_trace_receipt(
         expected_queries_path = expected_queries_path.resolve()
         if not expected_queries_path.is_file():
             raise ValueError("EXPECTED_QUERIES_MISSING")
-        expected_path = canonical_project_path(expected_queries_path, project_root)
+        expected_queries_project_path = canonical_project_path(
+            expected_queries_path, project_root
+        )
         expected_sha256 = hashlib.sha256(expected_queries_path.read_bytes()).hexdigest()
         recorded_queries_path = receipt.get("queries_path")
         if not isinstance(recorded_queries_path, str) or not recorded_queries_path:
             raise ValueError("GENERATION_RECEIPT_QUERIES_PATH_MISMATCH")
-        if _recorded_project_path(recorded_queries_path, project_root) != expected_path:
+        if (
+            _recorded_project_path(recorded_queries_path, project_root)
+            != expected_queries_project_path
+        ):
             raise ValueError("GENERATION_RECEIPT_QUERIES_PATH_MISMATCH")
         if receipt.get("queries_sha256") != expected_sha256:
             raise ValueError("GENERATION_RECEIPT_QUERIES_SHA256_MISMATCH")
         query_binding = {
-            "expected_queries_path": expected_path,
+            "expected_queries_path": expected_queries_project_path,
             "expected_queries_sha256": expected_sha256,
             "generation_receipt_queries_path": _recorded_project_path(
                 recorded_queries_path, project_root
@@ -127,7 +132,7 @@ def verify_generation_trace_receipt(
     return {
         "generation_receipt_path": canonical_project_path(receipt_path, project_root),
         "generation_receipt_sha256": hashlib.sha256(receipt_path.read_bytes()).hexdigest(),
-        "generation_trace_path": expected_path,
+        "generation_trace_path": expected_trace_project_path,
         "generation_trace_sha256": actual_trace_sha256,
         "generation_trace_receipt_verification": "PASS",
         "generation_receipt_source_commit": receipt_source_commit,

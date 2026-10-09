@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -116,6 +117,11 @@ def test_receipt_query_path_and_hash_are_authenticated(tmp_path: Path) -> None:
         expected_queries_path=queries,
     )
     assert result["receipt_queries_path_sha_verification"] == "PASS"
+    assert result["generation_trace_path"] == traces.as_posix()
+    assert result["generation_trace_sha256"] == hashlib.sha256(traces.read_bytes()).hexdigest()
+    assert result["expected_queries_path"] == queries.as_posix()
+    assert result["expected_queries_sha256"] == hashlib.sha256(queries.read_bytes()).hexdigest()
+    assert result["generation_trace_path"] != result["expected_queries_path"]
     payload["queries_sha256"] = "0" * 64
     receipt.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="GENERATION_RECEIPT_QUERIES_SHA256_MISMATCH"):
@@ -127,3 +133,34 @@ def test_receipt_query_path_and_hash_are_authenticated(tmp_path: Path) -> None:
             canonical_source_commit="a" * 40,
             expected_queries_path=queries,
         )
+
+
+def test_trace_only_receipt_returns_trace_path(tmp_path: Path) -> None:
+    traces = tmp_path / "traces.jsonl"
+    traces.write_text('{"heldout_id":"H_001"}\n', encoding="utf-8")
+    receipt = tmp_path / "receipt.json"
+    payload = {
+        "artifact_version": "v20",
+        "generation_trace_path": traces.as_posix(),
+        "generation_trace_sha256": hashlib.sha256(traces.read_bytes()).hexdigest(),
+        "canonical_source_commit": "a" * 40,
+        "canonical_git_byte_verification": "PASS",
+        "canonical_tracked_worktree_clean": True,
+        "runtime_implementation_provenance": [
+            {"path": "pipeline.py", "source_commit": "a" * 40, "bytes_match_git_blob": True}
+        ],
+        "evaluation_role": "DEVELOPMENT_REGRESSION",
+        "heldout_role": "NOT_HELDOUT",
+        "evaluation_annotations_loaded": False,
+        "gold_or_reference_cypher_loaded": False,
+    }
+    receipt.write_text(json.dumps(payload), encoding="utf-8")
+    result = verify_generation_trace_receipt(
+        receipt,
+        traces,
+        ROOT,
+        artifact_version="v20",
+        canonical_source_commit="a" * 40,
+    )
+    assert result["generation_trace_path"] == traces.as_posix()
+    assert result["expected_queries_path"] is None
