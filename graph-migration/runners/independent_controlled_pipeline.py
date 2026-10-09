@@ -505,16 +505,34 @@ def _detect_unsupported_explicit_constraints(
         # entailment rule); this firewall closes the new entity-noun gap.
         if match.span(number_group) in existing_limit_value_spans:
             continue
-        # Existing controlled list contracts may phrase the cap before an
-        # entity noun and explicitly project its IDs (for example, "up to 25
-        # pull requests ... showing just their IDs"). Preserve that frozen
-        # contract; the unsafe case is an entity-noun cap with no declared ID
-        # projection that would otherwise inherit a template default.
-        if re.search(
-            r"\b(?:ids?|identifiers?)\b",
-            text[match.end() : match.end() + 80],
-            re.IGNORECASE,
+        # Preserve only the already-frozen typed PullRequest ID-list family.
+        # A later ID/identifier mention alone does not prove that the cap is
+        # represented. Retain its numeric value in the ordinary limit audit:
+        # an equal contract default may entail it, while a conflicting cap
+        # must fail closed instead of inheriting that default.
+        noun = re.sub(
+            r"\s+", " ", str(match.group("noun") or match.group("reverse_noun") or "")
+        ).strip().lower()
+        is_pull_request_cap = noun in {"pull request", "pull requests", "pr", "prs"}
+        has_typed_pull_request_prefix = any(
+            scope.label == "PullRequest"
+            and scope.property == "entity_id"
+            and scope.operator == "STARTS_WITH"
+            for scope in ir.entity_scopes
+        )
+        is_pull_request_id_projection = (
+            len(ir.projection_items) == 1
+            and ir.projection_items[0].label == "PullRequest"
+            and ir.projection_items[0].property == "entity_id"
+        )
+        if (
+            is_pull_request_cap
+            and has_typed_pull_request_prefix
+            and is_pull_request_id_projection
         ):
+            value = int(match.group(number_group))
+            if value not in ir.unnormalized_limit_values:
+                ir.unnormalized_limit_values.append(value)
             continue
         entries.append(
             _unsupported_constraint_entry(
