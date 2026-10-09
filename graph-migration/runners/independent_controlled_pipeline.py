@@ -59,8 +59,9 @@ _PREFIX_OPERATOR_SUFFIX = re.compile(
     re.IGNORECASE,
 )
 _PREFIX_TOKEN_SUFFIX = re.compile(r"^\s+prefix\b", re.IGNORECASE)
+_TYPED_PREFIX_NEGATION_CUE = r"(?:excluding|exclude|omitting|omit|without|except(?:\s+for)?|but\s+not)"
 _POST_TOKEN_NEGATION_CUE_SUFFIX = re.compile(
-    r"\b(?:excluding|exclude|omitting|omit|without|except|but\s+not)\s+"
+    rf"\b{_TYPED_PREFIX_NEGATION_CUE}\s+"
     r"(?:(?:the|this|that|these|those)\s+)?$",
     re.IGNORECASE,
 )
@@ -125,7 +126,7 @@ _UNSUPPORTED_EXCLUSION_PATTERN = re.compile(
 )
 _TRAILING_TYPED_EXCLUSION_PATTERN = re.compile(
     r"(?:,?\s+)"
-    r"(?P<cue>but\s+not|except|excluding|exclude|omitting|omit|without)\s+"
+    r"(?P<cue>but\s+not|except(?:\s+for)?|excluding|exclude|omitting|omit|without)\s+"
     r"(?P<prefix>(?:I|PR)_\d+)\b",
     re.IGNORECASE,
 )
@@ -477,7 +478,7 @@ def _detect_unsupported_explicit_constraints(
         start, end = scope.source_span
         before_scope = text[max(0, start - 100) : start]
         if not re.search(
-            r"\b(?:excluding|exclude|omitting|omit|without|except|but\s+not)\s+"
+            rf"\b{_TYPED_PREFIX_NEGATION_CUE}\s+"
             r"(?:(?:the|this|that|these|those)\s+)?$",
             before_scope,
             re.IGNORECASE,
@@ -671,7 +672,7 @@ def _extract_typed_entity_scopes(text: str) -> list[EntityScope]:
         ):
             return True
         if re.search(
-            r"\b(?:without|excluding|exclude|omitting|omit|except|but\s+not)\s+"
+            rf"\b{_TYPED_PREFIX_NEGATION_CUE}\s+"
             r"(?:(?:the|these|those)\s+)?"
             r"(?:(?:issues?|pull\s+requests?)\s+)?prefix\s*$",
             before,
@@ -679,7 +680,7 @@ def _extract_typed_entity_scopes(text: str) -> list[EntityScope]:
         ):
             return True
         if re.search(
-            r"\b(?:except|but\s+not)\s+"
+            rf"\b(?:except(?:\s+for)?|but\s+not)\s+"
             r"(?:(?:those|issues?|pull\s+requests?)\s+whose\s+)?"
             r"(?:ids?|identifiers?)\s+(?:that\s+)?"
             r"(?:start(?:s|ing)?|begin(?:s|ning)?)\s+with\s*$",
