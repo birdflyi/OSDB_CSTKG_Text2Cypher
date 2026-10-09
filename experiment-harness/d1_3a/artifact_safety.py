@@ -37,45 +37,83 @@ def ensure_output_paths_available(
     directory named ``d1_3a_v1_dev_regression`` or with that prefix.
     """
     version = validate_artifact_version(artifact_version)
-    resolved_paths = [Path(path).resolve() for path in paths]
+    def lexical_absolute(path: Path) -> Path:
+        # abspath normalizes . and .. without dereferencing symlinks.
+        return Path(os.path.abspath(os.fspath(path)))
 
-    def is_protected(path: Path) -> bool:
-        if canonical_evidence_dir is not None:
-            try:
-                Path(os.path.abspath(path)).relative_to(canonical_evidence_dir.resolve())
-                return True
-            except ValueError:
-                pass
-        lexical_path = Path(os.path.abspath(path))
+    lexical_results_root = lexical_absolute(results_root)
+    try:
+        resolved_results_root = results_root.resolve(strict=False)
+        lexical_canonical_dir = (
+            lexical_absolute(canonical_evidence_dir)
+            if canonical_evidence_dir is not None
+            else None
+        )
+        resolved_canonical_dir = (
+            canonical_evidence_dir.resolve(strict=False)
+            if canonical_evidence_dir is not None
+            else None
+        )
+        classified_paths = [
+            (lexical_absolute(path), path.resolve(strict=False)) for path in paths
+        ]
+    except (OSError, RuntimeError, ValueError) as exc:
+        raise ValueError("could not safely classify development artifact path") from exc
+
+    def is_within(path: Path, parent: Path) -> bool:
         try:
-            relative = lexical_path.relative_to(results_root.resolve())
-        except ValueError:
-            relative = None
-        if relative and relative.parts and VERSIONED_EVIDENCE_NAMESPACE.match(relative.parts[0]):
+            path.relative_to(parent)
             return True
-        # Also protect a scratch-looking alias that resolves into the frozen
-        # namespace; resolving only would miss a protected lexical path whose
-        # directory itself is a symlink out of results/.
+        except ValueError:
+            return False
+
+    def is_protected(lexical_path: Path, resolved_path: Path) -> bool:
+        for candidate in (lexical_path, resolved_path):
+            if lexical_canonical_dir is not None and is_within(candidate, lexical_canonical_dir):
+                return True
+            if resolved_canonical_dir is not None and is_within(candidate, resolved_canonical_dir):
+                return True
+
+        lexical_relative = None
         try:
-            resolved_relative = path.relative_to(results_root.resolve())
+            lexical_relative = lexical_path.relative_to(lexical_results_root)
+        except ValueError:
+            pass
+        if (
+            lexical_relative
+            and lexical_relative.parts
+            and VERSIONED_EVIDENCE_NAMESPACE.match(lexical_relative.parts[0])
+        ):
+            return True
+
+        try:
+            resolved_relative = resolved_path.relative_to(resolved_results_root)
         except ValueError:
             return False
         return bool(resolved_relative.parts) and bool(
             VERSIONED_EVIDENCE_NAMESPACE.match(resolved_relative.parts[0])
         )
 
-    existing = [path for path in resolved_paths if path.exists()]
+    existing = [
+        (lexical_path, resolved_path)
+        for lexical_path, resolved_path in classified_paths
+        if os.path.lexists(lexical_path) or resolved_path.exists()
+    ]
     if not existing:
         return
-    existing_canonical = [path for path in existing if is_protected(path)]
+    existing_canonical = [
+        (lexical_path, resolved_path)
+        for lexical_path, resolved_path in existing
+        if is_protected(lexical_path, resolved_path)
+    ]
     if existing_canonical:
         raise FileExistsError(
             "refusing to overwrite append-only canonical D1.3a evidence: "
-            + ", ".join(str(path) for path in existing_canonical)
+            + ", ".join(str(lexical_path) for lexical_path, _ in existing_canonical)
         )
     if not allow_overwrite:
         raise FileExistsError(
             "refusing to overwrite existing development artifacts without "
             "--allow-overwrite-development-artifact: "
-            + ", ".join(str(path) for path in existing)
+            + ", ".join(str(lexical_path) for lexical_path, _ in existing)
         )

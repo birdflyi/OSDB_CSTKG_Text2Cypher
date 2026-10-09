@@ -108,6 +108,26 @@ def _load_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+def validate_unique_heldout_ids(
+    rows: list[dict[str, Any]], source: str
+) -> None:
+    """Reject malformed or repeated IDs before rows are keyed by ID."""
+    first_row_by_id: dict[str, int] = {}
+    for index, row in enumerate(rows):
+        heldout_id = row.get("heldout_id")
+        if not isinstance(heldout_id, str) or not heldout_id.strip():
+            raise ValueError(
+                f"{source} row {index + 1} has invalid heldout_id {heldout_id!r}; "
+                "expected a non-empty string"
+            )
+        if heldout_id in first_row_by_id:
+            raise ValueError(
+                f"{source} has duplicate heldout_id {heldout_id!r} at rows "
+                f"{first_row_by_id[heldout_id] + 1} and {index + 1}"
+            )
+        first_row_by_id[heldout_id] = index
+
+
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -153,8 +173,10 @@ def evaluate(
     input_provenance: dict[str, str] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     evaluator = _load_frozen_evaluator()
-    by_trace = {str(item.get("heldout_id") or ""): item for item in traces}
-    by_gold = {str(item.get("heldout_id") or ""): item for item in gold_rows}
+    validate_unique_heldout_ids(traces, "development traces")
+    validate_unique_heldout_ids(gold_rows, "frozen gold rows")
+    by_trace = {item["heldout_id"]: item for item in traces}
+    by_gold = {item["heldout_id"]: item for item in gold_rows}
     if set(by_trace) != set(by_gold):
         raise ValueError("development traces and frozen v1 evaluation rows must have identical IDs")
     rows: list[dict[str, Any]] = []
@@ -281,12 +303,19 @@ def main() -> int:
         direct_input_paths["generation_receipt"] = receipt_path
     direct_inputs = named_input_provenance(direct_input_paths, ROOT)
     direct_inputs.update(receipt_provenance)
+    trace_artifact = _load_jsonl(traces_path)
+    gold_artifact = _load_jsonl(args.gold)
+    frozen_artifact = _load_jsonl(args.frozen_rows)
+    pre_fix_artifact = _load_jsonl(args.pre_fix_rows)
+    validate_unique_heldout_ids(frozen_artifact, "frozen baseline rows")
+    validate_unique_heldout_ids(pre_fix_artifact, "pre-fix rows")
     rows, summary = evaluate(
-        _load_jsonl(traces_path), _load_jsonl(args.gold), input_provenance=direct_inputs
+        trace_artifact, gold_artifact, input_provenance=direct_inputs
     )
-    frozen_rows = {str(item.get("heldout_id") or ""): item for item in _load_jsonl(args.frozen_rows)}
-    pre_fix_rows = {str(item.get("heldout_id") or ""): item for item in _load_jsonl(args.pre_fix_rows)}
-    current_rows = {str(item.get("heldout_id") or ""): item for item in rows}
+    validate_unique_heldout_ids(rows, "current evaluation rows")
+    frozen_rows = {item["heldout_id"]: item for item in frozen_artifact}
+    pre_fix_rows = {item["heldout_id"]: item for item in pre_fix_artifact}
+    current_rows = {item["heldout_id"]: item for item in rows}
     if set(frozen_rows) != set(current_rows) or set(pre_fix_rows) != set(current_rows):
         raise ValueError("frozen v1 recovered rows do not align with the development trace set")
     rc1_moved = [
