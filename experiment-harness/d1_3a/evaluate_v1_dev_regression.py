@@ -21,6 +21,7 @@ from input_provenance import (  # noqa: E402
     git_byte_input_provenance,
     named_input_provenance,
 )
+from generation_receipt import verify_generation_trace_receipt  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "graph-migration"))
@@ -32,6 +33,7 @@ DEFAULT_OUTPUT = DEFAULT_TRACE_DIR
 EVALUATION_IMPLEMENTATION_RELATIVE_PATHS = (
     "experiment-harness/d1_3a/evaluate_v1_dev_regression.py",
     "experiment-harness/d1_3a/input_provenance.py",
+    "experiment-harness/d1_3a/generation_receipt.py",
     "experiment-harness/d1_3a/artifact_safety.py",
     "experiment-harness/d1_2c/evaluate_heldout_v1.py",
 )
@@ -122,6 +124,7 @@ def _load_frozen_evaluator():
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--traces", type=Path)
+    parser.add_argument("--generation-receipt", type=Path)
     parser.add_argument("--gold", type=Path, default=DEFAULT_GOLD)
     parser.add_argument("--frozen-rows", type=Path, default=DEFAULT_FROZEN_ROWS)
     parser.add_argument(
@@ -184,6 +187,8 @@ def evaluate(
         "UNDETECTED_SEMANTIC_ERROR_COUNT": counts["UNDETECTED_SEMANTIC_ERROR"],
         "FAILURE_TAXONOMY_COUNTS": dict(sorted(counts.items())),
         "SEMANTIC_SIGNATURE_SCOPE": "static_bounded_current_contract_grammar",
+        "evaluation_annotations_loaded": False,
+        "gold_or_reference_cypher_loaded": False,
         "NEO4J_RUN": False,
     }
     summary.update(input_provenance or {})
@@ -192,6 +197,14 @@ def evaluate(
 
 def main() -> int:
     args = build_parser().parse_args()
+    traces_path = args.traces or (
+        DEFAULT_TRACE_DIR / f"d1_3a_v1_dev_generation_traces_{args.artifact_version}.jsonl"
+    )
+    default_receipt_path = (
+        DEFAULT_TRACE_DIR
+        / f"d1_3a_v1_dev_generation_receipt_{args.artifact_version}.json"
+    )
+    receipt_path = args.generation_receipt or default_receipt_path
     canonical_gate = {
         "canonical_source_commit": None,
         "canonical_tracked_worktree_clean": "NOT_REQUESTED",
@@ -201,6 +214,14 @@ def main() -> int:
         "canonical_git_byte_verification": "NOT_REQUESTED",
         "tracked_input_provenance": [],
         "runtime_implementation_provenance": [],
+    }
+    receipt_provenance: dict[str, Any] = {
+        "generation_trace_receipt_verification": "NOT_REQUESTED",
+        "generation_receipt_path": None,
+        "generation_receipt_sha256": None,
+        "generation_trace_path": None,
+        "generation_trace_sha256": None,
+        "generation_receipt_source_commit": None,
     }
     if args.require_canonical_git_byte_verification:
         canonical_gate = canonical_tracked_worktree_gate(ROOT)
@@ -228,6 +249,14 @@ def main() -> int:
         canonical_inputs["canonical_tracked_worktree_clean"] = canonical_gate[
             "canonical_tracked_worktree_clean"
         ]
+    if args.require_canonical_git_byte_verification or args.generation_receipt is not None:
+        receipt_provenance = verify_generation_trace_receipt(
+            receipt_path,
+            traces_path,
+            ROOT,
+            artifact_version=args.artifact_version,
+            canonical_source_commit=canonical_inputs["source_commit"],
+        )
     rows_path = args.output_dir / f"d1_3a_v1_dev_evaluation_rows_{args.artifact_version}.jsonl"
     summary_path = args.output_dir / f"d1_3a_v1_dev_summary_{args.artifact_version}.json"
     delta_name = (
@@ -241,19 +270,17 @@ def main() -> int:
         artifact_version=args.artifact_version,
         allow_overwrite=args.allow_overwrite_development_artifact,
     )
-    traces_path = args.traces or (
-        DEFAULT_TRACE_DIR / f"d1_3a_v1_dev_generation_traces_{args.artifact_version}.jsonl"
-    )
-    direct_inputs = named_input_provenance(
-        {
+    direct_input_paths = {
             "generation_traces": traces_path,
             "gold": args.gold,
             "frozen_baseline_rows": args.frozen_rows,
             "pre_fix_rows": args.pre_fix_rows,
             "evaluator": EVALUATOR_PATH,
-        },
-        ROOT,
-    )
+    }
+    if receipt_provenance["generation_trace_receipt_verification"] == "PASS":
+        direct_input_paths["generation_receipt"] = receipt_path
+    direct_inputs = named_input_provenance(direct_input_paths, ROOT)
+    direct_inputs.update(receipt_provenance)
     rows, summary = evaluate(
         _load_jsonl(traces_path), _load_jsonl(args.gold), input_provenance=direct_inputs
     )

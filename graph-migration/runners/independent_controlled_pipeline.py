@@ -49,10 +49,28 @@ TYPED_PREFIX_PATTERN = re.compile(
     r"(?<![A-Za-z0-9_])(?P<prefix>PR|I)_(?P<number>\d+)(?![A-Za-z0-9_#@])",
     re.IGNORECASE,
 )
-PREFIX_SCOPE_CUE = re.compile(
-    r"\b(?:prefix|starts?\s+with|begins?\s+with|starting\s+with|beginning\s+with|"
-    r"whose\s+(?:entity\s+)?(?:ids?|identifiers?)|(?:ids?|identifiers?)\s+(?:that\s+)?"
-    r"(?:start|begin)|scope(?:d)?\s+to)\b",
+_PREFIX_OPERATOR_SUFFIX = re.compile(
+    r"(?:\bprefix|\bstarts?\s+with|\bbegins?\s+with|"
+    r"\bstarting\s+with|\bbeginning\s+with|"
+    r"\b(?:ids?|identifiers?)\s+(?:that\s+)?(?:start|begin)(?:s|ing|ning)?\s+with|"
+    r"\bwhose\s+(?:entity\s+)?(?:ids?|identifiers?)\s+"
+    r"(?:start|begin)(?:s|ing|ning)?\s+with|"
+    r"\bscope(?:d)?\s+to\s+(?:issues?|pull\s+requests?)?\s*prefix)\s*$",
+    re.IGNORECASE,
+)
+_PREFIX_TOKEN_SUFFIX = re.compile(r"^\s+prefix\b", re.IGNORECASE)
+_ENDS_WITH_OPERATOR_SUFFIX = re.compile(
+    r"\b(?:whose\s+)?(?:entity\s+)?(?:ids?|identifiers?)\s+"
+    r"(?:that\s+)?end(?:s|ing)?\s+with\s*$",
+    re.IGNORECASE,
+)
+_CONTAINS_OPERATOR_SUFFIX = re.compile(
+    r"\b(?:whose\s+)?(?:entity\s+)?(?:ids?|identifiers?)\s+"
+    r"(?:that\s+)?contain(?:s|ing)?\s*$",
+    re.IGNORECASE,
+)
+_UNSPECIFIED_TYPED_SCOPE_SUFFIX = re.compile(
+    r"\b(?:whose\s+)?(?:entity\s+)?(?:ids?|identifiers?)\s+(?:are|equal\s+to|match)\s*$",
     re.IGNORECASE,
 )
 
@@ -360,9 +378,13 @@ def _entity_label_for_id(entity_id: str) -> str | None:
 
 
 def _extract_typed_entity_scopes(text: str) -> list[EntityScope]:
-    def negated_prefix_scope(match: re.Match[str]) -> bool:
+    def negated_prefix_scope(match: re.Match[str], before_text: str | None = None) -> bool:
         """Recognize only the bounded negations of this scope grammar."""
-        before = text[max(0, match.start() - 180) : match.start()]
+        before = (
+            before_text
+            if before_text is not None
+            else text[max(0, match.start() - 180) : match.start()]
+        )
         if re.search(
             r"(?:do|does|did)\s+not\s+(?:start|begin)(?:s|ing)?\s+with\s*$",
             before,
@@ -420,24 +442,79 @@ def _extract_typed_entity_scopes(text: str) -> list[EntityScope]:
 
     scopes: list[EntityScope] = []
     for match in TYPED_PREFIX_PATTERN.finditer(text):
-        left = max(0, match.start() - 72)
-        right = min(len(text), match.end() + 72)
-        context = text[left:right]
-        if not PREFIX_SCOPE_CUE.search(context):
+        before = text[max(0, match.start() - 180) : match.start()]
+        # Keep the operator structurally adjacent to the typed token. A
+        # nearby but unrelated operator elsewhere in the sentence must not
+        # manufacture a typed-prefix constraint.
+        operator_window = re.split(r"[.!?;]", before)[-1]
+        after = text[match.end() : match.end() + 32]
+        operator_source = operator_window
+        repeated_operator = False
+        if not (
+            _PREFIX_OPERATOR_SUFFIX.search(operator_source)
+            or _ENDS_WITH_OPERATOR_SUFFIX.search(operator_source)
+            or _CONTAINS_OPERATOR_SUFFIX.search(operator_source)
+            or _UNSPECIFIED_TYPED_SCOPE_SUFFIX.search(operator_source)
+        ):
+            repeated_operator = bool(re.search(r"\b(?:or|and)\s*$", operator_source, flags=re.IGNORECASE))
+            operator_source = re.sub(r"\b(?:or|and)\s*$", "", operator_source, flags=re.IGNORECASE).strip()
+        if repeated_operator and re.search(
+            r"\b(?:whose\s+(?:entity\s+)?(?:ids?|identifiers?)\s+)?"
+            r"(?:start|begin)(?:s|ing|ning)?\s+with\b",
+            operator_source,
+            re.IGNORECASE,
+        ):
+            operator = "STARTS_WITH"
+            provenance = "typed_prefix_scope_from_nl"
+        elif repeated_operator and re.search(
+            r"\b(?:whose\s+(?:entity\s+)?(?:ids?|identifiers?)\s+)?"
+            r"end(?:s|ing)?\s+with\b",
+            operator_source,
+            re.IGNORECASE,
+        ):
+            operator = "ENDS_WITH"
+            provenance = "unsupported_typed_scope_operator_from_nl"
+        elif repeated_operator and re.search(
+            r"\b(?:whose\s+(?:entity\s+)?(?:ids?|identifiers?)\s+)?contain(?:s|ing)?\b",
+            operator_source,
+            re.IGNORECASE,
+        ):
+            operator = "CONTAINS"
+            provenance = "unsupported_typed_scope_operator_from_nl"
+        elif _PREFIX_TOKEN_SUFFIX.search(after):
+            # Bounded form such as "IDs that fall under PR_123 prefix".
+            # The operator cue follows the typed token, but remains directly
+            # attached to it rather than being inferred from distant text.
+            operator = "STARTS_WITH"
+            provenance = "typed_prefix_scope_from_nl"
+        elif _PREFIX_OPERATOR_SUFFIX.search(operator_source):
+            operator = "NOT_STARTS_WITH" if negated_prefix_scope(match, operator_source) else "STARTS_WITH"
+            provenance = (
+                "negated_typed_prefix_scope_from_nl"
+                if operator == "NOT_STARTS_WITH"
+                else "typed_prefix_scope_from_nl"
+            )
+        elif _ENDS_WITH_OPERATOR_SUFFIX.search(operator_source):
+            operator = "ENDS_WITH"
+            provenance = "unsupported_typed_scope_operator_from_nl"
+        elif _CONTAINS_OPERATOR_SUFFIX.search(operator_source):
+            operator = "CONTAINS"
+            provenance = "unsupported_typed_scope_operator_from_nl"
+        elif _UNSPECIFIED_TYPED_SCOPE_SUFFIX.search(operator_source):
+            # Preserve an explicit typed equality-like request without
+            # treating an arbitrary entity ID as a prefix filter.
+            operator = "UNSPECIFIED"
+            provenance = "unsupported_typed_scope_operator_from_nl"
+        else:
             continue
         prefix = match.group("prefix").upper()
-        negated = negated_prefix_scope(match)
         scopes.append(
             EntityScope(
                 label=TYPED_PREFIX_LABELS[prefix],
                 property="entity_id",
-                operator="NOT_STARTS_WITH" if negated else "STARTS_WITH",
+                operator=operator,
                 value=f"{prefix}_{match.group('number')}",
-                provenance=(
-                    "negated_typed_prefix_scope_from_nl"
-                    if negated
-                    else "typed_prefix_scope_from_nl"
-                ),
+                provenance=provenance,
                 source_span=[match.start(), match.end()],
             )
         )
@@ -1519,7 +1596,7 @@ def _time_bound_consumed(skeleton: str, token: str) -> bool:
 
 def _compatible_scope_slots(scope: EntityScope, template: IndependentTemplate) -> list[str]:
     """Return singular template slots whose typed predicate consumes scope."""
-    if scope.operator == "NOT_STARTS_WITH":
+    if scope.operator != "STARTS_WITH":
         return []
     matching_slots = {
         str(item.get("slot"))
@@ -1569,6 +1646,8 @@ def _scope_slot_analysis(
                     **asdict(scope),
                     "reason_code": "UNSUPPORTED_NEGATED_TYPED_SCOPE_OPERATOR"
                     if scope.operator == "NOT_STARTS_WITH"
+                    else "UNSUPPORTED_TYPED_SCOPE_OPERATOR"
+                    if scope.provenance == "unsupported_typed_scope_operator_from_nl"
                     else "NO_COMPATIBLE_TYPED_SCOPE_SLOT"
                     if not slots
                     else "AMBIGUOUS_TYPED_SCOPE_SLOT",
@@ -1740,6 +1819,8 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
                 (
                     "UNSUPPORTED_NEGATED_TYPED_SCOPE_OPERATOR"
                     if scope.operator == "NOT_STARTS_WITH"
+                    else "UNSUPPORTED_TYPED_SCOPE_OPERATOR"
+                    if scope.provenance == "unsupported_typed_scope_operator_from_nl"
                     else "NO_COMPATIBLE_TYPED_SCOPE_SLOT"
                     if not slots
                     else "AMBIGUOUS_TYPED_SCOPE_SLOT"
@@ -1753,6 +1834,8 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
                     "reason": (
                         "negative typed scope operator is not supported by the template contract"
                         if scope.operator == "NOT_STARTS_WITH"
+                        else "explicit typed scope operator is not supported by the template contract"
+                        if scope.provenance == "unsupported_typed_scope_operator_from_nl"
                         else "no unique compatible typed scope slot"
                     ),
                 }
