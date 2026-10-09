@@ -1,0 +1,82 @@
+{
+  "run_id": "d1_3a_v1_development_regression",
+  "evaluation_role": "DEVELOPMENT_REGRESSION",
+  "heldout_role": "NOT_HELDOUT",
+  "queries_path": "data_real/heldout_v1/heldout_queries_v1.jsonl",
+  "queries_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+  "schema_path": "data_real/pilot_queries/schema_metadata.yaml",
+  "schema_sha256": "d3e0ee543e603a3b545c406c4fd3b7275c779c9d4c64617b2edaa0c7a2f2d201",
+  "template_pack_path": "data_real/pilot_queries/independent_template_pack_v5.yaml",
+  "template_pack_sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b",
+  "template_dependency_hashes": [
+    {
+      "path": "data_real/pilot_queries/independent_template_pack_v4.yaml",
+      "sha256": "c57d05cb42989f0a406a3e48a4fb6f3dda822121b0db17bb1f72e5be91f66d8f"
+    },
+    {
+      "path": "data_real/pilot_queries/independent_template_pack_v5.yaml",
+      "sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b"
+    }
+  ],
+  "resolved_template_bundle_sha256": "a587c26385db6ae4d75621281126425b1b339bbe67c45e6a059c9c9349fde6dd",
+  "generation_input_rows": 45,
+  "artifact_version": "v7",
+  "generation_input_fields": [
+    "id",
+    "nl_query"
+  ],
+  "evaluation_annotations_loaded": false,
+  "gold_or_reference_cypher_loaded": false,
+  "repair_mode": "gold_blind_runtime_diagnosis_and_independent_ir_only",
+  "canonical_source_commit": "9be7907de2e39540a7e69ebb146517a6e0357d64",
+  "canonical_git_byte_verification": "PASS",
+  "tracked_input_provenance": [
+    {
+      "name": "queries",
+      "path": "data_real/heldout_v1/heldout_queries_v1.jsonl",
+      "working_file_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+      "git_blob_sha": "1c85b55e1f89d692ef23394683259553fa2aaaf1",
+      "git_blob_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+      "bytes_match_git_blob": true,
+      "source_commit": "9be7907de2e39540a7e69ebb146517a6e0357d64"
+    },
+    {
+      "name": "schema",
+      "path": "data_real/pilot_queries/schema_metadata.yaml",
+      "working_file_sha256": "d3e0ee543e603a3b545c406c4fd3b7275c779c9d4c64617b2edaa0c7a2f2d201",
+      "git_blob_sha": "514840274127a3f3a6616342c732bb7456d26c01",
+      "git_blob_sha256": "d3e0ee543e603a3b545c406c4fd3b7275c779c9d4c64617b2edaa0c7a2f2d201",
+      "bytes_match_git_blob": true,
+      "source_commit": "9be7907de2e39540a7e69ebb146517a6e0357d64"
+    },
+    {
+      "name": "template_pack",
+      "path": "data_real/pilot_queries/independent_template_pack_v5.yaml",
+      "working_file_sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b",
+      "git_blob_sha": "9a3ff8531a2e267a4d6bfff1c7b8b27e7ab1a008",
+      "git_blob_sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b",
+      "bytes_match_git_blob": true,
+      "source_commit": "9be7907de2e39540a7e69ebb146517a6e0357d64"
+    },
+    {
+      "name": "template_dependency_0",
+      "path": "data_real/pilot_queries/independent_template_pack_v4.yaml",
+      "working_file_sha256": "c57d05cb42989f0a406a3e48a4fb6f3dda822121b0db17bb1f72e5be91f66d8f",
+      "git_blob_sha": "79d2eb9372515a2b06158ce63fb3dd58b60d09c8",
+      "git_blob_sha256": "c57d05cb42989f0a406a3e48a4fb6f3dda822121b0db17bb1f72e5be91f66d8f",
+      "bytes_match_git_blob": true,
+      "source_commit": "9be7907de2e39540a7e69ebb146517a6e0357d64"
+    },
+    {
+      "name": "template_dependency_1",
+      "path": "data_real/pilot_queries/independent_template_pack_v5.yaml",
+      "working_file_sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b",
+      "git_blob_sha": "9a3ff8531a2e267a4d6bfff1c7b8b27e7ab1a008",
+      "git_blob_sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b",
+      "bytes_match_git_blob": true,
+      "source_commit": "9be7907de2e39540a7e69ebb146517a6e0357d64"
+    }
+  ],
+  "generation_trace_path": "experiment-harness/results/d1_3a_v1_dev_regression/d1_3a_v1_dev_generation_traces_v7.jsonl",
+  "generation_trace_sha256": "c20a7a76db6666971150eee6beabee13dbf51f49b03668748e515a33ae1c1471"
+}

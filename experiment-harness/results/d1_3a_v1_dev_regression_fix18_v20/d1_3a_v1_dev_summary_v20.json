@@ -1,0 +1,217 @@
+{
+  "run_id": "d1_3a_v1_development_regression",
+  "evaluation_role": "DEVELOPMENT_REGRESSION",
+  "heldout_role": "NOT_HELDOUT",
+  "N": 45,
+  "N_EXECUTABLE": 39,
+  "N_ABSTENTION": 6,
+  "EXECUTABLE_SEMANTIC_SUCCESS_COUNT": 13,
+  "CORRECT_ABSTENTION_COUNT": 6,
+  "FALSE_ABSTENTION_COUNT": 26,
+  "UNDETECTED_SEMANTIC_ERROR_COUNT": 0,
+  "FAILURE_TAXONOMY_COUNTS": {
+    "CORRECT_ABSTENTION": 6,
+    "FALSE_ABSTENTION": 26,
+    "SUCCESS": 13
+  },
+  "SEMANTIC_SIGNATURE_SCOPE": "static_bounded_current_contract_grammar",
+  "evaluation_annotations_loaded": true,
+  "gold_or_reference_cypher_loaded": true,
+  "generation_annotations_loaded": false,
+  "generation_gold_or_reference_cypher_loaded": false,
+  "stage_data_access": {
+    "generation": {
+      "evaluation_annotations_loaded": false,
+      "gold_or_reference_cypher_loaded": false
+    },
+    "evaluation": {
+      "evaluation_annotations_loaded": true,
+      "gold_or_reference_cypher_loaded": true
+    }
+  },
+  "NEO4J_RUN": false,
+  "expected_query_binding_verification": "PASS",
+  "expected_query_binding_count": 45,
+  "expected_query_binding_pairs_verified": 45,
+  "generation_traces_path": "experiment-harness/results/d1_3a_v1_dev_regression_fix18_v20/d1_3a_v1_dev_generation_traces_v20.jsonl",
+  "generation_traces_sha256": "4b026b0feffc546870e7b35b59ee2070c0ca8584b52a88733cc239e137a9509b",
+  "gold_path": "data_real/heldout_v1/heldout_gold_v1.jsonl",
+  "gold_sha256": "d04f2ce061327d25357d3b9f6479d54a76608071aba65e80a29aa760ac351be7",
+  "frozen_baseline_rows_path": "experiment-harness/results/d1_2c_heldout_v1/d1_2c_v1_recovered_evaluation_rows_v2.jsonl",
+  "frozen_baseline_rows_sha256": "cc15c59d9a35b1902acc4366b7aead1ca845b39168eb9effe06178a5faee9519",
+  "pre_fix_rows_path": "experiment-harness/results/d1_3a_v1_dev_regression/d1_3a_v1_dev_evaluation_rows_v1.jsonl",
+  "pre_fix_rows_sha256": "db26ff5cc8e295fe2adf2e29df80ff9e2c2dbd87feb1fc2466c74e0b55d30f8c",
+  "evaluator_path": "experiment-harness/d1_2c/evaluate_heldout_v1.py",
+  "evaluator_sha256": "e02639f85278819c895eea2426706cbfe82187c3b88f50791e65f5fb5db7ddba",
+  "expected_queries_path": "data_real/heldout_v1/heldout_queries_v1.jsonl",
+  "expected_queries_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+  "generation_receipt_path": "experiment-harness/results/d1_3a_v1_dev_regression_fix18_v20/d1_3a_v1_dev_generation_receipt_v20.json",
+  "generation_receipt_sha256": "314c879e81b01f04450bcf1388a29a9a01fe11e11848c7d9d5ceb7b226f827c9",
+  "generation_trace_path": "data_real/heldout_v1/heldout_queries_v1.jsonl",
+  "generation_trace_sha256": "4b026b0feffc546870e7b35b59ee2070c0ca8584b52a88733cc239e137a9509b",
+  "generation_trace_receipt_verification": "PASS",
+  "generation_receipt_source_commit": "ad332b729b4abad5b722358f9e2294f30b5d5b85",
+  "generation_receipt_queries_path": "data_real/heldout_v1/heldout_queries_v1.jsonl",
+  "generation_receipt_queries_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+  "receipt_queries_path_sha_verification": "PASS",
+  "artifact_version": "v20",
+  "FROZEN_BASELINE_METRICS": {
+    "EXECUTABLE_SEMANTIC_SUCCESS": 4,
+    "N_EXECUTABLE": 39,
+    "KNOWN_BOUNDARY_ABSTENTION": 6,
+    "N_ABSTENTION": 6,
+    "FALSE_ABSTENTION": 35,
+    "UNDETECTED_SEMANTIC_ERROR": 0
+  },
+  "PRE_FIX_D1_3A_METRICS": {
+    "EXECUTABLE_SEMANTIC_SUCCESS": 12,
+    "N_EXECUTABLE": 39,
+    "KNOWN_BOUNDARY_ABSTENTION": 6,
+    "N_ABSTENTION": 6,
+    "FALSE_ABSTENTION": 27,
+    "UNDETECTED_SEMANTIC_ERROR": 0
+  },
+  "DELTA_VS_FROZEN_BASELINE": {
+    "EXECUTABLE_SEMANTIC_SUCCESS": 9,
+    "KNOWN_BOUNDARY_ABSTENTION": 0,
+    "FALSE_ABSTENTION": -9,
+    "UNDETECTED_SEMANTIC_ERROR": 0
+  },
+  "DELTA_VS_PRE_FIX_D1_3A": {
+    "EXECUTABLE_SEMANTIC_SUCCESS": 1,
+    "KNOWN_BOUNDARY_ABSTENTION": 0,
+    "FALSE_ABSTENTION": -1,
+    "UNDETECTED_SEMANTIC_ERROR": 0
+  },
+  "RC1_SCOPE_PREFIX_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": [
+    "ho_q_l1_02_V1",
+    "ho_q_l1_02_V2",
+    "ho_q_l1_02_V3",
+    "ho_q_l4_02_V1",
+    "ho_q_l4_02_V3"
+  ],
+  "RC3_TARGET_ROLE_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": [
+    "ho_q_l1_02_V1",
+    "ho_q_l1_02_V2",
+    "ho_q_l1_02_V3",
+    "ho_q_l1_03_V1",
+    "ho_q_l1_03_V3",
+    "ho_q_l2_03_V2",
+    "ho_q_l4_02_V1",
+    "ho_q_l4_02_V3",
+    "ho_q_l4_03_V2"
+  ],
+  "PREVIOUS_SUCCESS_REGRESSION_COUNT": 0,
+  "PREVIOUS_SUCCESS_REGRESSION_IDS": [],
+  "SAFETY_GATES": {
+    "KNOWN_BOUNDARY_ABSTENTION_6_OF_6": true,
+    "UNDETECTED_SEMANTIC_ERROR_ZERO": true,
+    "PREVIOUSLY_SUCCESSFUL_EXECUTABLES_NO_REGRESSION": true
+  },
+  "V1_ROLE": "DEVELOPMENT_DIAGNOSTIC",
+  "V2_REQUIRED_AFTER_TUNING": true,
+  "V2_CONSTRUCTED": false,
+  "evaluation_rows_sha256": "4ca5a4a05f3dc44e879d125a4579135093a504e04d09f35666256970af093729",
+  "gold_dataset_sha256": "d04f2ce061327d25357d3b9f6479d54a76608071aba65e80a29aa760ac351be7",
+  "canonical_source_commit": "ad332b729b4abad5b722358f9e2294f30b5d5b85",
+  "canonical_git_byte_verification": "PASS",
+  "canonical_tracked_worktree_clean": true,
+  "tracked_input_provenance": [
+    {
+      "name": "expected_queries",
+      "path": "data_real/heldout_v1/heldout_queries_v1.jsonl",
+      "working_file_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+      "git_blob_sha": "1c85b55e1f89d692ef23394683259553fa2aaaf1",
+      "git_blob_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+      "bytes_match_git_blob": true,
+      "source_commit": "ad332b729b4abad5b722358f9e2294f30b5d5b85"
+    },
+    {
+      "name": "gold",
+      "path": "data_real/heldout_v1/heldout_gold_v1.jsonl",
+      "working_file_sha256": "d04f2ce061327d25357d3b9f6479d54a76608071aba65e80a29aa760ac351be7",
+      "git_blob_sha": "e26c614774c51162a0696eba42f995c76ca2607f",
+      "git_blob_sha256": "d04f2ce061327d25357d3b9f6479d54a76608071aba65e80a29aa760ac351be7",
+      "bytes_match_git_blob": true,
+      "source_commit": "ad332b729b4abad5b722358f9e2294f30b5d5b85"
+    },
+    {
+      "name": "frozen_baseline_rows",
+      "path": "experiment-harness/results/d1_2c_heldout_v1/d1_2c_v1_recovered_evaluation_rows_v2.jsonl",
+      "working_file_sha256": "cc15c59d9a35b1902acc4366b7aead1ca845b39168eb9effe06178a5faee9519",
+      "git_blob_sha": "1c263e5804c53e9c98eb104a4a04d35265505e71",
+      "git_blob_sha256": "cc15c59d9a35b1902acc4366b7aead1ca845b39168eb9effe06178a5faee9519",
+      "bytes_match_git_blob": true,
+      "source_commit": "ad332b729b4abad5b722358f9e2294f30b5d5b85"
+    },
+    {
+      "name": "pre_fix_rows",
+      "path": "experiment-harness/results/d1_3a_v1_dev_regression/d1_3a_v1_dev_evaluation_rows_v1.jsonl",
+      "working_file_sha256": "db26ff5cc8e295fe2adf2e29df80ff9e2c2dbd87feb1fc2466c74e0b55d30f8c",
+      "git_blob_sha": "7d5a7f5f8b53a5a0257b8f4f45c3617f4f9ba809",
+      "git_blob_sha256": "db26ff5cc8e295fe2adf2e29df80ff9e2c2dbd87feb1fc2466c74e0b55d30f8c",
+      "bytes_match_git_blob": true,
+      "source_commit": "ad332b729b4abad5b722358f9e2294f30b5d5b85"
+    },
+    {
+      "name": "evaluator",
+      "path": "experiment-harness/d1_2c/evaluate_heldout_v1.py",
+      "working_file_sha256": "e02639f85278819c895eea2426706cbfe82187c3b88f50791e65f5fb5db7ddba",
+      "git_blob_sha": "1a913126e0cbd150b20ba034d4e56f3a00df864c",
+      "git_blob_sha256": "e02639f85278819c895eea2426706cbfe82187c3b88f50791e65f5fb5db7ddba",
+      "bytes_match_git_blob": true,
+      "source_commit": "ad332b729b4abad5b722358f9e2294f30b5d5b85"
+    }
+  ],
+  "runtime_implementation_provenance": [
+    {
+      "name": "experiment-harness/d1_3a/evaluate_v1_dev_regression.py",
+      "path": "experiment-harness/d1_3a/evaluate_v1_dev_regression.py",
+      "working_file_sha256": "5db8eb2c396c9f5a879d0725213b9ac7a3901f9ef18a636f1af5ca38073d66b9",
+      "git_blob_sha": "d4d6d508c471176e081637dc6fb49d8be139e7c7",
+      "git_blob_sha256": "5db8eb2c396c9f5a879d0725213b9ac7a3901f9ef18a636f1af5ca38073d66b9",
+      "bytes_match_git_blob": true,
+      "source_commit": "ad332b729b4abad5b722358f9e2294f30b5d5b85"
+    },
+    {
+      "name": "experiment-harness/d1_3a/input_provenance.py",
+      "path": "experiment-harness/d1_3a/input_provenance.py",
+      "working_file_sha256": "5d16c9d57e56d9975ba7fc9f466cfebccc3985dc5b5e0a00abae296629919f44",
+      "git_blob_sha": "e23fdf44aa81414d2caaeb47d1105e428a731bed",
+      "git_blob_sha256": "5d16c9d57e56d9975ba7fc9f466cfebccc3985dc5b5e0a00abae296629919f44",
+      "bytes_match_git_blob": true,
+      "source_commit": "ad332b729b4abad5b722358f9e2294f30b5d5b85"
+    },
+    {
+      "name": "experiment-harness/d1_3a/generation_receipt.py",
+      "path": "experiment-harness/d1_3a/generation_receipt.py",
+      "working_file_sha256": "2da563d6778ef63b7b5892c4cf029129e33d13361bf468a5e6fc0b9d0facf57c",
+      "git_blob_sha": "a039cbd805f6392d2eacc75977ff50ac5158885a",
+      "git_blob_sha256": "2da563d6778ef63b7b5892c4cf029129e33d13361bf468a5e6fc0b9d0facf57c",
+      "bytes_match_git_blob": true,
+      "source_commit": "ad332b729b4abad5b722358f9e2294f30b5d5b85"
+    },
+    {
+      "name": "experiment-harness/d1_3a/artifact_safety.py",
+      "path": "experiment-harness/d1_3a/artifact_safety.py",
+      "working_file_sha256": "b1cc8a9ef758513b580d625451f3a555cb38d01f3c49c8246f7db6be10a4bd6a",
+      "git_blob_sha": "53241aa56e055fd2fbbdeb974ea758a3cca0dbf2",
+      "git_blob_sha256": "b1cc8a9ef758513b580d625451f3a555cb38d01f3c49c8246f7db6be10a4bd6a",
+      "bytes_match_git_blob": true,
+      "source_commit": "ad332b729b4abad5b722358f9e2294f30b5d5b85"
+    },
+    {
+      "name": "experiment-harness/d1_2c/evaluate_heldout_v1.py",
+      "path": "experiment-harness/d1_2c/evaluate_heldout_v1.py",
+      "working_file_sha256": "e02639f85278819c895eea2426706cbfe82187c3b88f50791e65f5fb5db7ddba",
+      "git_blob_sha": "1a913126e0cbd150b20ba034d4e56f3a00df864c",
+      "git_blob_sha256": "e02639f85278819c895eea2426706cbfe82187c3b88f50791e65f5fb5db7ddba",
+      "bytes_match_git_blob": true,
+      "source_commit": "ad332b729b4abad5b722358f9e2294f30b5d5b85"
+    }
+  ],
+  "evaluation_input_contract": "CANONICAL_V1",
+  "expected_queries_authority_path": "data_real/heldout_v1/heldout_queries_v1.jsonl",
+  "expected_queries_authority_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+  "expected_queries_git_blob_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91"
+}

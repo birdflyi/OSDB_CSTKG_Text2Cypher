@@ -1,0 +1,167 @@
+{
+  "run_id": "d1_3a_v1_development_regression",
+  "evaluation_role": "DEVELOPMENT_REGRESSION",
+  "heldout_role": "NOT_HELDOUT",
+  "N": 45,
+  "N_EXECUTABLE": 39,
+  "N_ABSTENTION": 6,
+  "EXECUTABLE_SEMANTIC_SUCCESS_COUNT": 12,
+  "CORRECT_ABSTENTION_COUNT": 6,
+  "FALSE_ABSTENTION_COUNT": 27,
+  "UNDETECTED_SEMANTIC_ERROR_COUNT": 0,
+  "FAILURE_TAXONOMY_COUNTS": {
+    "CORRECT_ABSTENTION": 6,
+    "FALSE_ABSTENTION": 27,
+    "SUCCESS": 12
+  },
+  "SEMANTIC_SIGNATURE_SCOPE": "static_bounded_current_contract_grammar",
+  "NEO4J_RUN": false,
+  "generation_traces_path": "experiment-harness/results/d1_3a_v1_dev_regression/d1_3a_v1_dev_generation_traces_v11.jsonl",
+  "generation_traces_sha256": "0c9fcc25c5a880fb309864c0126629ec548acbdb7732dc2467d8979679496f69",
+  "gold_path": "data_real/heldout_v1/heldout_gold_v1.jsonl",
+  "gold_sha256": "d04f2ce061327d25357d3b9f6479d54a76608071aba65e80a29aa760ac351be7",
+  "frozen_baseline_rows_path": "experiment-harness/results/d1_2c_heldout_v1/d1_2c_v1_recovered_evaluation_rows_v2.jsonl",
+  "frozen_baseline_rows_sha256": "cc15c59d9a35b1902acc4366b7aead1ca845b39168eb9effe06178a5faee9519",
+  "pre_fix_rows_path": "experiment-harness/results/d1_3a_v1_dev_regression/d1_3a_v1_dev_evaluation_rows_v1.jsonl",
+  "pre_fix_rows_sha256": "db26ff5cc8e295fe2adf2e29df80ff9e2c2dbd87feb1fc2466c74e0b55d30f8c",
+  "evaluator_path": "experiment-harness/d1_2c/evaluate_heldout_v1.py",
+  "evaluator_sha256": "e02639f85278819c895eea2426706cbfe82187c3b88f50791e65f5fb5db7ddba",
+  "artifact_version": "v11",
+  "FROZEN_BASELINE_METRICS": {
+    "EXECUTABLE_SEMANTIC_SUCCESS": 4,
+    "N_EXECUTABLE": 39,
+    "KNOWN_BOUNDARY_ABSTENTION": 6,
+    "N_ABSTENTION": 6,
+    "FALSE_ABSTENTION": 35,
+    "UNDETECTED_SEMANTIC_ERROR": 0
+  },
+  "PRE_FIX_D1_3A_METRICS": {
+    "EXECUTABLE_SEMANTIC_SUCCESS": 12,
+    "N_EXECUTABLE": 39,
+    "KNOWN_BOUNDARY_ABSTENTION": 6,
+    "N_ABSTENTION": 6,
+    "FALSE_ABSTENTION": 27,
+    "UNDETECTED_SEMANTIC_ERROR": 0
+  },
+  "DELTA_VS_FROZEN_BASELINE": {
+    "EXECUTABLE_SEMANTIC_SUCCESS": 8,
+    "KNOWN_BOUNDARY_ABSTENTION": 0,
+    "FALSE_ABSTENTION": -8,
+    "UNDETECTED_SEMANTIC_ERROR": 0
+  },
+  "DELTA_VS_PRE_FIX_D1_3A": {
+    "EXECUTABLE_SEMANTIC_SUCCESS": 0,
+    "KNOWN_BOUNDARY_ABSTENTION": 0,
+    "FALSE_ABSTENTION": 0,
+    "UNDETECTED_SEMANTIC_ERROR": 0
+  },
+  "RC1_SCOPE_PREFIX_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": [
+    "ho_q_l1_02_V1",
+    "ho_q_l1_02_V2",
+    "ho_q_l1_02_V3",
+    "ho_q_l4_02_V1",
+    "ho_q_l4_02_V3"
+  ],
+  "RC3_TARGET_ROLE_ROWS_MOVED_PAST_OLD_FAILURE_LAYER": [
+    "ho_q_l1_02_V1",
+    "ho_q_l1_02_V2",
+    "ho_q_l1_02_V3",
+    "ho_q_l1_03_V3",
+    "ho_q_l2_03_V2",
+    "ho_q_l4_02_V1",
+    "ho_q_l4_02_V3",
+    "ho_q_l4_03_V2"
+  ],
+  "PREVIOUS_SUCCESS_REGRESSION_COUNT": 0,
+  "PREVIOUS_SUCCESS_REGRESSION_IDS": [],
+  "SAFETY_GATES": {
+    "KNOWN_BOUNDARY_ABSTENTION_6_OF_6": true,
+    "UNDETECTED_SEMANTIC_ERROR_ZERO": true,
+    "PREVIOUSLY_SUCCESSFUL_EXECUTABLES_NO_REGRESSION": true
+  },
+  "V1_ROLE": "DEVELOPMENT_DIAGNOSTIC",
+  "V2_REQUIRED_AFTER_TUNING": true,
+  "V2_CONSTRUCTED": false,
+  "generation_trace_sha256": "0c9fcc25c5a880fb309864c0126629ec548acbdb7732dc2467d8979679496f69",
+  "evaluation_rows_sha256": "2c611a74d3d513d762a86011ca9f828d101514931c1be2ea64986cef4ebacde5",
+  "gold_dataset_sha256": "d04f2ce061327d25357d3b9f6479d54a76608071aba65e80a29aa760ac351be7",
+  "canonical_source_commit": "0c607e3d49547b328d71ed669ed0500975067fd2",
+  "canonical_git_byte_verification": "PASS",
+  "canonical_tracked_worktree_clean": true,
+  "tracked_input_provenance": [
+    {
+      "name": "gold",
+      "path": "data_real/heldout_v1/heldout_gold_v1.jsonl",
+      "working_file_sha256": "d04f2ce061327d25357d3b9f6479d54a76608071aba65e80a29aa760ac351be7",
+      "git_blob_sha": "e26c614774c51162a0696eba42f995c76ca2607f",
+      "git_blob_sha256": "d04f2ce061327d25357d3b9f6479d54a76608071aba65e80a29aa760ac351be7",
+      "bytes_match_git_blob": true,
+      "source_commit": "0c607e3d49547b328d71ed669ed0500975067fd2"
+    },
+    {
+      "name": "frozen_baseline_rows",
+      "path": "experiment-harness/results/d1_2c_heldout_v1/d1_2c_v1_recovered_evaluation_rows_v2.jsonl",
+      "working_file_sha256": "cc15c59d9a35b1902acc4366b7aead1ca845b39168eb9effe06178a5faee9519",
+      "git_blob_sha": "1c263e5804c53e9c98eb104a4a04d35265505e71",
+      "git_blob_sha256": "cc15c59d9a35b1902acc4366b7aead1ca845b39168eb9effe06178a5faee9519",
+      "bytes_match_git_blob": true,
+      "source_commit": "0c607e3d49547b328d71ed669ed0500975067fd2"
+    },
+    {
+      "name": "pre_fix_rows",
+      "path": "experiment-harness/results/d1_3a_v1_dev_regression/d1_3a_v1_dev_evaluation_rows_v1.jsonl",
+      "working_file_sha256": "db26ff5cc8e295fe2adf2e29df80ff9e2c2dbd87feb1fc2466c74e0b55d30f8c",
+      "git_blob_sha": "7d5a7f5f8b53a5a0257b8f4f45c3617f4f9ba809",
+      "git_blob_sha256": "db26ff5cc8e295fe2adf2e29df80ff9e2c2dbd87feb1fc2466c74e0b55d30f8c",
+      "bytes_match_git_blob": true,
+      "source_commit": "0c607e3d49547b328d71ed669ed0500975067fd2"
+    },
+    {
+      "name": "evaluator",
+      "path": "experiment-harness/d1_2c/evaluate_heldout_v1.py",
+      "working_file_sha256": "e02639f85278819c895eea2426706cbfe82187c3b88f50791e65f5fb5db7ddba",
+      "git_blob_sha": "1a913126e0cbd150b20ba034d4e56f3a00df864c",
+      "git_blob_sha256": "e02639f85278819c895eea2426706cbfe82187c3b88f50791e65f5fb5db7ddba",
+      "bytes_match_git_blob": true,
+      "source_commit": "0c607e3d49547b328d71ed669ed0500975067fd2"
+    }
+  ],
+  "runtime_implementation_provenance": [
+    {
+      "name": "experiment-harness/d1_3a/evaluate_v1_dev_regression.py",
+      "path": "experiment-harness/d1_3a/evaluate_v1_dev_regression.py",
+      "working_file_sha256": "83e893aee3ec73b09b612c259d9e358a8406d2cdfada4c226f14f7b3e9aa7e11",
+      "git_blob_sha": "40b64bc2fe0b277b1025e6afcb184a5718855a92",
+      "git_blob_sha256": "83e893aee3ec73b09b612c259d9e358a8406d2cdfada4c226f14f7b3e9aa7e11",
+      "bytes_match_git_blob": true,
+      "source_commit": "0c607e3d49547b328d71ed669ed0500975067fd2"
+    },
+    {
+      "name": "experiment-harness/d1_3a/input_provenance.py",
+      "path": "experiment-harness/d1_3a/input_provenance.py",
+      "working_file_sha256": "5d16c9d57e56d9975ba7fc9f466cfebccc3985dc5b5e0a00abae296629919f44",
+      "git_blob_sha": "e23fdf44aa81414d2caaeb47d1105e428a731bed",
+      "git_blob_sha256": "5d16c9d57e56d9975ba7fc9f466cfebccc3985dc5b5e0a00abae296629919f44",
+      "bytes_match_git_blob": true,
+      "source_commit": "0c607e3d49547b328d71ed669ed0500975067fd2"
+    },
+    {
+      "name": "experiment-harness/d1_3a/artifact_safety.py",
+      "path": "experiment-harness/d1_3a/artifact_safety.py",
+      "working_file_sha256": "2b69eb6bd1662d92c46ee60b581728aeda3d0d76aadc06d24275419de095cacf",
+      "git_blob_sha": "602fe8b4f23c7dd0f4d47d91320f34e12c06bd4c",
+      "git_blob_sha256": "2b69eb6bd1662d92c46ee60b581728aeda3d0d76aadc06d24275419de095cacf",
+      "bytes_match_git_blob": true,
+      "source_commit": "0c607e3d49547b328d71ed669ed0500975067fd2"
+    },
+    {
+      "name": "experiment-harness/d1_2c/evaluate_heldout_v1.py",
+      "path": "experiment-harness/d1_2c/evaluate_heldout_v1.py",
+      "working_file_sha256": "e02639f85278819c895eea2426706cbfe82187c3b88f50791e65f5fb5db7ddba",
+      "git_blob_sha": "1a913126e0cbd150b20ba034d4e56f3a00df864c",
+      "git_blob_sha256": "e02639f85278819c895eea2426706cbfe82187c3b88f50791e65f5fb5db7ddba",
+      "bytes_match_git_blob": true,
+      "source_commit": "0c607e3d49547b328d71ed669ed0500975067fd2"
+    }
+  ]
+}

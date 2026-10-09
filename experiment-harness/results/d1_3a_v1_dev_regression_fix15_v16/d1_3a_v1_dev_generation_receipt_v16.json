@@ -1,0 +1,157 @@
+{
+  "run_id": "d1_3a_v1_development_regression",
+  "evaluation_role": "DEVELOPMENT_REGRESSION",
+  "heldout_role": "NOT_HELDOUT",
+  "queries_path": "data_real/heldout_v1/heldout_queries_v1.jsonl",
+  "queries_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+  "schema_path": "data_real/pilot_queries/schema_metadata.yaml",
+  "schema_sha256": "d3e0ee543e603a3b545c406c4fd3b7275c779c9d4c64617b2edaa0c7a2f2d201",
+  "template_pack_path": "data_real/pilot_queries/independent_template_pack_v5.yaml",
+  "template_pack_sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b",
+  "template_dependency_hashes": [
+    {
+      "path": "data_real/pilot_queries/independent_template_pack_v4.yaml",
+      "sha256": "c57d05cb42989f0a406a3e48a4fb6f3dda822121b0db17bb1f72e5be91f66d8f"
+    },
+    {
+      "path": "data_real/pilot_queries/independent_template_pack_v5.yaml",
+      "sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b"
+    }
+  ],
+  "resolved_template_bundle_sha256": "a587c26385db6ae4d75621281126425b1b339bbe67c45e6a059c9c9349fde6dd",
+  "generation_input_rows": 45,
+  "artifact_version": "v16",
+  "generation_input_fields": [
+    "id",
+    "nl_query"
+  ],
+  "evaluation_annotations_loaded": false,
+  "gold_or_reference_cypher_loaded": false,
+  "repair_mode": "gold_blind_runtime_diagnosis_and_independent_ir_only",
+  "canonical_source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c",
+  "canonical_git_byte_verification": "PASS",
+  "canonical_tracked_worktree_clean": true,
+  "tracked_input_provenance": [
+    {
+      "name": "queries",
+      "path": "data_real/heldout_v1/heldout_queries_v1.jsonl",
+      "working_file_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+      "git_blob_sha": "1c85b55e1f89d692ef23394683259553fa2aaaf1",
+      "git_blob_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    },
+    {
+      "name": "schema",
+      "path": "data_real/pilot_queries/schema_metadata.yaml",
+      "working_file_sha256": "d3e0ee543e603a3b545c406c4fd3b7275c779c9d4c64617b2edaa0c7a2f2d201",
+      "git_blob_sha": "514840274127a3f3a6616342c732bb7456d26c01",
+      "git_blob_sha256": "d3e0ee543e603a3b545c406c4fd3b7275c779c9d4c64617b2edaa0c7a2f2d201",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    },
+    {
+      "name": "template_pack",
+      "path": "data_real/pilot_queries/independent_template_pack_v5.yaml",
+      "working_file_sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b",
+      "git_blob_sha": "9a3ff8531a2e267a4d6bfff1c7b8b27e7ab1a008",
+      "git_blob_sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    },
+    {
+      "name": "template_dependency_0",
+      "path": "data_real/pilot_queries/independent_template_pack_v4.yaml",
+      "working_file_sha256": "c57d05cb42989f0a406a3e48a4fb6f3dda822121b0db17bb1f72e5be91f66d8f",
+      "git_blob_sha": "79d2eb9372515a2b06158ce63fb3dd58b60d09c8",
+      "git_blob_sha256": "c57d05cb42989f0a406a3e48a4fb6f3dda822121b0db17bb1f72e5be91f66d8f",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    },
+    {
+      "name": "template_dependency_1",
+      "path": "data_real/pilot_queries/independent_template_pack_v5.yaml",
+      "working_file_sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b",
+      "git_blob_sha": "9a3ff8531a2e267a4d6bfff1c7b8b27e7ab1a008",
+      "git_blob_sha256": "ff1872b26fabd87ee607d0b62ba1155138c4e5f5eee8698ace8aa341f822132b",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    }
+  ],
+  "runtime_implementation_provenance": [
+    {
+      "name": "experiment-harness/d1_3a/generate_v1_dev_regression.py",
+      "path": "experiment-harness/d1_3a/generate_v1_dev_regression.py",
+      "working_file_sha256": "fca69e350a470645bd25d56028119d9e81733bbd29672e0b5e7cac7b8413614e",
+      "git_blob_sha": "7989d77e63a97cd23dedad56011304eb5676b2dd",
+      "git_blob_sha256": "fca69e350a470645bd25d56028119d9e81733bbd29672e0b5e7cac7b8413614e",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    },
+    {
+      "name": "experiment-harness/d1_3a/input_provenance.py",
+      "path": "experiment-harness/d1_3a/input_provenance.py",
+      "working_file_sha256": "5d16c9d57e56d9975ba7fc9f466cfebccc3985dc5b5e0a00abae296629919f44",
+      "git_blob_sha": "e23fdf44aa81414d2caaeb47d1105e428a731bed",
+      "git_blob_sha256": "5d16c9d57e56d9975ba7fc9f466cfebccc3985dc5b5e0a00abae296629919f44",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    },
+    {
+      "name": "experiment-harness/d1_3a/template_provenance.py",
+      "path": "experiment-harness/d1_3a/template_provenance.py",
+      "working_file_sha256": "1d0dd261750c09468683deb32242837e8c0dfb61b62d5b19d9de247947ea5017",
+      "git_blob_sha": "6268230e642a9ed0d75dbca1ed85010028c98792",
+      "git_blob_sha256": "1d0dd261750c09468683deb32242837e8c0dfb61b62d5b19d9de247947ea5017",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    },
+    {
+      "name": "experiment-harness/d1_3a/artifact_safety.py",
+      "path": "experiment-harness/d1_3a/artifact_safety.py",
+      "working_file_sha256": "2b69eb6bd1662d92c46ee60b581728aeda3d0d76aadc06d24275419de095cacf",
+      "git_blob_sha": "602fe8b4f23c7dd0f4d47d91320f34e12c06bd4c",
+      "git_blob_sha256": "2b69eb6bd1662d92c46ee60b581728aeda3d0d76aadc06d24275419de095cacf",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    },
+    {
+      "name": "graph-migration/runners/independent_controlled_pipeline.py",
+      "path": "graph-migration/runners/independent_controlled_pipeline.py",
+      "working_file_sha256": "ffa70ea31ec9f2ec53b4a313b6b86946482da8c7296a0bf907c0d739ec36ea46",
+      "git_blob_sha": "44701595ab3fe26f8916bd600264f4d59732de04",
+      "git_blob_sha256": "ffa70ea31ec9f2ec53b4a313b6b86946482da8c7296a0bf907c0d739ec36ea46",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    },
+    {
+      "name": "graph-migration/repair/gold_blind_repair.py",
+      "path": "graph-migration/repair/gold_blind_repair.py",
+      "working_file_sha256": "9c7a8125e4d01557c351fe4e553640e33bba4979b6c12094720f7f863fee436b",
+      "git_blob_sha": "278e02f18c8ea2e3515835312744dbcc108e65e4",
+      "git_blob_sha256": "9c7a8125e4d01557c351fe4e553640e33bba4979b6c12094720f7f863fee436b",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    },
+    {
+      "name": "graph-migration/validators/pilot_cypher_validator.py",
+      "path": "graph-migration/validators/pilot_cypher_validator.py",
+      "working_file_sha256": "05b2d6567a331c8573957b5f62c059bbda83bcb72135b1efb95e177c4c519fd4",
+      "git_blob_sha": "25da625ae59edcb6c6bb7946af6fd7ec2637c4ec",
+      "git_blob_sha256": "05b2d6567a331c8573957b5f62c059bbda83bcb72135b1efb95e177c4c519fd4",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    },
+    {
+      "name": "graph-migration/normalizers/derived_slot_builder.py",
+      "path": "graph-migration/normalizers/derived_slot_builder.py",
+      "working_file_sha256": "08e33b50814f7e6a614f0bc819163330947ca86d8c1c5413bf1f5c798a110c76",
+      "git_blob_sha": "98df71919a82f50cec2e451a1b1446e729e289e3",
+      "git_blob_sha256": "08e33b50814f7e6a614f0bc819163330947ca86d8c1c5413bf1f5c798a110c76",
+      "bytes_match_git_blob": true,
+      "source_commit": "c142a4dd424e8ee09d21417123f0ab19907e2b1c"
+    }
+  ],
+  "generation_trace_path": "experiment-harness/results/d1_3a_v1_dev_regression_fix15_v16/d1_3a_v1_dev_generation_traces_v16.jsonl",
+  "generation_trace_sha256": "9506d37742231653cdcaef42ebcabd85cb924eb03aa43f7562be2bfc533343f8"
+}

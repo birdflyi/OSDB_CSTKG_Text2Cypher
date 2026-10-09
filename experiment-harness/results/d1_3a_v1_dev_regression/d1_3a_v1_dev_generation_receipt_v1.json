@@ -1,0 +1,19 @@
+{
+  "run_id": "d1_3a_v1_development_regression",
+  "evaluation_role": "DEVELOPMENT_REGRESSION",
+  "heldout_role": "NOT_HELDOUT",
+  "queries_path": "data_real/heldout_v1/heldout_queries_v1.jsonl",
+  "queries_sha256": "433b55308edf7806775e855d5c3bfd4c40c4d29602a62291d18e523b8f05fe91",
+  "template_pack_path": "data_real/pilot_queries/independent_template_pack_v5.yaml",
+  "template_pack_sha256": "f6b037ff88911c856454674ce974378108f6a47dc00a1ac5498014f4a2e69875",
+  "generation_input_rows": 45,
+  "generation_input_fields": [
+    "id",
+    "nl_query"
+  ],
+  "evaluation_annotations_loaded": false,
+  "gold_or_reference_cypher_loaded": false,
+  "repair_mode": "gold_blind_runtime_diagnosis_and_independent_ir_only",
+  "generation_trace_path": "experiment-harness/results/d1_3a_v1_dev_regression/d1_3a_v1_dev_generation_traces_v1.jsonl",
+  "generation_trace_sha256": "2ffda642ad5963ceb10e4d2de86cf6a0f74043ebdb406437cd7e7775554e1c47"
+}
