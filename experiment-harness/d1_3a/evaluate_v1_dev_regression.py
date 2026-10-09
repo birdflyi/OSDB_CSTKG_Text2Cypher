@@ -16,6 +16,7 @@ from artifact_safety import (  # noqa: E402
     ensure_output_paths_available,
 )
 from input_provenance import (  # noqa: E402
+    canonical_project_path,
     canonical_tracked_worktree_gate,
     git_byte_implementation_provenance,
     git_byte_input_provenance,
@@ -27,6 +28,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "graph-migration"))
 EVALUATOR_PATH = ROOT / "experiment-harness" / "d1_2c" / "evaluate_heldout_v1.py"
 DEFAULT_TRACE_DIR = ROOT / "experiment-harness" / "results" / "d1_3a_v1_dev_regression"
+DEFAULT_EXPECTED_QUERIES = ROOT / "data_real" / "heldout_v1" / "heldout_queries_v1.jsonl"
 DEFAULT_GOLD = ROOT / "data_real" / "heldout_v1" / "heldout_gold_v1.jsonl"
 DEFAULT_FROZEN_ROWS = ROOT / "experiment-harness" / "results" / "d1_2c_heldout_v1" / "d1_2c_v1_recovered_evaluation_rows_v2.jsonl"
 DEFAULT_OUTPUT = DEFAULT_TRACE_DIR
@@ -128,6 +130,41 @@ def validate_unique_heldout_ids(
         first_row_by_id[heldout_id] = index
 
 
+def validate_query_rows(rows: list[dict[str, Any]], source: str) -> None:
+    """Validate the exact query-bearing input used for trace authentication."""
+    validate_unique_heldout_ids(rows, source)
+    for index, row in enumerate(rows):
+        nl_query = row.get("nl_query")
+        if not isinstance(nl_query, str) or not nl_query.strip():
+            raise ValueError(
+                f"{source} row {index + 1} has invalid nl_query {nl_query!r}; "
+                "expected a non-empty string"
+            )
+
+
+def verify_expected_query_binding(
+    expected_queries: list[dict[str, Any]], traces: list[dict[str, Any]], gold_rows: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Authenticate every trace NL string against the evaluator's authority."""
+    validate_query_rows(expected_queries, "expected v1 queries")
+    validate_query_rows(traces, "development traces")
+    expected_by_id = {row["heldout_id"]: row["nl_query"] for row in expected_queries}
+    trace_by_id = {row["heldout_id"]: row["nl_query"] for row in traces}
+    gold_ids = {row["heldout_id"] for row in gold_rows}
+    if set(expected_by_id) != set(gold_ids):
+        raise ValueError("EXPECTED_QUERIES_GOLD_ID_MISMATCH")
+    if set(expected_by_id) != set(trace_by_id):
+        raise ValueError("TRACE_EXPECTED_QUERY_ID_MISMATCH")
+    for heldout_id in sorted(expected_by_id):
+        if trace_by_id[heldout_id] != expected_by_id[heldout_id]:
+            raise ValueError(f"TRACE_EXPECTED_QUERY_TEXT_MISMATCH: {heldout_id}")
+    return {
+        "expected_query_binding_verification": "PASS",
+        "expected_query_binding_count": len(expected_by_id),
+        "expected_query_binding_pairs_verified": len(expected_by_id),
+    }
+
+
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -145,6 +182,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--traces", type=Path)
     parser.add_argument("--generation-receipt", type=Path)
+    parser.add_argument(
+        "--expected-queries",
+        type=Path,
+        default=DEFAULT_EXPECTED_QUERIES,
+        help="query text authority bound to traces before evaluation",
+    )
     parser.add_argument("--gold", type=Path, default=DEFAULT_GOLD)
     parser.add_argument("--frozen-rows", type=Path, default=DEFAULT_FROZEN_ROWS)
     parser.add_argument(
@@ -170,11 +213,19 @@ def build_parser() -> argparse.ArgumentParser:
 def evaluate(
     traces: list[dict[str, Any]],
     gold_rows: list[dict[str, Any]],
-    input_provenance: dict[str, str] | None = None,
+    input_provenance: dict[str, Any] | None = None,
+    expected_queries: list[dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     evaluator = _load_frozen_evaluator()
     validate_unique_heldout_ids(traces, "development traces")
     validate_unique_heldout_ids(gold_rows, "frozen gold rows")
+    binding = {
+        "expected_query_binding_verification": "NOT_REQUESTED",
+        "expected_query_binding_count": None,
+        "expected_query_binding_pairs_verified": 0,
+    }
+    if expected_queries is not None:
+        binding = verify_expected_query_binding(expected_queries, traces, gold_rows)
     by_trace = {item["heldout_id"]: item for item in traces}
     by_gold = {item["heldout_id"]: item for item in gold_rows}
     if set(by_trace) != set(by_gold):
@@ -209,10 +260,35 @@ def evaluate(
         "UNDETECTED_SEMANTIC_ERROR_COUNT": counts["UNDETECTED_SEMANTIC_ERROR"],
         "FAILURE_TAXONOMY_COUNTS": dict(sorted(counts.items())),
         "SEMANTIC_SIGNATURE_SCOPE": "static_bounded_current_contract_grammar",
-        "evaluation_annotations_loaded": False,
-        "gold_or_reference_cypher_loaded": False,
+        "evaluation_annotations_loaded": True,
+        "gold_or_reference_cypher_loaded": True,
+        "generation_annotations_loaded": bool(
+            (input_provenance or {}).get("generation_annotations_loaded", False)
+        ),
+        "generation_gold_or_reference_cypher_loaded": bool(
+            (input_provenance or {}).get(
+                "generation_gold_or_reference_cypher_loaded", False
+            )
+        ),
+        "stage_data_access": {
+            "generation": {
+                "evaluation_annotations_loaded": bool(
+                    (input_provenance or {}).get("generation_annotations_loaded", False)
+                ),
+                "gold_or_reference_cypher_loaded": bool(
+                    (input_provenance or {}).get(
+                        "generation_gold_or_reference_cypher_loaded", False
+                    )
+                ),
+            },
+            "evaluation": {
+                "evaluation_annotations_loaded": True,
+                "gold_or_reference_cypher_loaded": True,
+            },
+        },
         "NEO4J_RUN": False,
     }
+    summary.update(binding)
     summary.update(input_provenance or {})
     return rows, summary
 
@@ -227,6 +303,13 @@ def main() -> int:
         / f"d1_3a_v1_dev_generation_receipt_{args.artifact_version}.json"
     )
     receipt_path = args.generation_receipt or default_receipt_path
+    canonical_mode = bool(args.require_canonical_git_byte_verification)
+    binding_requested = canonical_mode or args.expected_queries != DEFAULT_EXPECTED_QUERIES
+    if canonical_mode and args.expected_queries.resolve() != DEFAULT_EXPECTED_QUERIES.resolve():
+        raise ValueError(
+            "CANONICAL_EXPECTED_QUERIES_PATH_MISMATCH: "
+            f"expected {DEFAULT_EXPECTED_QUERIES}, got {args.expected_queries}"
+        )
     canonical_gate = {
         "canonical_source_commit": None,
         "canonical_tracked_worktree_clean": "NOT_REQUESTED",
@@ -244,6 +327,8 @@ def main() -> int:
         "generation_trace_path": None,
         "generation_trace_sha256": None,
         "generation_receipt_source_commit": None,
+        "generation_annotations_loaded": False,
+        "generation_gold_or_reference_cypher_loaded": False,
     }
     if args.require_canonical_git_byte_verification:
         canonical_gate = canonical_tracked_worktree_gate(ROOT)
@@ -257,6 +342,7 @@ def main() -> int:
         )
         canonical_inputs = git_byte_input_provenance(
             {
+                "expected_queries": args.expected_queries,
                 "gold": args.gold,
                 "frozen_baseline_rows": args.frozen_rows,
                 "pre_fix_rows": args.pre_fix_rows,
@@ -271,6 +357,12 @@ def main() -> int:
         canonical_inputs["canonical_tracked_worktree_clean"] = canonical_gate[
             "canonical_tracked_worktree_clean"
         ]
+    expected_artifact: list[dict[str, Any]] | None = None
+    if binding_requested:
+        expected_artifact = _load_jsonl(args.expected_queries)
+        validate_query_rows(expected_artifact, "expected v1 queries")
+        if canonical_mode and len(expected_artifact) != 45:
+            raise ValueError("EXPECTED_QUERIES_CANONICAL_COUNT_MISMATCH")
     if args.require_canonical_git_byte_verification or args.generation_receipt is not None:
         receipt_provenance = verify_generation_trace_receipt(
             receipt_path,
@@ -278,6 +370,7 @@ def main() -> int:
             ROOT,
             artifact_version=args.artifact_version,
             canonical_source_commit=canonical_inputs["source_commit"],
+            expected_queries_path=args.expected_queries if binding_requested else None,
         )
     rows_path = args.output_dir / f"d1_3a_v1_dev_evaluation_rows_{args.artifact_version}.jsonl"
     summary_path = args.output_dir / f"d1_3a_v1_dev_summary_{args.artifact_version}.json"
@@ -287,11 +380,6 @@ def main() -> int:
         else f"d1_3a_v1_dev_delta_review_fix_{args.artifact_version}.md"
     )
     delta_path = args.output_dir / delta_name
-    ensure_output_paths_available(
-        [rows_path, summary_path, delta_path],
-        artifact_version=args.artifact_version,
-        allow_overwrite=args.allow_overwrite_development_artifact,
-    )
     direct_input_paths = {
             "generation_traces": traces_path,
             "gold": args.gold,
@@ -299,6 +387,8 @@ def main() -> int:
             "pre_fix_rows": args.pre_fix_rows,
             "evaluator": EVALUATOR_PATH,
     }
+    if binding_requested:
+        direct_input_paths["expected_queries"] = args.expected_queries
     if receipt_provenance["generation_trace_receipt_verification"] == "PASS":
         direct_input_paths["generation_receipt"] = receipt_path
     direct_inputs = named_input_provenance(direct_input_paths, ROOT)
@@ -310,7 +400,10 @@ def main() -> int:
     validate_unique_heldout_ids(frozen_artifact, "frozen baseline rows")
     validate_unique_heldout_ids(pre_fix_artifact, "pre-fix rows")
     rows, summary = evaluate(
-        trace_artifact, gold_artifact, input_provenance=direct_inputs
+        trace_artifact,
+        gold_artifact,
+        input_provenance=direct_inputs,
+        expected_queries=expected_artifact,
     )
     validate_unique_heldout_ids(rows, "current evaluation rows")
     frozen_rows = {item["heldout_id"]: item for item in frozen_artifact}
@@ -318,6 +411,11 @@ def main() -> int:
     current_rows = {item["heldout_id"]: item for item in rows}
     if set(frozen_rows) != set(current_rows) or set(pre_fix_rows) != set(current_rows):
         raise ValueError("frozen v1 recovered rows do not align with the development trace set")
+    ensure_output_paths_available(
+        [rows_path, summary_path, delta_path],
+        artifact_version=args.artifact_version,
+        allow_overwrite=args.allow_overwrite_development_artifact,
+    )
     rc1_moved = [
         item_id
         for item_id, before in frozen_rows.items()
@@ -408,6 +506,26 @@ def main() -> int:
             "runtime_implementation_provenance": canonical_inputs[
                 "runtime_implementation_provenance"
             ],
+            "evaluation_input_contract": "CANONICAL_V1" if canonical_mode else (
+                "SCRATCH_NONCANONICAL" if binding_requested else "LEGACY_UNBOUND_SCRATCH"
+            ),
+            "expected_queries_authority_path": (
+                canonical_project_path(args.expected_queries, ROOT) if binding_requested else None
+            ),
+            "expected_queries_authority_sha256": (
+                _sha256(args.expected_queries) if binding_requested else None
+            ),
+            "expected_queries_git_blob_sha256": next(
+                (
+                    record.get("git_blob_sha256")
+                    for record in canonical_inputs.get("tracked_input_provenance", [])
+                    if record.get("name") == "expected_queries"
+                ),
+                None,
+            ),
+            "receipt_queries_path_sha_verification": receipt_provenance.get(
+                "receipt_queries_path_sha_verification", "NOT_REQUESTED"
+            ),
         }
     )
     with summary_path.open("w", encoding="utf-8", newline="\n") as handle:

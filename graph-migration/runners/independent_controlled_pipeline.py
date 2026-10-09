@@ -122,6 +122,12 @@ _UNSUPPORTED_EXCLUSION_PATTERN = re.compile(
     r"(?:that\s+)?(?:start|begin)(?:s|ing|ning)?\s+with\s+(?P<prefix_but>(?:I|PR)_\d+)\b",
     re.IGNORECASE,
 )
+_TRAILING_TYPED_EXCLUSION_PATTERN = re.compile(
+    r"(?:,?\s+)"
+    r"(?P<cue>but\s+not|except|excluding|exclude|omitting|omit|without)\s+"
+    r"(?P<prefix>(?:I|PR)_\d+)\b",
+    re.IGNORECASE,
+)
 _UNSUPPORTED_POSTFIX_UNIQUENESS_PATTERN = re.compile(
     r"\b(?:without\s+duplicates|with\s+no\s+duplicates|no\s+duplicate\s+results?)\b",
     re.IGNORECASE,
@@ -469,6 +475,42 @@ def _detect_unsupported_explicit_constraints(
         )
         for match in _UNSUPPORTED_EXCLUSION_PATTERN.finditer(text)
     )
+
+    # A typed prefix followed by a direct negative/exclusion suffix is not a
+    # supported conjunction.  Without this bounded detector the parser would
+    # execute only the positive prefix and silently drop the explicit suffix.
+    # Keep the rule local to an earlier positive typed-prefix scope; this is a
+    # safety firewall, not a general Boolean-negation parser.
+    positive_prefix_scopes = [
+        scope
+        for scope in ir.entity_scopes
+        if scope.operator == "STARTS_WITH"
+        and scope.property == "entity_id"
+        and scope.source_span
+    ]
+    for match in _TRAILING_TYPED_EXCLUSION_PATTERN.finditer(text):
+        prior_scopes = [
+            scope for scope in positive_prefix_scopes if scope.source_span[1] <= match.start()
+        ]
+        if not prior_scopes:
+            continue
+        previous = max(prior_scopes, key=lambda scope: scope.source_span[1])
+        between = text[previous.source_span[1] : match.start()]
+        # Do not turn unrelated prose containing “except”/“without” into a
+        # global blacklist.  The suffix must be attached to the same local
+        # clause and must not cross a sentence boundary.
+        if re.search(r"[.!?;]", between):
+            continue
+        prefix_match = re.match(r"(?:I|PR)_", match.group("prefix"), re.IGNORECASE)
+        if not prefix_match:
+            continue
+        entries.append(
+            _unsupported_constraint_entry(
+                text,
+                match,
+                kind="unsupported_exclusion_surface",
+            )
+        )
 
     for match in _UNSUPPORTED_POSTFIX_UNIQUENESS_PATTERN.finditer(text):
         sentence_start = max(

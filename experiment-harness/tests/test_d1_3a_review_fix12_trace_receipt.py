@@ -177,5 +177,7 @@ def test_happy_path_evaluation_summary_records_verified_receipt_chain(tmp_path: 
     assert summary["generation_receipt_source_commit"] == "a" * 40
     assert summary["evaluation_role"] == "DEVELOPMENT_REGRESSION"
     assert summary["heldout_role"] == "NOT_HELDOUT"
-    assert summary["evaluation_annotations_loaded"] is False
-    assert summary["gold_or_reference_cypher_loaded"] is False
+    assert summary["evaluation_annotations_loaded"] is True
+    assert summary["gold_or_reference_cypher_loaded"] is True
+    assert summary["generation_annotations_loaded"] is False
+    assert summary["generation_gold_or_reference_cypher_loaded"] is False

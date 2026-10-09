@@ -24,6 +24,7 @@ def verify_generation_trace_receipt(
     *,
     artifact_version: str,
     canonical_source_commit: str | None,
+    expected_queries_path: Path | None = None,
 ) -> dict[str, Any]:
     """Fail closed unless a receipt authenticates the selected trace bytes.
 
@@ -93,6 +94,36 @@ def verify_generation_trace_receipt(
     if receipt.get("gold_or_reference_cypher_loaded") is not False:
         raise ValueError("GENERATION_TRACE_RECEIPT_GOLD_BLIND_BOUNDARY_FAILED")
 
+    query_binding: dict[str, Any] = {
+        "expected_queries_path": None,
+        "expected_queries_sha256": None,
+        "generation_receipt_queries_path": None,
+        "generation_receipt_queries_sha256": None,
+        "receipt_queries_path_sha_verification": "NOT_REQUESTED",
+    }
+    if expected_queries_path is not None:
+        expected_queries_path = expected_queries_path.resolve()
+        if not expected_queries_path.is_file():
+            raise ValueError("EXPECTED_QUERIES_MISSING")
+        expected_path = canonical_project_path(expected_queries_path, project_root)
+        expected_sha256 = hashlib.sha256(expected_queries_path.read_bytes()).hexdigest()
+        recorded_queries_path = receipt.get("queries_path")
+        if not isinstance(recorded_queries_path, str) or not recorded_queries_path:
+            raise ValueError("GENERATION_RECEIPT_QUERIES_PATH_MISMATCH")
+        if _recorded_project_path(recorded_queries_path, project_root) != expected_path:
+            raise ValueError("GENERATION_RECEIPT_QUERIES_PATH_MISMATCH")
+        if receipt.get("queries_sha256") != expected_sha256:
+            raise ValueError("GENERATION_RECEIPT_QUERIES_SHA256_MISMATCH")
+        query_binding = {
+            "expected_queries_path": expected_path,
+            "expected_queries_sha256": expected_sha256,
+            "generation_receipt_queries_path": _recorded_project_path(
+                recorded_queries_path, project_root
+            ),
+            "generation_receipt_queries_sha256": receipt.get("queries_sha256"),
+            "receipt_queries_path_sha_verification": "PASS",
+        }
+
     return {
         "generation_receipt_path": canonical_project_path(receipt_path, project_root),
         "generation_receipt_sha256": hashlib.sha256(receipt_path.read_bytes()).hexdigest(),
@@ -100,4 +131,9 @@ def verify_generation_trace_receipt(
         "generation_trace_sha256": actual_trace_sha256,
         "generation_trace_receipt_verification": "PASS",
         "generation_receipt_source_commit": receipt_source_commit,
+        "generation_annotations_loaded": receipt.get("evaluation_annotations_loaded") is True,
+        "generation_gold_or_reference_cypher_loaded": receipt.get(
+            "gold_or_reference_cypher_loaded"
+        ) is True,
+        **query_binding,
     }

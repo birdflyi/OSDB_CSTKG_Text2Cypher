@@ -216,6 +216,14 @@ def main() -> int:
         "generation_input_fields": ["id", "nl_query"],
         "evaluation_annotations_loaded": False,
         "gold_or_reference_cypher_loaded": False,
+        "generation_annotations_loaded": False,
+        "generation_gold_or_reference_cypher_loaded": False,
+        "stage_data_access": {
+            "generation": {
+                "evaluation_annotations_loaded": False,
+                "gold_or_reference_cypher_loaded": False,
+            }
+        },
         "repair_mode": "gold_blind_runtime_diagnosis_and_independent_ir_only",
         "canonical_source_commit": canonical_inputs["source_commit"],
         "canonical_git_byte_verification": canonical_inputs["canonical_git_byte_verification"],
