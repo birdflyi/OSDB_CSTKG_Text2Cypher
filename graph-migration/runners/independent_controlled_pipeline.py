@@ -59,6 +59,10 @@ _PREFIX_OPERATOR_SUFFIX = re.compile(
     re.IGNORECASE,
 )
 _PREFIX_TOKEN_SUFFIX = re.compile(r"^\s+prefix\b", re.IGNORECASE)
+_POST_TOKEN_NEGATION_CUE_SUFFIX = re.compile(
+    r"\b(?:excluding|exclude|omitting|omit|without|except|but\s+not)\s*$",
+    re.IGNORECASE,
+)
 _ENDS_WITH_OPERATOR_SUFFIX = re.compile(
     r"\b(?:whose\s+)?(?:entity\s+)?(?:ids?|identifiers?)\s+"
     r"(?:that\s+)?end(?:s|ing)?\s+with\s*$",
@@ -157,6 +161,33 @@ class ScopeSlotConflictError(ValueError):
         self.slot = slot
         self.values = values
         super().__init__(f"{self.reason_code}: {slot} cannot consume {len(values)} distinct values")
+
+
+class RepoScopeTypedPrefixConflictError(ValueError):
+    """Raised when an explicit typed prefix disagrees with repo context."""
+
+    reason_code = "REPO_SCOPE_TYPED_PREFIX_CONFLICT"
+
+    def __init__(
+        self,
+        *,
+        repo_entity_id: str,
+        scope_label: str,
+        expected_repo_prefix: str,
+        explicit_scope_value: str,
+        scope_operator: str,
+        source_span: list[int],
+    ) -> None:
+        self.repo_entity_id = repo_entity_id
+        self.scope_label = scope_label
+        self.expected_repo_prefix = expected_repo_prefix
+        self.explicit_scope_value = explicit_scope_value
+        self.scope_operator = scope_operator
+        self.source_span = source_span
+        super().__init__(
+            f"{self.reason_code}: {scope_label} {explicit_scope_value} conflicts "
+            f"with {repo_entity_id} ({expected_repo_prefix})"
+        )
 
 
 @dataclass
@@ -485,8 +516,13 @@ def _extract_typed_entity_scopes(text: str) -> list[EntityScope]:
             # Bounded form such as "IDs that fall under PR_123 prefix".
             # The operator cue follows the typed token, but remains directly
             # attached to it rather than being inferred from distant text.
-            operator = "STARTS_WITH"
-            provenance = "typed_prefix_scope_from_nl"
+            post_token_negated = bool(_POST_TOKEN_NEGATION_CUE_SUFFIX.search(operator_window))
+            operator = "NOT_STARTS_WITH" if post_token_negated else "STARTS_WITH"
+            provenance = (
+                "negated_typed_prefix_scope_from_nl"
+                if post_token_negated
+                else "typed_prefix_scope_from_nl"
+            )
         elif _PREFIX_OPERATOR_SUFFIX.search(operator_source):
             operator = "NOT_STARTS_WITH" if negated_prefix_scope(match, operator_source) else "STARTS_WITH"
             provenance = (
@@ -1661,13 +1697,47 @@ def _compatible_scope_slots(scope: EntityScope, template: IndependentTemplate) -
     )
 
 
+def _repo_scope_typed_prefix_conflicts(ir: ControlledQueryIR) -> list[dict[str, Any]]:
+    """Return explicit positive typed prefixes that disagree with repo context."""
+    if not ir.repo_scope:
+        return []
+    repo_entity_id = str(ir.repo_scope.get("repo_entity_id") or "")
+    conflicts: list[dict[str, Any]] = []
+    for scope in ir.entity_scopes:
+        if scope.operator != "STARTS_WITH":
+            continue
+        expected = build_repo_scope_prefixes(repo_entity_id, [scope.label]).get(
+            "base_prefixes", {}
+        ).get(scope.label)
+        if expected is None or str(scope.value) == str(expected):
+            continue
+        conflicts.append(
+            {
+                "reason_code": RepoScopeTypedPrefixConflictError.reason_code,
+                "repo_entity_id": repo_entity_id,
+                "scope_label": scope.label,
+                "expected_repo_prefix": str(expected),
+                "explicit_scope_value": str(scope.value),
+                "scope_operator": scope.operator,
+                "source_span": list(scope.source_span),
+            }
+        )
+    return conflicts
+
+
 def _scope_slot_analysis(
     ir: ControlledQueryIR, template: IndependentTemplate
 ) -> tuple[dict[str, list[EntityScope]], dict[str, EntityScope], list[dict[str, Any]]]:
     """Group explicit scopes by slot and identify non-representable conflicts."""
     groups: dict[str, list[EntityScope]] = {}
-    unassigned: list[dict[str, Any]] = []
+    repo_prefix_conflicts = _repo_scope_typed_prefix_conflicts(ir)
+    conflicts_by_span = {
+        tuple(item["source_span"]): item for item in repo_prefix_conflicts
+    }
+    unassigned: list[dict[str, Any]] = [dict(item) for item in repo_prefix_conflicts]
     for scope in ir.entity_scopes:
+        if tuple(scope.source_span) in conflicts_by_span:
+            continue
         slots = _compatible_scope_slots(scope, template)
         if len(slots) == 1:
             groups.setdefault(slots[0], []).append(scope)
@@ -1839,6 +1909,26 @@ def audit_ir_constraint_coverage(ir: ControlledQueryIR, template: IndependentTem
     scope_groups, scope_assignments, scope_slot_conflicts = _scope_slot_analysis(ir, template)
     conflict_by_slot = {str(item["slot"]): item for item in scope_slot_conflicts if item.get("slot")}
     for scope_item, scope in zip(requested_scopes, ir.entity_scopes):
+        repo_prefix_conflict = next(
+            (
+                item
+                for item in scope_slot_conflicts
+                if item.get("reason_code")
+                == RepoScopeTypedPrefixConflictError.reason_code
+                and item.get("source_span") == scope_item.get("source_span")
+            ),
+            None,
+        )
+        if repo_prefix_conflict:
+            unconsumed_scopes.append(
+                {
+                    **scope_item,
+                    **repo_prefix_conflict,
+                    "status": "ABSTAIN_WITH_TYPED_UNCONSUMED_REASON",
+                    "reason": "explicit typed prefix conflicts with the repository-derived prefix",
+                }
+            )
+            continue
         slots = _compatible_scope_slots(scope, template)
         if len(slots) != 1:
             reason_code = next(
@@ -2314,6 +2404,17 @@ def select_template(ir: ControlledQueryIR, templates: list[IndependentTemplate])
 
 
 def _slot_values(ir: ControlledQueryIR, template: IndependentTemplate) -> dict[str, Any]:
+    repo_prefix_conflicts = _repo_scope_typed_prefix_conflicts(ir)
+    if repo_prefix_conflicts:
+        conflict = repo_prefix_conflicts[0]
+        raise RepoScopeTypedPrefixConflictError(
+            repo_entity_id=str(conflict["repo_entity_id"]),
+            scope_label=str(conflict["scope_label"]),
+            expected_repo_prefix=str(conflict["expected_repo_prefix"]),
+            explicit_scope_value=str(conflict["explicit_scope_value"]),
+            scope_operator=str(conflict["scope_operator"]),
+            source_span=list(conflict["source_span"]),
+        )
     values: dict[str, Any] = {}
     for item in ir.aligned_entities:
         label = item.get("entity_label")
