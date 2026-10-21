@@ -1,0 +1,9 @@
+# Prepared known-goal project transfer
+
+IoTDB retains all14 known development goal bindings:12 answerable and2 boundary. Elasticsearch retains all14 in intake but predicts13:11 answerable and2 boundary. Its July new-PR list has557 complete rows, above the frozen500-row output contract, and is marked ineligible without changing period, using LIMIT, changing to counts or replacing the task. IoTDB new-PR list has301 rows. All other retained outputs fit the contract. Report the557-row goal in output-budget coverage; it is not an accuracy observation.
+
+Independent CSV gold agrees with database execution for all23 eligible answerable goal-project bindings. There are46 execution checks because both a reference-query slot and a service-query slot were exercised. For the12 old-family bindings these are the same compiled query, not two independent implementations. The11 event bindings compare separately written E3 queries and the event compiler to independent CSV gold. No model predictions have been produced on either project.
+
+Keep this known-goal transfer control separate from the21-case-per-project new-task workload. It adds no independent semantic goals, real users or new-schema generalization. The original deterministic discriminating-anchor selector succeeded on both projects without fallback. Method and time windows were not tuned to scores.
+
+Remaining queue code runs14 fixed batches sequentially only after a later recorded probe. At most111 eligible case-project instances across the independent workload and this control imply666 attempts under the first+one-repair ceiling, below the remaining986-slot budget before a later probe. This bound conservatively includes cached source calls. Stop the queue at the first incomplete batch, never automatically repeat generation or dispatch recovery v3. The queue has not been started at this preparation checkpoint.

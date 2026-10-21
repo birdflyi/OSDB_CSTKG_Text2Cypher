@@ -1,0 +1,51 @@
+{
+  "status": "PREPARED_NOT_PREDICTED",
+  "protocol_commit": "8f77516",
+  "projects": [
+    {
+      "project": "iotdb",
+      "manifest": {
+        "mode": "E8_KNOWN_GOAL_PROJECT_TRANSFER_NOT_TASK_GENERALIZATION",
+        "project": "iotdb",
+        "repo_id": "158975124",
+        "source_hashes": {
+          "nodes.csv": "8d76396bc77a34dc7aa6ea94337cdd675aa2ec484ba7cc79cd1a5073ee7aeee3",
+          "edges.csv": "7fa83e8f08d207dde1374717803512da13a0a76f0a1eac3577ba5af64ac94244"
+        },
+        "prepared": 14,
+        "eligible": 14,
+        "excluded_output_budget": [],
+        "task_sha256": "5985dbd539f3c54f96aa7c754c51887816b09c49c3f28a6c074d07b574dd61cb",
+        "all_prepared_sha256": "5985dbd539f3c54f96aa7c754c51887816b09c49c3f28a6c074d07b574dd61cb",
+        "builder_sha256": "9cfedccbb95db89d4e6ac1054c28feb70c0b70ebecda12570a560b1be37818c9",
+        "limits": "Known developer goal definitions. No independent task count. All14 retained in intake; over500-row outputs excluded without replacement before prediction."
+      },
+      "answerable_bindings": 12,
+      "all_reference_checks_correct": true
+    },
+    {
+      "project": "elasticsearch",
+      "manifest": {
+        "mode": "E8_KNOWN_GOAL_PROJECT_TRANSFER_NOT_TASK_GENERALIZATION",
+        "project": "elasticsearch",
+        "repo_id": "507775",
+        "source_hashes": {
+          "nodes.csv": "3a867bb67842275935497bb3f1d6e9c36b7a98d33864a9bc56c3c7b47871c467",
+          "edges.csv": "524364bda48a9216f7aeacf80367e2d51acf0628df44f2633e704caa6d838842"
+        },
+        "prepared": 14,
+        "eligible": 13,
+        "excluded_output_budget": [
+          "pr_new"
+        ],
+        "task_sha256": "1cc422760a5b1fa3fe3f3f632bef618dde670d3de594919f4d0461eb3b2187b6",
+        "all_prepared_sha256": "8beb72bc22e4a069922df9a6e9a1c216ba5d2e51d7f7a84b43a20a4329e427c5",
+        "builder_sha256": "9cfedccbb95db89d4e6ac1054c28feb70c0b70ebecda12570a560b1be37818c9",
+        "limits": "Known developer goal definitions. No independent task count. All14 retained in intake; over500-row outputs excluded without replacement before prediction."
+      },
+      "answerable_bindings": 11,
+      "all_reference_checks_correct": true
+    }
+  ],
+  "limits": "23 answerable goal-project bindings;46 executions include duplicate same compiled queries for old six families. Independent CSV gold; E3 handwritten and event compiler checked for the event goals. Not46 independent tasks or model accuracy."
+}
