@@ -8,6 +8,7 @@
 | `codex/ch7-e1-strong-baselines` | 输出协议、结构检查、一次修复、开发预测 | 本地验证及预检完成；运行结果和失败记录成阶段报告 |
 | `codex/ch7-e2-semantic-diagnostics` | E1 同批预测的表达／语义对照、多实例执行 | 配对分析和评价自检完成；不能把未完成见证标为通过 |
 | `codex/ch7-e3-demand-coverage` | 独立来源需求、能力边界及参考 | 来源与争议冻结后才启动正式预测 |
+| `codex/ch7-e3-information-boundary` | E3b 配对世界的信息充分性见证 | CSV 和实际 Cypher 核验完成，独立于模型预测 |
 | `codex/ch7-e4-project-transfer` | 候选特征盘点、留出选择与迁移评价 | 先冻结选择，后运行预测 |
 | `codex/ch7-e5-cost-analysis` | 全尝试成本与有效完成分析 | 费用未知、接口失败、缓存复用已正确处理 |
 

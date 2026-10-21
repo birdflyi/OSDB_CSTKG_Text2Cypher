@@ -44,3 +44,4 @@
 - 实验目录 32 项测试通过。
 - 外部材料：`ch7_private/e3_information_witness_v1_20261021/`；数据库凭据：`ch7_private/e3_information_runtime_v1_20261021/`。
 - 公开摘要：`E3_INFORMATION_RESULTS.json`。全部原六服务编译器仍为 SHA-256 `52c7ab97f945778f4267e6721b36506055ad823c8bb3e7fa61045d4ef71d0631`。
+- 两个见证实例和 E3 两个项目实例均已关闭，17475–17478 无监听；关闭凭据在外部 E3 准备目录。没有删除源数据。
