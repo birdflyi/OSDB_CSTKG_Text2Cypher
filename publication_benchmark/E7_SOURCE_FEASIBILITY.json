@@ -1,0 +1,302 @@
+{
+  "mode": "FULL_SOURCE_FEASIBILITY_INTAKE_NOT_FINAL_WORKLOAD",
+  "source_sha256": "7b6faa59f5e426e2d6217a511ac704fd1b90966524380c22963daa48e8eaa847",
+  "source_entries": 32,
+  "status_counts": {
+    "UNRESOLVED_DEFINITION_OR_HISTORY": 7,
+    "UNAVAILABLE_EVIDENCE": 11,
+    "NEW_PARTIAL_OPERATIONALIZATION_CANDIDATE": 8,
+    "DEVELOPMENT_OPERATIONALIZATION": 6
+  },
+  "rows": [
+    {
+      "source_entry_id": "SRC001",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 1",
+      "source_url": "https://zenodo.org/records/17162221",
+      "status": "UNRESOLVED_DEFINITION_OR_HISTORY",
+      "reason": "Commit date meaning unresolved; source-event time is not authored date. Possible push-event proxy duplicates SRC013.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC002",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 2",
+      "source_url": "https://zenodo.org/records/17162221",
+      "status": "UNRESOLVED_DEFINITION_OR_HISTORY",
+      "reason": "Commit detail fields and date meaning unresolved; nodes do not provide authored metadata or content.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC003",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 3",
+      "source_url": "https://zenodo.org/records/17162221",
+      "status": "UNAVAILABLE_EVIDENCE",
+      "reason": "File nodes/change sets unavailable.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC004",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 4",
+      "source_url": "https://zenodo.org/records/17162221",
+      "status": "UNAVAILABLE_EVIDENCE",
+      "reason": "Bug labels, fix relationships and current unfixed state unavailable.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC005",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 5",
+      "source_url": "https://zenodo.org/records/17162221",
+      "status": "UNAVAILABLE_EVIDENCE",
+      "reason": "File change and bug-fix evidence unavailable.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC006",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 6",
+      "source_url": "https://zenodo.org/records/17162221",
+      "status": "UNAVAILABLE_EVIDENCE",
+      "reason": "File changes and bug-introduction causality unavailable.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC007",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 7",
+      "source_url": "https://zenodo.org/records/17162221",
+      "status": "UNAVAILABLE_EVIDENCE",
+      "reason": "Buggy-commit classification and authored date unavailable.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC008",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 8",
+      "source_url": "https://zenodo.org/records/17162221",
+      "status": "UNAVAILABLE_EVIDENCE",
+      "reason": "Actual fixing relationship unavailable; REFERENCES is not RESOLVES.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC009",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 9",
+      "source_url": "https://zenodo.org/records/17162221",
+      "status": "UNAVAILABLE_EVIDENCE",
+      "reason": "Bug-introduction causality unavailable.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC010",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 10",
+      "source_url": "https://zenodo.org/records/17162221",
+      "status": "UNAVAILABLE_EVIDENCE",
+      "reason": "Fixing/introducing classifications unavailable.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC011",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "branch-lifecycle",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-activity/branch-lifecycle.md",
+      "status": "NEW_PARTIAL_OPERATIONALIZATION_CANDIDATE",
+      "reason": "Observed branch create/delete event counts, not a qualitative branch-management process.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC012",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-request-commits",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-activity/change-request-commits.md",
+      "status": "UNAVAILABLE_EVIDENCE",
+      "reason": "Complete PR commit membership unavailable; MERGED_AS is only merge result, REFERENCES is mention evidence.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC013",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "code-changes-commits",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-activity/code-changes-commits.md",
+      "status": "NEW_PARTIAL_OPERATIONALIZATION_CANDIDATE",
+      "reason": "Distinct commit identifiers on observed Push COMMITTED_AS events, not authored-date changes or total historical commits.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC014",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "code-changes-lines",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-activity/code-changes-lines.md",
+      "status": "UNAVAILABLE_EVIDENCE",
+      "reason": "Added/deleted line counts unavailable.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC015",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-request-acceptance-ratio",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-efficiency/change-request-acceptance-ratio.md",
+      "status": "DEVELOPMENT_OPERATIONALIZATION",
+      "reason": "Already used in the six E3 observed-event goals; new date/anchor is not an independent semantic goal.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC016",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-requests-accepted",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-efficiency/change-requests-accepted.md",
+      "status": "DEVELOPMENT_OPERATIONALIZATION",
+      "reason": "Already used in the six E3 observed-event goals; new date/anchor is not an independent semantic goal.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC017",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-requests-declined",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-efficiency/change-requests-declined.md",
+      "status": "DEVELOPMENT_OPERATIONALIZATION",
+      "reason": "Already used in the six E3 observed-event goals; new date/anchor is not an independent semantic goal.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC018",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-requests-duration",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-efficiency/change-requests-duration.md",
+      "status": "NEW_PARTIAL_OPERATIONALIZATION_CANDIDATE",
+      "reason": "First observed PR initial-open to later observed merge/close duration; incomplete-history and censoring explicit.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC019",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-request-reviews",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-process-quality/change-request-reviews.md",
+      "status": "NEW_PARTIAL_OPERATIONALIZATION_CANDIDATE",
+      "reason": "Observed PullRequestReview CREATED_IN links to PRs, not review quality or all historical reviews.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC020",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-requests",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-process-quality/change-requests.md",
+      "status": "DEVELOPMENT_OPERATIONALIZATION",
+      "reason": "Already used in the six E3 observed-event goals; new date/anchor is not an independent semantic goal.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC021",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "contribution-attribution",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/community-growth/contribution-attribution.md",
+      "status": "NEW_PARTIAL_OPERATIONALIZATION_CANDIDATE",
+      "reason": "Actor identifier attribution for explicitly declared observed activity; organizations and complete contributor identities unavailable.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC022",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "conversion-rate",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/community-growth/conversion-rate.md",
+      "status": "UNRESOLVED_DEFINITION_OR_HISTORY",
+      "reason": "Sustained-contribution threshold, contribution activity types and prior-history cohort need definition.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC023",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "inactive-contributors",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/community-growth/inactive-contributors.md",
+      "status": "UNRESOLVED_DEFINITION_OR_HISTORY",
+      "reason": "Inactivity threshold, contribution activity types and prior-history cohort need definition.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC024",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "new-contributor-closing-issues",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/community-growth/new-contributor-closing-issues.md",
+      "status": "UNRESOLVED_DEFINITION_OR_HISTORY",
+      "reason": "First-ever Issue closer requires pre-snapshot history; first observed closer is a different scope.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC025",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "new-contributors",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/community-growth/new-contributors.md",
+      "status": "UNRESOLVED_DEFINITION_OR_HISTORY",
+      "reason": "First-ever contributor requires pre-snapshot history and a contribution definition.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC026",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "number-of-downloads",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/community-growth/number-of-downloads.md",
+      "status": "UNAVAILABLE_EVIDENCE",
+      "reason": "Artifact download events/counters unavailable.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC027",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "issue-age",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/issue-resolution/issue-age.md",
+      "status": "UNRESOLVED_DEFINITION_OR_HISTORY",
+      "reason": "Current open state/age needs a reference date and complete lifecycle; observed events alone do not establish current state.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC028",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "issue-resolution-duration",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/issue-resolution/issue-resolution-duration.md",
+      "status": "NEW_PARTIAL_OPERATIONALIZATION_CANDIDATE",
+      "reason": "Observed Issue opening-to-closing durations with both events available; no full-history completion estimate.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC029",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "issue-response-time",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/issue-resolution/issue-response-time.md",
+      "status": "NEW_PARTIAL_OPERATIONALIZATION_CANDIDATE",
+      "reason": "Observed Issue opening-to-comment response from a different Actor with explicit joins and censoring policy.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC030",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "issues-active",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/issue-resolution/issues-active.md",
+      "status": "NEW_PARTIAL_OPERATIONALIZATION_CANDIDATE",
+      "reason": "Distinct Issues with explicitly declared observed event/comment activity in a window; activity definition must be fixed.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC031",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "issues-closed",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/issue-resolution/issues-closed.md",
+      "status": "DEVELOPMENT_OPERATIONALIZATION",
+      "reason": "Already used in the six E3 observed-event goals; new date/anchor is not an independent semantic goal.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    },
+    {
+      "source_entry_id": "SRC032",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "issues-new",
+      "source_url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/issue-resolution/issues-new.md",
+      "status": "DEVELOPMENT_OPERATIONALIZATION",
+      "reason": "Already used in the six E3 observed-event goals; new date/anchor is not an independent semantic goal.",
+      "adjudication": "AI-assisted provisional assessment from source text and projected metadata, not human annotation or final gold."
+    }
+  ],
+  "limitations": "All 32 convenience-source entries retained. Partial operationalizations are not exact source replication, representative user requests or automatic eligibility. Needs independent reference definitions before predictions."
+}
