@@ -1,0 +1,67 @@
+{
+  "mode": "HOLDOUT_PREPARATION_NOT_PREDICTION",
+  "projects": [
+    {
+      "mode": "E8_HOLDOUT_PROJECTION_NO_MODEL_PREDICTIONS",
+      "project": "iotdb",
+      "projection_version": "d1_typed_v1_2",
+      "projection_sha256": "f17989409f71c9ebf860dc4f0b8ad7ff9101118b8a82b65cedd0307157f06a55",
+      "raw_sha256": "30472dcf4df84456335309e2d04f068511e099e84f83d18c80db5e47146f0b31",
+      "source_manifest_sha256": "a4a1d1141b883023f5086e4f93d64509c10afc203653b0373e9d7e8cd39ba102",
+      "selection_sha256": "16bc8a5955371a6dc457313601c9e4e1e715433f8df720b5f98da5b048767133",
+      "profile_sha256": "fc47aa2d924399e623dd3a93298bb0c840a8f4ba4b45cf047d972061291f7f24",
+      "counts": {
+        "nodes": 29425,
+        "edges": 140313,
+        "typed_signatures": 77
+      },
+      "physical_counts": {
+        "EVENT_ACTION": 75849,
+        "REFERENCE": 64464
+      },
+      "execution_csv_hashes": {
+        "nodes.csv": "8d76396bc77a34dc7aa6ea94337cdd675aa2ec484ba7cc79cd1a5073ee7aeee3",
+        "edges.csv": "7fa83e8f08d207dde1374717803512da13a0a76f0a1eac3577ba5af64ac94244"
+      },
+      "holdout_predictions_seen": 0,
+      "limits": "Same source year and projection/schema. Preselected graph size is not a query-difficulty measure. Whole source tar archive checksum was not verified.",
+      "csv_validation": {
+        "unique_nodes": 29425,
+        "unique_edges": 140313,
+        "dangling_edges": 0,
+        "missing_event_time": 0
+      }
+    },
+    {
+      "mode": "E8_HOLDOUT_PROJECTION_NO_MODEL_PREDICTIONS",
+      "project": "elasticsearch",
+      "projection_version": "d1_typed_v1_2",
+      "projection_sha256": "f17989409f71c9ebf860dc4f0b8ad7ff9101118b8a82b65cedd0307157f06a55",
+      "raw_sha256": "4e1abc2acf577f8b700511d27d25c9d2fa4c1caa937581ed9e22772714c85fec",
+      "source_manifest_sha256": "a4a1d1141b883023f5086e4f93d64509c10afc203653b0373e9d7e8cd39ba102",
+      "selection_sha256": "16bc8a5955371a6dc457313601c9e4e1e715433f8df720b5f98da5b048767133",
+      "profile_sha256": "5cf8985570fa46a8b17b7bad14ea61dee292ebd364ee0f8ec8931de8f955e218",
+      "counts": {
+        "nodes": 130413,
+        "edges": 352591,
+        "typed_signatures": 94
+      },
+      "physical_counts": {
+        "EVENT_ACTION": 305192,
+        "REFERENCE": 47399
+      },
+      "execution_csv_hashes": {
+        "nodes.csv": "3a867bb67842275935497bb3f1d6e9c36b7a98d33864a9bc56c3c7b47871c467",
+        "edges.csv": "524364bda48a9216f7aeacf80367e2d51acf0628df44f2633e704caa6d838842"
+      },
+      "holdout_predictions_seen": 0,
+      "limits": "Same source year and projection/schema. Preselected graph size is not a query-difficulty measure. Whole source tar archive checksum was not verified.",
+      "csv_validation": {
+        "unique_nodes": 130413,
+        "unique_edges": 352591,
+        "dangling_edges": 0,
+        "missing_event_time": 0
+      }
+    }
+  ]
+}
