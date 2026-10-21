@@ -1,0 +1,11 @@
+# Post-hoc scope witness for an actual returned direct query
+
+The frozen source task explicitly requests literal Branch prefix `B_156018:`. The source Redis v2 direct prediction instead binds `$branch_prefix` to `B_156018` and applies STARTS WITH. The original snapshot result matches gold and its recorded execution grade remains correct. Those two prefixes nevertheless define different scopes.
+
+A separate post-hoc witness adds two temporary synthetic Branch records to the isolated reference-fixture database: `B_156018:main` and `B_1560189:foreign`, each with one in-window CREATED_BY event. Executing the exact original model query/parameters returns `[2,0]`; executing the literal task contract returns `[1,0]`. No model was called again. The temporary transaction was rolled back and the original48node/87edge fixture counts were restored. All four real project databases were left unchanged.
+
+This is a concrete semantic counterexample to the returned query, not a new independent error-rate observation. The witness was constructed AFTER inspecting that query and must be labeled post-hoc. It cannot retrospectively become a predeclared test suite or change the original snapshot grade. No system, task, reference answer, repair rule or formal denominator was changed. Other semantic errors are not ruled out by this one witness.
+
+The service catalogs cannot answer this branch task, so this is not a service win. It also does not prove that a compiler validates natural-language mapping: a literal-prefix service could receive the same incorrect argument. Any claim that typed mapping prevents such errors needs a separate mechanism and evaluation. The immediate supported lesson is to check literal scope and discriminating graph instances alongside exact answers on the current snapshot.
+
+Script frozen736af45. Private receipt e9_observed_prefix_scope_witness_v1.json records source prediction/task hashes, exact prefix contrast, both outputs, fixture identity and rollback verification. This diagnosis is separate from the24reference-world checks/26declared mutant checks in E7_REFERENCE_CORNER_REPORT.md; its new confounding prefix is not silently inserted into that earlier fixture set.
