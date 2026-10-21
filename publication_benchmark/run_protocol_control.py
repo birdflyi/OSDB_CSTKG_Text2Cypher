@@ -16,6 +16,14 @@ from run_mechanism_pilot import bag
 import protocol_control as p
 
 
+def derived(path, value):
+    """Only replace derived progress/PID views; raw evidence stays immutable."""
+    path.parent.mkdir(parents=True,exist_ok=True)
+    temporary=path.with_suffix(path.suffix+'.tmp')
+    temporary.write_text(json.dumps(value,ensure_ascii=False,indent=2),encoding='utf-8')
+    temporary.replace(path)
+
+
 def reserve(budget_dir, request_path, maximum=1200):
     directory = Path(budget_dir)
     directory.mkdir(parents=True, exist_ok=True)
@@ -119,7 +127,7 @@ def run(a):
         'prompts':{arm:p.prompt(arm) for arm in ('S','P')},
         'model':{k:cfg[k] for k in ('model','temperature','top_p','reasoning_effort')},
         'max_calls':4*len(tasks),'repair_limit':1,'infra_retries':0,'consecutive_infra_stop':3})
-    b.save(out/'active_process.json',{'pid':os.getpid(),'commit':commit})
+    derived(out/'active_process.json',{'pid':os.getpid(),'commit':commit})
     records, consecutive, stopped = [], 0, False
     for index,spec in enumerate(tasks):
         for arm in (('S','P') if index%2==0 else ('P','S')):
@@ -146,7 +154,7 @@ def run(a):
                 records.append(record)
             progress=summarize(out,records,len(tasks))
             progress['status']='RUNNING'
-            b.save(out/'progress.json',progress)
+            derived(out/'progress.json',progress)
             print(a.project,index+1,len(tasks),arm,final['execution']['status'],flush=True)
             if consecutive>=3:
                 stopped=True
@@ -155,7 +163,7 @@ def run(a):
             break
     result=summarize(out,records,len(tasks),stopped)
     r.store(out/'summary.json',result)
-    b.save(out/'active_process.json',{'pid':None,'status':result['status']})
+    derived(out/'active_process.json',{'pid':None,'status':result['status']})
     print(json.dumps(result,indent=2),flush=True)
 
 
