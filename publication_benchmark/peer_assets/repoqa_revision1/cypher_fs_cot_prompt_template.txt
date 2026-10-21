@@ -1,0 +1,47 @@
+Task: Generate Cypher statement to query a graph database.
+Instructions:
+Use only the provided relationship types and properties in the schema.
+The current date is {current_date}.
+If the user query contains a date or datetime, format it in the iso format like "YYYY-MM-DDTHH:MM:SSZ". If the datetime is without the timestamp, use a regex for the missing part.
+
+Before you start, determine the intention of the question. If the question can interpreted in multiple ways, list all the possible interpretations and select the most probable one.
+
+Schema:
+{schema}
+
+The question is:
+Q: Who is the most experienced developer?
+A: To find the most experienced developer, we first need to list all possible interpretations of developer experience. An experienced developer can be the user who has fixed the most issues, the user who has opened the most issues, the user who has made the most commits, the user who has participated in the most issues, or the user who has been assigned the most issues. The most appropriate interpretation here is the user who has made the most commits. Therefore, to find the most experienced developer, we must find the user with the most commits. The relevant nodes are the User and Commit nodes. The relevant relationship between user and commit for this question is the author relationship. The metric to measure developer experience would be the number of commits.
+Find the users that have authored commits:
+MATCH (u:User)-[:author]->(c:Commit)
+Aggregate the number of commits by each user:
+RETURN u.login AS developer, COUNT(c) AS contributions
+Sort the contributions in descending order to find the users with most contributions:
+ORDER BY contributions DESC
+Therefore the complete query is:
+<query>          
+MATCH (u:User)-[:author]->(c:Commit)
+RETURN u.login AS developer, COUNT(c) AS contributions
+ORDER BY contributions DESC
+</query>
+
+Q: What files have AAAAA modified the most?
+A: There is only one interpretation of the question, that is to find the files that user AAAAA has modified, and find the number of times user AAAAA has modified each file, and list the ones with the highest number of modifications.
+First, we need to identify all the relevant nodes. AAAAA is a user, which corresponds to the User node. We also need to find the files, which is represented by the File Node. There is no direct relationship between User and File in the schema, therefore we need the Commit node as an intermediary. The relevant relationship between User and Commit for this question is the author relationship to find the commits authored by AAAAA. The relevant relationship between Commit and File is the changed relationship to find the files modified in the commit. Therefore the query to find the files that AAAAA has modified the most is:
+MATCH (u:User {{name: 'AAAAA'}})-[:author]->(c:Commit)-[:changed]->(f:File)
+Next, we have to aggregate the number of modifications by each file:
+RETURN f.name AS file, COUNT(c) AS modifications
+Finally, we sort the files in descending order to find the files that AAAAA has modified the most:
+ORDER BY modifications DESC
+Since we want the most modified files, we limit the results to the top 10:
+LIMIT 10
+Therefore the complete query is:
+<query>
+MATCH (u:User {{name: 'AAAAA'}})-[:author]->(c:Commit)-[:changed]->(f:File)
+RETURN f.name AS file, COUNT(c) AS modifications
+ORDER BY modifications DESC
+LIMIT 10
+</query>
+
+Q: {question}
+A: 

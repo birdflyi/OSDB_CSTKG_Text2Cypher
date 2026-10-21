@@ -1,0 +1,13 @@
+Task: Generate Cypher statement to query a graph database.
+Instructions:
+Use only the provided relationship types and properties in the schema.
+The current date is {current_date}.
+If the user query contains a date or datetime, format it in the iso format like "YYYY-MM-DDTHH:MM:SSZ". and if the datetime is without the timestamp, use the regex for the missing part.
+
+Schema:
+{schema}
+
+Do not include any text except the generated Cypher statement.
+
+The question is:
+{question}

@@ -1,0 +1,72 @@
+{
+  "source": "https://zenodo.org/records/17162221",
+  "concept_doi": "10.5281/zenodo.14271490",
+  "version_doi": "10.5281/zenodo.17162221",
+  "version": "revision-1",
+  "author": "Samuel Abedu",
+  "license": "CC-BY-4.0 per Zenodo record metadata",
+  "source_archive_sha256": "1e5032daa0b47c1d3584b68f721260c99aecc31dcb5f04c1975a3eccebfac5ad",
+  "files": [
+    {
+      "archive_member": "sabedu-knowledge_graph_llm_synergy-7ee18de/step_2/cypher_generator/const/fs_cot_prompt_template.txt",
+      "local_file": "cypher_fs_cot_prompt_template.txt",
+      "sha256": "cb45ae53efdfd38cd93b4c5bfe58d0e4d45b28c03c2a92a0c4ea81333d285cb6",
+      "modified": false
+    },
+    {
+      "archive_member": "sabedu-knowledge_graph_llm_synergy-7ee18de/step_2/cypher_generator/const/zs_prompt_template.txt",
+      "local_file": "cypher_zs_prompt_template.txt",
+      "sha256": "ac7dbbc79e306ca58a04a425e100885de86cfc6a922172fac1720b1afca360dd",
+      "modified": false
+    },
+    {
+      "archive_member": "sabedu-knowledge_graph_llm_synergy-7ee18de/step_2/response_generator/const/prompt_template.txt",
+      "local_file": "answer_prompt_template.txt",
+      "sha256": "b775efd84243b3f6e07e73f36906aa09d9227a607fb42b2cd49f7e51a439604d",
+      "modified": false
+    }
+  ],
+  "question_inventory": [
+    {
+      "project": "AutoGPT",
+      "rows": 150,
+      "unique_query_no": 23,
+      "unique_task": 10,
+      "unique_question_strings": 122
+    },
+    {
+      "project": "bootstrap",
+      "rows": 150,
+      "unique_query_no": 23,
+      "unique_task": 10,
+      "unique_question_strings": 122
+    },
+    {
+      "project": "ohmyzsh",
+      "rows": 150,
+      "unique_query_no": 23,
+      "unique_task": 10,
+      "unique_question_strings": 123
+    },
+    {
+      "project": "react",
+      "rows": 150,
+      "unique_query_no": 23,
+      "unique_task": 10,
+      "unique_question_strings": 122
+    },
+    {
+      "project": "vue",
+      "rows": 150,
+      "unique_query_no": 23,
+      "unique_task": 10,
+      "unique_question_strings": 122
+    }
+  ],
+  "status": "INERT_UNMODIFIED_REFERENCE_PROMPTS_NOT_INTEGRATED_OR_REPRODUCED",
+  "limitations": [
+    "Peer schema uses User/Commit/File and author/changed, not our schema.",
+    "Do not copy peer answers into our test gold.",
+    "Prompt adaptation and same-backbone comparison still required."
+  ]
+}

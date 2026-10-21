@@ -1,0 +1,20 @@
+{
+  "purpose": "Reuse only offline graph projection for comparable datasets, not legacy NL implementation",
+  "files": [
+    {
+      "path": "graph-migration\\projection\\__init__.py",
+      "source": "prior local working tree (untracked projection asset)",
+      "sha256": "115941e44c564a9a0de0a2abc73ec8675716ceb7f27160e698eb7598d2769c0c"
+    },
+    {
+      "path": "graph-migration\\projection\\d1_contract_adapter.py",
+      "source": "prior local working tree (untracked projection asset)",
+      "sha256": "467ad8e99404e48d3819bfb852da8d44e5cf99593af30d8d761860cc59476f69"
+    },
+    {
+      "path": "graph-migration\\projection\\d1_typed_projection.py",
+      "source": "prior local working tree (untracked projection asset)",
+      "sha256": "f17989409f71c9ebf860dc4f0b8ad7ff9101118b8a82b65cedd0307157f06a55"
+    }
+  ]
+}
