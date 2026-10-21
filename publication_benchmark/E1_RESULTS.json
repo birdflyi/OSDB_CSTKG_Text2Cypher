@@ -1,0 +1,102 @@
+{
+  "mode": "E1_DEVELOPMENT_COMPLETE_NOT_FORMAL_TEST",
+  "run_commit": "e806f408dd91ab787939ad98148cc9545d2c8495",
+  "projects": {
+    "redis": {
+      "summary": {
+        "status": "PLANNED_DISPATCHES_COMPLETED",
+        "arm_scores": {
+          "G0": {
+            "planned_cases": 72,
+            "evaluated_cases": 72,
+            "correct": 68,
+            "executed": 68,
+            "repairs_used": 0,
+            "infrastructure_failures": 0
+          },
+          "G1": {
+            "planned_cases": 72,
+            "evaluated_cases": 72,
+            "correct": 72,
+            "executed": 72,
+            "repairs_used": 4,
+            "infrastructure_failures": 0
+          },
+          "S0": {
+            "planned_cases": 72,
+            "evaluated_cases": 72,
+            "correct": 69,
+            "executed": 69,
+            "repairs_used": 0,
+            "infrastructure_failures": 0
+          },
+          "S1": {
+            "planned_cases": 72,
+            "evaluated_cases": 72,
+            "correct": 72,
+            "executed": 72,
+            "repairs_used": 3,
+            "infrastructure_failures": 0
+          }
+        },
+        "terminal_dispatches": 151,
+        "known_reported_tokens": 390273,
+        "unknown_usage_dispatches": 0,
+        "dispatch_seconds": 1415.4019999996526,
+        "interpretation": "Development only. G1/S1 include shared first passes, not independent samples. No whole-system or human-study claim."
+      },
+      "summary_sha256": "bc2804d23a0f5f1f67860b0a0a7afb3b56e08173b8e08e334a6ee4615aea19d5",
+      "manifest_sha256": "63a469b14669e6d0f315ad89144cbe3ca89858d27a2d3e6bff288260b07194e9",
+      "input_audit_sha256": "7c71a878f1cd7c5ed95b4e336b320993b571604aefe91a3dd86d6d54fefb980b"
+    },
+    "duckdb": {
+      "summary": {
+        "status": "PLANNED_DISPATCHES_COMPLETED",
+        "arm_scores": {
+          "G0": {
+            "planned_cases": 72,
+            "evaluated_cases": 72,
+            "correct": 71,
+            "executed": 71,
+            "repairs_used": 0,
+            "infrastructure_failures": 0
+          },
+          "G1": {
+            "planned_cases": 72,
+            "evaluated_cases": 72,
+            "correct": 71,
+            "executed": 71,
+            "repairs_used": 1,
+            "infrastructure_failures": 0
+          },
+          "S0": {
+            "planned_cases": 72,
+            "evaluated_cases": 72,
+            "correct": 71,
+            "executed": 71,
+            "repairs_used": 0,
+            "infrastructure_failures": 0
+          },
+          "S1": {
+            "planned_cases": 72,
+            "evaluated_cases": 72,
+            "correct": 72,
+            "executed": 72,
+            "repairs_used": 1,
+            "infrastructure_failures": 0
+          }
+        },
+        "terminal_dispatches": 146,
+        "known_reported_tokens": 375607,
+        "unknown_usage_dispatches": 0,
+        "dispatch_seconds": 1324.6889999997802,
+        "interpretation": "Development only. G1/S1 include shared first passes, not independent samples. No whole-system or human-study claim."
+      },
+      "summary_sha256": "c8b2f2dd9ca23e2bf2ce21aa8a945c76376581b96e684de74ce84971e35430e8",
+      "manifest_sha256": "ca3ee9fc441225fb29dc6b883e9e0cc4c69bacf94df71869f77359eac7d0ce3e",
+      "input_audit_sha256": "2352a789155fb890c8b48b6a0ef8b0edf0fa5685137664180580edb426c1320a"
+    }
+  },
+  "fresh_dispatches": 297,
+  "limitations": "24 instantiated base groups, six developer-known families. Shared first passes are correlated. No general superiority claim."
+}

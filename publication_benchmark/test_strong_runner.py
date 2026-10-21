@@ -41,3 +41,8 @@ def test_result_matching_requires_full_public_columns():
     spec = {'columns': ['count'], 'expected_rows': [[3]]}
     observation = {'execution': {'status': 'EXECUTED', 'columns': ['wrong'], 'rows': [[3]]}}
     assert not r.score(observation, spec)
+
+
+def test_progress_never_claims_planned_completion_before_all_arms_finish(tmp_path):
+    assert r.summary(tmp_path, [], 72, False)['status'] == 'RUNNING'
+    assert r.summary(tmp_path, [], 72, True)['status'] == 'STOPPED_INFRASTRUCTURE'

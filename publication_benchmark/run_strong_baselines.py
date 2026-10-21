@@ -88,7 +88,8 @@ def summary(out, records, total, stopped):
                      'repairs_used': sum(r['repair_used'] for r in rows),
                      'infrastructure_failures': sum(r['failure'] == 'INFRASTRUCTURE' for r in rows)}
     terminals = [json.loads(p.read_text(encoding='utf-8')) for p in (out / 'calls').glob('*/terminal.json')]
-    return {'status': 'STOPPED_INFRASTRUCTURE' if stopped else 'PLANNED_DISPATCHES_COMPLETED',
+    complete = all(value['evaluated_cases'] == total for value in arms.values())
+    return {'status': 'STOPPED_INFRASTRUCTURE' if stopped else ('PLANNED_DISPATCHES_COMPLETED' if complete else 'RUNNING'),
             'arm_scores': arms, 'terminal_dispatches': len(terminals),
             'known_reported_tokens': sum((r.get('body', {}).get('usage') or {}).get('total_tokens', 0) for r in terminals),
             'unknown_usage_dispatches': sum(not r.get('body', {}).get('usage') for r in terminals),
