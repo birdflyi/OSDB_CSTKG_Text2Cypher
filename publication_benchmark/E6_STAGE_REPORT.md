@@ -1,4 +1,14 @@
-# E6 information-interface development: Redis complete, DuckDB interrupted
+# E6 information-interface development: Redis and DuckDB recovery complete
+
+## Recovery outcome
+
+The separately declared DuckDB v2 run completed with exactly the same methods, tasks and settings. G1 completed 10/12 answerable goals plus both boundaries, with one infrastructure failure and one wrong returned result. I1 completed 10/12 plus both boundaries, with two infrastructure failures and no wrong returned result. P1 completed 6/12 plus both boundaries, with one infrastructure failure. No repairs were made to valid but wrong predictions. Including Redis, G/I each completed 22/24 answerable cases and all four boundaries; this is no overall operational accuracy superiority.
+
+The direct-query error on DuckDB's new-PR list used exact `entity_id=$entity_prefix` matching rather than STARTS WITH and returned an empty list. The query executed but lost the requested prefix semantics. The service's typed prefix parameter compiles to STARTS WITH, but this one developer-known example is not a general semantic guarantee or an independent main effect.
+
+DuckDB v2 used 43 calls, known tokens253257, unknown usage4; all43 inputs passed isolation audit. Together with Redis43 calls and original DuckDB3 failed calls, E6 used89 actual attempts, known tokens509791, unknown usage9. The original interrupted run remains visible below and in E6_RESULTS.json. Count14 logical goals per project, not15 for DuckDB. Execution protocol and compiler were unchanged; later commits only record reports and the declared recovery policy.
+
+Original stage checkpoint follows for provenance; its next-action paragraph is historical and has been completed by the recovery above.
 
 Method frozen at 3d6bd22 before predictions. Added one generic observed_events operation, not an operation per question. It preserves time/action/explicit-decline scope before projection or reduction. The six legacy services, read guard and one structural repair remain unchanged. P and I share the same output/refusal instructions; I has the additional executable event contract. G receives the full schema and extended contract definitions. This is a focused capability extension, not a novel general theory or established superiority.
 
