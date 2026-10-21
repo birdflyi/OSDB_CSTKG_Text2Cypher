@@ -1,0 +1,252 @@
+{
+  "mode": "E4_FEATURE_SELECTED_BEFORE_HOLDOUT_PREDICTIONS",
+  "scale_project": "elasticsearch",
+  "distribution_contrast_project": "iotdb",
+  "selection_rule": "Quality gates: >=1000 nodes, >=5000 edges, <=5% quarantined rows, >=95% edge event-time presence. Then maximum total edges; among remaining maximum JS divergence of service frequency from equally weighted Redis/DuckDB baseline. Lexicographic ties.",
+  "eligible": {
+    "gridgain": {
+      "nodes": 5018,
+      "edges": 13467,
+      "reference_edges": 1467,
+      "typed_signatures": 52,
+      "quarantine_fraction": 0.010361552028218694,
+      "time_known_fraction": 1.0,
+      "service_distribution_js": 0.2759777713934007
+    },
+    "tdengine": {
+      "nodes": 44760,
+      "edges": 154868,
+      "reference_edges": 38104,
+      "typed_signatures": 76,
+      "quarantine_fraction": 0.012378116052012321,
+      "time_known_fraction": 1.0,
+      "service_distribution_js": 0.23853129445916443
+    },
+    "iotdb": {
+      "nodes": 29425,
+      "edges": 140313,
+      "reference_edges": 64464,
+      "typed_signatures": 77,
+      "quarantine_fraction": 0.005965073854982112,
+      "time_known_fraction": 1.0,
+      "service_distribution_js": 0.28612459161643683
+    },
+    "elasticsearch": {
+      "nodes": 130413,
+      "edges": 352591,
+      "reference_edges": 47399,
+      "typed_signatures": 94,
+      "quarantine_fraction": 0.015543419384740813,
+      "time_known_fraction": 1.0,
+      "service_distribution_js": 0.032789875821677646
+    }
+  },
+  "rejected": {},
+  "holdout_predictions_seen": 0,
+  "limitations": "Convenience candidate pool from one 2023 dataset and same projection/schema. Graph selection is observational. Reference count and task-subgraph statistics are reported separately; total size is not automatically query difficulty.",
+  "profile_hashes": {
+    "redis": "42427f9ae9540895f6991183c13c7a6533cf5d5ca51465da50933024f230b4f8",
+    "duckdb": "cd853fd770663bfd5e9c2102acb4e04af311adece6b4a4fcc5018f2cbb00241e",
+    "gridgain": "328b37b51315505b3b2976f6235d1032d2dbbd929332e1e26b095f7d54922577",
+    "tdengine": "c4159868bd17b2ae2fee308201119319d53d23c1f27519219de7d8aad1a72f7a",
+    "iotdb": "fc47aa2d924399e623dd3a93298bb0c840a8f4ba4b45cf047d972061291f7f24",
+    "elasticsearch": "5cf8985570fa46a8b17b7bad14ea61dee292ebd364ee0f8ec8931de8f955e218"
+  },
+  "selector_sha256": "503e0bbe6e0cca39847eac77f7301941fca1bd02f0302cb9e821647d7a5610ab",
+  "profile_summary": {
+    "duckdb": {
+      "features": {
+        "nodes": 35270,
+        "edges": 84925,
+        "reference_edges": 9779,
+        "node_types": 14,
+        "service_meanings": 31,
+        "typed_signatures": 95,
+        "reference_edge_fraction": 0.11514866058286724,
+        "pr_external_link_records": 87,
+        "repeated_link_pairs": 3,
+        "active_source_out_degree": {
+          "n": 21639,
+          "p50": 3,
+          "p90": 6,
+          "max": 5748
+        },
+        "reference_source_out_degree": {
+          "n": 5366,
+          "p50": 1,
+          "p90": 2,
+          "max": 946
+        }
+      },
+      "provenance": {
+        "execution_csv_hashes": {
+          "nodes.csv": "dd20114217334c157f251631d8f7340b443c94806d57f9a4cfd9490a50753518",
+          "edges.csv": "d71c29c7dd8ecbd28a1bec93d16b53ed60bf28fd5db76e01c81dfd7d7d07c845"
+        }
+      }
+    },
+    "elasticsearch": {
+      "features": {
+        "nodes": 130413,
+        "edges": 352591,
+        "reference_edges": 47399,
+        "node_types": 14,
+        "service_meanings": 31,
+        "typed_signatures": 94,
+        "reference_edge_fraction": 0.13443054417157557,
+        "pr_external_link_records": 700,
+        "repeated_link_pairs": 3,
+        "active_source_out_degree": {
+          "n": 94034,
+          "p50": 3,
+          "p90": 6,
+          "max": 5176
+        },
+        "reference_source_out_degree": {
+          "n": 26330,
+          "p50": 1,
+          "p90": 3,
+          "max": 44
+        }
+      },
+      "provenance": {
+        "raw_sha256": "4e1abc2acf577f8b700511d27d25c9d2fa4c1caa937581ed9e22772714c85fec",
+        "source_manifest_sha256": "a4a1d1141b883023f5086e4f93d64509c10afc203653b0373e9d7e8cd39ba102",
+        "raw_records": 358158,
+        "quarantined_records": 5567,
+        "projection_version": "d1_typed_v1_2",
+        "projection_sha256": "f17989409f71c9ebf860dc4f0b8ad7ff9101118b8a82b65cedd0307157f06a55"
+      }
+    },
+    "gridgain": {
+      "features": {
+        "nodes": 5018,
+        "edges": 13467,
+        "reference_edges": 1467,
+        "node_types": 13,
+        "service_meanings": 29,
+        "typed_signatures": 52,
+        "reference_edge_fraction": 0.10893294720427713,
+        "pr_external_link_records": 193,
+        "repeated_link_pairs": 24,
+        "active_source_out_degree": {
+          "n": 3276,
+          "p50": 3,
+          "p90": 7,
+          "max": 176
+        },
+        "reference_source_out_degree": {
+          "n": 458,
+          "p50": 1,
+          "p90": 9,
+          "max": 22
+        }
+      },
+      "provenance": {
+        "raw_sha256": "5c94560d597bf76a35085b654ad835c90401da14807f4a7687a0afe959af1510",
+        "source_manifest_sha256": "a4a1d1141b883023f5086e4f93d64509c10afc203653b0373e9d7e8cd39ba102",
+        "raw_records": 13608,
+        "quarantined_records": 141,
+        "projection_version": "d1_typed_v1_2",
+        "projection_sha256": "f17989409f71c9ebf860dc4f0b8ad7ff9101118b8a82b65cedd0307157f06a55"
+      }
+    },
+    "iotdb": {
+      "features": {
+        "nodes": 29425,
+        "edges": 140313,
+        "reference_edges": 64464,
+        "node_types": 14,
+        "service_meanings": 31,
+        "typed_signatures": 77,
+        "reference_edge_fraction": 0.45942998866819185,
+        "pr_external_link_records": 526,
+        "repeated_link_pairs": 6,
+        "active_source_out_degree": {
+          "n": 19691,
+          "p50": 3,
+          "p90": 22,
+          "max": 1658
+        },
+        "reference_source_out_degree": {
+          "n": 5855,
+          "p50": 2,
+          "p90": 30,
+          "max": 325
+        }
+      },
+      "provenance": {
+        "raw_sha256": "30472dcf4df84456335309e2d04f068511e099e84f83d18c80db5e47146f0b31",
+        "source_manifest_sha256": "a4a1d1141b883023f5086e4f93d64509c10afc203653b0373e9d7e8cd39ba102",
+        "raw_records": 141155,
+        "quarantined_records": 842,
+        "projection_version": "d1_typed_v1_2",
+        "projection_sha256": "f17989409f71c9ebf860dc4f0b8ad7ff9101118b8a82b65cedd0307157f06a55"
+      }
+    },
+    "redis": {
+      "features": {
+        "nodes": 25747,
+        "edges": 56836,
+        "reference_edges": 5520,
+        "node_types": 14,
+        "service_meanings": 31,
+        "typed_signatures": 89,
+        "reference_edge_fraction": 0.09712154268421423,
+        "pr_external_link_records": 42,
+        "repeated_link_pairs": 2,
+        "active_source_out_degree": {
+          "n": 15403,
+          "p50": 3,
+          "p90": 5,
+          "max": 5548
+        },
+        "reference_source_out_degree": {
+          "n": 3368,
+          "p50": 1,
+          "p90": 2,
+          "max": 71
+        }
+      },
+      "provenance": {
+        "execution_csv_hashes": {
+          "nodes.csv": "283e6e74fc9c31db09c0fa55bf5b38d3f871f7cc46b7879fe5e257df3e4aa1da",
+          "edges.csv": "7964e5633375a76d8fc8d6e845db68cf442f6a7966b84882d1aca53c0069b262"
+        }
+      }
+    },
+    "tdengine": {
+      "features": {
+        "nodes": 44760,
+        "edges": 154868,
+        "reference_edges": 38104,
+        "node_types": 14,
+        "service_meanings": 31,
+        "typed_signatures": 76,
+        "reference_edge_fraction": 0.24604179042797739,
+        "pr_external_link_records": 6,
+        "repeated_link_pairs": 0,
+        "active_source_out_degree": {
+          "n": 26564,
+          "p50": 3,
+          "p90": 8,
+          "max": 3946
+        },
+        "reference_source_out_degree": {
+          "n": 5474,
+          "p50": 1,
+          "p90": 5,
+          "max": 3942
+        }
+      },
+      "provenance": {
+        "raw_sha256": "1191dc6830fdf11d53023ee21770940fedb99eb0404ad0acf2068194e370e46f",
+        "source_manifest_sha256": "a4a1d1141b883023f5086e4f93d64509c10afc203653b0373e9d7e8cd39ba102",
+        "raw_records": 156809,
+        "quarantined_records": 1941,
+        "projection_version": "d1_typed_v1_2",
+        "projection_sha256": "f17989409f71c9ebf860dc4f0b8ad7ff9101118b8a82b65cedd0307157f06a55"
+      }
+    }
+  }
+}
