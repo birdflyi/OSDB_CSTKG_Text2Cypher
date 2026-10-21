@@ -37,6 +37,8 @@
 
 这是一项接口充分性反例和工程约束，不是新的通用信息论定理，也不是实际用户错误率。它本身不能证明可录用的贡献；后续需在有来源的任务和留出项目上验证覆盖、错误接纳与成本折中。
 
+相关一手工作：[Nash、Segoufin、Vianu，Views and Queries: Determinacy and Rewriting，TODS 2010](https://dbucsd.github.io/paperpdfs/2010_3.pdf) 已讨论视图是否提供足够信息确定查询答案；[Romero、Preda、Suchanek，Query Rewriting On Path Views Without Integrity Constraints，Datamod 2020 作者版本](https://arxiv.org/abs/2010.03527) 将带绑定参数的视图用于描述服务及其组合。因此，我们不能把“相同服务观察不能确定不同答案”包装成新原理。参数化服务与固定物化视图的形式化设置也有差别，本阶段没有直接套用其判定算法；候选贡献只能来自 OSS 任务上的具体设计、边界证据和改进收益。
+
 ## 材料与状态
 
 - 实验目录 32 项测试通过。
