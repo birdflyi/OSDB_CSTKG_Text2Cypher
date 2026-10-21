@@ -25,6 +25,24 @@ def infrastructure(terminal):
     return 'transport_error' in terminal or status==429 or (status is not None and status>=500)
 
 
+class StopNewInfrastructure(RuntimeError):
+    pass
+
+
+class NewAttemptFailureGate:
+    """Historical cache successes must not reset consecutive NEW failures."""
+    def __init__(self):
+        self.consecutive=0
+
+    def before_dispatch(self):
+        if self.consecutive>=3:
+            raise StopNewInfrastructure('Three consecutive new infrastructure failures')
+
+    def observe(self,reply,new_attempt):
+        if new_attempt:
+            self.consecutive=self.consecutive+1 if reply.get('failure')=='INFRASTRUCTURE' else 0
+
+
 def source_calls(source):
     reusable=[];failed=[]
     for folder in sorted((Path(source)/'calls').iterdir()):
@@ -85,7 +103,9 @@ def run(a):
     import run_baselines as b
     import run_information_comparison as comparison
     original_dispatch=comparison.dispatch
+    gate=NewAttemptFailureGate()
     def checked_dispatch(output,stage,config,arm,data,budget):
+        gate.before_dispatch()
         previous=source/'calls'/stage/'request.json'
         if previous.exists():
             prompt=comparison.s.PROMPTS['G'] if arm=='G' else comparison.p.PROTOCOL_PROMPT
@@ -93,19 +113,34 @@ def run(a):
             expected.update(max_tokens=6000,messages=[{'role':'system','content':prompt},
                 {'role':'user','content':json.dumps(data,ensure_ascii=False)}])
             if load(previous)!=expected:raise ValueError('Recovery would change request payload')
-        return original_dispatch(output,stage,config,arm,data,budget)
+        new_attempt=not (output/'calls'/stage/'request.json').exists()
+        reply=original_dispatch(output,stage,config,arm,data,budget)
+        gate.observe(reply,new_attempt)
+        return reply
     before={p.name for p in Path(a.budget_dir).glob('*.json')}
     comparison.dispatch=checked_dispatch
     b.DB_URL='http://127.0.0.1:17475/db/neo4j/tx/commit'
     try:
         comparison.run(SimpleNamespace(task_dir=str(task),project='redis',data=a.data,receipt=a.receipt,
             config=a.config,output=str(out),budget_dir=a.budget_dir,port=17475,context='compact'))
+    except StopNewInfrastructure:
+        # The third failed raw call and its scored record are already durable.
+        records=[load(path) for path in sorted((out/'records').glob('*.json'))]
+        result=comparison.summary(out,records,len(load(task/'specifications.json')),stopped=True)
+        result['mode']=original['mode']
+        comparison.r.store(out/'summary.json',result)
+        comparison.control.derived(out/'active_process.json',{'pid':None,'status':'STOPPED_INFRASTRUCTURE'})
     finally:
         comparison.dispatch=original_dispatch
         after={p.name for p in Path(a.budget_dir).glob('*.json')}
         store('transport_recovery_dispatch_receipt.json',{'new_budget_slots':sorted(after-before),
             'new_attempts':len(after-before),'cached_attempts_not_charged_again':len(copied),
             'warning':'summary actual_calls includes cached calls. Ledger slots are authoritative for new/all-attempt accounting; original failed attempts remain in source v1.'})
+        if gate.consecutive>=3:
+            store('transport_recovery_stop.json',{'status':'STOPPED_THREE_CONSECUTIVE_NEW_INFRASTRUCTURE_FAILURES',
+                'consecutive_new_failures':gate.consecutive})
+    if gate.consecutive>=3:
+        raise SystemExit(3)
 
 
 if __name__=='__main__':

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 import pytest
-from run_source_transport_recovery import infrastructure,source_calls
+from run_source_transport_recovery import infrastructure,source_calls,NewAttemptFailureGate,StopNewInfrastructure
 
 
 def test_transport_status_not_answer_quality():
@@ -28,3 +28,21 @@ def test_unrecorded_attempt_cannot_be_redispatched(tmp_path):
     folder=tmp_path/'calls'/'pending';folder.mkdir(parents=True)
     (folder/'request.json').write_text('{}')
     with pytest.raises(RuntimeError,match='reconciliation'):source_calls(tmp_path)
+
+
+def test_cached_success_does_not_reset_new_failure_stop():
+    gate=NewAttemptFailureGate()
+    for i in range(3):
+        gate.before_dispatch()
+        gate.observe({'failure':'INFRASTRUCTURE'},True)
+        gate.observe({'prediction':{'status':'UNSUPPORTED'}},False)
+    with pytest.raises(StopNewInfrastructure):gate.before_dispatch()
+
+
+def test_actual_new_success_resets_failure_streak():
+    gate=NewAttemptFailureGate()
+    gate.observe({'failure':'INFRASTRUCTURE'},True)
+    gate.observe({'failure':'INFRASTRUCTURE'},True)
+    gate.observe({'prediction':{'status':'UNSUPPORTED'}},True)
+    assert gate.consecutive==0
+    gate.before_dispatch()
