@@ -1,0 +1,7 @@
+# Bounded offline interface-composition check
+
+Do not equate the frozen one-call output language with every computation the lower service interface can support. The original system concept includes an upper interaction/composition layer, while the current G/P/I benchmark admits one service call. Classifying all eight source goals as outside that one-call language does not prove missing information for all possible service compositions.
+
+Check ONE existing goal, opening_actor_attribution, across the same four project bindings. Use the unchanged observed_events operation twice with modeactor_counts: once for Issue OPENED_BY and once for PullRequest OPENED_BY in the already fixed April1–8window. Deterministically full-outer-join the returned actor counts, filling absent counts with0. Compare only after composition with the independent frozen source CSV gold. Apply the actual I compiler/readguard/EXPLAIN/execution/500row gate to both calls; record row counts and total final eligibility. No new operation, model generation, task rewriting or upper NL planner is introduced.
+
+This is an offline expressivity/feasibility witness, not an independent task effect, a tested routing/planning system, or a method-cost advantage. Frozen single-call tasks/support labels/predictions remain unchanged; clarify their interpretation in reports. If successful, it justifies separating single-call coverage, compositional expressivity and realized planner performance. Do not expand this check into a new unbounded framework while the provider is blocked.
