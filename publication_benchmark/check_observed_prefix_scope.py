@@ -7,6 +7,8 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
+from urllib.parse import urlparse
 import requests
 import source_snapshot_references as references
 
@@ -44,9 +46,12 @@ def check(a):
             "CREATE (a:Actor {entity_id:'A_15601899'}),(b:Branch {entity_id:'B_156018:main'}),(c:Branch {entity_id:'B_1560189:foreign'}) "
             "CREATE (b)-[:EVENT_ACTION {service_rel_type:'CREATED_BY',source_event_time:'2023-04-01T00:00:00Z'}]->(a),"
             "(c)-[:EVENT_ACTION {service_rel_type:'CREATED_BY',source_event_time:'2023-04-01T00:00:00Z'}]->(a)"}])
-        tx_url=response.headers['Location']
-        # Never follow an unexpected server-supplied address.
-        if not tx_url.startswith(base+'/tx/'):raise ValueError('Unexpected transaction location')
+        location=urlparse(response.headers['Location'])
+        if (location.scheme!='http' or location.hostname not in ('localhost','127.0.0.1')
+            or location.port!=17479 or not re.fullmatch(r'/db/neo4j/tx/\d+',location.path)):
+            raise ValueError('Unexpected transaction location')
+        # Normalize to the verified loopback endpoint; never follow arbitrary URLs.
+        tx_url='http://127.0.0.1:17479'+location.path
         gold=references.queries('156018')['branch_events']
         _,body=call(tx_url,[{'statement':prediction['cypher'],'parameters':prediction['parameters']},
             {'statement':gold['query'],'parameters':gold['parameters']}])
