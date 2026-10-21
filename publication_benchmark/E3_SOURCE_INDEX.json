@@ -1,0 +1,205 @@
+{
+  "mode": "E3_SOURCE_CENSUS_BEFORE_LOCAL_CAPABILITY_LABELS",
+  "source_entries": 32,
+  "chaoss_metric_files": 22,
+  "repoqa_published_task_groups": 10,
+  "selection": "All non-README Evolution focus-area metric files. Per RepoQA task 1..10 choose most frequent query_no (smallest on ties), then first row. No filtering by local graph or service capability.",
+  "source_census_sha256": "7b6faa59f5e426e2d6217a511ac704fd1b90966524380c22963daa48e8eaa847",
+  "source_collector_commit": "13737ac",
+  "limits": "Convenience source census, not random real-user sample. Labels and task grouping may contain errors. Entries are not yet deduplicated independent goals.",
+  "semantic_goal_count": "NOT_FINALIZED; source entries must be deduplicated after date/intent clarification",
+  "entries": [
+    {
+      "source_entry_id": "SRC001",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 1",
+      "url": "https://zenodo.org/records/17162221"
+    },
+    {
+      "source_entry_id": "SRC002",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 2",
+      "url": "https://zenodo.org/records/17162221"
+    },
+    {
+      "source_entry_id": "SRC003",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 3",
+      "url": "https://zenodo.org/records/17162221"
+    },
+    {
+      "source_entry_id": "SRC004",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 4",
+      "url": "https://zenodo.org/records/17162221"
+    },
+    {
+      "source_entry_id": "SRC005",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 5",
+      "url": "https://zenodo.org/records/17162221"
+    },
+    {
+      "source_entry_id": "SRC006",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 6",
+      "url": "https://zenodo.org/records/17162221"
+    },
+    {
+      "source_entry_id": "SRC007",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 7",
+      "url": "https://zenodo.org/records/17162221"
+    },
+    {
+      "source_entry_id": "SRC008",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 8",
+      "url": "https://zenodo.org/records/17162221"
+    },
+    {
+      "source_entry_id": "SRC009",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 9",
+      "url": "https://zenodo.org/records/17162221"
+    },
+    {
+      "source_entry_id": "SRC010",
+      "source_kind": "REPOQA_PUBLISHED_TASK",
+      "title": "RepoQA published task 10",
+      "url": "https://zenodo.org/records/17162221"
+    },
+    {
+      "source_entry_id": "SRC011",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "branch-lifecycle",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-activity/branch-lifecycle.md"
+    },
+    {
+      "source_entry_id": "SRC012",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-request-commits",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-activity/change-request-commits.md"
+    },
+    {
+      "source_entry_id": "SRC013",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "code-changes-commits",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-activity/code-changes-commits.md"
+    },
+    {
+      "source_entry_id": "SRC014",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "code-changes-lines",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-activity/code-changes-lines.md"
+    },
+    {
+      "source_entry_id": "SRC015",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-request-acceptance-ratio",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-efficiency/change-request-acceptance-ratio.md"
+    },
+    {
+      "source_entry_id": "SRC016",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-requests-accepted",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-efficiency/change-requests-accepted.md"
+    },
+    {
+      "source_entry_id": "SRC017",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-requests-declined",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-efficiency/change-requests-declined.md"
+    },
+    {
+      "source_entry_id": "SRC018",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-requests-duration",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-efficiency/change-requests-duration.md"
+    },
+    {
+      "source_entry_id": "SRC019",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-request-reviews",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-process-quality/change-request-reviews.md"
+    },
+    {
+      "source_entry_id": "SRC020",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "change-requests",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/code-development-process-quality/change-requests.md"
+    },
+    {
+      "source_entry_id": "SRC021",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "contribution-attribution",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/community-growth/contribution-attribution.md"
+    },
+    {
+      "source_entry_id": "SRC022",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "conversion-rate",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/community-growth/conversion-rate.md"
+    },
+    {
+      "source_entry_id": "SRC023",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "inactive-contributors",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/community-growth/inactive-contributors.md"
+    },
+    {
+      "source_entry_id": "SRC024",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "new-contributor-closing-issues",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/community-growth/new-contributor-closing-issues.md"
+    },
+    {
+      "source_entry_id": "SRC025",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "new-contributors",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/community-growth/new-contributors.md"
+    },
+    {
+      "source_entry_id": "SRC026",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "number-of-downloads",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/community-growth/number-of-downloads.md"
+    },
+    {
+      "source_entry_id": "SRC027",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "issue-age",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/issue-resolution/issue-age.md"
+    },
+    {
+      "source_entry_id": "SRC028",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "issue-resolution-duration",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/issue-resolution/issue-resolution-duration.md"
+    },
+    {
+      "source_entry_id": "SRC029",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "issue-response-time",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/issue-resolution/issue-response-time.md"
+    },
+    {
+      "source_entry_id": "SRC030",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "issues-active",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/issue-resolution/issues-active.md"
+    },
+    {
+      "source_entry_id": "SRC031",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "issues-closed",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/issue-resolution/issues-closed.md"
+    },
+    {
+      "source_entry_id": "SRC032",
+      "source_kind": "CHAOSS_EVOLUTION_METRIC",
+      "title": "issues-new",
+      "url": "https://github.com/chaoss/wg-evolution/blob/ada8c11ee342fdc64e94f5f894676565aa2e6506/focus-areas/issue-resolution/issues-new.md"
+    }
+  ]
+}
