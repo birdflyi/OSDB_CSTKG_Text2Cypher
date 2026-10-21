@@ -1,0 +1,7 @@
+# Later numbered admission probes before any holdout task has run
+
+Probe05 failed with HTTP500 before any IoTDB task was dispatched. Its original started/status/terminal files remain immutable. The pacing hypothesis therefore remains untested. A later hourly heartbeat may create exactly one newly numbered probe/admission record after verifying no model job is active and at least one hour has passed since the latest terminal. This is permitted low-frequency connection checking, not a repeated full-task batch.
+
+The same helper now accepts --probe-number, with separate immutable started/status paths for each later number. Probe06 follows probe05; history cannot be skipped. All previous requests/failures remain charged. A failed probe exits; it does not retry in a loop. A usable later probe may admit the SAME first untouched IoTDB source batch under the existing60second pacing protocol. The helper always refuses an existing e7_source_iotdb_v1 directory, so it cannot rerun a stopped/completed actual batch or select better responses.
+
+No frozen method, task, inference setting, row budget, scoring or structural repair rule changes. The same maximum49newattempt bound and three-consecutive-infrastructure stop apply to a successful admission. Do not infer stable transport from probe success or schedule another project automatically. Active numbered helper ownership must be checked before any additional job. The old probe05 state must not be mistaken for an active owner.

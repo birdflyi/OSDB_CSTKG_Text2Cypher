@@ -1,4 +1,4 @@
-"""One idle-gated probe05 and one paced untouched IoTDB source batch."""
+"""One numbered idle-gated probe and one paced untouched IoTDB source batch."""
 import argparse
 from datetime import datetime,timezone
 import hashlib
@@ -20,13 +20,18 @@ def run(a):
     root=Path(a.root).resolve();engine=Path(a.engine_root).resolve()
     out=root/'e7_source_iotdb_v1'
     if out.exists():raise FileExistsError('Untouched IoTDB batch already exists')
-    with (root/'paced_admission_started.json').open('x',encoding='utf-8') as f:
+    number=a.probe_number
+    if number>5 and not (root/f'connectivity_probe_{number-1:02d}'/'terminal.json').exists():
+        raise ValueError('Earlier probe receipt missing; do not skip probe history')
+    prefix='paced_admission' if number==5 else f'paced_admission_probe_{number:02d}'
+    with (root/(prefix+'_started.json')).open('x',encoding='utf-8') as f:
         json.dump({'pid':os.getpid(),'started_utc':datetime.now(timezone.utc).isoformat(),
+            'probe_number':number,
             'policy':'One later probe, one fresh paced IoTDB source batch; no model/task/scoring changes, no automatic next batch.'},f,indent=2)
     def state(value):
         value.update(pid=os.getpid(),updated_utc=datetime.now(timezone.utc).isoformat())
-        temp=root/'paced_admission_status.tmp';temp.write_text(json.dumps(value,indent=2),encoding='utf-8')
-        temp.replace(root/'paced_admission_status.json')
+        temp=root/(prefix+'_status.tmp');temp.write_text(json.dumps(value,indent=2),encoding='utf-8')
+        temp.replace(root/(prefix+'_status.json'))
     deadline=time.time()+7200
     while True:
         remaining=latest_terminal(root)+3600-time.time()
@@ -42,8 +47,8 @@ def run(a):
     import run_baselines as b
     import run_protocol_control as control
     import run_information_comparison as comparison
-    cfg=load(a.config);probe=root/'connectivity_probe_05'
-    if probe.exists():raise FileExistsError('Probe05 already exists')
+    cfg=load(a.config);probe=root/f'connectivity_probe_{number:02d}'
+    if probe.exists():raise FileExistsError('Numbered probe already exists; no repeat')
     payload=load(root/'connectivity_probe_03/request.json')
     if not all(payload[k]==cfg[k] for k in ('model','temperature','top_p','reasoning_effort')):
         raise ValueError('Not the same declared model cohort')
@@ -93,4 +98,5 @@ def run(a):
 if __name__=='__main__':
     p=argparse.ArgumentParser()
     for key in ('root','engine-root','config'):p.add_argument('--'+key,required=True)
+    p.add_argument('--probe-number',type=int,choices=range(5,11),default=5)
     run(p.parse_args())
