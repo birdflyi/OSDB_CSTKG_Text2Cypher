@@ -54,8 +54,9 @@ def public_input(spec,schema,arm):
 
 def grade(spec,reply,obs,arm):
     prediction=reply.get('prediction') or {}
+    accepted=spec.get('accepted_nonanswer_statuses',[spec['expected_status']])
     correct=(r.score(obs,spec) if spec['expected_status']=='ANSWER' else
-             prediction.get('status')==spec['expected_status'] and obs['execution']['status']!='EXECUTED')
+             prediction.get('status') in accepted and obs['execution']['status']!='EXECUTED')
     expressible=(spec.get('information_expressible',True) if arm=='I' else
                  spec['service_expressible'] if arm=='P' else spec['expected_status']=='ANSWER')
     return {'correct':correct,'executed':obs['execution']['status']=='EXECUTED',

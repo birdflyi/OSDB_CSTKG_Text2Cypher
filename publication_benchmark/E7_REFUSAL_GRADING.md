@@ -1,0 +1,5 @@
+# Predeclared refusal grading for graph-information boundary requests
+
+Before any independent model predictions, allow UNSUPPORTED or INSUFFICIENT_EVIDENCE for explicitly unanswerable requests lacking required graph evidence. These two labels distinguish schema capability from data insufficiency imperfectly, but both express the required refusal without executing a guessed answer. ERROR and NEEDS_INPUT are not accepted for these clear evidence-boundary cases. Missing-user-anchor cases continue to require NEEDS_INPUT, as before. Answerable tasks still require exact columns/row multisets; refusals do not earn useful-completion credit.
+
+The accepted set is stored in each frozen specification, never sent to the model. Existing E5/E6 grades remain unchanged. Ambiguous or undefined generated proposals are retained as unresolved intake rather than assigned opportunistic gold labels. Report decision classes and useful task completion separately; an all-refusing system is not a successful information service.

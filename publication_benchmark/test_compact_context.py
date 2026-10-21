@@ -1,6 +1,7 @@
 import compact_context as c
 import strong_baselines as s
 import information_interface as i
+import run_information_comparison as runner
 
 
 def schema():
@@ -32,3 +33,12 @@ def test_context_separates_unusable_metadata_not_business_meanings():
     assert direct['observed_event_definitions']==service['observed_event_definitions']==control['observed_event_definitions']
     for data in (direct,service,control):
         assert data['task']=={'question':spec['question'],'columns':spec['columns']}
+
+
+def test_predeclared_graph_information_refusal_classes_exclude_errors():
+    spec={'expected_status':'UNSUPPORTED','accepted_nonanswer_statuses':['UNSUPPORTED','INSUFFICIENT_EVIDENCE'],
+          'service_expressible':False,'information_expressible':False}
+    obs={'execution':{'status':'NOT_EXECUTED'}}
+    assert runner.grade(spec,{'prediction':{'status':'INSUFFICIENT_EVIDENCE'}},obs,'G')['correct']
+    assert not runner.grade(spec,{'prediction':{'status':'ERROR'}},obs,'G')['correct']
+    assert not runner.grade(spec,{'prediction':{'status':'NEEDS_INPUT'}},obs,'G')['correct']
