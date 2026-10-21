@@ -191,3 +191,30 @@ python run_mechanism_pilot.py --source PRIVATE_DATASET --project redis --receipt
 Bring up only the owned dedicated graph before verification/execution. DuckDB
 uses its own receipt and port 17476. Stop and verify owned graph processes after
 the run. Private API configuration and raw graph artifacts stay outside Git.
+
+## Strong-baseline development run (route v2)
+
+`strong_baselines.py` defines the new minimal protocol (no model-generated ID or
+reason), paired fictional examples, read guard, Neo4j EXPLAIN warnings and bounded
+repair feedback. Unknown-property warnings are a structural heuristic, not a
+complete type checker or an NL condition checker. `run_strong_baselines.py` runs
+G0/G1/S0/S1, reusing the same first response within each representation. At most
+one repair follows a protocol/structural/execution error; never a wrong score.
+Nonanswers and complete but semantically wrong valid queries are not retried.
+
+The runner requires a clean Git commit, current reference checks, source file
+hashes and the owned database identity. All 72 project instances are evaluated,
+canonical forms first. Three consecutive infrastructure failures stop dispatch;
+there are no infrastructure retries. Transport timeout is 120 seconds. Do not
+restart a terminal stopped run in place; use a separately recorded new run.
+An unrecorded request is never automatically dispatched again. Derived progress
+is updated; raw API and scored per-case records remain immutable.
+
+```powershell
+python -m pytest -q
+python run_strong_baselines.py --source PRIVATE_DATASET --project redis --receipt PRIVATE_GRAPH_RECEIPT --reference NEW_REFERENCE_CHECK --data EXECUTION_CSV --config PRIVATE_CONFIG --output NEW_PRIVATE_RUN --port 17475 --selection all
+```
+
+E1 preparation: 27 tests, 28 live structural checks, and 72/72 reference executions
+on each project passed. These are readiness checks, not model accuracy results.
+Branch and checkpoint policy: `VERSIONING.md`.
