@@ -1,0 +1,11 @@
+# E6 minimal event information development
+
+Add one generic observed_events contract, leaving all six legacy operations unchanged. It filters observed Issue/PR-to-Actor records by literal source scope, action, explicit decline trigger and half-open event-time window before projecting facts or reducing to distinct counts, lists, actor groups or a two-count ratio. Fact records can retain event times and edge IDs. This is a focused capability extension, not a new general theory or arbitrary query engine.
+
+Compare strong direct G, protocol-only P and extended I, using the same model, graph metadata, observed-event definitions, output grammar and one structural/protocol/execution repair. P/I share exactly the same system prompt; their executable catalogs differ. G receives all extended contract descriptions as well as the full schema, to avoid withholding business semantics from the strong baseline. No gold-aware retries or repair. A direct generated query remains subject to the established read guard and EXPLAIN checks.
+
+Development only: the E5 mix of six canonical legacy tasks, six previously seen scope goals and two boundary cases per project. Independently recompute all six event goals from CSV and compare both the earlier independent reference queries and new compiled service queries on the actual dedicated DB. Keep correctness, catalog refusal, answerable task coverage and wrong returned results separate. Old results stay unchanged; do not count these seen goals as independent main effects.
+
+First pass and at most one repair are paired views. Three consecutive infrastructure failures stop a batch. Shared continuation cap: 1200 new API calls including probes/failures. Preserve immutable requests, responses and source snapshots outside Git, and commit a clean implementation before model predictions.
+
+Next stages require independently sourced goals and predeclared systematic variations that are not just these six semantic goals with new dates. Keep core reference/collaboration facts separate from adjacent event-maintenance metrics and unavailable complete-history or bug-causality tasks. Freeze methods before constructing held-out predictions. More projects or language rewrites alone are not a contribution. Need measured useful improvement or an actionable boundary explanation validated beyond the known examples.
