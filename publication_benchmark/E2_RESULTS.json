@@ -1,0 +1,250 @@
+{
+  "mode": "E2_DEVELOPMENT_COMPLETE_NOT_FORMAL_TEST",
+  "fresh_model_dispatches": 0,
+  "request_instances": 144,
+  "instantiated_base_groups": 24,
+  "families": 6,
+  "arms": {
+    "G0": {
+      "groups": 24,
+      "equivalent_groups_all_correct": 22,
+      "equivalent_groups_identical_but_wrong": 0,
+      "contrast_pairs": 48,
+      "contrast_pairs_both_correct": 46
+    },
+    "G1": {
+      "groups": 24,
+      "equivalent_groups_all_correct": 24,
+      "equivalent_groups_identical_but_wrong": 0,
+      "contrast_pairs": 48,
+      "contrast_pairs_both_correct": 47
+    },
+    "S0": {
+      "groups": 24,
+      "equivalent_groups_all_correct": 22,
+      "equivalent_groups_identical_but_wrong": 0,
+      "contrast_pairs": 48,
+      "contrast_pairs_both_correct": 44
+    },
+    "S1": {
+      "groups": 24,
+      "equivalent_groups_all_correct": 24,
+      "equivalent_groups_identical_but_wrong": 0,
+      "contrast_pairs": 48,
+      "contrast_pairs_both_correct": 48
+    }
+  },
+  "paired_comparison": {
+    "S0_vs_G0": {
+      "both_correct": 135,
+      "left_only_correct": 5,
+      "right_only_correct": 4,
+      "both_wrong": 0
+    },
+    "S1_vs_G1": {
+      "both_correct": 143,
+      "left_only_correct": 1,
+      "right_only_correct": 0,
+      "both_wrong": 0
+    }
+  },
+  "fixtures": {
+    "base": {
+      "references_correct": 144,
+      "mutation_detection": {
+        "drop_duplicate_rows": {
+          "applicable_cases": 44,
+          "detected_cases": 0
+        },
+        "drop_lower": {
+          "applicable_cases": 48,
+          "detected_cases": 0
+        },
+        "drop_upper": {
+          "applicable_cases": 48,
+          "detected_cases": 8
+        },
+        "drop_window": {
+          "applicable_cases": 48,
+          "detected_cases": 8
+        },
+        "records_to_distinct_targets": {
+          "applicable_cases": 40,
+          "detected_cases": 0
+        },
+        "reverse_comment_direction": {
+          "applicable_cases": 24,
+          "detected_cases": 24
+        }
+      },
+      "implementation_hashes": {
+        "run_semantic_fixture_checks.py": "dae0d7c65aef7ed3e6eb4dc06dbbdce9a61c5fb4567c0cd9b9955d7470156075",
+        "strong_baselines.py": "866201ab817c74d9e14dd0ec0e73f3e32be0ac314180aa6464a3a0ce4d27e0fb",
+        "mechanism_core.py": "52c7ab97f945778f4267e6721b36506055ad823c8bb3e7fa61045d4ef71d0631",
+        "run_baselines.py": "e9e0c21e577d20caf8f1030d4dd1dd1801abd88dca1aa1036583cbb8281320f7"
+      },
+      "fixture_hashes": {
+        "nodes.csv": "af430c5b9ff909fe1aa61cd245b532ce3e7667391ee6c94808e5827107340f84",
+        "edges.csv": "57d024b073c924ea5c92f08c61994b0da6abf7ae2c75abd88072325c92b8e3d8",
+        "expected.json": "4042b595279e77d6339ec48490811af07634c7d0205e1eeebd028107bb3f9796"
+      },
+      "source_sha256": "de4c322c7568555d3eb64bb00793d9601602c85e1ffdb8f038849ed45b3f69a1",
+      "arms": {
+        "G0": {
+          "correct": 139,
+          "original_correct_fixture_wrong": 0
+        },
+        "G1": {
+          "correct": 143,
+          "original_correct_fixture_wrong": 0
+        },
+        "S0": {
+          "correct": 140,
+          "original_correct_fixture_wrong": 0
+        },
+        "S1": {
+          "correct": 144,
+          "original_correct_fixture_wrong": 0
+        }
+      }
+    },
+    "boundary": {
+      "references_correct": 144,
+      "mutation_detection": {
+        "drop_duplicate_rows": {
+          "applicable_cases": 44,
+          "detected_cases": 4
+        },
+        "drop_lower": {
+          "applicable_cases": 48,
+          "detected_cases": 48
+        },
+        "drop_upper": {
+          "applicable_cases": 48,
+          "detected_cases": 48
+        },
+        "drop_window": {
+          "applicable_cases": 48,
+          "detected_cases": 48
+        },
+        "records_to_distinct_targets": {
+          "applicable_cases": 40,
+          "detected_cases": 0
+        },
+        "reverse_comment_direction": {
+          "applicable_cases": 24,
+          "detected_cases": 24
+        }
+      },
+      "implementation_hashes": {
+        "run_semantic_fixture_checks.py": "dae0d7c65aef7ed3e6eb4dc06dbbdce9a61c5fb4567c0cd9b9955d7470156075",
+        "strong_baselines.py": "866201ab817c74d9e14dd0ec0e73f3e32be0ac314180aa6464a3a0ce4d27e0fb",
+        "mechanism_core.py": "52c7ab97f945778f4267e6721b36506055ad823c8bb3e7fa61045d4ef71d0631",
+        "run_baselines.py": "e9e0c21e577d20caf8f1030d4dd1dd1801abd88dca1aa1036583cbb8281320f7"
+      },
+      "fixture_hashes": {
+        "nodes.csv": "7b259873176a4074bad54c5fad2e0bb55c3cc49941116e9e8cf631a28a752c5c",
+        "edges.csv": "86be457fb4b67cca7b5e69933805422a038f868db4993aa33253622975f23f22",
+        "expected.json": "e9398b152c126f5dac24ef4cefe4b0e007fee1a91944fc55fd66265c603449a9"
+      },
+      "source_sha256": "ea308c550c83a40c2a6317d012b85e8e74b2c0ef649de98f8aaa7d7e1082fa72",
+      "arms": {
+        "G0": {
+          "correct": 139,
+          "original_correct_fixture_wrong": 0
+        },
+        "G1": {
+          "correct": 143,
+          "original_correct_fixture_wrong": 0
+        },
+        "S0": {
+          "correct": 140,
+          "original_correct_fixture_wrong": 0
+        },
+        "S1": {
+          "correct": 144,
+          "original_correct_fixture_wrong": 0
+        }
+      }
+    },
+    "multiplicity": {
+      "references_correct": 144,
+      "mutation_detection": {
+        "drop_duplicate_rows": {
+          "applicable_cases": 44,
+          "detected_cases": 44
+        },
+        "drop_lower": {
+          "applicable_cases": 48,
+          "detected_cases": 48
+        },
+        "drop_upper": {
+          "applicable_cases": 48,
+          "detected_cases": 48
+        },
+        "drop_window": {
+          "applicable_cases": 48,
+          "detected_cases": 48
+        },
+        "records_to_distinct_targets": {
+          "applicable_cases": 40,
+          "detected_cases": 40
+        },
+        "reverse_comment_direction": {
+          "applicable_cases": 24,
+          "detected_cases": 24
+        }
+      },
+      "implementation_hashes": {
+        "run_semantic_fixture_checks.py": "dae0d7c65aef7ed3e6eb4dc06dbbdce9a61c5fb4567c0cd9b9955d7470156075",
+        "strong_baselines.py": "866201ab817c74d9e14dd0ec0e73f3e32be0ac314180aa6464a3a0ce4d27e0fb",
+        "mechanism_core.py": "52c7ab97f945778f4267e6721b36506055ad823c8bb3e7fa61045d4ef71d0631",
+        "run_baselines.py": "e9e0c21e577d20caf8f1030d4dd1dd1801abd88dca1aa1036583cbb8281320f7"
+      },
+      "fixture_hashes": {
+        "nodes.csv": "4dcc5dc453fd4235df6e93a97670a62c108ca442ed8b5b525d99ba21136475cb",
+        "edges.csv": "2968b635530da963f3ecbe7498c1906af2e91cf25378e44c62c790728c7a0ef5",
+        "expected.json": "62479a8b0bc50043c4635eadc4978489f5d9367637d1141dd20d6950ae686c6a"
+      },
+      "source_sha256": "5d90ca0ab1295c752cde2bd974344bdbc6c83a4fb310955a1071a7e73b5423ea",
+      "arms": {
+        "G0": {
+          "correct": 139,
+          "original_correct_fixture_wrong": 0
+        },
+        "G1": {
+          "correct": 143,
+          "original_correct_fixture_wrong": 0
+        },
+        "S0": {
+          "correct": 140,
+          "original_correct_fixture_wrong": 0
+        },
+        "S1": {
+          "correct": 144,
+          "original_correct_fixture_wrong": 0
+        }
+      }
+    }
+  },
+  "all_instances": {
+    "G0": {
+      "cases": 144,
+      "original_and_all_fixtures_correct": 139
+    },
+    "G1": {
+      "cases": 144,
+      "original_and_all_fixtures_correct": 143
+    },
+    "S0": {
+      "cases": 144,
+      "original_and_all_fixtures_correct": 140
+    },
+    "S1": {
+      "cases": 144,
+      "original_and_all_fixtures_correct": 144
+    }
+  },
+  "source_pair_analysis_sha256": "e71bc1439c903c806b97552a991fb9800ffc61cf7b7ebf3d18bed58b7bd557e5",
+  "limitations": "Developer templates, one served model, same graph schema, six task families. Finite synthetic witnesses are not general equivalence or real-user evidence."
+}
