@@ -1,0 +1,35 @@
+{
+  "mode": "HOLDOUT_RUNTIME_REFERENCE_PREPARATION",
+  "projects": [
+    {
+      "project": "iotdb",
+      "nodes": 29425,
+      "edges": 140313,
+      "distinct_edge_uids": 140313,
+      "source_hashes": {
+        "nodes.csv": "8d76396bc77a34dc7aa6ea94337cdd675aa2ec484ba7cc79cd1a5073ee7aeee3",
+        "edges.csv": "7fa83e8f08d207dde1374717803512da13a0a76f0a1eac3577ba5af64ac94244"
+      },
+      "importer_sha256": "811f327e1e92d8a6386b8903ad6159a4ce9fb5fe6ee7af3a3f5a40b9fed9901c",
+      "source_reference_cases": 8,
+      "source_reference_correct": 8,
+      "task_sha256": "f011feee2280cf0884963e3d916573003ca789ba4d0fe59647d5681a34414499",
+      "predictions_at_import_report": 0
+    },
+    {
+      "project": "elasticsearch",
+      "nodes": 130413,
+      "edges": 352591,
+      "distinct_edge_uids": 352591,
+      "source_hashes": {
+        "nodes.csv": "3a867bb67842275935497bb3f1d6e9c36b7a98d33864a9bc56c3c7b47871c467",
+        "edges.csv": "524364bda48a9216f7aeacf80367e2d51acf0628df44f2633e704caa6d838842"
+      },
+      "importer_sha256": "811f327e1e92d8a6386b8903ad6159a4ce9fb5fe6ee7af3a3f5a40b9fed9901c",
+      "source_reference_cases": 8,
+      "source_reference_correct": 8,
+      "task_sha256": "8f3e2f2e703d7b2bde485eb811efc721700c13b45b547a8018d3951ad52bc42d",
+      "predictions_at_import_report": 0
+    }
+  ]
+}
