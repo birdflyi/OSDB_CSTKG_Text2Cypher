@@ -1,0 +1,77 @@
+{
+  "mode": "SYNTHETIC_INFORMATION_BOUNDARY_NOT_MODEL_ACCURACY",
+  "service_calls_checked": 67,
+  "service_outputs_equal": true,
+  "target_A": [
+    [
+      1
+    ]
+  ],
+  "target_B": [
+    [
+      0
+    ]
+  ],
+  "changed_property": "source_event_time on Issue -> EVENT_ACTION[OPENED_BY] -> Actor only",
+  "assumptions": "Same user context; observations restricted to the six current services, no other graph/API data access.",
+  "limits": "Finite argument execution checks are not an exhaustive proof. Compiler dependency analysis explains invariance for arbitrary legal parameters. This is a counterexample to interface sufficiency, not a new general theorem or real-world failure rate.",
+  "compiler_sha256": "52c7ab97f945778f4267e6721b36506055ad823c8bb3e7fa61045d4ef71d0631",
+  "world_hashes": {
+    "A": {
+      "nodes.csv": "c8e4bebff2ed364320f003e520b3f4c1580dcfc1df128c7644a4a3ff2d78ec86",
+      "edges.csv": "41a9a88245b1b1aadef6f8f6c0ec8d36aeb3d1a3db97486fe4188c347acd2b97",
+      "oracle_observations.json": "f7b12ae4e0efa115db807bba9dbfa62b3cb0e2c7ac072188b3c51be3457e7860"
+    },
+    "B": {
+      "nodes.csv": "c8e4bebff2ed364320f003e520b3f4c1580dcfc1df128c7644a4a3ff2d78ec86",
+      "edges.csv": "e77f779e6fcc73523de1e5b11713bd83a579d3420b3714bfe1d0882c71f10a40",
+      "oracle_observations.json": "dcde88874500c629ff79a8c38a229681be3776fa8085704ecce01c7a194e989e"
+    }
+  },
+  "execution_commit": "d3ec965",
+  "actual_cypher_verification": {
+    "A": {
+      "calls": 67,
+      "target_rows": [
+        [
+          1
+        ]
+      ],
+      "database_identity": [
+        {
+          "row": [
+            "2F4874A380024F249167201EB12E7F78F8AA08A08A9DC93187DBD0A264754D47",
+            "neo4j"
+          ],
+          "meta": [
+            null,
+            null
+          ]
+        }
+      ],
+      "receipt_sha256": "e19efe2c5414133459be3ec76deae9b02f8ac897fbcac62a095b3af0471096b9"
+    },
+    "B": {
+      "calls": 67,
+      "target_rows": [
+        [
+          0
+        ]
+      ],
+      "database_identity": [
+        {
+          "row": [
+            "FAA3AC769F72920B829029DFE52388E718A66A315C84DB2A8DBAC06E262A2472",
+            "neo4j"
+          ],
+          "meta": [
+            null,
+            null
+          ]
+        }
+      ],
+      "receipt_sha256": "b8d6014016d3f2401ae3a7a2c952877165df2a67b72acb65fe713099e257a0f5"
+    }
+  },
+  "actual_service_outputs_equal": true
+}
