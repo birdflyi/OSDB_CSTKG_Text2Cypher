@@ -1,0 +1,121 @@
+{
+  "status": "FOUR_PROJECT_TASK_PREPARATION_COMPLETE_NOT_MODEL_EVALUATION",
+  "projects": [
+    {
+      "project": "redis",
+      "strata": {
+        "source": {
+          "cases": 8,
+          "task_sha256": "6069745b9ea8b1dc25308dfee6b1a375f1911414d33fc896e7bb3917180d8f65",
+          "manifest_sha256": "8959fb8b04bff1ab76d2cdd4912a6649c1287c327989728e6c0369ab063b68a4",
+          "expected_answer": 8,
+          "semantic_groups": 8
+        },
+        "grounded": {
+          "cases": 7,
+          "task_sha256": "2f65c0461a4eb643d425c7357869392bcdb41726887da44f63016936d34e4573",
+          "manifest_sha256": "883a84c8c0e1fb19a30e203f2a14bacd837edd07063e68cd14ff38b6c84aca79",
+          "expected_answer": 7,
+          "semantic_groups": 4
+        },
+        "boundary": {
+          "cases": 6,
+          "task_sha256": "727ca042a6e340064896b8f7a09b619f89fac3756fa476f65e25341578f6cf8b",
+          "manifest_sha256": "cc8bf54bd7e644d2ed640dd6fce3926f9e9fe29607e6bd37d2851df0b6795b8f",
+          "expected_answer": 0,
+          "semantic_groups": 6
+        }
+      }
+    },
+    {
+      "project": "duckdb",
+      "strata": {
+        "source": {
+          "cases": 8,
+          "task_sha256": "9a684c35c906e304e1b6ae21c67b9e8c71eee94e7981748a7db00550c22f61d4",
+          "manifest_sha256": "35236ef475aa7b1fc8e46d3a3f9612936b16a080c1eedc4b6b7134ac35f0f572",
+          "expected_answer": 8,
+          "semantic_groups": 8
+        },
+        "grounded": {
+          "cases": 7,
+          "task_sha256": "73a68cdad8d91b8bf07883119ba2b98c7f4f1e9c9f555bde47ad08274b2db477",
+          "manifest_sha256": "340554147eda3d16271981dca5868cae61d5dd7600e85eac02a3b64318908eb8",
+          "expected_answer": 7,
+          "semantic_groups": 4
+        },
+        "boundary": {
+          "cases": 6,
+          "task_sha256": "ee66f75cb17669cb9b928f431b4e315624eda4d6ae778a19b6144f2d6e3714a5",
+          "manifest_sha256": "494e9cc0f38a1a2f191d8b26e59d04ff9e4a673353647875ba6d7d84d42c246a",
+          "expected_answer": 0,
+          "semantic_groups": 6
+        }
+      }
+    },
+    {
+      "project": "iotdb",
+      "strata": {
+        "source": {
+          "cases": 8,
+          "task_sha256": "f011feee2280cf0884963e3d916573003ca789ba4d0fe59647d5681a34414499",
+          "manifest_sha256": "c492172535edb7167e351f6bbaef61e627e0a8ab4885e38b453c35cec69d6499",
+          "expected_answer": 8,
+          "semantic_groups": 8
+        },
+        "grounded": {
+          "cases": 7,
+          "task_sha256": "42c29b73c58c6923ac5311ae40e1af1dacdad9b7a26476906184096be2bb4280",
+          "manifest_sha256": "615131cd6d43622187a93378346194709a9b2e8500cd7b0d89630a3508816a4b",
+          "expected_answer": 7,
+          "semantic_groups": 4
+        },
+        "boundary": {
+          "cases": 6,
+          "task_sha256": "c4789ced0a54119cc4cc879dcec91ec5f0edf7e70e74bb646beba9150cadb5c6",
+          "manifest_sha256": "7528a1383da119b5ca772e3db3dc418b22d275bf82bbad8290b9aef33d105f98",
+          "expected_answer": 0,
+          "semantic_groups": 6
+        }
+      }
+    },
+    {
+      "project": "elasticsearch",
+      "strata": {
+        "source": {
+          "cases": 8,
+          "task_sha256": "8f3e2f2e703d7b2bde485eb811efc721700c13b45b547a8018d3951ad52bc42d",
+          "manifest_sha256": "3a41a4d0bfd97836e191fa8d4297a04134dafad83375dec976d2196522eef7e0",
+          "expected_answer": 8,
+          "semantic_groups": 8
+        },
+        "grounded": {
+          "cases": 7,
+          "task_sha256": "ee0941edd154cfd57764ea75085254570059b66847a299fd0a6e6da4db973147",
+          "manifest_sha256": "ddaf122a8af135c252406eab675b19cd0f94d7543860285aa77e59bb3f3637de",
+          "expected_answer": 7,
+          "semantic_groups": 4
+        },
+        "boundary": {
+          "cases": 6,
+          "task_sha256": "9e168e11b5fbc83c774e77c4c429186cad767f9eee0f1fe45a380ea42102452c",
+          "manifest_sha256": "edc31176cb56b70d517a3ba372fadb1c32f63a53ce2fbdf3f532b24acc0352a2",
+          "expected_answer": 0,
+          "semantic_groups": 6
+        }
+      }
+    }
+  ],
+  "prediction_method_commit": "3d6bd22",
+  "compact_renderer_commit": "4ea628e",
+  "grading_commit": "4a30839",
+  "reference_builder_commit": "6961a56",
+  "limits": "AI-assisted operationalized/synthetic tasks, no human annotation. No same-capability positive new goal received. Catalog support refers only to the new matched-capability prototype, not the whole legacy engine.",
+  "reference_conformance": {
+    "source_unique_goal_project_queries": 32,
+    "grounded_unique_goal_project_queries": 16,
+    "grounded_variant_checks": 28,
+    "grounded_conformance_receipt_sha256": "3b4ef893e0f65e9014f12146a4d66903343a99c298eed5cacf5430892deb2968",
+    "interpretation": "Independent CSV and separately written Cypher agree on actual graphs. Repeated wording checks are not additional semantic goals or model predictions."
+  }
+}
