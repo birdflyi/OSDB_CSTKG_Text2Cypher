@@ -31,3 +31,13 @@ def test_transport_exception_is_recorded_and_propagated_once(tmp_path):
     with pytest.raises(ConnectionError):paced('model',json={})
     assert count[0]==1
     assert 'private-message' not in (tmp_path/'0001.json').read_text()
+
+
+def test_receipt_records_actual_wait_if_scheduler_oversleeps(tmp_path):
+    now=[0.0]
+    def sleep(seconds):now[0]+=seconds+2
+    paced=PacedPost(lambda url,**kwargs:SimpleNamespace(status_code=200),'model',tmp_path,
+        clock=lambda:now[0],sleep=sleep)
+    paced('model',json={})
+    first=json.loads((tmp_path/'0001.json').read_text())
+    assert first['pacing_wait_seconds']==62

@@ -13,12 +13,12 @@ class PacedPost:
 
     def __call__(self,url,*args,**kwargs):
         if url!=self.endpoint:return self.delegate(url,*args,**kwargs)
-        waited=0.0
+        wait_begin=self.clock()
         while True:
             remaining=self.last_start+self.interval-self.clock()
             if remaining<=0:break
-            step=min(30,remaining);self.sleep(step);waited+=step
-        self.last_start=self.clock();self.calls+=1
+            step=min(30,remaining);self.sleep(step)
+        self.last_start=self.clock();waited=self.last_start-wait_begin;self.calls+=1
         response=None;error=None
         try:
             response=self.delegate(url,*args,**kwargs)
