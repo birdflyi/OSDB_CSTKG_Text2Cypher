@@ -1,0 +1,188 @@
+{
+  "e6_redis_v1": {
+    "summary": {
+      "status": "COMPLETED",
+      "arm_scores": {
+        "G0": {
+          "planned": 14,
+          "evaluated": 14,
+          "correct": 14,
+          "answerable_cases": 12,
+          "answerable_correct": 12,
+          "answerable_executed": 12,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 1,
+          "infrastructure_failures": 0,
+          "repairs": 0
+        },
+        "G1": {
+          "planned": 14,
+          "evaluated": 14,
+          "correct": 14,
+          "answerable_cases": 12,
+          "answerable_correct": 12,
+          "answerable_executed": 12,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 1,
+          "infrastructure_failures": 0,
+          "repairs": 0
+        },
+        "P0": {
+          "planned": 14,
+          "evaluated": 14,
+          "correct": 8,
+          "answerable_cases": 12,
+          "answerable_correct": 6,
+          "answerable_executed": 6,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 5,
+          "infrastructure_failures": 1,
+          "repairs": 0
+        },
+        "P1": {
+          "planned": 14,
+          "evaluated": 14,
+          "correct": 8,
+          "answerable_cases": 12,
+          "answerable_correct": 6,
+          "answerable_executed": 6,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 5,
+          "infrastructure_failures": 2,
+          "repairs": 1
+        },
+        "I0": {
+          "planned": 14,
+          "evaluated": 14,
+          "correct": 14,
+          "answerable_cases": 12,
+          "answerable_correct": 12,
+          "answerable_executed": 12,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 1,
+          "infrastructure_failures": 0,
+          "repairs": 0
+        },
+        "I1": {
+          "planned": 14,
+          "evaluated": 14,
+          "correct": 14,
+          "answerable_cases": 12,
+          "answerable_correct": 12,
+          "answerable_executed": 12,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 1,
+          "infrastructure_failures": 0,
+          "repairs": 0
+        }
+      },
+      "actual_calls": 43,
+      "known_reported_tokens": 256534,
+      "unknown_usage_calls": 2,
+      "dispatch_seconds": 1010.4509999997681,
+      "limits": "One provider model. Correct refusal is separate from completing graph-answerable tasks. G/P/I first/repaired views are paired. A capability extension alone is not a novel mechanism or evidence of superiority.",
+      "mode": "E6_KNOWN_DEVELOPMENT_NOT_INDEPENDENT"
+    },
+    "input_audit": {
+      "audited_requests": 43,
+      "task_fields": [
+        "question",
+        "columns"
+      ],
+      "forbidden_gold_keys_present": false
+    }
+  },
+  "e6_duckdb_v1": {
+    "summary": {
+      "status": "STOPPED_INFRASTRUCTURE",
+      "arm_scores": {
+        "G0": {
+          "planned": 14,
+          "evaluated": 1,
+          "correct": 0,
+          "answerable_cases": 1,
+          "answerable_correct": 0,
+          "answerable_executed": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 0,
+          "infrastructure_failures": 1,
+          "repairs": 0
+        },
+        "G1": {
+          "planned": 14,
+          "evaluated": 1,
+          "correct": 0,
+          "answerable_cases": 1,
+          "answerable_correct": 0,
+          "answerable_executed": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 0,
+          "infrastructure_failures": 1,
+          "repairs": 0
+        },
+        "P0": {
+          "planned": 14,
+          "evaluated": 1,
+          "correct": 0,
+          "answerable_cases": 1,
+          "answerable_correct": 0,
+          "answerable_executed": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 0,
+          "infrastructure_failures": 1,
+          "repairs": 0
+        },
+        "P1": {
+          "planned": 14,
+          "evaluated": 1,
+          "correct": 0,
+          "answerable_cases": 1,
+          "answerable_correct": 0,
+          "answerable_executed": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 0,
+          "infrastructure_failures": 1,
+          "repairs": 0
+        },
+        "I0": {
+          "planned": 14,
+          "evaluated": 1,
+          "correct": 0,
+          "answerable_cases": 1,
+          "answerable_correct": 0,
+          "answerable_executed": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 0,
+          "infrastructure_failures": 1,
+          "repairs": 0
+        },
+        "I1": {
+          "planned": 14,
+          "evaluated": 1,
+          "correct": 0,
+          "answerable_cases": 1,
+          "answerable_correct": 0,
+          "answerable_executed": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 0,
+          "infrastructure_failures": 1,
+          "repairs": 0
+        }
+      },
+      "actual_calls": 3,
+      "known_reported_tokens": 0,
+      "unknown_usage_calls": 3,
+      "dispatch_seconds": 14.375999999931082,
+      "limits": "One provider model. Correct refusal is separate from completing graph-answerable tasks. G/P/I first/repaired views are paired. A capability extension alone is not a novel mechanism or evidence of superiority.",
+      "mode": "E6_KNOWN_DEVELOPMENT_NOT_INDEPENDENT"
+    },
+    "input_audit": {
+      "audited_requests": 3,
+      "task_fields": [
+        "question",
+        "columns"
+      ],
+      "forbidden_gold_keys_present": false
+    }
+  }
+}
