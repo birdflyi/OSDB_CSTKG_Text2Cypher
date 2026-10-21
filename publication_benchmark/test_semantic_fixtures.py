@@ -18,3 +18,11 @@ def test_actual_query_mutants_change_only_declared_fragments():
     changed = mutations(query)
     assert set(changed) == {'drop_lower', 'drop_upper', 'drop_window', 'records_to_distinct_targets'}
     assert '$start_date' not in changed['drop_lower'] and '$end_date' in changed['drop_lower']
+
+
+def test_window_witnesses_have_outside_only_targets():
+    specs = [{'reference_call': {'arguments': {'pr_id': 'PR_1#2', 'start_date': '2023-01-01', 'end_date': '2024-01-01'}}}]
+    _, edges = build(specs, 'boundary')
+    links = [e for e in edges if e['service_rel_type'] == 'LINKS_TO']
+    assert len(links) == 4
+    assert len({e['target_node_uid'] for e in links}) == 4

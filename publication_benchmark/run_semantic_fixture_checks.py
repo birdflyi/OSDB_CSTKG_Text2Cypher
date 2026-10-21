@@ -94,6 +94,8 @@ def run(a):
               'mutants': mutants, 'predictions': predictions, 'prediction_sources': sources,
               'unique_query_executions': len(cache), 'database_identity': receipt['database_identity'],
               'fixture_hashes': {name: b.sha(fixture / name) for name in ('nodes.csv', 'edges.csv', 'expected.json')},
+              'implementation_hashes': {name: b.sha(Path(__file__).with_name(name)) for name in
+                  ('run_semantic_fixture_checks.py', 'strong_baselines.py', 'mechanism_core.py', 'run_baselines.py')},
               'mutation_detection': {kind: {'applicable_cases': sum(m['kind'] == kind for m in mutants),
                   'detected_cases': sum(m['kind'] == kind and m['detected_by_result'] for m in mutants)} for kind in sorted({m['kind'] for m in mutants})},
               'limitations': 'Finite declared witnesses. Detection is not a model error rate or proof of semantic equivalence. No re-prompting.'}

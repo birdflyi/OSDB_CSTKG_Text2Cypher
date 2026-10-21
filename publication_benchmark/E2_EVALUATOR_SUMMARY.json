@@ -1,0 +1,119 @@
+{
+  "mode": "E2_EVALUATOR_SELFCHECK_NOT_MODEL_ACCURACY",
+  "fixtures": {
+    "base": {
+      "references_correct": 144,
+      "reference_cases": 144,
+      "mutation_detection": {
+        "drop_duplicate_rows": {
+          "applicable_cases": 44,
+          "detected_cases": 0
+        },
+        "drop_lower": {
+          "applicable_cases": 48,
+          "detected_cases": 0
+        },
+        "drop_upper": {
+          "applicable_cases": 48,
+          "detected_cases": 8
+        },
+        "drop_window": {
+          "applicable_cases": 48,
+          "detected_cases": 8
+        },
+        "records_to_distinct_targets": {
+          "applicable_cases": 40,
+          "detected_cases": 0
+        },
+        "reverse_comment_direction": {
+          "applicable_cases": 24,
+          "detected_cases": 24
+        }
+      },
+      "source_sha256": "c93d026d11598a18ca109fc373497fb4816f1fb58f8682abae4852ab36c85401",
+      "fixture_hashes": {
+        "nodes.csv": "af430c5b9ff909fe1aa61cd245b532ce3e7667391ee6c94808e5827107340f84",
+        "edges.csv": "57d024b073c924ea5c92f08c61994b0da6abf7ae2c75abd88072325c92b8e3d8",
+        "expected.json": "4042b595279e77d6339ec48490811af07634c7d0205e1eeebd028107bb3f9796"
+      }
+    },
+    "boundary": {
+      "references_correct": 144,
+      "reference_cases": 144,
+      "mutation_detection": {
+        "drop_duplicate_rows": {
+          "applicable_cases": 44,
+          "detected_cases": 4
+        },
+        "drop_lower": {
+          "applicable_cases": 48,
+          "detected_cases": 48
+        },
+        "drop_upper": {
+          "applicable_cases": 48,
+          "detected_cases": 48
+        },
+        "drop_window": {
+          "applicable_cases": 48,
+          "detected_cases": 48
+        },
+        "records_to_distinct_targets": {
+          "applicable_cases": 40,
+          "detected_cases": 0
+        },
+        "reverse_comment_direction": {
+          "applicable_cases": 24,
+          "detected_cases": 24
+        }
+      },
+      "source_sha256": "b3585aa0ed286e23e81ef151a14530edff3eac5af1618efe3f4a216f61226f62",
+      "fixture_hashes": {
+        "nodes.csv": "7b259873176a4074bad54c5fad2e0bb55c3cc49941116e9e8cf631a28a752c5c",
+        "edges.csv": "86be457fb4b67cca7b5e69933805422a038f868db4993aa33253622975f23f22",
+        "expected.json": "e9398b152c126f5dac24ef4cefe4b0e007fee1a91944fc55fd66265c603449a9"
+      }
+    },
+    "multiplicity": {
+      "references_correct": 144,
+      "reference_cases": 144,
+      "mutation_detection": {
+        "drop_duplicate_rows": {
+          "applicable_cases": 44,
+          "detected_cases": 44
+        },
+        "drop_lower": {
+          "applicable_cases": 48,
+          "detected_cases": 48
+        },
+        "drop_upper": {
+          "applicable_cases": 48,
+          "detected_cases": 48
+        },
+        "drop_window": {
+          "applicable_cases": 48,
+          "detected_cases": 48
+        },
+        "records_to_distinct_targets": {
+          "applicable_cases": 40,
+          "detected_cases": 40
+        },
+        "reverse_comment_direction": {
+          "applicable_cases": 24,
+          "detected_cases": 24
+        }
+      },
+      "source_sha256": "8b0b0659261f075cf87828307bc8d965a4706136dd2ee0239574a0803d48d563",
+      "fixture_hashes": {
+        "nodes.csv": "4dcc5dc453fd4235df6e93a97670a62c108ca442ed8b5b525d99ba21136475cb",
+        "edges.csv": "2968b635530da963f3ecbe7498c1906af2e91cf25378e44c62c790728c7a0ef5",
+        "expected.json": "62479a8b0bc50043c4635eadc4978489f5d9367637d1141dd20d6950ae686c6a"
+      }
+    }
+  },
+  "declared_mutant_instance_detection": {
+    "applicable": 252,
+    "detected": 252,
+    "independent_error_classes": 6,
+    "note": "Includes repeated expressions, not independent tasks."
+  }
+}

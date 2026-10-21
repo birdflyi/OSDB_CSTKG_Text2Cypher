@@ -6,7 +6,6 @@ The fixtures target declared omissions; they do not prove query equivalence.
 import argparse
 import csv
 from datetime import datetime, timedelta, timezone
-import hashlib
 import json
 from pathlib import Path
 
@@ -73,10 +72,13 @@ def build(specs, variant):
                 dates += [lower - timedelta(seconds=1), upper, lower + (upper - lower) / 2]
             for j, date in enumerate(dates):
                 stamp = date.isoformat(timespec='seconds').replace('+00:00', 'Z')
-                edge(p, targets[j % 2], 'REFERENCE', 'LINKS_TO', source_event_time=stamp,
+                # Distinct-target counts also need an outside-only target.
+                # Reusing an inside target can hide a missing time predicate.
+                target = node('ExternalResource', 'E_E2_' + str(index) + '_' + lo.replace('-', '') + '_' + str(j))
+                edge(p, target, 'REFERENCE', 'LINKS_TO', source_event_time=stamp,
                      url_domain_etld1='alpha.example' if j % 2 == 0 else 'beta.example')
                 if variant == 'multiplicity':
-                    edge(p, targets[j % 2], 'REFERENCE', 'LINKS_TO', source_event_time=stamp,
+                    edge(p, target, 'REFERENCE', 'LINKS_TO', source_event_time=stamp,
                          url_domain_etld1='alpha.example' if j % 2 == 0 else 'beta.example')
             if variant == 'multiplicity':
                 edge(p, targets[0], 'REFERENCE', 'LINKS_TO', url_domain_etld1='alpha.example')
