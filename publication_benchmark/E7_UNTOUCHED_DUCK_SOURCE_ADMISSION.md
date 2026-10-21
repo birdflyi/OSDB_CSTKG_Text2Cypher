@@ -1,0 +1,9 @@
+# Bounded admission of the next untouched source project
+
+22 October2026, after probe04. Redis source v2 remains stopped and immutable; no source v3 is introduced. Its failures and valid responses remain in the study. The original finite queue cannot be restarted silently.
+
+One later recorded small probe04 returnedHTTP200 with a complete response after more than an hour idle (budget slot221,216reported tokens). This is an admission signal for a bounded fresh batch, not proof of stable transport. The next project in the original fixed untouched-source order is DuckDB. Run its eight ALREADY FROZEN source goals once at e7_source_duckdb_v1, using the same compact G/P/I engine, model settings, output budget, scoring and bounded structural repair. No requests or goals are chosen according to success. No generator, method extension or extra service is added.
+
+At most48new attempts are possible in this one batch (three first passes and at most one structural repair per arm/case); the continuation budget before admission is221/1200. Three consecutive infrastructure failures stop this batch. Do not retry an existing valid wrong answer/refusal. If the batch stops, preserve its actual evaluated/planned counts and return to offline work; do not automatically start a different project to evade the stop or create DuckDB v2. If it completes, record both success and failure outcomes before deciding the next untouched held-out-project stage.
+
+This explicitly changes execution scheduling because a previous batch could not complete, not task inclusion or method design. Redis remains incomplete; an observed DuckDB result cannot fill its missing cells. Operational failures, available-response conditional results and catalog coverage must be kept separate. A favorable result in one incomplete infrastructure cohort cannot establish a general method advantage. No journal submission or human annotation is implied.
