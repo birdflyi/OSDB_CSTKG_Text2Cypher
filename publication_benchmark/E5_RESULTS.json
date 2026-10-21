@@ -1,0 +1,156 @@
+{
+  "e5_redis_v2": {
+    "summary": {
+      "mode": "E5_PROTOCOL_ONLY_DEVELOPMENT_CONTROL",
+      "status": "COMPLETED",
+      "arm_scores": {
+        "S0": {
+          "planned": 14,
+          "evaluated": 14,
+          "supported_cases": 6,
+          "supported_correct": 6,
+          "catalog_decisions_correct": 7,
+          "graph_answerable_catalog_outside_cases": 6,
+          "outside_safe_refusals": 1,
+          "outside_answer_decisions": 1,
+          "wrong_returned_answers": 1,
+          "infrastructure_failures": 2,
+          "protocol_failures": 3,
+          "repairs": 0
+        },
+        "S1": {
+          "planned": 14,
+          "evaluated": 14,
+          "supported_cases": 6,
+          "supported_correct": 6,
+          "catalog_decisions_correct": 8,
+          "graph_answerable_catalog_outside_cases": 6,
+          "outside_safe_refusals": 1,
+          "outside_answer_decisions": 1,
+          "wrong_returned_answers": 1,
+          "infrastructure_failures": 2,
+          "protocol_failures": 2,
+          "repairs": 3
+        },
+        "P0": {
+          "planned": 14,
+          "evaluated": 14,
+          "supported_cases": 6,
+          "supported_correct": 6,
+          "catalog_decisions_correct": 14,
+          "graph_answerable_catalog_outside_cases": 6,
+          "outside_safe_refusals": 6,
+          "outside_answer_decisions": 0,
+          "wrong_returned_answers": 0,
+          "infrastructure_failures": 0,
+          "protocol_failures": 0,
+          "repairs": 0
+        },
+        "P1": {
+          "planned": 14,
+          "evaluated": 14,
+          "supported_cases": 6,
+          "supported_correct": 6,
+          "catalog_decisions_correct": 14,
+          "graph_answerable_catalog_outside_cases": 6,
+          "outside_safe_refusals": 6,
+          "outside_answer_decisions": 0,
+          "wrong_returned_answers": 0,
+          "infrastructure_failures": 0,
+          "protocol_failures": 0,
+          "repairs": 0
+        }
+      },
+      "actual_calls": 31,
+      "known_reported_tokens": 173302,
+      "unknown_usage_calls": 2,
+      "dispatch_seconds": 854.091999999946,
+      "limits": "Developer-known tasks, one model, no service capability change. Refusal is not completing an answerable task. Shared first-pass views are paired, not independent calls."
+    },
+    "input_audit": {
+      "audited_requests": 31,
+      "task_fields": [
+        "question",
+        "columns"
+      ],
+      "forbidden_gold_keys_present": false
+    }
+  },
+  "e5_duckdb_v1": {
+    "summary": {
+      "mode": "E5_PROTOCOL_ONLY_DEVELOPMENT_CONTROL",
+      "status": "COMPLETED",
+      "arm_scores": {
+        "S0": {
+          "planned": 14,
+          "evaluated": 14,
+          "supported_cases": 6,
+          "supported_correct": 6,
+          "catalog_decisions_correct": 7,
+          "graph_answerable_catalog_outside_cases": 6,
+          "outside_safe_refusals": 0,
+          "outside_answer_decisions": 0,
+          "wrong_returned_answers": 0,
+          "infrastructure_failures": 3,
+          "protocol_failures": 4,
+          "repairs": 0
+        },
+        "S1": {
+          "planned": 14,
+          "evaluated": 14,
+          "supported_cases": 6,
+          "supported_correct": 6,
+          "catalog_decisions_correct": 9,
+          "graph_answerable_catalog_outside_cases": 6,
+          "outside_safe_refusals": 1,
+          "outside_answer_decisions": 0,
+          "wrong_returned_answers": 0,
+          "infrastructure_failures": 3,
+          "protocol_failures": 2,
+          "repairs": 4
+        },
+        "P0": {
+          "planned": 14,
+          "evaluated": 14,
+          "supported_cases": 6,
+          "supported_correct": 6,
+          "catalog_decisions_correct": 14,
+          "graph_answerable_catalog_outside_cases": 6,
+          "outside_safe_refusals": 6,
+          "outside_answer_decisions": 0,
+          "wrong_returned_answers": 0,
+          "infrastructure_failures": 0,
+          "protocol_failures": 0,
+          "repairs": 0
+        },
+        "P1": {
+          "planned": 14,
+          "evaluated": 14,
+          "supported_cases": 6,
+          "supported_correct": 6,
+          "catalog_decisions_correct": 14,
+          "graph_answerable_catalog_outside_cases": 6,
+          "outside_safe_refusals": 6,
+          "outside_answer_decisions": 0,
+          "wrong_returned_answers": 0,
+          "infrastructure_failures": 0,
+          "protocol_failures": 0,
+          "repairs": 0
+        }
+      },
+      "actual_calls": 32,
+      "known_reported_tokens": 183538,
+      "unknown_usage_calls": 3,
+      "dispatch_seconds": 1192.594999999972,
+      "limits": "Developer-known tasks, one model, no service capability change. Refusal is not completing an answerable task. Shared first-pass views are paired, not independent calls."
+    },
+    "input_audit": {
+      "audited_requests": 32,
+      "task_fields": [
+        "question",
+        "columns"
+      ],
+      "forbidden_gold_keys_present": false
+    }
+  }
+}
