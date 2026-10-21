@@ -16,6 +16,7 @@ import strong_baselines as s
 import protocol_control as p
 import run_protocol_control as control
 import information_interface as info
+import compact_context
 from run_mechanism_pilot import bag
 
 
@@ -132,7 +133,9 @@ def run(a):
         'legacy_compiler_sha256':b.sha(Path(__file__).with_name('mechanism_core.py')),
         'information_compiler_sha256':b.sha(Path(info.__file__)),
         'prompts':{'G':s.PROMPTS['G'],'P':p.PROTOCOL_PROMPT,'I':p.PROTOCOL_PROMPT},
-        'catalogs':{'P':s.CATALOG,'G':info.CATALOG,'I':info.CATALOG},
+        'context_variant':a.context,
+        'context_renderer_sha256':b.sha(Path(compact_context.__file__)) if a.context=='compact' else b.sha(__file__),
+        'catalogs':{'P':s.CATALOG,'G':None if a.context=='compact' else info.CATALOG,'I':info.CATALOG},
         'model':{k:cfg[k] for k in ('model','temperature','top_p','reasoning_effort')},
         'repair_limit':1,'infra_retries':0,'max_calls':6*len(tasks),'consecutive_infra_stop':3})
     for source in Path(__file__).parent.glob('*.py'):
@@ -145,7 +148,7 @@ def run(a):
     orders=(('G','P','I'),('P','I','G'),('I','G','P'))
     for index,spec in enumerate(tasks):
         for arm in orders[index%3]:
-            data=public_input(spec,schema,arm)
+            data=(compact_context.public_input(spec,schema,arm) if a.context=='compact' else public_input(spec,schema,arm))
             stage=arm+'_'+spec['id']
             first_reply=dispatch(out,stage+'_first',cfg,arm,data,a.budget_dir)
             consecutive=consecutive+1 if first_reply.get('failure')=='INFRASTRUCTURE' else 0
@@ -186,6 +189,7 @@ if __name__=='__main__':
     for key in ('task-dir','project','data','receipt','config','output','budget-dir'):
         parser.add_argument('--'+key,required=True)
     parser.add_argument('--port',type=int,choices=(17475,17476),required=True)
+    parser.add_argument('--context',choices=('full','compact'),default='full')
     args=parser.parse_args()
     b.DB_URL=f'http://127.0.0.1:{args.port}/db/neo4j/tx/commit'
     run(args)
