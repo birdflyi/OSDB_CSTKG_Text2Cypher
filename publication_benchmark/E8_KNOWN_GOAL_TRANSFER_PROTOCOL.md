@@ -1,0 +1,9 @@
+# Known-goal project-transfer control
+
+Freeze before any model prediction on IoTDB or Elasticsearch. The independent new answerable goals all exceed both service catalogs. That stratum diagnoses coverage but cannot test ordinary operation inside the service capability. Add a separately labeled project-transfer control using the ALREADY KNOWN development goal definitions, not newly invented supported goals.
+
+Reuse the original mechanism_core.dataset anchor/discriminability algorithm without fallback and take the first canonical instance in each of its six existing families, exactly as E5 did. If its strict graph-only anchor requirements fail, record failure rather than invent a new favorable sampling rule. Reuse all six existing event goals with the original July1–August1 window and deterministic dominant repository ID. Do not search periods according to model outcomes. Keep the original missing-anchor and anchored actual-RESOLVES boundary probes. Add no paraphrases or new semantic goals.
+
+Use independent CSV answers for the original families and independent E3 CSV event references plus the existing EventOracle cross-check. Execute separately recorded/compiled references against the actual selected databases. This control reuses the old goal definitions; it is a held-out project binding, NOT independent task generalization. Compiled old-family reference checks are not independent manual query implementations.
+
+Retain all14 cases in preparation. Mark complete outputs above500 rows ineligible before prediction, publish that flow, and do not replace them with shorter windows or counts. Model tasks include only eligible cases with their exact original semantics. The G/P/I methods, compact renderer, output contract and repair policy stay frozen. Analyze this control separately from the source, grounded, direction and boundary workloads. It cannot inflate the new independent semantic-goal count.
