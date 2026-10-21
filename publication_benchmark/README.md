@@ -218,3 +218,18 @@ python run_strong_baselines.py --source PRIVATE_DATASET --project redis --receip
 E1 preparation: 27 tests, 28 live structural checks, and 72/72 reference executions
 on each project passed. These are readiness checks, not model accuracy results.
 Branch and checkpoint policy: `VERSIONING.md`.
+
+## E2 semantic diagnostics
+
+`analyze_mechanism_pairs.py` rejects incomplete or duplicate E1 records and
+reports all-four-correct equivalent groups, canonical/contrast pair success,
+identical-but-wrong groups and paired G/S outcomes. It makes no model calls.
+
+`build_semantic_fixtures.py` fixes three small synthetic graphs from task scopes
+without consulting predictions. `run_semantic_fixture_checks.py` verifies CSV
+references on a dedicated imported fixture, executes declared Cypher mutants,
+and optionally reexecutes E1 predictions. Original project data is not edited.
+Fixtures must be imported into fresh dedicated instances (17477–17479), using
+the guarded empty-graph importer; hash/identity receipts are mandatory.
+Without `--runs`, only evaluator self-checks are performed. Six declared mutant
+classes are finite diagnostic targets, not an estimate of all semantic errors.
