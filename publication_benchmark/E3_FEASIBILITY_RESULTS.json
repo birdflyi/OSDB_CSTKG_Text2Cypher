@@ -1,0 +1,166 @@
+{
+  "mode": "E3_FEASIBILITY_BOUNDARY_NOT_FORMAL_COMPARISON",
+  "projects": {
+    "redis": {
+      "summary": {
+        "status": "PLANNED_DISPATCHES_COMPLETED",
+        "arm_scores": {
+          "G0": {
+            "planned_cases": 6,
+            "evaluated_cases": 6,
+            "correct": 6,
+            "executed": 6,
+            "repairs_used": 0,
+            "infrastructure_failures": 0,
+            "safe_catalog_refusals": 0,
+            "catalog_false_accept_decisions": 0,
+            "wrong_returned_results": 0
+          },
+          "G1": {
+            "planned_cases": 6,
+            "evaluated_cases": 6,
+            "correct": 6,
+            "executed": 6,
+            "repairs_used": 0,
+            "infrastructure_failures": 0,
+            "safe_catalog_refusals": 0,
+            "catalog_false_accept_decisions": 0,
+            "wrong_returned_results": 0
+          },
+          "S0": {
+            "planned_cases": 6,
+            "evaluated_cases": 6,
+            "correct": 0,
+            "executed": 0,
+            "repairs_used": 0,
+            "infrastructure_failures": 3,
+            "safe_catalog_refusals": 0,
+            "catalog_false_accept_decisions": 1,
+            "wrong_returned_results": 0
+          },
+          "S1": {
+            "planned_cases": 6,
+            "evaluated_cases": 6,
+            "correct": 0,
+            "executed": 0,
+            "repairs_used": 3,
+            "infrastructure_failures": 3,
+            "safe_catalog_refusals": 0,
+            "catalog_false_accept_decisions": 2,
+            "wrong_returned_results": 0
+          }
+        },
+        "terminal_dispatches": 15,
+        "known_reported_tokens": 85933,
+        "unknown_usage_dispatches": 3,
+        "dispatch_seconds": 960.2510000000475,
+        "interpretation": "Development only. G1/S1 include shared first passes, not independent samples. No whole-system or human-study claim.",
+        "mode": "E3_FEASIBILITY_NOT_FORMAL_TEST"
+      },
+      "failure_breakdown": {
+        "G0": {
+          "EXECUTED": 6
+        },
+        "G1": {
+          "EXECUTED": 6
+        },
+        "S0": {
+          "PROTOCOL_ERROR": 2,
+          "CONTRACT_ERROR": 1,
+          "INFRASTRUCTURE": 3
+        },
+        "S1": {
+          "CONTRACT_ERROR": 2,
+          "INFRASTRUCTURE": 3,
+          "PROTOCOL_ERROR": 1
+        }
+      },
+      "summary_sha256": "0712da687db811fb828c5c1f8a109e0c62de93b3d079aa18b665c8d4b691ecd0",
+      "run_manifest_sha256": "614bf092a44a4f10a34fd900447b6806ca7b01a72452dbc1a3143fcbe9a82e52",
+      "input_audit_sha256": "f323f63a15e209172e32169c368aa14faf456740219e24da4ff311bec05817e9"
+    },
+    "duckdb": {
+      "summary": {
+        "status": "STOPPED_INFRASTRUCTURE",
+        "arm_scores": {
+          "G0": {
+            "planned_cases": 6,
+            "evaluated_cases": 6,
+            "correct": 5,
+            "executed": 5,
+            "repairs_used": 0,
+            "infrastructure_failures": 1,
+            "safe_catalog_refusals": 0,
+            "catalog_false_accept_decisions": 0,
+            "wrong_returned_results": 0
+          },
+          "G1": {
+            "planned_cases": 6,
+            "evaluated_cases": 6,
+            "correct": 5,
+            "executed": 5,
+            "repairs_used": 0,
+            "infrastructure_failures": 1,
+            "safe_catalog_refusals": 0,
+            "catalog_false_accept_decisions": 0,
+            "wrong_returned_results": 0
+          },
+          "S0": {
+            "planned_cases": 6,
+            "evaluated_cases": 6,
+            "correct": 0,
+            "executed": 0,
+            "repairs_used": 0,
+            "infrastructure_failures": 3,
+            "safe_catalog_refusals": 0,
+            "catalog_false_accept_decisions": 0,
+            "wrong_returned_results": 0
+          },
+          "S1": {
+            "planned_cases": 6,
+            "evaluated_cases": 6,
+            "correct": 0,
+            "executed": 0,
+            "repairs_used": 3,
+            "infrastructure_failures": 4,
+            "safe_catalog_refusals": 0,
+            "catalog_false_accept_decisions": 1,
+            "wrong_returned_results": 0
+          }
+        },
+        "terminal_dispatches": 15,
+        "known_reported_tokens": 69293,
+        "unknown_usage_dispatches": 5,
+        "dispatch_seconds": 1044.7989999998827,
+        "interpretation": "Development only. G1/S1 include shared first passes, not independent samples. No whole-system or human-study claim.",
+        "mode": "E3_FEASIBILITY_NOT_FORMAL_TEST"
+      },
+      "failure_breakdown": {
+        "G0": {
+          "EXECUTED": 5,
+          "INFRASTRUCTURE": 1
+        },
+        "G1": {
+          "EXECUTED": 5,
+          "INFRASTRUCTURE": 1
+        },
+        "S0": {
+          "PROTOCOL_ERROR": 3,
+          "INFRASTRUCTURE": 3
+        },
+        "S1": {
+          "INFRASTRUCTURE": 4,
+          "CONTRACT_ERROR": 1,
+          "PROTOCOL_ERROR": 1
+        }
+      },
+      "summary_sha256": "229a75e56237d29d8efadbf9a072bbd59a289825974c58e6479e2935f1c1ea79",
+      "run_manifest_sha256": "4b48e9bf37c19d806db2cb2b21537a3a98a7dd9bf9a2176773c47591737257cf",
+      "input_audit_sha256": "9f5673bb7f7afe3831a97c66027cf5064b40606d964ee1433ed3e33eb19a4f4e"
+    }
+  },
+  "fresh_dispatches": 30,
+  "known_reported_tokens": 155226,
+  "unknown_usage_dispatches": 8,
+  "limitations": "Six externally motivated observed-event goals selected for reference feasibility, all outside frozen service catalog. Eight infrastructure failures prevent a clean semantic comparison; do not interpret task coverage as model semantic error rate. No whole-history metric or representative user population claim."
+}
