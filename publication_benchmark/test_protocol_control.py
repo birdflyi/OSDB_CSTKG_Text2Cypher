@@ -7,6 +7,17 @@ import protocol_control as p
 import run_protocol_control as r
 
 
+def test_progress_can_update_without_rewriting_raw_evidence(tmp_path):
+    progress=tmp_path/'progress.json'
+    r.derived(progress,{'status':'RUNNING','done':1})
+    r.derived(progress,{'status':'RUNNING','done':2})
+    assert json.loads(progress.read_text())['done']==2
+    raw=tmp_path/'request.json'
+    r.r.store(raw,{'question':'fixed'})
+    with pytest.raises(ValueError,match='Immutable'):
+        r.r.store(raw,{'question':'changed'})
+
+
 def test_same_compiler_and_contract_are_used():
     assert p.s.CATALOG is m.CATALOG
     assert p.s.compile_call is m.compile_call
