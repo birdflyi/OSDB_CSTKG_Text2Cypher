@@ -1,0 +1,44 @@
+{
+  "mode": "USER_DIRECTED_BOUNDED_TEN_SECOND_RETRY_DIAGNOSTIC",
+  "status": "SEQUENCE_FINISHED",
+  "actual_attempts": 1,
+  "retry_attempts": 0,
+  "retry_effect_not_observed": true,
+  "http_status": 200,
+  "seconds": 9.172000000020489,
+  "usage": {
+    "completion_tokens": 326,
+    "prompt_tokens": 1863,
+    "total_tokens": 2189,
+    "completion_tokens_details": {
+      "reasoning_tokens": 309
+    }
+  },
+  "same_original_failed_json": true,
+  "prepared_wire_sha256": "2a7eda2395f703436a62b6a80d1e7ad5b535c930221dc75c656af34aa8ce1313",
+  "unique_continuation_attempts": {
+    "reserved_slots": 348,
+    "attempts": 348,
+    "unknown_usage_attempts": 83,
+    "pending_attempts": 0,
+    "known_prompt_tokens": 1061008,
+    "known_completion_tokens": 199526,
+    "known_total_tokens": 1260534,
+    "unknown_prompt_token_attempts": 83,
+    "unknown_completion_token_attempts": 83,
+    "http_or_transport_failures": 83,
+    "recorded_dispatch_seconds": 8635.351999999257,
+    "total_tokens_complete": false,
+    "currency_cost": null,
+    "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+  },
+  "protected_field_audit": {
+    "requests": 348,
+    "plaintext_user_messages": 13,
+    "pass": true
+  },
+  "fault_injection_tests_passed": 9,
+  "original_scores_changed": false,
+  "formal_historical_engine_changed": false,
+  "limits": "First attempt succeeded, so the ten-second recovery policy was not exercised on live failures. Diagnostic excluded from effectiveness. No causal frequency/client conclusion. Formal application requires a separately declared uniform cohort; do not silently pool zero-retry and retry results."
+}
