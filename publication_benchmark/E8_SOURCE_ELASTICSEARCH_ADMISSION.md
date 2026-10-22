@@ -1,0 +1,11 @@
+# Finite admission: untouched source Elasticsearch goals
+
+22 October 2026. The idle-gated exact failed-body curl diagnostic returned a complete HTTP200 response and has exited. Its exact wire/payload, unique budget and input-field checks have been audited. This is a usable full-task response at one time, not proof of stable availability, Python/curl causality or a repaired endpoint. The earlier failures and diagnostic successes remain separate and unchanged.
+
+Admit exactly one untouched pre-frozen independent coverage batch: `e7_source_tasks_v1/elasticsearch`, output `e7_source_elasticsearch_v1`, through the existing `run_selected_holdout.py` wrapper and unchanged clean E9 engine. Retain all eight source goal operationalizations and original April window/bindings. They exceed the frozen single-call catalog; assess coverage and realized completion, not a matched-capability mapping contest. They are source proxies, not representative user questions or exact replications of source metrics.
+
+Use the original Python requests client, compact G/P/I contexts, low reasoning, 6,000 output cap and original connect/read timeout (10,120). Do not adopt curl or its 300-second diagnostic timeout as a benchmark change. The child process explicitly bypasses local proxies for the model endpoint and loopback, matching the separately recorded grounded-direct cohort. No claim of proxy repair is made. Parent/system environment remains unchanged.
+
+At admission, global accounting is 338/1,200 actual attempts, 78 unknown-usage attempts, zero pending. The absolute ceiling is 48 new requests (8 goals x 3 arms x first plus at most one structural repair). No infrastructure retry or gold-informed repair is permitted. The existing runner rotates arm order and stops the batch on three consecutive infrastructure outcomes. No new goals, compiler defaults, score changes, source retries or other project batches are authorized by this admission.
+
+Reference answers, graph identity and CSV hashes are checked before prediction. Archive evaluated/planned positions, refusals, returned errors, infrastructure failures, repairs, unknown costs and undispatched positions. A stopped batch is not a completed zero score. Preserve all original outputs; audit this outcome before any subsequent decision. No automatic next batch or queue restart.
