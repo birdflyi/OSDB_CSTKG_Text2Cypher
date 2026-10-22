@@ -1,0 +1,9 @@
+# Exact failed-body curl diagnostic: usable, cause unresolved
+
+22 October 2026. The single idle-gated helper exited after one diagnostic at 12:37 local. The same 15,603-byte full request that failed in the grounded Redis batch returned HTTP200 through curl-direct, finish_reason stop and nonempty content, in 11.563 seconds. Its body SHA-256 is ba96a4148c57ea4a3453df7c5d8359798c40b13287e8fe330f0a68e4ad9aafb3; saved bytes and decoded JSON match the failed input exactly. This diagnostic uses a disclosed 300-second total timeout, not the frozen benchmark read timeout of 120 seconds.
+
+The attempt reports 4,186 tokens (3,881 prompt; 305 completion). Unique continuation accounting is 338/1,200 attempts, 78 unknown-usage attempts, zero pending, 1,242,786 known tokens. Recorded global duration is 8,367.117 seconds and includes previously disclosed pacing waits. Verified fees remain unavailable. All 338 saved inputs pass the protected reference/score field audit; this check is not general contamination proof.
+
+This response is diagnostic only. It does not replace any failed prediction, enter effectiveness scores or establish that curl is better than Python. The earlier Python and current curl observations occurred at different times. Ten prior diagnostics also succeeded before a fresh three-failure benchmark stop. Stable availability and the physical failure cause therefore remain unresolved; Chinese encoding is not supported as the explanation.
+
+After this audit, one separately documented finite admission may attempt the still untouched source Elasticsearch workload with the original frozen Python client, settings and read timeout. Such execution measures that cohort, not the effect of a proven transport repair. It must stop on three consecutive infrastructure failures, preserve all older outputs, and never automatically queue another batch. The exact-body helper itself has exited and will not be repeated.

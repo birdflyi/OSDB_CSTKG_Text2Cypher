@@ -1,0 +1,45 @@
+{
+  "mode": "EXACT_FAILED_BODY_CURL_DIAGNOSTIC_AUDIT_NOT_EFFECTIVENESS",
+  "budget_slot": 338,
+  "http_status": 200,
+  "seconds": 11.562999999965541,
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 305,
+    "prompt_tokens": 3881,
+    "total_tokens": 4186,
+    "completion_tokens_details": {
+      "reasoning_tokens": 234
+    }
+  },
+  "wire_sha256": "ba96a4148c57ea4a3453df7c5d8359798c40b13287e8fe330f0a68e4ad9aafb3",
+  "wire_bytes": 15603,
+  "exact_original_wire_match": true,
+  "json_roundtrip_match": true,
+  "timeout_seconds": 300,
+  "route": "curl direct",
+  "diagnostic_not_graded": true,
+  "unique_continuation_attempts": {
+    "reserved_slots": 338,
+    "attempts": 338,
+    "unknown_usage_attempts": 78,
+    "pending_attempts": 0,
+    "known_prompt_tokens": 1047176,
+    "known_completion_tokens": 195610,
+    "known_total_tokens": 1242786,
+    "unknown_prompt_token_attempts": 78,
+    "unknown_completion_token_attempts": 78,
+    "http_or_transport_failures": 78,
+    "recorded_dispatch_seconds": 8367.11699999927,
+    "total_tokens_complete": false,
+    "currency_cost": null,
+    "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+  },
+  "payload_protected_field_audit": {
+    "requests": 338,
+    "plaintext_user_messages": 13,
+    "pass": true,
+    "limits": "Field check only; not proof against textual or pretraining contamination."
+  },
+  "limits": "Time-separated success cannot isolate Python/curl effects, prove a cause, stable recovery, or replace a failed formal prediction."
+}
