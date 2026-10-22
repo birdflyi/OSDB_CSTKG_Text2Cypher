@@ -1,0 +1,11 @@
+# User-directed ten-second infrastructure retry
+
+22 October 2026. The user authorized retrying after failures at ten-second intervals. This supersedes the prior hourly-only waiting policy for the bounded diagnostic admitted here. It does not authorize unlimited retries or erase the three-consecutive-physical-infrastructure-failure stop.
+
+Use the latest failed request from source Elasticsearch, selected by terminal time before any new call. Copy the entire JSON payload without changing model, prompt, arguments, temperature, reasoning effort or output cap. Keep the original Python connect/read timeout (10,120), explicit direct routing and no HTTP-library retries. Make one initial diagnostic attempt and at most two additional attempts, waiting at least ten seconds after each failure completes. Respect a longer Retry-After if returned. No benchmark or next batch starts automatically.
+
+Each physical attempt receives a new unique budget slot, immutable request/wire/terminal and measured network time. Waiting time is separate. HTTP429, HTTP5xx and recorded request connection/read failures qualify. HTTP200 responses, including wrong, refused, truncated or malformed model output, must not be rerolled by this infrastructure policy. Other HTTP failures are retained and stop that sequence without a retry. An unrecorded pending attempt is not automatically repeated.
+
+The diagnostic has an absolute three-call ceiling inside the shared 1,200 limit. Three consecutive actual infrastructure failures stop it. A timeout can consume provider work even without a delivered answer; unknown usage/fees remain unknown. The first completed non-infrastructure response is retained without comparing alternative answers. All prior formal scores remain unchanged. Diagnosis is excluded from effectiveness metrics.
+
+This test can show whether a particular failure is recoverable under this policy; it cannot identify rate limiting as the cause. The earlier sixty-second paced source cohort also failed, and no rate-limit cause has been established. Any later formal retry cohort must declare the same policy for all methods, report first-physical and after-retry results plus all costs, and remain separate from zero-retry cohorts. This policy module is not silently injected into the frozen historical engine.
