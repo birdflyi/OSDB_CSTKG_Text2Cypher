@@ -1,0 +1,371 @@
+{
+  "mode": "E10_GROUNDED_DUCKDB_RETRY_COHORT_NOT_POOLED_WITH_ZERO_RETRY",
+  "summary": {
+    "status": "STOPPED_INFRASTRUCTURE",
+    "scores": {
+      "G_FIRST_PHYSICAL": {
+        "planned": 7,
+        "evaluated": 4,
+        "answerable_cases": 4,
+        "answerable_correct": 4,
+        "correct_boundary": 0,
+        "wrong_returned_answers": 0,
+        "safe_catalog_refusals": 0,
+        "infrastructure_outcomes": 0
+      },
+      "G_AFTER_TRANSPORT": {
+        "planned": 7,
+        "evaluated": 4,
+        "answerable_cases": 4,
+        "answerable_correct": 4,
+        "correct_boundary": 0,
+        "wrong_returned_answers": 0,
+        "safe_catalog_refusals": 0,
+        "infrastructure_outcomes": 0
+      },
+      "G_AFTER_STRUCTURAL": {
+        "planned": 7,
+        "evaluated": 4,
+        "answerable_cases": 4,
+        "answerable_correct": 4,
+        "correct_boundary": 0,
+        "wrong_returned_answers": 0,
+        "safe_catalog_refusals": 0,
+        "infrastructure_outcomes": 0
+      },
+      "P_FIRST_PHYSICAL": {
+        "planned": 7,
+        "evaluated": 4,
+        "answerable_cases": 4,
+        "answerable_correct": 0,
+        "correct_boundary": 0,
+        "wrong_returned_answers": 0,
+        "safe_catalog_refusals": 4,
+        "infrastructure_outcomes": 0
+      },
+      "P_AFTER_TRANSPORT": {
+        "planned": 7,
+        "evaluated": 4,
+        "answerable_cases": 4,
+        "answerable_correct": 0,
+        "correct_boundary": 0,
+        "wrong_returned_answers": 0,
+        "safe_catalog_refusals": 4,
+        "infrastructure_outcomes": 0
+      },
+      "P_AFTER_STRUCTURAL": {
+        "planned": 7,
+        "evaluated": 4,
+        "answerable_cases": 4,
+        "answerable_correct": 0,
+        "correct_boundary": 0,
+        "wrong_returned_answers": 0,
+        "safe_catalog_refusals": 4,
+        "infrastructure_outcomes": 0
+      },
+      "I_FIRST_PHYSICAL": {
+        "planned": 7,
+        "evaluated": 4,
+        "answerable_cases": 4,
+        "answerable_correct": 0,
+        "correct_boundary": 0,
+        "wrong_returned_answers": 0,
+        "safe_catalog_refusals": 3,
+        "infrastructure_outcomes": 1
+      },
+      "I_AFTER_TRANSPORT": {
+        "planned": 7,
+        "evaluated": 4,
+        "answerable_cases": 4,
+        "answerable_correct": 0,
+        "correct_boundary": 0,
+        "wrong_returned_answers": 0,
+        "safe_catalog_refusals": 3,
+        "infrastructure_outcomes": 1
+      },
+      "I_AFTER_STRUCTURAL": {
+        "planned": 7,
+        "evaluated": 4,
+        "answerable_cases": 4,
+        "answerable_correct": 0,
+        "correct_boundary": 0,
+        "wrong_returned_answers": 0,
+        "safe_catalog_refusals": 3,
+        "infrastructure_outcomes": 1
+      }
+    },
+    "actual_calls": 14,
+    "physical_usage": {
+      "attempts": 14,
+      "unknown_usage_attempts": 3,
+      "pending_attempts": 0,
+      "known_prompt_tokens": 30008,
+      "known_completion_tokens": 9873,
+      "known_total_tokens": 39881,
+      "unknown_prompt_token_attempts": 3,
+      "unknown_completion_token_attempts": 3,
+      "http_or_transport_failures": 3,
+      "recorded_dispatch_seconds": 398.7180000001099,
+      "total_tokens_complete": false,
+      "currency_cost": null,
+      "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+    },
+    "arm_physical_costs": {
+      "G": {
+        "attempts": 4,
+        "unknown_usage_attempts": 0,
+        "pending_attempts": 0,
+        "known_prompt_tokens": 16084,
+        "known_completion_tokens": 2654,
+        "known_total_tokens": 18738,
+        "unknown_prompt_token_attempts": 0,
+        "unknown_completion_token_attempts": 0,
+        "http_or_transport_failures": 0,
+        "recorded_dispatch_seconds": 75.76500000013039,
+        "total_tokens_complete": true,
+        "currency_cost": null,
+        "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+      },
+      "P": {
+        "attempts": 4,
+        "unknown_usage_attempts": 0,
+        "pending_attempts": 0,
+        "known_prompt_tokens": 7368,
+        "known_completion_tokens": 3123,
+        "known_total_tokens": 10491,
+        "unknown_prompt_token_attempts": 0,
+        "unknown_completion_token_attempts": 0,
+        "http_or_transport_failures": 0,
+        "recorded_dispatch_seconds": 89.89099999994505,
+        "total_tokens_complete": true,
+        "currency_cost": null,
+        "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+      },
+      "I": {
+        "attempts": 6,
+        "unknown_usage_attempts": 3,
+        "pending_attempts": 0,
+        "known_prompt_tokens": 6556,
+        "known_completion_tokens": 4096,
+        "known_total_tokens": 10652,
+        "unknown_prompt_token_attempts": 3,
+        "unknown_completion_token_attempts": 3,
+        "http_or_transport_failures": 3,
+        "recorded_dispatch_seconds": 233.06200000003446,
+        "total_tokens_complete": false,
+        "currency_cost": null,
+        "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+      }
+    },
+    "retry_wait_seconds": 20.015999999945052,
+    "limits": "New retry cohort, not pooled with zero-retry cohorts. Views share physical attempts; do not add their costs. No inference of rate-limit causality."
+  },
+  "stratified_results": {
+    "G": {
+      "FIRST_PHYSICAL": {
+        "answerable_main": {
+          "planned": 6,
+          "evaluated": 3,
+          "correct": 3,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 0,
+          "infrastructure_outcomes": 0
+        },
+        "direction_control": {
+          "planned": 1,
+          "evaluated": 1,
+          "correct": 1,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 0,
+          "infrastructure_outcomes": 0
+        }
+      },
+      "AFTER_TRANSPORT": {
+        "answerable_main": {
+          "planned": 6,
+          "evaluated": 3,
+          "correct": 3,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 0,
+          "infrastructure_outcomes": 0
+        },
+        "direction_control": {
+          "planned": 1,
+          "evaluated": 1,
+          "correct": 1,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 0,
+          "infrastructure_outcomes": 0
+        }
+      },
+      "AFTER_STRUCTURAL": {
+        "answerable_main": {
+          "planned": 6,
+          "evaluated": 3,
+          "correct": 3,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 0,
+          "infrastructure_outcomes": 0
+        },
+        "direction_control": {
+          "planned": 1,
+          "evaluated": 1,
+          "correct": 1,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 0,
+          "infrastructure_outcomes": 0
+        }
+      }
+    },
+    "P": {
+      "FIRST_PHYSICAL": {
+        "answerable_main": {
+          "planned": 6,
+          "evaluated": 3,
+          "correct": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 3,
+          "infrastructure_outcomes": 0
+        },
+        "direction_control": {
+          "planned": 1,
+          "evaluated": 1,
+          "correct": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 1,
+          "infrastructure_outcomes": 0
+        }
+      },
+      "AFTER_TRANSPORT": {
+        "answerable_main": {
+          "planned": 6,
+          "evaluated": 3,
+          "correct": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 3,
+          "infrastructure_outcomes": 0
+        },
+        "direction_control": {
+          "planned": 1,
+          "evaluated": 1,
+          "correct": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 1,
+          "infrastructure_outcomes": 0
+        }
+      },
+      "AFTER_STRUCTURAL": {
+        "answerable_main": {
+          "planned": 6,
+          "evaluated": 3,
+          "correct": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 3,
+          "infrastructure_outcomes": 0
+        },
+        "direction_control": {
+          "planned": 1,
+          "evaluated": 1,
+          "correct": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 1,
+          "infrastructure_outcomes": 0
+        }
+      }
+    },
+    "I": {
+      "FIRST_PHYSICAL": {
+        "answerable_main": {
+          "planned": 6,
+          "evaluated": 3,
+          "correct": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 2,
+          "infrastructure_outcomes": 1
+        },
+        "direction_control": {
+          "planned": 1,
+          "evaluated": 1,
+          "correct": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 1,
+          "infrastructure_outcomes": 0
+        }
+      },
+      "AFTER_TRANSPORT": {
+        "answerable_main": {
+          "planned": 6,
+          "evaluated": 3,
+          "correct": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 2,
+          "infrastructure_outcomes": 1
+        },
+        "direction_control": {
+          "planned": 1,
+          "evaluated": 1,
+          "correct": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 1,
+          "infrastructure_outcomes": 0
+        }
+      },
+      "AFTER_STRUCTURAL": {
+        "answerable_main": {
+          "planned": 6,
+          "evaluated": 3,
+          "correct": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 2,
+          "infrastructure_outcomes": 1
+        },
+        "direction_control": {
+          "planned": 1,
+          "evaluated": 1,
+          "correct": 0,
+          "wrong_returned_answers": 0,
+          "safe_catalog_refusals": 1,
+          "infrastructure_outcomes": 0
+        }
+      }
+    }
+  },
+  "unique_continuation_attempts": {
+    "reserved_slots": 362,
+    "attempts": 362,
+    "unknown_usage_attempts": 86,
+    "pending_attempts": 0,
+    "known_prompt_tokens": 1091016,
+    "known_completion_tokens": 209399,
+    "known_total_tokens": 1300415,
+    "unknown_prompt_token_attempts": 86,
+    "unknown_completion_token_attempts": 86,
+    "http_or_transport_failures": 86,
+    "recorded_dispatch_seconds": 9034.069999999367,
+    "total_tokens_complete": false,
+    "currency_cost": null,
+    "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+  },
+  "http_transport_breakdown": {
+    "200": 11,
+    "500": 2,
+    "ReadTimeout": 1
+  },
+  "logical_requests_recovered_to_http200": 0,
+  "transport_retry_attempts": 2,
+  "next_routine_probe_not_before_if_stopped": "2026-10-22T15:12:34+08:00",
+  "audit": {
+    "references_pass": 7,
+    "task_schema_engine_model_match": true,
+    "physical_budget_matches_once": true,
+    "all_retry_payloads_identical": true,
+    "wait_receipts_and_wallclock_checks_pass": true,
+    "global_three_physical_failure_stop_pass": true,
+    "first_physical_vs_after_preserved": true,
+    "direction_control_separate": true,
+    "protected_field_requests": 362,
+    "plaintext_user_messages": 13,
+    "protected_field_check_pass": true
+  },
+  "limits": "One provider, adapted synthetic goals, single-call coverage mismatch. Observed retry recovery is not a causal rate-limit finding. Shared first/transport/structural views do not add independent samples or costs. Unknown fees not zero."
+}
