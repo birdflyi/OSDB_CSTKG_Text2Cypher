@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "platform": "Linux-5.4.119-19-0009.11-x86_64-with-glibc2.35",
+  "python": "3.11.11",
+  "source_commit": "cd78924e343406dda6461593c2903f8547eee158",
+  "archive_sha256": "04f0ff3cbb57ed0f400087303f1a32216de12fdcba7fa01f6fb6f59cab4cf723",
+  "source_member_hashes": {
+    "build_reference_corner_fixture.py": "c319fd1c91db348d6d1b9d0768c9aec84047c3c08815198c3b08bfe3822c32e7",
+    "grounded_references.py": "c6b74eaa68708076e44d5e7843772fbc3940b090f07fe37697ed25f912363402",
+    "source_snapshot_references.py": "de77b2892639bafcbee8f05fbe53a9ae5291a14df891cbe85563910d01f9d013",
+    "expected_manifest.json": "6f8fb923ad171893c7a8dcf3da5cd3439ac309fd433eec12abff08eeca4d18a6"
+  },
+  "nodes": 48,
+  "edges": 87,
+  "manual_csv_goal_world_checks": 24,
+  "csv_source_hashes": {
+    "nodes.csv": "4284df43c8750c92ee031c5a7633458d54af5336a3b2a464c6be939ee07bc5fc",
+    "edges.csv": "6dd282ff641c345c97745b865a3eac2cdf2fe5a0ef74a3bbb13520c5c575d537"
+  },
+  "csv_bytes_match_original": true,
+  "manual_worlds_match_original": true,
+  "new_model_calls": 0,
+  "database_checks_run": 0,
+  "limits": "Pure CSV/manual reference portability check only. No Neo4j query replay, mutations, inference, GPU job or method superiority/generalization claim. No private API configuration uploaded.",
+  "currency_cost": null,
+  "currency_cost_reason": "Remote compute billing not supplied; no new model calls. No zero-cost or latency-superiority claim."
+}
