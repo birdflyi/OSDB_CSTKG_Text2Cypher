@@ -1,0 +1,348 @@
+{
+  "checkpoint": "2026-10-22 after first paced IoTDB source batch stopped",
+  "unique_continuation_attempts": {
+    "reserved_slots": 245,
+    "attempts": 245,
+    "unknown_usage_attempts": 52,
+    "pending_attempts": 0,
+    "known_prompt_tokens": 883434,
+    "known_completion_tokens": 162771,
+    "known_total_tokens": 1046205,
+    "unknown_prompt_token_attempts": 52,
+    "unknown_completion_token_attempts": 52,
+    "http_or_transport_failures": 52,
+    "recorded_dispatch_seconds": 6543.438999999198,
+    "total_tokens_complete": false,
+    "currency_cost": null,
+    "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+  },
+  "run": {
+    "folder": "e7_source_iotdb_v1",
+    "mode": "E7_NEW_SOURCE_PROXY_COVERAGE_STRATUM_NOT_USER_SAMPLE",
+    "git_commit": "53ac4323a70bf9f88cc4b3f1016046f66e125222",
+    "arms": {
+      "G0": {
+        "evaluated_cases": 4,
+        "answerable_cases": 4,
+        "correct_answerable_cases": 1,
+        "correct_boundary_decisions": 0,
+        "wrong_returned_answers": 0,
+        "executed_answerable": 1,
+        "infrastructure_outcomes": 3,
+        "all_attempt_usage": {
+          "attempts": 4,
+          "unknown_usage_attempts": 3,
+          "pending_attempts": 0,
+          "known_prompt_tokens": 3733,
+          "known_completion_tokens": 1198,
+          "known_total_tokens": 4931,
+          "unknown_prompt_token_attempts": 3,
+          "unknown_completion_token_attempts": 3,
+          "http_or_transport_failures": 3,
+          "recorded_dispatch_seconds": 177.46799999999348,
+          "total_tokens_complete": false,
+          "currency_cost": null,
+          "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+        },
+        "tokens_per_correct_answerable": null,
+        "median_model_dispatch_seconds_per_case": 37.20299999997951,
+        "p95_model_dispatch_seconds_per_case": 45.51599999994505
+      },
+      "G1": {
+        "evaluated_cases": 4,
+        "answerable_cases": 4,
+        "correct_answerable_cases": 1,
+        "correct_boundary_decisions": 0,
+        "wrong_returned_answers": 0,
+        "executed_answerable": 1,
+        "infrastructure_outcomes": 3,
+        "all_attempt_usage": {
+          "attempts": 4,
+          "unknown_usage_attempts": 3,
+          "pending_attempts": 0,
+          "known_prompt_tokens": 3733,
+          "known_completion_tokens": 1198,
+          "known_total_tokens": 4931,
+          "unknown_prompt_token_attempts": 3,
+          "unknown_completion_token_attempts": 3,
+          "http_or_transport_failures": 3,
+          "recorded_dispatch_seconds": 177.46799999999348,
+          "total_tokens_complete": false,
+          "currency_cost": null,
+          "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+        },
+        "tokens_per_correct_answerable": null,
+        "median_model_dispatch_seconds_per_case": 37.20299999997951,
+        "p95_model_dispatch_seconds_per_case": 45.51599999994505
+      },
+      "I0": {
+        "evaluated_cases": 4,
+        "answerable_cases": 4,
+        "correct_answerable_cases": 0,
+        "correct_boundary_decisions": 0,
+        "wrong_returned_answers": 0,
+        "executed_answerable": 0,
+        "infrastructure_outcomes": 1,
+        "all_attempt_usage": {
+          "attempts": 4,
+          "unknown_usage_attempts": 1,
+          "pending_attempts": 0,
+          "known_prompt_tokens": 6640,
+          "known_completion_tokens": 2093,
+          "known_total_tokens": 8733,
+          "unknown_prompt_token_attempts": 1,
+          "unknown_completion_token_attempts": 1,
+          "http_or_transport_failures": 1,
+          "recorded_dispatch_seconds": 253.59400000004098,
+          "total_tokens_complete": false,
+          "currency_cost": null,
+          "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+        },
+        "tokens_per_correct_answerable": null,
+        "median_model_dispatch_seconds_per_case": 61.9375,
+        "p95_model_dispatch_seconds_per_case": 64.17200000002049
+      },
+      "I1": {
+        "evaluated_cases": 4,
+        "answerable_cases": 4,
+        "correct_answerable_cases": 0,
+        "correct_boundary_decisions": 0,
+        "wrong_returned_answers": 0,
+        "executed_answerable": 0,
+        "infrastructure_outcomes": 2,
+        "all_attempt_usage": {
+          "attempts": 5,
+          "unknown_usage_attempts": 2,
+          "pending_attempts": 0,
+          "known_prompt_tokens": 6640,
+          "known_completion_tokens": 2093,
+          "known_total_tokens": 8733,
+          "unknown_prompt_token_attempts": 2,
+          "unknown_completion_token_attempts": 2,
+          "http_or_transport_failures": 2,
+          "recorded_dispatch_seconds": 411.53100000007544,
+          "total_tokens_complete": false,
+          "currency_cost": null,
+          "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+        },
+        "tokens_per_correct_answerable": null,
+        "median_model_dispatch_seconds_per_case": 61.9375,
+        "p95_model_dispatch_seconds_per_case": 64.17200000002049
+      },
+      "P0": {
+        "evaluated_cases": 4,
+        "answerable_cases": 4,
+        "correct_answerable_cases": 0,
+        "correct_boundary_decisions": 0,
+        "wrong_returned_answers": 0,
+        "executed_answerable": 0,
+        "infrastructure_outcomes": 1,
+        "all_attempt_usage": {
+          "attempts": 4,
+          "unknown_usage_attempts": 1,
+          "pending_attempts": 0,
+          "known_prompt_tokens": 5557,
+          "known_completion_tokens": 1469,
+          "known_total_tokens": 7026,
+          "unknown_prompt_token_attempts": 1,
+          "unknown_completion_token_attempts": 1,
+          "http_or_transport_failures": 1,
+          "recorded_dispatch_seconds": 250.829000000027,
+          "total_tokens_complete": false,
+          "currency_cost": null,
+          "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+        },
+        "tokens_per_correct_answerable": null,
+        "median_model_dispatch_seconds_per_case": 66.9770000000135,
+        "p95_model_dispatch_seconds_per_case": 75.40700000000652
+      },
+      "P1": {
+        "evaluated_cases": 4,
+        "answerable_cases": 4,
+        "correct_answerable_cases": 0,
+        "correct_boundary_decisions": 0,
+        "wrong_returned_answers": 0,
+        "executed_answerable": 0,
+        "infrastructure_outcomes": 1,
+        "all_attempt_usage": {
+          "attempts": 4,
+          "unknown_usage_attempts": 1,
+          "pending_attempts": 0,
+          "known_prompt_tokens": 5557,
+          "known_completion_tokens": 1469,
+          "known_total_tokens": 7026,
+          "unknown_prompt_token_attempts": 1,
+          "unknown_completion_token_attempts": 1,
+          "http_or_transport_failures": 1,
+          "recorded_dispatch_seconds": 250.829000000027,
+          "total_tokens_complete": false,
+          "currency_cost": null,
+          "currency_cost_reason": "No verified provider price or billing record. Known token sums exclude unknown usage; they are not zero-cost estimates."
+        },
+        "tokens_per_correct_answerable": null,
+        "median_model_dispatch_seconds_per_case": 66.9770000000135,
+        "p95_model_dispatch_seconds_per_case": 75.40700000000652
+      }
+    },
+    "paired_correctness": [
+      {
+        "left": "I1",
+        "right": "P1",
+        "paired_cases": 4,
+        "left_only_correct": 0,
+        "right_only_correct": 0,
+        "both_correct": 0,
+        "neither_correct": 4
+      },
+      {
+        "left": "I1",
+        "right": "G1",
+        "paired_cases": 4,
+        "left_only_correct": 0,
+        "right_only_correct": 1,
+        "both_correct": 0,
+        "neither_correct": 3
+      }
+    ],
+    "limits": "Retrieval/result-generation stage only, not end-to-end conversational answering or service construction/maintenance. Dispatch-time sums are per-attempt recorded time, not queue wall time or DB time. Arm first/repaired views share calls; do not add their usage. Development requests are not an independent generalization estimate."
+  },
+  "run_summary_time_semantics": "This run includes injected pacing waits in recorded dispatch seconds; medians and p95 are NOT pure provider/network latency.",
+  "input_field_audit": {
+    "attempts_checked": 245,
+    "plaintext_user_messages": 7,
+    "protected_field_findings": [],
+    "limits": "Structured user-field check, not a proof about all textual contamination or model pretraining."
+  },
+  "paced_integrity_audit": {
+    "calls": 13,
+    "all_payload_hashes_match": true,
+    "protected_field_findings": [],
+    "network_seconds": 345.9210000002058,
+    "injected_wait_seconds": 493.84499999985565,
+    "runner_terminal_seconds": 839.8280000000959,
+    "timing_reconciliation_difference_seconds": 0.062000000034458935,
+    "min_reconstructed_start_gap_seconds": 59.984517097473145,
+    "max_reconstructed_start_gap_seconds": 120.25264835357666,
+    "last_three_http_statuses": [
+      500,
+      500,
+      500
+    ],
+    "usage_unknown_calls": 6,
+    "limits": "Start times reconstructed from receipt filesystem mtime minus measured network time; small filesystem/write timing tolerance. Provider/network durations separate from injected wait. Pacing is not randomized across matching projects/times."
+  },
+  "paced_attempts": [
+    {
+      "sequence": 1,
+      "http_status": 200,
+      "exception_class": null,
+      "network_seconds": 40.84299999999348,
+      "pacing_wait_seconds": 57.31299999996554,
+      "payload_sha256": "3f378df9649bb0d0055593a835afa29e30023d1c58fcae5ac593cb1aee7d9110"
+    },
+    {
+      "sequence": 2,
+      "http_status": 200,
+      "exception_class": null,
+      "network_seconds": 16.780999999959022,
+      "pacing_wait_seconds": 18.54700000002049,
+      "payload_sha256": "f2711a4e6e527194d5e822db027cb9ab5a088b810ea756c5fb5f1808bc6ea60d"
+    },
+    {
+      "sequence": 3,
+      "http_status": 200,
+      "exception_class": null,
+      "network_seconds": 21.125,
+      "pacing_wait_seconds": 43.04700000002049,
+      "payload_sha256": "b1f4fb6b917d4e1e6bb00259b5280a2204c4dc4679b54a712e4c50c5bd94c252"
+    },
+    {
+      "sequence": 4,
+      "http_status": 200,
+      "exception_class": null,
+      "network_seconds": 42.875,
+      "pacing_wait_seconds": 38.67200000002049,
+      "payload_sha256": "154da6b0b1fad22575c9733e064f1b72f83b42d24c05e97d7a7eee69814b7407"
+    },
+    {
+      "sequence": 5,
+      "http_status": 200,
+      "exception_class": null,
+      "network_seconds": 35.96900000004098,
+      "pacing_wait_seconds": 16.969000000040978,
+      "payload_sha256": "f771344d62794e5eee9ceae1f8f5e40dee96e3977552b97b7cf6ab4a7379807d"
+    },
+    {
+      "sequence": 6,
+      "http_status": 500,
+      "exception_class": null,
+      "network_seconds": 5.030999999959022,
+      "pacing_wait_seconds": 23.859000000054948,
+      "payload_sha256": "c8066c7dfe65206ea69b3c57927739e6967514af64b3d87f231a177f2e406066"
+    },
+    {
+      "sequence": 7,
+      "http_status": 200,
+      "exception_class": null,
+      "network_seconds": 21.93799999996554,
+      "pacing_wait_seconds": 54.82799999997951,
+      "payload_sha256": "21a33a97f55716f34fdbc8fe1c16eecb2262a7bcde25eed592168db687726ab1"
+    },
+    {
+      "sequence": 8,
+      "http_status": null,
+      "exception_class": "ReadTimeout",
+      "network_seconds": 120.03099999995902,
+      "pacing_wait_seconds": 37.89000000001397,
+      "payload_sha256": "c2098a08d61e08434d7c91d46b6596a89a44760b6cb7e9718f32d757a9c6d6a8"
+    },
+    {
+      "sequence": 9,
+      "http_status": 500,
+      "exception_class": null,
+      "network_seconds": 4.906000000075437,
+      "pacing_wait_seconds": 0.0,
+      "payload_sha256": "7f694a5d9b67ad373d7f6da78f127801f8904501f333110ab48fc5e9cc679266"
+    },
+    {
+      "sequence": 10,
+      "http_status": 200,
+      "exception_class": null,
+      "network_seconds": 20.469000000040978,
+      "pacing_wait_seconds": 54.93799999996554,
+      "payload_sha256": "bc3ded696b8f0baa4eb253433b11f955e338b16365d2bfaf97a52249b9b954a5"
+    },
+    {
+      "sequence": 11,
+      "http_status": 500,
+      "exception_class": null,
+      "network_seconds": 6.156000000075437,
+      "pacing_wait_seconds": 39.34399999992456,
+      "payload_sha256": "15c50a7cf2a366624987929fac92102dac52f2a39d70f5dc1e58e69447dfadeb"
+    },
+    {
+      "sequence": 12,
+      "http_status": 500,
+      "exception_class": null,
+      "network_seconds": 4.953000000095926,
+      "pacing_wait_seconds": 53.59399999992456,
+      "payload_sha256": "0985ab0a7d45c0ba8449a51728d07e19d0afbb5c2ca97c358fb11b36d4fcd3e6"
+    },
+    {
+      "sequence": 13,
+      "http_status": 500,
+      "exception_class": null,
+      "network_seconds": 4.844000000040978,
+      "pacing_wait_seconds": 54.84399999992456,
+      "payload_sha256": "82ca144909e540e7a333cc9b629387df09db42ddb31816d175aaaf72c6be9997"
+    }
+  ],
+  "provenance_sha256": {
+    "manifest.json": "643a2092f7e936bb664a9ca5317e65c86788ec5d4ca79f9a34d701fb79bef5b8",
+    "summary.json": "e3cb757db74f0be8decace742560d3ce80dbc1ad77824483ccac6c3866f1687e",
+    "transport_manifest.json": "3a76c9e1c83e48f2e49dde62fbd9e56f543da407ea343c0e11af8432da512f07"
+  },
+  "execution_commit": "53ac4323a70bf9f88cc4b3f1016046f66e125222",
+  "transport_wrapper_commit": "0a185eb",
+  "claims": "Incomplete source coverage stratum. No full per-arm accuracy estimate, no stable superiority, no latency or currency-cost advantage. First/repaired views share calls and must not be summed."
+}
