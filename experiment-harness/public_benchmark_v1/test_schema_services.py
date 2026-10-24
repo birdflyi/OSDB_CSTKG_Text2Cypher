@@ -36,6 +36,42 @@ def queued_results(results):
 
 
 class SchemaSelectionChecks(unittest.TestCase):
+    def test_mandatory_edges_share_one_match_and_optional_groups_keep_nulls(self):
+        call = selection()
+        call['nodes'].append({'id': 'c', 'label': 'Company'})
+        call['edges'] = [{'id': 'r', 'source': 'n', 'target': 'c', 'label': 'worksAt'}]
+        self.assertEqual(compile_selection(call, SCHEMA)['query'].count('MATCH '), 1)
+        call['edges'][0]['optional'] = True
+        call['where'] = [{'field': 'n.age', 'op': 'gt', 'value': 18}]
+        call['returns'] = [{'field': 'n.name', 'alias': 'name'},
+                           {'field': 'c.eid', 'agg': 'count', 'distinct': True, 'alias': 'count'}]
+        call['group_by'] = ['n.eid']
+        compiled = compile_selection(call, SCHEMA)
+        self.assertIn('OPTIONAL MATCH', compiled['query'])
+        self.assertIn('WITH * WHERE', compiled['query'])
+        self.assertEqual(compiled['contract']['nullable_nodes'], ['c'])
+        self.assertIn('__group_0', compiled['query'])
+
+    def test_nullable_negation_is_not_a_disjointness_certificate(self):
+        candidate = plan('Alice', 'Bob')
+        for call in candidate['calls']:
+            call['where'][0]['negate'] = True
+        self.assertIn('NOT (', compile_selection(candidate['calls'][0], SCHEMA)['query'])
+        result = execute_plan(candidate, SCHEMA,
+                 queued_results([[['x', 'Other']], [['x', 'Other']]]))
+        self.assertEqual(result['rows'], [[1]])
+        self.assertEqual(result['representation'], 'entity_records')
+
+    def test_explicit_grouping_checks_functional_attachment(self):
+        call = selection()
+        call['returns'] = [{'field': 'n.name', 'alias': 'name'},
+                           {'field': '*', 'agg': 'count', 'alias': 'count'}]
+        call['group_by'] = ['n.age']
+        with self.assertRaises(UnsupportedPlan):
+            compile_selection(call, SCHEMA)
+        call['group_by'] = ['n.eid']
+        self.assertIn('WITH ', compile_selection(call, SCHEMA)['query'])
+
     def test_literals_are_parameters_and_schema_is_enforced(self):
         malicious = "x' DELETE n //"
         call = selection(malicious)

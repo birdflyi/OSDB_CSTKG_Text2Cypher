@@ -163,7 +163,8 @@ def fixtures(data, schema, worker):
             outcomes[strategy] = result
         rows.append({'id': label, 'kind': 'CONSTRUCTED_TRAIN_COMPILER_CHECK',
                      'expected_rows': [[expected]], 'outcomes': outcomes})
-    return rows
+    from semantic_preflight import semantic_checks
+    return rows + semantic_checks(graph, schema, worker)
 
 
 def run(args):

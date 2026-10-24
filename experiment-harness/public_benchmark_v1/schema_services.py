@@ -1,4 +1,4 @@
-"""Version 0.1: typed finite graph selection and two-input set composition.
+"""Version 0.2: typed bounded graph selection and two-input set composition.
 
 This is a DEVELOPMENT candidate, not the v16 method or a general Cypher IR.
 No query text is accepted from the service planner. Labels/properties/edges
@@ -12,7 +12,7 @@ import re
 import time
 
 
-VERSION = 'typed-services-dev-0.1.2'
+VERSION = 'typed-services-dev-0.2'
 
 
 class UnsupportedPlan(ValueError):
@@ -69,7 +69,7 @@ def literal_matches(value, kind):
 
 def compile_selection(call, schema):
     object_fields(call, ['nodes', 'edges', 'where', 'returns'],
-                  ['distinct', 'order_by', 'limit'])
+                  ['distinct', 'order_by', 'limit', 'group_by'])
     entities = {row['label']: row for row in schema['entities']}
     relations = {(row['label'], row['subj_label'], row['obj_label']): row
                  for row in schema['relations']}
@@ -88,11 +88,15 @@ def compile_selection(call, schema):
         variables[variable].update({'eid': 'str', 'name': 'str', 'aliases': 'list[str]',
                                     'description': 'str'})
         types[variable] = 'node'
-    matches = ['MATCH ' + ','.join('(' + v + ':' + ident(label) + ')'
-                                   for v, label in node_labels.items())]
     adjacency = {v: set() for v in node_labels}
+    required_adjacency = {v: set() for v in node_labels}
+    required_nodes = {next(iter(node_labels))}
+    optional_edges = []
+    required_edges = []
     for row in call['edges']:
-        object_fields(row, ['id', 'source', 'target', 'label'])
+        object_fields(row, ['id', 'source', 'target', 'label'], ['optional'])
+        if type(row.get('optional', False)) is not bool:
+            raise UnsupportedPlan('Optional edge flag must be boolean')
         v, a, b = name(row['id']), row['source'], row['target']
         if v in variables or a not in node_labels or b not in node_labels:
             raise UnsupportedPlan('Unknown endpoint or duplicate edge variable')
@@ -103,8 +107,13 @@ def compile_selection(call, schema):
         types[v] = 'edge'
         adjacency[a].add(b)
         adjacency[b].add(a)
-        # Separate MATCH clauses specify conjunction with possible edge reuse.
-        matches.append(f'MATCH ({a})-[{v}:{ident(row["label"])}]->({b})')
+        if row.get('optional', False):
+            optional_edges.append(row)
+        else:
+            required_edges.append(row)
+            required_nodes.update([a, b])
+            required_adjacency[a].add(b)
+            required_adjacency[b].add(a)
     reached = {next(iter(node_labels))}
     while True:
         grown = reached | {b for a in reached for b in adjacency[a]}
@@ -112,7 +121,31 @@ def compile_selection(call, schema):
             break
         reached = grown
     if reached != set(node_labels):
-        raise UnsupportedPlan('Disconnected Cartesian patterns are not in v0.1')
+        raise UnsupportedPlan('Disconnected Cartesian patterns are not supported')
+    if len(optional_edges) > 1:
+        raise UnsupportedPlan('v0.2 admits at most one optional edge')
+    reached_required = {next(iter(node_labels))}
+    while True:
+        grown = reached_required | {b for a in reached_required for b in required_adjacency[a]}
+        if grown == reached_required:
+            break
+        reached_required = grown
+    if reached_required != required_nodes:
+        raise UnsupportedPlan('Required pattern must be connected to the first/root node')
+    nullable_nodes = set(node_labels) - required_nodes
+    matches = ['MATCH ' + ','.join('(' + v + ':' + ident(label) + ')'
+                                   for v, label in node_labels.items() if v in required_nodes)]
+    # One clause: distinct edge variables cannot reuse the same relationship,
+    # matching Cypher's default relationship uniqueness semantics.
+    for row in required_edges:
+        matches[0] += f',({row["source"]})-[{row["id"]}:{ident(row["label"])}]->({row["target"]})'
+    for row in optional_edges:
+        if not ({row['source'], row['target']} & required_nodes):
+            raise UnsupportedPlan('Optional edge needs an already bound endpoint')
+        def endpoint(v):
+            return v + (':' + ident(node_labels[v]) if v in nullable_nodes else '')
+        matches.append(f'OPTIONAL MATCH ({endpoint(row["source"])})-[{row["id"]}:'
+                       f'{ident(row["label"])}]->({endpoint(row["target"])})')
 
     def field(value, allow_node=False):
         if allow_node and value in node_labels:
@@ -129,13 +162,17 @@ def compile_selection(call, schema):
         raise UnsupportedPlan('Invalid AND predicate list')
     comparisons = {'eq': '=', 'ne': '<>', 'lt': '<', 'le': '<=', 'gt': '>', 'ge': '>='}
     for index, predicate in enumerate(call['where']):
-        object_fields(predicate, ['field', 'op'], ['value', 'other_field'])
+        object_fields(predicate, ['field', 'op'], ['value', 'other_field', 'negate'])
+        if type(predicate.get('negate', False)) is not bool:
+            raise UnsupportedPlan('Predicate negate must be boolean')
+        def emit_predicate(value):
+            predicates.append('NOT (' + value + ')' if predicate.get('negate') else value)
         expression, kind = field(predicate['field'])
         op = predicate['op']
         if op in ('is_null', 'not_null'):
             if 'value' in predicate or 'other_field' in predicate:
                 raise UnsupportedPlan('Null predicate has no argument')
-            predicates.append(expression + (' IS NULL' if op == 'is_null' else ' IS NOT NULL'))
+            emit_predicate(expression + (' IS NULL' if op == 'is_null' else ' IS NOT NULL'))
             continue
         if ('value' in predicate) == ('other_field' in predicate):
             raise UnsupportedPlan('One predicate argument required')
@@ -165,19 +202,23 @@ def compile_selection(call, schema):
             params[parameter] = value
             right = ('date($' + parameter + ')' if kind == 'date' else '$' + parameter)
         if op in comparisons:
-            predicates.append(expression + comparisons[op] + right)
+            emit_predicate(expression + comparisons[op] + right)
         elif op == 'in' and isinstance(predicate.get('value'), list):
-            predicates.append(expression + ' IN ' + right)
+            emit_predicate(expression + ' IN ' + right)
         elif op == 'contains' and kind.startswith('list['):
-            predicates.append(right + ' IN ' + expression)
+            emit_predicate(right + ' IN ' + expression)
         elif op in ('contains', 'starts_with', 'ends_with') and kind == 'str':
             if not isinstance(predicate.get('value'), str):
                 raise UnsupportedPlan('String predicate requires string literal')
-            predicates.append(expression + ' ' + {'contains': 'CONTAINS',
+            emit_predicate(expression + ' ' + {'contains': 'CONTAINS',
                               'starts_with': 'STARTS WITH', 'ends_with': 'ENDS WITH'}[op] + ' ' + right)
         else:
             raise UnsupportedPlan('Unsupported typed predicate')
     if predicates:
+        if optional_edges:
+            # A bare WHERE after OPTIONAL MATCH would qualify the optional
+            # pattern, not filter the full joined relation. Preserve IR meaning.
+            matches.append('WITH *')
         matches.append('WHERE ' + ' AND '.join('(' + item + ')' for item in predicates))
     if not isinstance(call['returns'], list) or not 1 <= len(call['returns']) <= 8:
         raise UnsupportedPlan('One to eight return items required')
@@ -211,7 +252,23 @@ def compile_selection(call, schema):
         outputs.append(expression + ' AS ' + ident(alias))
     if type(call.get('distinct', False)) is not bool:
         raise UnsupportedPlan('Row DISTINCT must be boolean')
-    matches.append('RETURN ' + ('DISTINCT ' if call.get('distinct') else '') + ','.join(outputs))
+    if 'group_by' in call:
+        keys = call['group_by']
+        if not aggregates or not isinstance(keys, list) or not keys or len(keys) > 4 or len(set(keys)) != len(keys):
+            raise UnsupportedPlan('Explicit grouping needs aggregation and one to four unique property keys')
+        grouped = [field(value)[0] for value in keys]
+        for value in projected.values():
+            variable = value.split('.')[0]
+            identity = variable + ('.eid' if types[variable] == 'node' else '.rid')
+            if value not in keys and identity not in keys:
+                raise UnsupportedPlan('Return property is not determined by declared grouping keys')
+        hidden = [expression + ' AS ' + ident('__group_' + str(index))
+                  for index, expression in enumerate(grouped)]
+        matches.append('WITH ' + ','.join(hidden + outputs))
+        matches.append('RETURN ' + ('DISTINCT ' if call.get('distinct') else '') +
+                       ','.join(ident(alias) for alias in columns))
+    else:
+        matches.append('RETURN ' + ('DISTINCT ' if call.get('distinct') else '') + ','.join(outputs))
     ordering = call.get('order_by', [])
     if not isinstance(ordering, list):
         raise UnsupportedPlan('Invalid ordering')
@@ -230,6 +287,7 @@ def compile_selection(call, schema):
         matches.append('LIMIT $requested_limit')
     return {'query': ' '.join(matches), 'parameters': params, 'columns': columns,
             'contract': {'node_labels': node_labels, 'projected': projected,
+                         'nullable_nodes': sorted(nullable_nodes), 'group_by': call.get('group_by'),
                          'aggregates': aggregates, 'explicit_limit': call.get('limit'),
                          'set_rows': call.get('distinct', False)}}
 
@@ -242,6 +300,8 @@ def _set_contract(call, compiled, key):
     if not reference.endswith('.eid'):
         raise UnsupportedPlan('Composition key must be a projected entity eid')
     node = reference.split('.')[0]
+    if node in contract.get('nullable_nodes', []):
+        raise UnsupportedPlan('Composition entity key must be bound in the required pattern')
     if any(not field.startswith(node + '.') for field in contract['projected'].values()):
         raise UnsupportedPlan('Set payload must be functionally attached to its key entity')
     return node, contract['node_labels'][node]
@@ -257,6 +317,7 @@ def _disjoint_equality(left, right, compiled_left, compiled_right, key, schema):
     for x in left['where']:
         for y in right['where']:
             if (x.get('op') == y.get('op') == 'eq' and 'value' in x and 'value' in y
+                and not x.get('negate', False) and not y.get('negate', False)
                 and x['field'].startswith(a + '.') and y['field'].startswith(b + '.')
                 and x['field'].split('.')[1] == y['field'].split('.')[1]):
                 kind = props.get(x['field'].split('.')[1])
@@ -404,16 +465,37 @@ Otherwise use {"status":"ANSWER","calls":[selection],"combine":{"op":"single"}}.
 A selection is {"nodes":[{"id":"n","label":"SCHEMA_LABEL"}],"edges":[],
 "where":[],"returns":[{"field":"n.name","alias":"name"}]}.
 Each calls item is directly this selection object; do not wrap it in a
-"selection" or "query" field. No text before/after the JSON. Grouping is
-implicit from non-aggregate return items; do not emit a group_by field.
+"selection" or "query" field. No text before/after the JSON.
 Up to4 nodes and3 connected directed edges; edges have id,source,target,label.
+The first node is the required root. Mandatory edges form one Cypher MATCH:
+distinct edge variables cannot reuse the same graph relationship.
+At most one edge may have optional:true. It must attach to the required
+pattern and may introduce a nullable neighbor. Use this when requested groups
+must be preserved even when they have zero matching neighbors. Count a nullable
+neighbor eid (or edge rid), not count(*) or a required root, to obtain zero.
+An optional expansion after an anchor filter can count ALL neighbors, including
+the anchor relationship; this is a separate Cypher matching stage.
 All labels/properties and edge directions must match schema. Available node
 metadata properties: eid,name,aliases,description. Edge metadata: rid.
 where is an AND list of {field:"n.property",op:"eq",value:literal}; supported
 ops eq,ne,lt,le,gt,ge,in,contains,starts_with,ends_with,is_null,not_null.
+Each predicate may add negate:true, applying Cypher NOT with three-valued
+NULL semantics. NOT unknown remains unknown and is rejected by WHERE.
+where predicates apply globally after the optional match. A condition on the
+nullable neighbor can therefore remove zero groups. Filtered optional counts
+that require conditions inside the optional pattern are outside this version.
+Set difference removes known positive entity sets; it is not automatically
+equivalent to negating a nullable property predicate.
 Use other_field instead of value for same-type property comparisons.
 returns items have field and alias; optional agg=count|sum|avg|min|max|collect,
 optional distinct boolean for aggregation. count may use field "*" or node ID.
+Grouping is otherwise implicit from non-aggregate returns. To group per ENTITY,
+add group_by:["n.eid"] (or the appropriate root eid); equal display names are
+not guaranteed to be one entity. For grouping by a property value use that
+property as a grouping key. Returned non-aggregate properties must be determined
+by the keys. A filter-anchor neighbor and a neighbor to be counted may need
+separate variables; do not count only the restricted anchor when all related
+entities are requested.
 Selection optional distinct boolean, order_by:[{column:alias,direction:"ASC"}],
 limit:positive integer ONLY when explicitly requested; never add a default LIMIT.
 For union/intersection/difference of ENTITY SETS use exactly2 selections. Each
@@ -421,7 +503,7 @@ must return the same columns, include projected n.eid as alias "id", and only
 properties of that same answer entity. No input aggregation, order or limit.
 combine is {op:"union"|"intersection"|"difference",key:"id",output:"count",
 alias:"count"}, or output:"rows",columns:[requested output aliases].
-This finite version does not support OPTIONAL MATCH, subqueries, arbitrary
+This finite version does not support multiple optional edges, subqueries, arbitrary
 expressions, regex, variable-length paths, arithmetic, HAVING, multi-stage
 aggregation, joins of service summaries, or semantic relations absent in schema.
 Do not replace an unsupported condition with an easier question.
