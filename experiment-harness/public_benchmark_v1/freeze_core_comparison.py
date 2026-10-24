@@ -38,6 +38,8 @@ def build(args):
             or not summary['graph_validation']['all_properties_labels_and_endpoints_match']
             or set(failures) != set(certified) or len(certified) != count - summary['passed']):
             raise ValueError('Incomplete reference evidence for ' + graph)
+        if sha(args.data / ('upstream/graphs/simplekg/' + graph + '_simplekg.json')) != summary['graph_sha256']:
+            raise ValueError('Reviewed graph does not match the local frozen asset')
         evidence[str(summary_path.resolve())] = sha(summary_path)
         for path in checks:
             evidence[str(path.resolve())] = sha(path)

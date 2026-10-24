@@ -176,6 +176,9 @@ class TracedExecutor:
 def run(args):
     code_root = Path(__file__).resolve().parents[2]
     freeze, admission, tasks = check_admission(args.freeze, args.admission, args.data, code_root, args.graph)
+    # Check evaluator identity before spending a single model call, not only
+    # after the graph predictions have finished.
+    load_official_comparator(args.official_source)
     if subprocess.check_output(['git', 'status', '--porcelain'], cwd=code_root, text=True).strip():
         raise ValueError('Source checkout is dirty')
     if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', args.segment):
