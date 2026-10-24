@@ -1,0 +1,272 @@
+{
+  "kind": "PINNED_SPLIT_METADATA_NOT_MODEL_RESULTS",
+  "timestamp_utc": "2026-10-24T13:58:26.219519+00:00",
+  "repository": "interact-erc/ZOGRASCOPE",
+  "commit": "b2f91718b1324fdf8c759131d0d7c47c0eb33373",
+  "model_calls": 0,
+  "rows_by_file": {
+    "zograscope_test_v1.csv": {
+      "records": 2117,
+      "unique_ids": 2117,
+      "fields": [
+        "id",
+        "nl",
+        "mr",
+        "nl_gold_linked",
+        "nl_bracketed",
+        "entities",
+        "num_nodes",
+        "template_id",
+        "type",
+        "return_count"
+      ],
+      "num_nodes": {
+        "3": 864,
+        "5": 105,
+        "2": 555,
+        "4": 593
+      },
+      "query_type_counts": {
+        "argmax": 135,
+        "max": 109,
+        "entity_set": 677,
+        "count": 569,
+        "attribute_set": 446,
+        "min": 54,
+        "argmin": 127
+      },
+      "template_ids": 347,
+      "missing_fields": {
+        "entities": 40
+      }
+    },
+    "zograscope_train_v1.csv": {
+      "records": 2905,
+      "unique_ids": 2905,
+      "fields": [
+        "id",
+        "nl",
+        "mr",
+        "nl_gold_linked",
+        "nl_bracketed",
+        "entities",
+        "num_nodes",
+        "template_id",
+        "type",
+        "return_count"
+      ],
+      "num_nodes": {
+        "2": 1509,
+        "3": 841,
+        "4": 441,
+        "5": 114
+      },
+      "query_type_counts": {
+        "count": 1010,
+        "attribute_set": 338,
+        "entity_set": 987,
+        "argmax": 105,
+        "max": 205,
+        "argmin": 95,
+        "min": 165
+      },
+      "template_ids": 318,
+      "missing_fields": {
+        "entities": 92
+      }
+    },
+    "zograscope_length_test_v1.csv": {
+      "records": 1253,
+      "unique_ids": 1253,
+      "fields": [
+        "id",
+        "nl",
+        "mr",
+        "nl_gold_linked",
+        "nl_bracketed",
+        "entities",
+        "num_nodes",
+        "template_id",
+        "type",
+        "return_count"
+      ],
+      "num_nodes": {
+        "4": 1034,
+        "5": 219
+      },
+      "query_type_counts": {
+        "attribute_set": 269,
+        "entity_set": 360,
+        "argmax": 108,
+        "max": 117,
+        "argmin": 69,
+        "count": 261,
+        "min": 69
+      },
+      "template_ids": 113,
+      "missing_fields": {
+        "entities": 27
+      }
+    },
+    "zograscope_length_train_v1.csv": {
+      "records": 3769,
+      "unique_ids": 3769,
+      "fields": [
+        "id",
+        "nl",
+        "mr",
+        "nl_gold_linked",
+        "nl_bracketed",
+        "entities",
+        "num_nodes",
+        "template_id",
+        "type",
+        "return_count"
+      ],
+      "num_nodes": {
+        "2": 2064,
+        "3": 1705
+      },
+      "query_type_counts": {
+        "attribute_set": 515,
+        "entity_set": 1304,
+        "max": 197,
+        "argmin": 153,
+        "count": 1318,
+        "min": 150,
+        "argmax": 132
+      },
+      "template_ids": 353,
+      "missing_fields": {
+        "entities": 105
+      }
+    }
+  },
+  "iid_id_lines": 768,
+  "comp_id_lines": 1349,
+  "iid_unique": 768,
+  "comp_unique": 1349,
+  "iid_comp_overlap": 0,
+  "listed_test_ids_missing_from_csv": [],
+  "unassigned_test_ids": [],
+  "train_test_id_overlap": 0,
+  "length_train_test_id_overlap": 0,
+  "length_test_overlap_standard_test": 698,
+  "length_test_overlap_standard_train": 555,
+  "unique_union_test_ids": 2672,
+  "length_test_identical_rows_in_standard_corpus": 1253,
+  "partitions": {
+    "IID": {
+      "records": 768,
+      "unique_ids": 768,
+      "fields": [
+        "id",
+        "nl",
+        "mr",
+        "nl_gold_linked",
+        "nl_bracketed",
+        "entities",
+        "num_nodes",
+        "template_id",
+        "type",
+        "return_count"
+      ],
+      "num_nodes": {
+        "3": 225,
+        "5": 33,
+        "2": 384,
+        "4": 126
+      },
+      "query_type_counts": {
+        "argmax": 30,
+        "max": 56,
+        "entity_set": 256,
+        "count": 263,
+        "attribute_set": 90,
+        "min": 45,
+        "argmin": 28
+      },
+      "template_ids": 287,
+      "missing_fields": {
+        "entities": 28
+      }
+    },
+    "COMP": {
+      "records": 1349,
+      "unique_ids": 1349,
+      "fields": [
+        "id",
+        "nl",
+        "mr",
+        "nl_gold_linked",
+        "nl_bracketed",
+        "entities",
+        "num_nodes",
+        "template_id",
+        "type",
+        "return_count"
+      ],
+      "num_nodes": {
+        "3": 639,
+        "4": 467,
+        "5": 72,
+        "2": 171
+      },
+      "query_type_counts": {
+        "attribute_set": 356,
+        "count": 306,
+        "entity_set": 421,
+        "argmax": 105,
+        "argmin": 99,
+        "min": 9,
+        "max": 53
+      },
+      "template_ids": 121,
+      "missing_fields": {
+        "entities": 12
+      }
+    },
+    "LEN": {
+      "records": 1253,
+      "unique_ids": 1253,
+      "fields": [
+        "id",
+        "nl",
+        "mr",
+        "nl_gold_linked",
+        "nl_bracketed",
+        "entities",
+        "num_nodes",
+        "template_id",
+        "type",
+        "return_count"
+      ],
+      "num_nodes": {
+        "4": 1034,
+        "5": 219
+      },
+      "query_type_counts": {
+        "attribute_set": 269,
+        "entity_set": 360,
+        "argmax": 108,
+        "max": 117,
+        "argmin": 69,
+        "count": 261,
+        "min": 69
+      },
+      "template_ids": 113,
+      "missing_fields": {
+        "entities": 27
+      }
+    }
+  },
+  "template_id_overlap_with_standard_train": {
+    "IID": 286,
+    "COMP": 62,
+    "LEN": 102
+  },
+  "zero_shot_partition_independence_caveat": "IID/COMP/LEN are author partitions relative to author training data, not independent graph domains.",
+  "entity_linking_protocol": "README reported scores use nl_gold_linked; raw nl requires a separately labelled track. Never give gold links to one method only.",
+  "reference_execution_completed": false,
+  "prediction_admitted": false
+}

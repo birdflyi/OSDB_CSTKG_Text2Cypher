@@ -1,0 +1,981 @@
+{
+  "kind": "AUTHOR_LINKED_CYPHER_TEST_SNAPSHOT_NOT_ADMISSION",
+  "timestamp_utc": "2026-10-24T13:57:22.735292+00:00",
+  "object_etag": "\"726AE0E556EC34F05D0A95A4C949B30F-91\"",
+  "object_bytes": 953926289,
+  "whole_object_sha256": null,
+  "range_receipts": [
+    {
+      "start": 953926267,
+      "end": 953926288,
+      "bytes": 22,
+      "sha256": "800dabade7676dd9e52b6189efc5e850a8c838ed965044b6ecd6ade9ddbae99d"
+    },
+    {
+      "start": 953926247,
+      "end": 953926266,
+      "bytes": 20,
+      "sha256": "13a445c2d05ad61d9ff7eea1259371056a194fe3b5433ba2d1e8fe2d4d10bc1d"
+    },
+    {
+      "start": 953706531,
+      "end": 953926266,
+      "bytes": 219736,
+      "sha256": "b3cb98c756c190de0bd8fc1ba8be59ade81d9dd4d615c2e21f41e2bf0d0e7628"
+    },
+    {
+      "start": 404315841,
+      "end": 407310743,
+      "bytes": 2994903,
+      "sha256": "6333f74f9ba3a896953cf8de4a77f3ff60afad5fee5ed47dcc10ba557464c0da"
+    }
+  ],
+  "assets": [
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/FInancial_Financial_Payment_cypher.json",
+      "bytes": 467963,
+      "sha256": "1bce7b10e652365245c8743f10cc11871de0625616b468a0243fcf65945cafff",
+      "crc32": "b25ecef9"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/Account.csv",
+      "bytes": 38837,
+      "sha256": "b3be37c94027b88721cb5e2e64995ec10d2de0e9f9d26c746d9ac5b623917aca",
+      "crc32": "44b38a81"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/AuditLog.csv",
+      "bytes": 191806,
+      "sha256": "87cc8faab6106ddc668a3048c4806f5d22fbe907f65ae61f8594908f0f1ca6ae",
+      "crc32": "f81a66c4"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/AuthorizedBy.csv",
+      "bytes": 42034,
+      "sha256": "aa57f0451b7f4186be01bc0c87faefd0d75ae64539a96cd5d70745738cba6418",
+      "crc32": "762c3126"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/ComplianceRule.csv",
+      "bytes": 1616,
+      "sha256": "179b8bc1f3f41c357f8ae01a73b54584cdd8e0f22097432a86a3bbeb427169f5",
+      "crc32": "36c0fdd8"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/Customer.csv",
+      "bytes": 60752,
+      "sha256": "fb751aeab459469ebed826aaea66661ef92558f76477e351d4e73eecdbec8bab",
+      "crc32": "a128fc70"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/FundsFrom.csv",
+      "bytes": 44028,
+      "sha256": "0c7c5fd990a0a34004617eb9f9f08e21aff063ee248f44b4817bf69dc9dd3034",
+      "crc32": "d175aafd"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/GovernedBy.csv",
+      "bytes": 56399,
+      "sha256": "f8152b2be53fa4baf8daa717a66660459b27fac78c81d467879aeb302e134d14",
+      "crc32": "f66916e9"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/HasAuditLog.csv",
+      "bytes": 57529,
+      "sha256": "c22bf21ffb2e75869b4eced10fb26072232f9d22c2cb81b1131ff4561690d4bb",
+      "crc32": "671a8103"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/HasRiskAssessment.csv",
+      "bytes": 42035,
+      "sha256": "7b809c863fb4ab64f33debc8486d418099987f1aea58dcb8a8f89a31ba05e36e",
+      "crc32": "835d6622"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/import_config.json",
+      "bytes": 13175,
+      "sha256": "2e0764cd71b1b8429cd1cbc190982ddad95d727dc77f988b198755304b85c3af",
+      "crc32": "964eab67"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/Initiates.csv",
+      "bytes": 46029,
+      "sha256": "025b7b1254998bd9dd90da8d4356c9d83b524b6b6f238ed738add6609275c9ec",
+      "crc32": "e19d2e58"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/Merchant.csv",
+      "bytes": 6807,
+      "sha256": "dc2cd3bef61738eaf67c55ae984e49ccf03f074d90ef8cea647940dd0a8581dc",
+      "crc32": "1dfa9b40"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/PaymentMethod.csv",
+      "bytes": 46407,
+      "sha256": "637726ebdb9aefb9b65ba9ef2f0be56f42e86e6576e892a8f5cf0ed005eec33e",
+      "crc32": "0975086b"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/PaymentTransaction.csv",
+      "bytes": 145697,
+      "sha256": "e82a5f189b84b4b950cd4fa1c398c357eb3c974926a55a1eeabbd0b5ac29bf19",
+      "crc32": "9ae65b86"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/ProcessedFor.csv",
+      "bytes": 44029,
+      "sha256": "4787af7b6224141f9b540d0d9bf864858423e839ad1829520b17735b3bdb60c0",
+      "crc32": "9585629a"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/ReceivesTo.csv",
+      "bytes": 44028,
+      "sha256": "827749fe19405c14f25683875764fa3f91ebae608640339d7ab47b5b07f0935e",
+      "crc32": "03fec3e1"
+    },
+    {
+      "member": "dataset/test/Financial_Payment/Cypher/TuGraph-DB_Instance/RiskAssessment.csv",
+      "bytes": 78414,
+      "sha256": "8df4b0a70142bc4d629213c6d55bef9ca07a1d368c9587f2cd59891132dce6d3",
+      "crc32": "d245c3bc"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/Information_Technology_IT_Asset_Management_cypher.json",
+      "bytes": 402879,
+      "sha256": "783fe3b655420cdce6fbe002895c8cd926a785661566840792b33305d8ce8ad4",
+      "crc32": "7b0fdf1f"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/ASSET.csv",
+      "bytes": 31521,
+      "sha256": "1172830c3e37331384f4adbd478550120daf0921805d6b66579671a9c22f815b",
+      "crc32": "58214930"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/ASSIGNED_TO.csv",
+      "bytes": 11324,
+      "sha256": "e40a75f5a2341df5bc0e69debfcc29d7a6b9d6e45b9b45b0c927fa3070eacee8",
+      "crc32": "ae9947f2"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/CONTRACT.csv",
+      "bytes": 2932,
+      "sha256": "9c6f95c551f2a00bd600339d80bca418e2ae8a685ae50bd3f56be718da7761ad",
+      "crc32": "1d7f144a"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/COST_CENTER.csv",
+      "bytes": 708,
+      "sha256": "a832b59a5507620e99b8f4358a077b82031563121dfda30d8a09d6e95b97ada8",
+      "crc32": "62c49818"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/COVERED_BY.csv",
+      "bytes": 14659,
+      "sha256": "c2402228e8fcd2f5ce4b56bd44fdabf8072db627c4f5e1b25e9b7763b3fcfdce",
+      "crc32": "791a3e54"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/EMPLOYEE.csv",
+      "bytes": 8950,
+      "sha256": "014abe20e9d1f4a4d9bc14f4c16abba07e843cd66258f9868ecdeeb8e6e823bb",
+      "crc32": "db44c0ac"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/HOSTS.csv",
+      "bytes": 7184,
+      "sha256": "fc46640bb5db0025467606444bf7cac8f65cb8e3b0b5b15c893fcd49b4ff5bc9",
+      "crc32": "d6bc48b4"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/import_config.json",
+      "bytes": 12753,
+      "sha256": "d887380effa5742cd3371ea3766a98092315489d0f8aec4439140ef88fbb86ff",
+      "crc32": "246773b5"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/LICENSED_FOR.csv",
+      "bytes": 6685,
+      "sha256": "421b095193a28e5a2afc1d3d35310fe31112c7f9c5a6b4bc250995538195a9a1",
+      "crc32": "f50e56fe"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/LICENSED_FOR_Asset.csv",
+      "bytes": 4435,
+      "sha256": "f06a77d7fa12ebcc59921e7b85758350e9d37f7184fae595cb3d008b06d5289f",
+      "crc32": "e2584b01"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/LICENSED_FOR_Employee.csv",
+      "bytes": 3053,
+      "sha256": "941e86f3c4f94d6186584a30f72a33cbb5183c6842c58616d9673a306aee4836",
+      "crc32": "68c892b9"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/LOCATED_AT.csv",
+      "bytes": 17874,
+      "sha256": "b884a83bae8c31ef0548e344eadefa860b14570985eb972aee2abbabc842151f",
+      "crc32": "f04afff6"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/LOCATION.csv",
+      "bytes": 1757,
+      "sha256": "5da4a7eb124dfeacec80e0ea8182d055be2760605223b29e65b4cf62be742308",
+      "crc32": "cf028252"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/OWNED_BY.csv",
+      "bytes": 13029,
+      "sha256": "3e2df490c0abe6be6e6d643753896277239b771938f0429332f2b93692386040",
+      "crc32": "cb09eb4b"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/PROVIDES.csv",
+      "bytes": 577,
+      "sha256": "77ad23a5c0abd9f22d6977ceeb3eda0f8bcf146a405d6e18b1efdd129fff0d6e",
+      "crc32": "5284227e"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/REQUESTS.csv",
+      "bytes": 21512,
+      "sha256": "e61df5a4164f13d101a48eaa2f4348c5223e2978e1399d9ff6e90fa92ae7e98b",
+      "crc32": "d62b941c"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/SOFTWARE_LICENSE.csv",
+      "bytes": 3146,
+      "sha256": "298df07351d39f3e600e279fb303c3b3f8cc844189956e5d81ad1ce2c76c5f25",
+      "crc32": "a467c960"
+    },
+    {
+      "member": "dataset/test/Information_Technology_IT_Asset_Management/Cypher/TuGraph-DB_Instance/VENDOR.csv",
+      "bytes": 2009,
+      "sha256": "39269672fb1fc612fbcd058a589c3a277cc9b83ebbe6e96aac3de9e8b8a6bc69",
+      "crc32": "c112a206"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/Knowledge_Graph_Geography_cypher.json",
+      "bytes": 362018,
+      "sha256": "45cfe68eb6462556273682f625e08b6081315244a2fca6195d588f2f15729cb8",
+      "crc32": "99a557a5"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/AdministrativeArea.csv",
+      "bytes": 8681,
+      "sha256": "59542636bb3d3b15c91b7bc72e674b2e059c7923d6cdc67d8d9866934b5e1ac2",
+      "crc32": "537fdbe9"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/Borders.csv",
+      "bytes": 19591,
+      "sha256": "982fd79e1a35b580e44ac79a988f461c2125acdee8ca7505351bb0294848e141",
+      "crc32": "aeb07fb6"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/ContainsPoi.csv",
+      "bytes": 3924,
+      "sha256": "f0d65745ebdb50351e8ccaa38b70be6f4ffe7a6ada898996ca6582e80ddb7449",
+      "crc32": "306b8516"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/ContainsPoi_AA.csv",
+      "bytes": 3915,
+      "sha256": "2158f6bcd517618e9517290906b8306670b92cc487e23d103854e3436c79175a",
+      "crc32": "20f719b9"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/ContainsPoi_GZ.csv",
+      "bytes": 15,
+      "sha256": "3e2d516cec13bec05147a6efffd823ea199720e335e4001b571df48e3bc35851",
+      "crc32": "c829c3bd"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/CoordinateSystem.csv",
+      "bytes": 662,
+      "sha256": "1ec489af1aebd1657069790523850d12af0aed03e408fbe6b50a78b4844da874",
+      "crc32": "701006e8"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/DemographicRegion.csv",
+      "bytes": 11202,
+      "sha256": "58f6e3e95b951bccff9ee6feb28987b0f96bd805822acbb23955222f1cf659a4",
+      "crc32": "1c8927df"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/GeographicZone.csv",
+      "bytes": 5728,
+      "sha256": "ed6d2232438a33ff508aa48e085872becda6533cd6b649b7db00f99bf0517d7d",
+      "crc32": "5a7dda6f"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/import_config.json",
+      "bytes": 14155,
+      "sha256": "50d7fd0136473b2d39a9ef12bc30a98d179d6d2f1338a7c07bd2ef0001c0bb0e",
+      "crc32": "a899df6f"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/InfrastructureNetwork.csv",
+      "bytes": 4357,
+      "sha256": "0a3f4918c93a3f56c2ac8434b4e00ff7e86db0450f4cae6f36b17089991de1f6",
+      "crc32": "35ff95c0"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/LocatedIn.csv",
+      "bytes": 7029,
+      "sha256": "a7c5dff68d8a57a911d3a238bee2819849ed9c0a8af507f9842883634cbd883a",
+      "crc32": "c1b17543"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/Location.csv",
+      "bytes": 30622,
+      "sha256": "ee5009d1033fb166ce5bf87d3ad7ba69ac411d070b7962e3f7a20e14df2858f6",
+      "crc32": "e39f9905"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/OverlapsWith.csv",
+      "bytes": 45737,
+      "sha256": "351904ba79f20712a6b76a7cf849e892d18129aedfe01ea21f7f236ba4ce579a",
+      "crc32": "47437b61"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/OverlapsWith_AA_AA.csv",
+      "bytes": 29746,
+      "sha256": "03424e0b6b5fe8362c641f976c3e0d1180b73b273e621b1144534988d87b203e",
+      "crc32": "85ee00e5"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/OverlapsWith_AA_GZ.csv",
+      "bytes": 3711,
+      "sha256": "dc05ac94ec1f04baac7b806aad2d6e1cd11a1be5565cfea849d4b73ff2bb45f4",
+      "crc32": "a622e43e"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/OverlapsWith_GZ_AA.csv",
+      "bytes": 7085,
+      "sha256": "daebb4ac6d2d49a106e5834f70eb1448b10d272d4625f7f1ac55d58139f6e1c2",
+      "crc32": "78c428d3"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/OverlapsWith_GZ_GZ.csv",
+      "bytes": 5235,
+      "sha256": "f140e6d49ef83099a632faf53ee289b22e4dee6f0bf0bafa9d02f201d4dc1b46",
+      "crc32": "fabae3c6"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/PointOfInterest.csv",
+      "bytes": 31616,
+      "sha256": "c2ca471ea602a1709994240661ed1fd5a2c8906d6da8e24ec3312d712d1f30e4",
+      "crc32": "1173e8ff"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/ServesDemographic.csv",
+      "bytes": 41241,
+      "sha256": "6dea4cf27ed6b6d2a811ca3388ead18d4c26d05f0af6a1f5f8ef7c5a02662f4a",
+      "crc32": "542e1063"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/ServesDemographic_AA.csv",
+      "bytes": 24025,
+      "sha256": "b209ecb62a265efded382d93de94adab5593fc8f78bbd92fbde9bf58f9cd4e2f",
+      "crc32": "97ddd071"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/ServesDemographic_GZ.csv",
+      "bytes": 17220,
+      "sha256": "e6b3ee2b903bd72fa7c6e9a5b99b9c0d72e98e55a0aaf31652b084645fcd03d8",
+      "crc32": "6d89c1c5"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/Spans.csv",
+      "bytes": 8372,
+      "sha256": "6f25608ef0b82048627f9cd05f2af9cdbc018c01116c6cc558d596703a90055b",
+      "crc32": "2e24bc97"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/UsesCoordinateSystem.csv",
+      "bytes": 8275,
+      "sha256": "63f44cf114acde6c200647f3a24c93553d97f47a59d16ee0e6d0a42ee328d6bf",
+      "crc32": "967ca9d9"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/UsesCoordinateSystem_GZ.csv",
+      "bytes": 765,
+      "sha256": "541d7e0192933aac7902981760fb592e9a7a77cc54f318edbdce6046ed6917a7",
+      "crc32": "03e38eee"
+    },
+    {
+      "member": "dataset/test/Knowledge_Graph_Geography/Cypher/TuGraph-DB_Instance/UsesCoordinateSystem_Location.csv",
+      "bytes": 7515,
+      "sha256": "444d0dc816bc086760baa289610c38d53be866fd105787c3310516dfc1b543bb",
+      "crc32": "5e092e49"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/Manufacturing_BOM(Bill_Of_Materials)_cypher.json",
+      "bytes": 273241,
+      "sha256": "e6779eca47ce4836f74021b8160794430ec47dd2f103af3dd96343ff07835d11",
+      "crc32": "0f64e22c"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/Assembly.csv",
+      "bytes": 9917,
+      "sha256": "fc4f2b6f427e47d6b5e13365eeccb406085fee5263844b4e5cd3f66ffa1ac284",
+      "crc32": "5520c135"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/BomVersion.csv",
+      "bytes": 5029,
+      "sha256": "ca259c38816e5f6a2d82e9726d8536cc01a772057435ac93f352d868ddf77334",
+      "crc32": "5fd75fd6"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ConsistsOf.csv",
+      "bytes": 33996,
+      "sha256": "ec8e0a27779351ad6ed11cb14a56030d645fe0cea89b9b7265c91935e93aece6",
+      "crc32": "7457767a"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ConsistsOf_Assembly_Assembly.csv",
+      "bytes": 82,
+      "sha256": "5ee5738ddfbed1a0371370c6b631cc76cb467ab49d80a62f66d42b10d1a82891",
+      "crc32": "aedf8ed1"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ConsistsOf_Assembly_Material.csv",
+      "bytes": 82,
+      "sha256": "5ee5738ddfbed1a0371370c6b631cc76cb467ab49d80a62f66d42b10d1a82891",
+      "crc32": "aedf8ed1"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ConsistsOf_Assembly_Product.csv",
+      "bytes": 82,
+      "sha256": "5ee5738ddfbed1a0371370c6b631cc76cb467ab49d80a62f66d42b10d1a82891",
+      "crc32": "aedf8ed1"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ConsistsOf_Product_Assembly.csv",
+      "bytes": 8517,
+      "sha256": "39fabe2372041656067463d3b7f6fc00bf36abb9deb5ef6cd522c3bf115f5109",
+      "crc32": "02fe1fc0"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ConsistsOf_Product_Material.csv",
+      "bytes": 25558,
+      "sha256": "e53e1ce8a26326269b76e549c22ff2c9ac9f20adae722939f52c91f63b8a15cf",
+      "crc32": "888c7055"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/EngineeringChange.csv",
+      "bytes": 9564,
+      "sha256": "6f5a48018955548add561127c5a897813a112e955a6f321af8358a995f2c0798",
+      "crc32": "afd702e6"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/HasBomVersion.csv",
+      "bytes": 4520,
+      "sha256": "ccb5d397e9ba565b8701eb5ec63b53f35f85c30b8457aea26340e57f0f571e00",
+      "crc32": "171f5f82"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/HasBomVersion_Assembly.csv",
+      "bytes": 1905,
+      "sha256": "233520fd39ac4135f92a1ec564dee7ad0cf8bc749d6d0b727e810a25598d4e24",
+      "crc32": "03193e8a"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/HasBomVersion_Product.csv",
+      "bytes": 2625,
+      "sha256": "234dd94279dd509cd7a0e51870355b28a2eab33d3f2d92111d6dbf2cbfe15e91",
+      "crc32": "39ddaba4"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/import_config.json",
+      "bytes": 19056,
+      "sha256": "6239346a845bed7e03fc8c86f67b1a9b14ef92c152cb10337e34f9ec1baf7cf1",
+      "crc32": "a5d3cac8"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ManufacturedAt.csv",
+      "bytes": 20679,
+      "sha256": "bd7fb6dac1e89df5089b903c86dc7f186bc54df8df1a633207f4d2d1be4b8093",
+      "crc32": "93e42aff"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ManufacturedAt_Assembly.csv",
+      "bytes": 8987,
+      "sha256": "08a9ddd7ef4b3faa1b0dcf3f98e4b1d07123ea1786763d38dc5023cb3909403a",
+      "crc32": "f5ae68b3"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ManufacturedAt_Product.csv",
+      "bytes": 11763,
+      "sha256": "323a4c013e2ec0076b8335f141447ac9df6c36bbdd17bc5a1a371a7fba8e3980",
+      "crc32": "18313510"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ManufacturingOrder.csv",
+      "bytes": 13549,
+      "sha256": "c4dcc64583dcf52d9841c7be2e54e46c7f4b370fb64aa40ff91ae7824d28232c",
+      "crc32": "6e0bd336"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/Material.csv",
+      "bytes": 39545,
+      "sha256": "b662568598769505ace3d4a58a87b3423108e3154959ebb431bede6dcd75652a",
+      "crc32": "68fe3b33"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ModifiedBy.csv",
+      "bytes": 12773,
+      "sha256": "be24514feb1e62e5b2e894cc6ae8054046a1883d0c0d0b010f772402e5bb8fbf",
+      "crc32": "83248c2d"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ModifiedBy_Assembly.csv",
+      "bytes": 2397,
+      "sha256": "e6e950b719338eb39ffa57cb369cbd2fb71fe2b8d8f0e110ed83c75cc0d3ffc7",
+      "crc32": "1b5ac027"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ModifiedBy_Material.csv",
+      "bytes": 8034,
+      "sha256": "3b327a985480a4f3d98889c7a8422520cf8411d4ec891e3116fbe6a7be5955b3",
+      "crc32": "fb4746cd"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/ModifiedBy_Product.csv",
+      "bytes": 2492,
+      "sha256": "801a9ad4537b8119a26967315fd00fa2163562b0a37fb2b8c49e05fb396639b1",
+      "crc32": "2cdc01ca"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/OrderedFor.csv",
+      "bytes": 7678,
+      "sha256": "a9fcca45c0d67d0da1b22c96d998d14c5f8426e059512d33a3b5b1f98d971794",
+      "crc32": "04885ca0"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/OrderedFor_Assembly.csv",
+      "bytes": 3258,
+      "sha256": "a3f7361a12e63c5706a7a578aaa2cf8b1e30bc3a280bbfb941f3b5a8889bdc46",
+      "crc32": "b75ca67f"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/OrderedFor_Product.csv",
+      "bytes": 4440,
+      "sha256": "7b46caa6537b37fc64819f2f2f2d0a2f86bec46b117758e406b65e317e5b43b9",
+      "crc32": "d06654fe"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/Product.csv",
+      "bytes": 27640,
+      "sha256": "28522409e1dff4f090edc9ed5181c4e3c3898f1133862e491af8dbfb2e1614ed",
+      "crc32": "7e3e223b"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/SourcedFrom.csv",
+      "bytes": 20002,
+      "sha256": "c729b88a1dafaacd6072096af73c5b22d79f57342dfadaabf07bb5c2e735759b",
+      "crc32": "4d328756"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/SubstitutesFor.csv",
+      "bytes": 6417,
+      "sha256": "718794c05f2f5441099ded23c95e2deaab99c79f1c797231eae45b81d65c8fce",
+      "crc32": "e68cd30d"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/SubstitutesFor_Assembly.csv",
+      "bytes": 610,
+      "sha256": "3e2cd4a755ff88732b933e8021dfe820bf60f3bae723e8ef264e454f0902c164",
+      "crc32": "6f7e0c00"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/SubstitutesFor_Material.csv",
+      "bytes": 737,
+      "sha256": "b5f38efd4956313caf2624b9da7878c518cdf273c776db1d8232c41afc637bae",
+      "crc32": "8c232da2"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/SubstitutesFor_Product.csv",
+      "bytes": 862,
+      "sha256": "086eb301c81cf99289154b3a205fef21160987054f63c0bc9107aa0ccbe26f2a",
+      "crc32": "16ca2826"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/Supplier.csv",
+      "bytes": 7157,
+      "sha256": "76a25c80ff7118e46dc7e4fceee8cc5535287c8620e2607ffef8bbb8a87e3246",
+      "crc32": "3e03e0e0"
+    },
+    {
+      "member": "dataset/test/Manufacturing_BOM(Bill_Of_Materials)/Cypher/TuGraph-DB_Instance/WorkCenter.csv",
+      "bytes": 3560,
+      "sha256": "bfed5becfedf681ff3c16509fe1310243d120a80f0e37ba1bf93559582f22595",
+      "crc32": "fc245650"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/Manufacturing_Production_Process_cypher.json",
+      "bytes": 347465,
+      "sha256": "07b53aa6f6fb02030b5d6bd71d38a7946c974e925597899e2d52e7588c580e72",
+      "crc32": "f77c43a7"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/BillOfMaterials.csv",
+      "bytes": 2043,
+      "sha256": "b3e43ae8faf6a70a390e3691fd087ae8076a59c4c3ef540e0370ed9b9bb9da0d",
+      "crc32": "289fe189"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/CONSUMES.csv",
+      "bytes": 6928,
+      "sha256": "e40810163ee970b14f75e2b50469c7c0a24c1be519751108bd2c4a50fb3140a0",
+      "crc32": "6446cdbf"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/DEFINED_BY.csv",
+      "bytes": 3219,
+      "sha256": "6ac826d52761260b6a68f80db18d2d810427ddc853a14f952a40db1072dbd94b",
+      "crc32": "be192aff"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/EquipmentResource.csv",
+      "bytes": 5022,
+      "sha256": "a6f09fd3fc0d26f81ab59de1088b97559c9ee688bd9410e84ed562cd047c90b0",
+      "crc32": "12cd929a"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/import_config.json",
+      "bytes": 13852,
+      "sha256": "552b41395f4aaae5c8fac6560fc80fe39ecca8a44d8b24a28f9661e88add3d85",
+      "crc32": "c98c952b"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/ManufacturingOperation.csv",
+      "bytes": 7457,
+      "sha256": "a30d0d8b369951e04b4854ff2663c5cc3cc5f65d1e5fd4aa5262e759199471d4",
+      "crc32": "f1da411e"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/MaterialBatch.csv",
+      "bytes": 18959,
+      "sha256": "70011d60e331841c4ebe17b16c6b9a09d33fd02e1caaca58276b7976a46ca82d",
+      "crc32": "b5cc5d1e"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/OPERATED_BY.csv",
+      "bytes": 2672,
+      "sha256": "20411063927ad496cd45aeb71332089abc41051ec97f2654cabb21cbacdacc23",
+      "crc32": "8592eeb5"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/Personnel.csv",
+      "bytes": 4674,
+      "sha256": "70f77be9b79eec824bcd1e092e3a870c129d96c5467119c41394334edd2beb7f",
+      "crc32": "bb4cb64a"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/PROCESSED_AT.csv",
+      "bytes": 2592,
+      "sha256": "bedc259b4b2112d7a1cd60a89dfc8fcec6bf5db7cb8d4530cbf2deb21c464559",
+      "crc32": "3ec68125"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/Product.csv",
+      "bytes": 2486,
+      "sha256": "9f5aa34a50bf343adca1ed9eac68460ba8b5a65e1b729eb8a810d3dd5852888f",
+      "crc32": "5a36768b"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/ProductionStation.csv",
+      "bytes": 1441,
+      "sha256": "4e5163d8c2abce2e3ce409127a34e97073a2612b7a665e4d48fa2d868062a141",
+      "crc32": "324d2245"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/QualityCheckpoint.csv",
+      "bytes": 2273,
+      "sha256": "515e72a38c2630f28f478cf898865bf489ade7b26a06070cf2af443cdf357591",
+      "crc32": "fb8aabf8"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/REQUIRES.csv",
+      "bytes": 5112,
+      "sha256": "b8afa26117577b6c6ab9f6c08a030abec98821836f7be3259f0e553ddbb446f2",
+      "crc32": "dcf61b4e"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/TRIGGERS.csv",
+      "bytes": 6936,
+      "sha256": "a64da2e48c7be1c873a883cd952000c89e9b4b38233bf79f1d7393e3d51fc139",
+      "crc32": "971d594c"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/USES_BOM.csv",
+      "bytes": 875,
+      "sha256": "b45e40c08251cd75bf71a0244173bc2e327e2976d8f58e59e8d122f88cf0f6d7",
+      "crc32": "59c2c6f5"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/VERIFIES_AGAINST.csv",
+      "bytes": 7551,
+      "sha256": "d96d03f69740a575bbc9b37491f0f3a3f46c11fd04284975a5d20b9410852d3e",
+      "crc32": "bbf2d23d"
+    },
+    {
+      "member": "dataset/test/Manufacturing_Production_Process/Cypher/TuGraph-DB_Instance/WorkOrder.csv",
+      "bytes": 8617,
+      "sha256": "4618e20ddec77d856472d81fb5afb918c1d74d60ceb13c226ff6e3f794d542f0",
+      "crc32": "783d8832"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/Social_Network_Twitter_cypher.json",
+      "bytes": 322204,
+      "sha256": "4324f2505480136bc0b3d3338319e5979ee1f20378a175ae645f9286180a927a",
+      "crc32": "dfcdc5ee"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/ATTACHES_MEDIA.csv",
+      "bytes": 59764,
+      "sha256": "6750bb579a93aabcfd752b3ae70d83334ffa5e35edef44d0acee3d5da2b9e573",
+      "crc32": "721b4d31"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/BELONGS_TO_TREND.csv",
+      "bytes": 3387,
+      "sha256": "4d2322c46a0281d189438b41e507ed00ef7e0563cb517cb9642ad4635e71f832",
+      "crc32": "ca050e6d"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/CONTAINS_HASHTAG.csv",
+      "bytes": 368337,
+      "sha256": "bed797e3898bae98adba019847e5c908b5e519f25ad3b58673f125ac0a078bc2",
+      "crc32": "710dc965"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/ENGAGES_WITH.csv",
+      "bytes": 1211269,
+      "sha256": "a74ef16baecc1bc79d001a03f05068f2ec4c1d1746b3eee728cbc670914fe420",
+      "crc32": "27025390"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/FOLLOWS.csv",
+      "bytes": 204467,
+      "sha256": "77a7f28efc45693dd7e13c7965f70cf13ac218bb24ae2dd36be90d6e4747628b",
+      "crc32": "f7b3963b"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/HASHTAG.csv",
+      "bytes": 19478,
+      "sha256": "4c38ea8b07037a7bb76be653fa13cf11d215dfe762a55247b17860d41c78907b",
+      "crc32": "29ce3afb"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/import_config.json",
+      "bytes": 14900,
+      "sha256": "16231c757926e9578a7cb0bceea8f2f283020f4b0b63530c0d1c4e5f3935e203",
+      "crc32": "e3c26ce2"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/LIST.csv",
+      "bytes": 25555,
+      "sha256": "6af545a8c9f8e21b46b29033df767cdc9bfd6bb5831e237077b1ccd287096483",
+      "crc32": "6b9748b4"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/LOCATION.csv",
+      "bytes": 4706,
+      "sha256": "7d0a3fd42231c3c070b7ec9c9696cc76405decde4003103150f16e41ff85ee8a",
+      "crc32": "b7766055"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/MEDIA_ATTACHMENT.csv",
+      "bytes": 136048,
+      "sha256": "21e1a71c13e3222935b7044ebbad6f3d622d0ea181756a3d873436a26f29e3db",
+      "crc32": "71ecd717"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/MEMBER_OF_LIST.csv",
+      "bytes": 144020,
+      "sha256": "ec796ee5b01c0a26d2acf7535682613a6c325edb44a12df17b12de46ba22a89c",
+      "crc32": "e2509702"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/ORIGINATES_FROM.csv",
+      "bytes": 57030,
+      "sha256": "2bc24697818c31685d122f3137c108bdf48d3ecf5dbe32cd492ebac2b965a511",
+      "crc32": "6e2846f0"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/POSTS.csv",
+      "bytes": 273523,
+      "sha256": "12cb3932ed96bc0cafedd17507df3e31e387290ed6157d0819b55c336c3fda3e",
+      "crc32": "12079147"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/TREND.csv",
+      "bytes": 9422,
+      "sha256": "465a964e11d81d7a0adeb308d468abce370af999a39a47667a788e4f39bcc635",
+      "crc32": "dce8bc30"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/TWEET.csv",
+      "bytes": 1382346,
+      "sha256": "e06c584f083bcd477fe15722bc4052443f77cb0fb0012b31507eaf00abbd40ee",
+      "crc32": "2df70e0e"
+    },
+    {
+      "member": "dataset/test/Social_Network_Twitter/Cypher/TuGraph-DB_Instance/USER.csv",
+      "bytes": 172690,
+      "sha256": "cb5073b3d369402d5b721fda69432073177738397b370df92eba696d2bb16cd2",
+      "crc32": "b70afa2f"
+    }
+  ],
+  "graphs": {
+    "Financial_Payment": {
+      "records": 776,
+      "unique_ids": 776,
+      "fields": [
+        "id",
+        "database",
+        "initial_question",
+        "initial_gql",
+        "difficulty",
+        "source"
+      ],
+      "difficulty": {
+        "medium": 255,
+        "hard": 384,
+        "extra hard": 34,
+        "easy": 103
+      },
+      "source": {
+        "AT2G-Synth": 776
+      },
+      "string_question_rows": 776,
+      "string_reference_query_rows": 776
+    },
+    "Information_Technology_IT_Asset_Management": {
+      "records": 726,
+      "unique_ids": 726,
+      "fields": [
+        "id",
+        "database",
+        "initial_question",
+        "initial_gql",
+        "difficulty",
+        "source"
+      ],
+      "difficulty": {
+        "hard": 293,
+        "medium": 259,
+        "extra hard": 54,
+        "easy": 120
+      },
+      "source": {
+        "AT2G-Synth": 726
+      },
+      "string_question_rows": 726,
+      "string_reference_query_rows": 726
+    },
+    "Knowledge_Graph_Geography": {
+      "records": 642,
+      "unique_ids": 642,
+      "fields": [
+        "id",
+        "database",
+        "initial_question",
+        "initial_gql",
+        "difficulty",
+        "source"
+      ],
+      "difficulty": {
+        "easy": 112,
+        "hard": 246,
+        "medium": 255,
+        "extra hard": 29
+      },
+      "source": {
+        "AT2G-Synth": 642
+      },
+      "string_question_rows": 642,
+      "string_reference_query_rows": 642
+    },
+    "Manufacturing_BOM(Bill_Of_Materials)": {
+      "records": 489,
+      "unique_ids": 489,
+      "fields": [
+        "id",
+        "database",
+        "initial_question",
+        "initial_gql",
+        "difficulty",
+        "source"
+      ],
+      "difficulty": {
+        "medium": 192,
+        "hard": 180,
+        "extra hard": 18,
+        "easy": 99
+      },
+      "source": {
+        "AT2G-Synth": 489
+      },
+      "string_question_rows": 489,
+      "string_reference_query_rows": 489
+    },
+    "Manufacturing_Production_Process": {
+      "records": 596,
+      "unique_ids": 596,
+      "fields": [
+        "id",
+        "database",
+        "initial_question",
+        "initial_gql",
+        "difficulty",
+        "source"
+      ],
+      "difficulty": {
+        "hard": 288,
+        "medium": 141,
+        "extra hard": 42,
+        "easy": 125
+      },
+      "source": {
+        "AT2G-Synth": 596
+      },
+      "string_question_rows": 596,
+      "string_reference_query_rows": 596
+    },
+    "Social_Network_Twitter": {
+      "records": 597,
+      "unique_ids": 597,
+      "fields": [
+        "id",
+        "database",
+        "initial_question",
+        "initial_gql",
+        "difficulty",
+        "source"
+      ],
+      "difficulty": {
+        "hard": 253,
+        "medium": 191,
+        "extra hard": 74,
+        "easy": 79
+      },
+      "source": {
+        "AT2G-Synth": 597
+      },
+      "string_question_rows": 597,
+      "string_reference_query_rows": 597
+    }
+  },
+  "total_test_records": 3826,
+  "unique_graph_id_pairs": 3826,
+  "model_calls": 0,
+  "source_executed": false,
+  "database_imported": false,
+  "reference_execution_completed": false,
+  "engine": "TuGraph source package; Neo4j equivalence not established",
+  "budget_authorized_for_prediction": false
+}
