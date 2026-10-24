@@ -24,8 +24,13 @@ def run(args):
     if any(not re.fullmatch(r'[a-z_]+', name) for name in jobs):
         raise ValueError('Unexpected graph name')
     args.output.mkdir(parents=True, exist_ok=False)
+    source_dir = Path(__file__).resolve().parent
+    remote_hashes = {name: hashlib.sha256((source_dir / name).read_bytes()).hexdigest()
+                     for name in ['public_graph_runtime.py', 'answer_scoring.py',
+                                  'smoke_train_database.py', 'model_transport.py', 'attempt_budget.py']}
     immutable_json(args.output / 'plan.json', {'kind': 'PUBLIC_DATA_ONLY_NO_MODEL_QUEUE',
                    'pid': os.getpid(), 'graphs': jobs, 'model_calls': 0,
+                   'remote_module_hashes': remote_hashes,
                    'source_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()})
     ssh = ['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=12', '-p', '2491',
            '-i', str(args.ssh_key), 'root@117.50.195.94']
@@ -52,6 +57,13 @@ def run(args):
                     ' && test ! -e ' + shlex.quote(remote_graph + '.partial') +
                     ' && test ! -e ' + shlex.quote(output))
         try:
+            hash_command = 'sha256sum ' + ' '.join(shlex.quote(REMOTE + '/public_runtime_v1_code/' + name)
+                                                  for name in remote_hashes)
+            remote_output = subprocess.check_output(ssh + [hash_command], text=True)
+            actual_hashes = {Path(line.split(None, 1)[1].strip()).name: line.split()[0]
+                             for line in remote_output.splitlines()}
+            if actual_hashes != remote_hashes:
+                raise RuntimeError('Remote preflight source changed; do not run under stale freeze')
             subprocess.run(ssh + [precheck], check=True, capture_output=True)
             with (stage / 'transfer.log').open('xb') as log:
                 subprocess.run(scp + [str(source), 'root@117.50.195.94:' + remote_graph + '.partial'],
