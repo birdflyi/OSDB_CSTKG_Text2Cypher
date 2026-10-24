@@ -56,8 +56,51 @@ service code, predictions and reference freezes are unchanged.
    recognizes the first legacy probe's special terminal name, and blocks
    pending attempts, changed requests, missing history or exceeded allowance.
    It performs no model requests. A leftover lock requires owner inspection;
-   it is never silently cleared. This is accounting, not a complete transport,
-   failure-stop or prediction runner.
+   it is never silently cleared. The development transport below uses this
+   accounting; the ledger by itself does not send requests.
+
+## Executable preparation v1 (development only)
+
+`dev_preparation.py` has no formal-test mode. It admits exactly the three pinned
+TRAIN smoke questions and refuses a dirty source checkout. Run it first without
+`--models`: this checks the owned remote database, constructed disjoint/overlap
+fixtures against independent Python references, and three distributed TRAIN
+references. All are development checks, not main-table scores.
+
+The remote directory `preparation_v1_code` must contain `dev_database_worker.py`,
+`cypher_read_guard.py`, and `smoke_train_database.py`. The worker verifies the
+shared-mount owner/hostname and training graph hash, starts only its private CPU
+Neo4j runtime, and stops it on stdin EOF. An occupied port blocks startup.
+
+`schema_services.py` supplies a schema-typed finite v0.1 plan language with short
+directed graph patterns, typed filters, projections, aggregation, and at most two
+entity-set inputs. A union count uses branch counts only when incompatible
+scalar equalities prove the answer entity sets disjoint. Otherwise entity IDs
+and attached payloads are retrieved. The full-detail control uses the same plan.
+Unsupported operators stay explicit: no OPTIONAL MATCH, variable-length paths,
+subqueries, arbitrary expressions, HAVING, or multi-stage aggregation. This is
+an initial candidate, not the established v16 method or a universal translator.
+
+With `--models`, the runner uses the same supplied model/settings for Direct and
+Ours; each path has at most one format/compile/execution feedback pass. Reference
+answers are read only after predictions. A valid wrong answer is not retried.
+The conservative read guard disallows procedures and scoped CALL syntax in v1;
+these restrictions require review before claiming a strong formal baseline.
+
+`model_transport.py` uses explicit UTF-8 HTTP payloads, no SDK retries, immutable
+request/terminal records and the canonical 12,000 cumulative ledger. One run is
+limited to at most 12 physical calls. Transient failures retry the identical body
+after 10 seconds; three consecutive infrastructure failures stop the batch.
+Every attempt is charged, and unknown usage stays unknown. An interrupted or
+stopped run is not automatically restarted. Private credentials are never saved
+with request payloads or committed to Git.
+
+The current 32 local checks cover schema validation, disjointness/overlap,
+full-detail agreement, output completeness, read guards, UTF-8, bounded retries,
+history/cap enforcement, and official answer-equivalence semantics. They do not
+replace real database and model development checks. Every preparation summary
+keeps `full_main_table_ready=false`; formal admission needs a fresh independent
+review of all required gates.
 
 Output data, credentials and runtime files belong outside Git. The runtime
 record split is a runner contract, not an OS security boundary.
