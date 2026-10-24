@@ -29,7 +29,10 @@ service code, predictions and reference freezes are unchanged.
 2. `bootstrap_remote.py --root PATH` installs a private Neo4j 5.26.32 / Java 21
    development runtime. It binds only loopback, uses a private database
    credential file, and does not modify system packages or GPU services.
-   Its fixed owned-root check is intentional. When remote package access is
+   Its fixed owned-root check is intentional. When the filesystem is
+   shared across instances, `execution_owner.json` binds execution to the
+   selected hostname; another instance must not start this database.
+   When remote package access is
    blocked, supply verified archives under `downloads/` and wheels under
    `wheels/`. Java metadata is persisted in `downloads/java21.json`.
 3. `smoke_train_database.py --root PATH` verifies every transferred artifact,

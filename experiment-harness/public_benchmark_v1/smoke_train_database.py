@@ -95,6 +95,8 @@ def main(root):
         raise ValueError('Unexpected experiment root')
     if not (root / 'OWNED_CH7_T1').exists():
         raise ValueError('Missing ownership marker')
+    if json.loads((root / 'execution_owner.json').read_text())['hostname'] != socket.gethostname():
+        raise ValueError('Shared directory belongs to a different execution host')
     runtime = json.loads((root / 'runtime_receipt.json').read_text())
     data = root / 'cypherbench_data'
     manifest = json.loads((data / 'manifest.json').read_text())

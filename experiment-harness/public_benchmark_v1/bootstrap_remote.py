@@ -41,6 +41,13 @@ def main(root):
     if root.parent != Path('/mnt/data/louzehua') or root.name != 'ch7_t1_public_benchmark_20261023':
         raise ValueError('Unexpected remote experiment root')
     root.mkdir(exist_ok=True)
+    owner_file = root / 'execution_owner.json'
+    if owner_file.exists():
+        if json.loads(owner_file.read_text())['hostname'] != socket.gethostname():
+            raise ValueError('Shared directory belongs to a different execution host')
+    else:
+        with owner_file.open('x') as owner:
+            json.dump({'hostname': socket.gethostname()}, owner)
     marker = root / 'OWNED_CH7_T1'
     marker.touch(exist_ok=True)
     downloads = root / 'downloads'
@@ -112,6 +119,7 @@ def main(root):
                     *package_options, 'neo4j==5.24.0', 'pydantic==2.9.2'], check=True)
     report = {
         'status': 'RUNTIME_INSTALLED_NOT_STARTED', 'neo4j_version': NEO4J_VERSION,
+        'execution_hostname': socket.gethostname(),
         'java_release': java_info['release_name'], 'java_home': str(java_home),
         'neo4j_home': str(neo4j_home), 'python': str(venv / 'bin/python'),
         'bind_address': '127.0.0.1', 'bolt_port': 17687,
