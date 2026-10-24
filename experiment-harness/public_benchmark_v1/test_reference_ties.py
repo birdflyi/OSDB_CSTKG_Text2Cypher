@@ -24,6 +24,13 @@ class RankingWitnessChecks(unittest.TestCase):
         self.assertFalse(ranking_tie_witness([{'name': 'A', 'key': 0}, {'name': 'A', 'key': 0}],
                          [['A']], [['A']], limit=1)['certified'])
 
+    def test_projection_duplicates_keep_their_per_rank_multiplicity(self):
+        rows = [{'name': 'A', 'key': 2}, {'name': 'A', 'key': 1}, {'name': 'B', 'key': 1}]
+        self.assertTrue(ranking_tie_witness(rows, [['A'], ['A'], ['B']],
+                        [['A'], ['B'], ['A']], descending=True)['certified'])
+        self.assertFalse(ranking_tie_witness(rows, [['A'], ['A'], ['B']],
+                         [['B'], ['A'], ['A']], descending=True)['certified'])
+
 
 if __name__ == '__main__':
     unittest.main()
