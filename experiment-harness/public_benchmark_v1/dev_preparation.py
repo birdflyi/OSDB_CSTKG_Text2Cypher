@@ -101,7 +101,7 @@ class RemoteWorker:
             self.log.close()
 
 
-def interpret(content, usable, arm, schema, worker):
+def _interpret(content, usable, arm, schema, worker):
     if not usable:
         return {'status': 'MODEL_ERROR', 'rows': None, 'error': 'Missing or truncated final content'}
     observations = []
@@ -129,6 +129,13 @@ def interpret(content, usable, arm, schema, worker):
         return {'status': 'MODEL_ERROR', 'rows': None,
                 'error': type(error).__name__ + ': ' + str(error)[:1000],
                 'observations': observations}
+
+
+def interpret(content, usable, arm, schema, worker):
+    started = time.monotonic()
+    result = _interpret(content, usable, arm, schema, worker)
+    result['pipeline_interpret_wall_seconds'] = time.monotonic() - started
+    return result
 
 
 def fixtures(data, schema, worker):

@@ -12,7 +12,7 @@ import re
 import time
 
 
-VERSION = 'typed-services-dev-0.1.1'
+VERSION = 'typed-services-dev-0.1.2'
 
 
 class UnsupportedPlan(ValueError):
@@ -32,8 +32,13 @@ def ident(value):
 
 
 def object_fields(value, required, optional=()):
-    if not isinstance(value, dict) or not set(required) <= value.keys() or value.keys() - set(required) - set(optional):
-        raise UnsupportedPlan('Invalid or extra plan fields')
+    if not isinstance(value, dict):
+        raise UnsupportedPlan('Expected an object with required fields: ' + ','.join(required))
+    missing = set(required) - value.keys()
+    extra = value.keys() - set(required) - set(optional)
+    if missing or extra:
+        raise UnsupportedPlan('Missing required fields: ' + ','.join(sorted(missing)) +
+                              '; unsupported fields: ' + ','.join(sorted(extra)))
 
 
 def name(value):
@@ -269,6 +274,10 @@ def execute_plan(plan, schema, execute, *, strategy='contract'):
     full_detail: always retrieve sufficient entity rows for set composition.
     Both share the same logical plan. Neither uses gold or reference outputs.
     """
+    total_started = time.monotonic()
+    compile_seconds = 0.0
+    db_wall_seconds = 0.0
+    compose_seconds = 0.0
     if strategy not in ('contract', 'full_detail'):
         raise UnsupportedPlan('Unknown execution strategy')
     object_fields(plan, ['status'], ['calls', 'combine', 'reason'])
@@ -279,7 +288,13 @@ def execute_plan(plan, schema, execute, *, strategy='contract'):
     combine = plan.get('combine')
     object_fields(combine, ['op'], ['key', 'output', 'columns', 'alias'])
     calls = plan['calls']
-    compiled = [compile_selection(call, schema) for call in calls]
+    def compile_call(call):
+        nonlocal compile_seconds
+        start = time.monotonic()
+        value = compile_selection(call, schema)
+        compile_seconds += time.monotonic() - start
+        return value
+    compiled = [compile_call(call) for call in calls]
     operation = combine['op']
     if operation == 'single':
         if len(calls) != 1 or set(combine) != {'op'}:
@@ -289,7 +304,10 @@ def execute_plan(plan, schema, execute, *, strategy='contract'):
     observations, started = [], time.monotonic()
 
     def run(item):
+        nonlocal db_wall_seconds
+        call_started = time.monotonic()
         observation = execute(item['query'], item['parameters'])
+        db_wall_seconds += time.monotonic() - call_started
         observations.append(observation)
         if observation.get('status') == 'EXECUTION_ERROR':
             raise ServiceExecutionError(observation.get('error', 'Database execution failed'))
@@ -327,14 +345,24 @@ def execute_plan(plan, schema, execute, *, strategy='contract'):
                 reduced['returns'] = [{'field': query['contract']['projected'][key],
                                        'agg': 'count', 'distinct': True, 'alias': columns[0]}]
                 reduced['distinct'] = False
-                summary = run(compile_selection(reduced, schema))
+                summary = run(compile_call(reduced))
                 if len(summary) != 1 or len(summary[0]) != 1 or type(summary[0][0]) is not int:
                     raise UnsupportedPlan('Invalid count summary')
                 counts.append(summary[0][0])
+            compose_started = time.monotonic()
             rows = [[sum(counts)]]
+            compose_seconds += time.monotonic() - compose_started
             representation = 'certified_disjoint_counts'
         else:
-            records = [run(query) for query in compiled]
+            # Entity-set composition is invariant to duplicate identical rows.
+            # Give the full-detail control this safe pushdown too; do not pad it.
+            detailed = []
+            for call in calls:
+                distinct_call = deepcopy(call)
+                distinct_call['distinct'] = True
+                detailed.append(compile_call(distinct_call))
+            records = [run(query) for query in detailed]
+            compose_started = time.monotonic()
             indices = {column: index for index, column in enumerate(compiled[0]['columns'])}
             maps = []
             for result in records:
@@ -359,9 +387,15 @@ def execute_plan(plan, schema, execute, *, strategy='contract'):
             rows = ([[len(selected)]] if output == 'count' else
                     [[merged[k][indices[column]] for column in columns] for k in sorted(selected)])
             representation = 'entity_records'
+            compose_seconds += time.monotonic() - compose_started
+    total_seconds = time.monotonic() - total_started
     return {'status': 'EXECUTED', 'rows': rows, 'columns': columns,
             'representation': representation, 'strategy': strategy,
-            'observations': observations, 'execution_wall_seconds': time.monotonic() - started}
+            'observations': observations, 'execution_wall_seconds': time.monotonic() - started,
+            'total_plan_seconds': total_seconds, 'compile_seconds': compile_seconds,
+            'db_roundtrip_seconds': db_wall_seconds, 'compose_and_payload_check_seconds': compose_seconds,
+            'validation_and_dispatch_seconds': max(0.0, total_seconds - compile_seconds -
+                                                  db_wall_seconds - compose_seconds)}
 
 
 PLAN_INSTRUCTIONS = """Return one JSON object only, without Markdown.
@@ -369,6 +403,9 @@ Use {"status":"UNSUPPORTED","reason":"..."} if outside the finite language.
 Otherwise use {"status":"ANSWER","calls":[selection],"combine":{"op":"single"}}.
 A selection is {"nodes":[{"id":"n","label":"SCHEMA_LABEL"}],"edges":[],
 "where":[],"returns":[{"field":"n.name","alias":"name"}]}.
+Each calls item is directly this selection object; do not wrap it in a
+"selection" or "query" field. No text before/after the JSON. Grouping is
+implicit from non-aggregate return items; do not emit a group_by field.
 Up to4 nodes and3 connected directed edges; edges have id,source,target,label.
 All labels/properties and edge directions must match schema. Available node
 metadata properties: eid,name,aliases,description. Edge metadata: rid.

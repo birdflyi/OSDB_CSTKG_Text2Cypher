@@ -85,6 +85,38 @@ run provenance; no historical run is rewritten. Every transport policy records
 the actual values. These changes need development checks before formal freeze.
 See the canonical discussion/T1_EXECUTION_PLAN_V4_20261024.md outside this tree.
 
+`public_graph_runtime.py` creates one isolated public graph store, batches its
+import, verifies every node/edge/property/endpoint and executes every distributed
+reference. `prepare_public_graph_queue.py` runs the remaining graph preflights
+sequentially, stops on an actual data/runtime failure and keeps all attempts.
+Reference mismatches are retained for scientific review, not silently excluded.
+`reference_ties.py` can certify a restricted ranking-tie witness from independent
+data; it does not relax or replace the official primary result comparator.
+
+`run_frozen_main.py` is the fail-closed formal entry: both a source/data freeze
+and matching explicit graph admission are mandatory. It pins all 2,348 tasks
+before any formal prediction, checks the same model settings for both arms,
+persists per-path intents/replies/views/final records, and blocks uncertain
+interrupted intents instead of resending them. Completed path records can be
+reused; no correctness-aware retry is implemented. References are read only
+after the graph predictions. Direct first/feedback results and fixed-plan
+full-detail scores are kept separate. In v0.1 the simple safe record policy is
+equivalent to full-detail; it must not be presented as independent evidence.
+
+The public query worker allows ordinary scoped CALL subqueries as well as
+unscoped ones; procedures remain disabled and Neo4j EXPLAIN must certify read
+type before execution. No default query LIMIT is added. Resource ceilings are
+one million returned rows/64 MiB per DB response, common to all arms/controls;
+exhaustion is explicit TRUNCATED and cannot receive EX credit. This differs from
+the historical development worker's 10,000-row transport ceiling.
+
+v0.1.2 adds component clocks and safe DISTINCT pushdown on entity-set records
+for both the contract and full-detail paths. Single-selection bag semantics are
+unchanged. The latest 45 local checks pass. The v2 development batch stopped
+after14 physical calls (three consecutive HTTP500s),9complete paths of24,
+1infrastructure-failed incomplete path,14never dispatched. This does not admit
+the formal runner. Do not restart that stopped batch or claim main-table scores.
+
 `dev_preparation.py` has no formal-test mode. It admits exactly the three pinned
 TRAIN smoke questions and refuses a dirty source checkout. Run it first without
 `--models`: this checks the owned remote database, constructed disjoint/overlap

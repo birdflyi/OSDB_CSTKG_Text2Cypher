@@ -7,6 +7,7 @@ import argparse
 from collections import defaultdict
 import hashlib
 import json
+import logging
 import os
 from pathlib import Path
 import secrets
@@ -96,7 +97,7 @@ def import_verify(session, graph, folder):
     return validation
 
 
-def preflight(root, graph_name, output):
+def preflight(root, graph_name, output, only_qids=None):
     root = root.resolve()
     if root != ROOT or json.loads((root / 'execution_owner.json').read_text())['hostname'] != socket.gethostname():
         raise ValueError('Wrong runtime owner/host')
@@ -164,9 +165,11 @@ def preflight(root, graph_name, output):
             fd = os.open(private, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             with os.fdopen(fd, 'w') as stream:
                 json.dump(credentials, stream)
-            subprocess.run([runtime['neo4j_home'] + '/bin/neo4j-admin', 'dbms',
+            password_result = subprocess.run([runtime['neo4j_home'] + '/bin/neo4j-admin', 'dbms',
                             'set-initial-password', credentials['password']],
-                           env=env, capture_output=True, check=True)
+                           env=env, capture_output=True, check=False)
+            if password_result.returncode:
+                raise RuntimeError('Private database credential initialization failed; inspect privately')
         credentials = json.loads(private.read_text())
         with (output / 'database_console.log').open('x') as log:
             process = subprocess.Popen([runtime['neo4j_home'] + '/bin/neo4j', 'console'],
@@ -196,6 +199,10 @@ def preflight(root, graph_name, output):
                 if s.strip() and json.loads(s)['graph'] == graph_name]
         if len(refs) != expected_tasks:
             raise ValueError('Reference task count mismatch')
+        if only_qids:
+            if not set(only_qids) <= {r['qid'] for r in refs}:
+                raise ValueError('Diagnostic QID outside selected public graph')
+            refs = [r for r in refs if r['qid'] in set(only_qids)]
         checked = []
         for row in sorted(refs, key=lambda r: r['qid']):
             started = time.monotonic()
@@ -212,6 +219,8 @@ def preflight(root, graph_name, output):
                          order_matters='order by' in row['gold_cypher'].lower(), qid=row['qid'], compare=compare)
                 item = {'qid': row['qid'], 'reference_answer_match': result['ex'],
                         'rows': len(actual), 'seconds': time.monotonic() - started}
+                if result['ex'] != 1:
+                    item.update(actual_rows=actual, published_rows=read_reference_answer(row['answer_json']))
             except Exception as error:
                 item = {'qid': row['qid'], 'reference_answer_match': 0,
                         'error_type': type(error).__name__, 'error': str(error)[:1000],
@@ -219,6 +228,7 @@ def preflight(root, graph_name, output):
             checked.append(item)
             immutable_json(output / 'references' / (row['qid'] + '.json'), item)
         summary = {'kind': 'TEST_DATA_REFERENCE_PREFLIGHT_NOT_MODEL_RESULT', 'graph': graph_name,
+                   'diagnostic_subset': bool(only_qids), 'official_graph_tasks': expected_tasks,
                    'tasks': len(refs), 'checked': len(checked),
                    'passed': sum(r['reference_answer_match'] == 1 for r in checked),
                    'graph_validation': validation, 'model_calls': 0, 'formal_predictions': 0,
@@ -248,5 +258,7 @@ if __name__ == '__main__':
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--graph', required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--qid', action='append')
     args = parser.parse_args()
-    preflight(args.root, args.graph, args.output)
+    logging.getLogger('neo4j.notifications').setLevel(logging.ERROR)
+    preflight(args.root, args.graph, args.output, args.qid)
