@@ -1,0 +1,67 @@
+{
+  "kind": "COMPLETED_GRAPH_ACCEPTANCE",
+  "timestamp_utc": "2026-10-24T12:52:22.336194+00:00",
+  "graph": "flight_accident",
+  "n": 189,
+  "terminal_primary_paths": 378,
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "score_path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\flight_accident\\scores\\flight_accident.json",
+  "score_sha256": "4622fe2f58ee4f1b2d19ac7a3fa2580a1c930f1e8d375cc0ff05d4039fd6f609",
+  "all_frozen_task_arm_ids_present_once": true,
+  "saved_predictions_unchanged_by_scoring": true,
+  "final_status_counts": {
+    "direct:EXECUTED": 189,
+    "ours:EXECUTED": 173,
+    "ours:UNSUPPORTED": 15,
+    "ours:MODEL_ERROR": 1
+  },
+  "methods": {
+    "Direct": {
+      "n": 189,
+      "correct": 145.0,
+      "returned": 189,
+      "ex_percent": 76.71957671957672
+    },
+    "Direct+feedback": {
+      "n": 189,
+      "correct": 145.0,
+      "returned": 189,
+      "ex_percent": 76.71957671957672
+    },
+    "Ours": {
+      "n": 189,
+      "correct": 136.0,
+      "returned": 173,
+      "ex_percent": 71.95767195767196
+    },
+    "Full-detail(shared-plan)": {
+      "n": 189,
+      "correct": 136.0,
+      "returned": 173
+    }
+  },
+  "descriptive_pairs": {
+    "ours_only": 3,
+    "direct_only": 12,
+    "both_correct": 133,
+    "neither_correct": 41
+  },
+  "fixed_plan_control_status_counts": {
+    "EXECUTED": 173,
+    "UNSUPPORTED": 15,
+    "MODEL_ERROR": 1
+  },
+  "executed_plan_raw_row_disagreement_qids": [],
+  "physical_model_attempts": 381,
+  "known_token_sums": {
+    "prompt_tokens": 566296,
+    "completion_tokens": 217851,
+    "total_tokens": 784147
+  },
+  "attempts_with_unknown_usage": 0,
+  "monetary_cost": "unknown; unit price unavailable",
+  "unknown_original_wrapper_clocks": 1,
+  "full2348_conclusion_ready": false,
+  "entire_T1_complete": false,
+  "interpretation": "One completed graph only. Do not tune the frozen method from these results."
+}
