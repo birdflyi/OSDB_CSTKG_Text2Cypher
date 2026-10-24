@@ -1,0 +1,10 @@
+{
+  "timestamp_utc": "2026-10-24T18:53:29.593510+00:00",
+  "action": "SIGINT_EXACT_VERIFIED_IDLE_ORPHAN",
+  "target_pid": 198329,
+  "returncode": 0,
+  "stdout": "{\"state\": \"OWNED_ORPHAN_VERIFIED\", \"pid\": 198329, \"java_pid\": 198344, \"lock\": {\"pid\": 198329, \"graph\": \"company\", \"state\": \"PUBLIC_QUERY_WORKER\"}, \"wchan\": \"pipe_wait\"}\n{\"state\": \"ORPHAN_STOPPED_BY_OWN_FINALLY\", \"public_port_free\": true, \"lock_removed_by_worker\": true, \"manual_lock_unlink\": false, \"model_calls\": 0}\n",
+  "stderr": "",
+  "automatic_lock_removal": false,
+  "new_model_calls": 0
+}
