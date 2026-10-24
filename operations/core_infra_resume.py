@@ -49,9 +49,11 @@ def load_original(root):
         raise ValueError('Expected original frozen implementation, not recovery worktree copy')
     def popen(command, *args, **kwargs):
         return subprocess.Popen(keepalive_command(command), *args, **kwargs)
-    main.subprocess = SimpleNamespace(check_output=subprocess.check_output, Popen=popen,
-                TimeoutExpired=subprocess.TimeoutExpired,
-                CREATE_NO_WINDOW=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+    class SubprocessProxy:
+        Popen = staticmethod(popen)
+        def __getattr__(self, name):
+            return getattr(subprocess, name)
+    main.subprocess = SubprocessProxy()
     main.PublicWorker.close = safe_close
     return main
 
@@ -83,7 +85,7 @@ def recover_cached(main, args):
     terminal = json.loads((attempt/'terminal.json').read_text(encoding='utf-8'))
     if terminal.get('http_status') != 200 or terminal['body']['choices'][0]['message']['content'] != reply['content']:
         raise ValueError('Cached response lacks immutable successful attempt evidence')
-    recovery = run/'infra_recovery_cached_v1'
+    recovery = run/'infra_recovery_cached_v2'
     recovery.mkdir(exist_ok=False)
     main.immutable_json(recovery/'plan.json', {**recovery_identity(main, args),
                           'qid': args.qid, 'arm': args.arm, 'new_model_calls': 0,
