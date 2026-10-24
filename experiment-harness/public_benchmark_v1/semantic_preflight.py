@@ -10,7 +10,8 @@ from schema_services import compile_selection, execute_plan
 
 def check_rows(result, expected):
     if result.get('status') != 'EXECUTED' or result.get('complete', True) is not True:
-        raise RuntimeError('Semantic conformance query did not execute completely')
+        raise RuntimeError('Semantic conformance query did not execute completely: '
+                           + str(result.get('error', result.get('status'))))
     if sorted(result['rows']) != sorted(expected):
         raise RuntimeError('Compiled semantics differ from independent reference')
 
@@ -108,7 +109,9 @@ def synthetic_fragment_checks(worker):
         prefix = 'MATCH (n:`Person`) '
         if not compiled['query'].startswith(prefix):
             raise RuntimeError('Synthetic expression binding no longer matches compiler entry')
-        query = 'UNWIND $fixture_rows AS n ' + compiled['query'][len(prefix):]
+        # WHERE attaches to MATCH/WITH, never directly to UNWIND. Preserve the
+        # compiler expression while replacing only the read-only row source.
+        query = 'UNWIND $fixture_rows AS n WITH n ' + compiled['query'][len(prefix):]
         actual = worker.execute(query, {**compiled['parameters'], 'fixture_rows': data})
         check_rows(actual, expected)
         result.append({'id': label, 'kind': 'CONSTRUCTED_READ_ONLY_EXPRESSION_CHECK',
