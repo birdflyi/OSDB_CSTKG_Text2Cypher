@@ -1,7 +1,8 @@
 # T1 public benchmark preparation
 
-Status (2026-10-24): development infrastructure preflight passed. No model
-prediction has been run, and no formal test protocol is frozen.
+Status (2026-10-24): development infrastructure preflight passed. Executed-answer
+scoring and serial attempt accounting components added and checked offline.
+No model prediction has been run, and no formal test protocol is frozen.
 
 This directory is the new experiment branch's preparation code. Historical
 service code, predictions and reference freezes are unchanged.
@@ -41,8 +42,22 @@ service code, predictions and reference freezes are unchanged.
    executes three deterministic training references. The database is stopped
    in `finally`; per-attempt reports and a latest report are saved.
 4. `python -m unittest discover -s experiment-harness/public_benchmark_v1
-   -p test_preparation.py -v` checks leakage prevention, split separation,
-   artifact tampering, duplicate tasks and immutable outputs.
+   -p 'test_*.py' -v` checks leakage prevention, split separation,
+   artifact tampering, answer semantics and immutable attempt accounting.
+5. `answer_scoring.py` loads only pure result-equivalence functions from the
+   hash-pinned official evaluator. It does not load the official query-text
+   identity shortcut, run queries or call a model. The eventual runner must
+   supply actual executed, normalized JSON row arrays. Refusal, truncation
+   and execution failures cannot become correct answers, even for empty gold.
+   Set `CH7_CYPHERBENCH_SOURCE` to the pinned official checkout for tests
+   outside the canonical workspace layout.
+6. `attempt_budget.py` requires an explicit approval file and serial shared
+   ledger, preserves historical slots, supports verified path translation,
+   recognizes the first legacy probe's special terminal name, and blocks
+   pending attempts, changed requests, missing history or exceeded allowance.
+   It performs no model requests. A leftover lock requires owner inspection;
+   it is never silently cleared. This is accounting, not a complete transport,
+   failure-stop or prediction runner.
 
 Output data, credentials and runtime files belong outside Git. The runtime
 record split is a runner contract, not an OS security boundary.
@@ -61,6 +76,21 @@ record split is a runner contract, not an OS security boundary.
   to make that correction.
 - No model calls, GPU allocations or formal accuracy results.
 
+## Offline execution-component checks
+
+- All 17 preparation/execution-component checks passed, including official
+  bag/order/column semantics, empty answer versus refusal, metric tampering,
+  failed attempts charged once, pending-call blocking and migrated legacy
+  accounting. Comparator tests use real hash-pinned upstream functions.
+- All 8,534 TRAIN reference answer arrays passed result-shape normalization.
+  A small self-consistency check is evaluator preflight only, not accuracy.
+- A read-only inspection of the canonical historical ledger found 364 unique
+  reservations, no pending terminal records, cumulative cap 12,000 and 11,636
+  unreserved slots. No new slot was allocated. The approval is scoped to this
+  CypherBench stage; other benchmark/backbone needs remain separate.
+- Generic method adaptation, direct/feedback dispatch, test-graph deployment,
+  author-method reproducibility and formal freezes remain outstanding.
+
 The native loader is a development deployment; these checks do not certify
 equivalence to the official Docker image for every graph, type and query.
 Database timings here are reference smoke timings, not method efficiency.
@@ -74,12 +104,14 @@ Database timings here are reference smoke timings, not method efficiency.
 3. Freeze the independent evaluation scope, prompts, method version, retries,
    scoring and call allowance before formal predictions.
 4. Prioritize CypherBench, then matching MindTheQuery tasks and independent
-   CoRE tasks. Audit one external specialist first, preferably CYQUARK-4B;
+   OSDB-STKG tasks. Audit one external specialist first, preferably CYQUARK-4B;
    do not assume weights or per-task outputs are available.
 5. Preserve raw attempts and collect complete costs. Direct-feedback may reuse
    an identical direct first pass; deterministic execution controls may reuse
    plans only when their model inputs and feedback are unchanged.
 
 The four-benchmark table is not authorization to run every candidate on every
-full dataset. The existing call cap remains unchanged. Legacy background
-queues must not be restarted by this preparation package.
+full dataset. Current approval raises the cumulative attempt cap to 12,000,
+retaining all 364 historical reservations. Legacy background queues must not
+be restarted by this preparation package. A completed CypherBench column alone
+is not automatically completion of the entire multi-benchmark main table.
