@@ -39,6 +39,20 @@ class TransportChecks(unittest.TestCase):
             client.complete([], purpose='must not restart')
         self.assertEqual(len(wires), 3)
 
+    def test_explicit_shared_token_and_timeout_allowances_are_recorded(self):
+        config = {**self.config, 'max_tokens': 8192, 'read_timeout_seconds': 240}
+        wires = []
+        def send(config, wire):
+            wires.append(json.loads(wire))
+            return {'http_status': 200, 'body': {'choices': [
+                {'finish_reason': 'stop', 'message': {'content': 'RETURN 1'}}]}}
+        client = ModelTransport(config, self.budget, self.root / 'limits', send=send)
+        client.complete([], purpose='allowance check')
+        self.assertEqual(wires[0]['max_tokens'], 8192)
+        policy = json.loads((self.root / 'limits/transport_policy.json').read_text())
+        self.assertEqual(policy['timeout_seconds'], [10, 240])
+        self.assertEqual(policy['max_completion_tokens'], 8192)
+
     def test_valid_but_truncated_model_output_is_not_transport_retry(self):
         calls = []
 

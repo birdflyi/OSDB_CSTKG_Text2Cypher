@@ -36,7 +36,7 @@ def http_send(config, wire):
             'Content-Type': 'application/json; charset=utf-8',
         })
         if connection.sock:
-            connection.sock.settimeout(120)
+            connection.sock.settimeout(config.get('read_timeout_seconds', 120))
         response = connection.getresponse()
         raw = response.read()
         try:
@@ -57,6 +57,11 @@ class ModelTransport:
         if type(max_physical_calls) is not int or max_physical_calls < 1:
             raise ValueError('Positive physical call allowance required')
         self.send, self.sleep = send, sleep
+        self.max_tokens = config.get('max_tokens', 4096)
+        self.read_timeout = config.get('read_timeout_seconds', 120)
+        if (type(self.max_tokens) is not int or not 1 <= self.max_tokens <= 32768
+            or type(self.read_timeout) is not int or not 1 <= self.read_timeout <= 600):
+            raise ValueError('Invalid explicit token/timeout allowance')
         self.physical_calls = self.failures = 0
         self.stopped = False
         url = urlsplit(config['endpoint'])
@@ -69,7 +74,8 @@ class ModelTransport:
         immutable_json(self.directory / 'transport_policy.json', {
             'max_physical_calls': max_physical_calls, 'max_attempts_per_request': 3,
             'consecutive_infrastructure_failure_stop': 3, 'retry_wait_seconds': 10,
-            'environment_proxy': False, 'encoding': 'utf-8', 'timeout_seconds': [10, 120],
+            'environment_proxy': False, 'encoding': 'utf-8', 'timeout_seconds': [10, self.read_timeout],
+            'max_completion_tokens': self.max_tokens,
             'model': config['model'], 'no_automatic_batch_restart': True})
 
     def stop(self, reason):
@@ -85,7 +91,7 @@ class ModelTransport:
             raise self.stop('Batch already stopped; do not restart automatically')
         payload = {'model': self.config['model'], 'messages': messages,
                    'temperature': self.config['temperature'], 'top_p': self.config['top_p'],
-                   'reasoning_effort': self.config['reasoning_effort'], 'max_tokens': 4096}
+                   'reasoning_effort': self.config['reasoning_effort'], 'max_tokens': self.max_tokens}
         wire = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
         attempts = []
         for retry in range(3):

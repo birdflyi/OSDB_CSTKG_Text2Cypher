@@ -19,6 +19,7 @@ import time
 from answer_scoring import load_official_comparator, read_reference_answer, score_executed_answer
 from attempt_budget import AttemptBudget
 from model_transport import ModelTransport, immutable_json, BatchStopped
+from entity_candidates import EntityCandidates, CANDIDATE_NOTICE
 from schema_services import (PLAN_INSTRUCTIONS, VERSION, execute_plan, UnsupportedPlan,
                              IncompleteEvidence, ServiceExecutionError)
 
@@ -168,9 +169,19 @@ def run(args):
     if output.exists():
         raise RuntimeError('Existing preparation run is immutable; audit rather than rerun')
     manifest = json.loads((data / 'manifest.json').read_text(encoding='utf-8'))
-    tasks = lines(data / 'runtime/dev_smoke.jsonl')
-    if len(tasks) != 3 or {x['qid'] for x in tasks} != set(manifest['dev_smoke_ids']):
-        raise ValueError('Only the fixed three TRAIN smoke tasks are admitted')
+    task_path = args.train_tasks or data / 'runtime/dev_smoke.jsonl'
+    tasks = lines(task_path)
+    if args.train_tasks:
+        pinned = data / 'runtime/train.jsonl'
+        expected = next(x['sha256'] for x in manifest['artifacts'] if x['path'] == 'runtime/train.jsonl')
+        if hashlib.sha256(pinned.read_bytes()).hexdigest() != expected:
+            raise ValueError('Pinned TRAIN task catalog changed')
+        catalog = {x['qid']: x for x in lines(pinned)}
+        if (not 1 <= len(tasks) <= 32 or len({t['qid'] for t in tasks}) != len(tasks)
+            or any(t != catalog.get(t.get('qid')) for t in tasks)):
+            raise ValueError('Custom development tasks must exactly match unique pinned TRAIN runtime records')
+    elif len(tasks) != 3 or {x['qid'] for x in tasks} != set(manifest['dev_smoke_ids']):
+        raise ValueError('Default development set must match pinned smoke tasks')
     if any(t['graph'] != manifest['dev_smoke_graph'] or t['graph'] in manifest['splits']['test']['by_graph'] for t in tasks):
         raise ValueError('Development runner refuses test tasks/graphs')
     for relative in ['runtime/dev_smoke.jsonl', 'upstream/graphs/schemas/terrorist_attack_schema.json']:
@@ -182,6 +193,9 @@ def run(args):
     immutable_json(output / 'run_manifest.json', {
         'kind': 'TRAIN_PREPARATION_ONLY_NOT_MAIN_TABLE', 'git_commit': commit,
         'method_version': VERSION, 'task_ids': [t['qid'] for t in tasks],
+        'task_file_sha256': hashlib.sha256(task_path.read_bytes()).hexdigest(),
+        'shared_entity_candidates': args.entity_candidates,
+        'max_completion_tokens': args.max_output_tokens, 'read_timeout_seconds': args.read_timeout,
         'models_enabled': args.models, 'maximum_new_physical_calls': args.max_model_calls if args.models else 0,
         'feedback': 'At most once per path for invalid format/compile/execution only; no gold feedback.',
         'limits': 'One TRAIN graph; schema finite, no formal test mode. Timings include SSH worker. Not a generalization estimate.'})
@@ -195,16 +209,30 @@ def run(args):
         immutable_json(output / 'compiler_fixture_results.json', checks)
         if args.models:
             config = json.loads(args.model_config.read_text(encoding='utf-8'))
+            config.update(max_tokens=args.max_output_tokens, read_timeout_seconds=args.read_timeout)
             budget = AttemptBudget(args.budget, args.approval, path_rewrites=[
                 (r'C:\Users\10651\Documents\trae_projects\ch7_private', args.private_data)])
             transport = ModelTransport(config, budget, output / 'model_calls', max_physical_calls=args.max_model_calls)
+            resolver = None
+            if args.entity_candidates:
+                graph = json.loads((data / 'upstream/graphs/simplekg/terrorist_attack_simplekg.json').read_text(encoding='utf-8'))
+                resolver = EntityCandidates(graph['entities'])
             for index, task in enumerate(tasks):
+                lookup_started = time.monotonic()
+                candidates = resolver.find(task['nl_question']) if resolver else []
+                lookup_seconds = time.monotonic() - lookup_started
+                shared_context = ('Graph schema:\n' + json.dumps(schema, ensure_ascii=False) +
+                                  '\nQuestion:\n' + task['nl_question'])
+                if resolver:
+                    shared_context += '\n' + CANDIDATE_NOTICE + '\nCandidates:\n' + json.dumps(candidates, ensure_ascii=False)
+                immutable_json(output / 'shared_inputs' / (task['qid'] + '.json'),
+                               {'context': shared_context, 'candidates': candidates,
+                                'lookup_seconds': lookup_seconds})
                 arms = ['direct', 'ours'] if index % 2 == 0 else ['ours', 'direct']
                 for arm in arms:
                     messages = [{'role': 'system', 'content': DIRECT_INSTRUCTIONS if arm == 'direct' else PLAN_INSTRUCTIONS},
-                                {'role': 'user', 'content': 'Graph schema:\n' + json.dumps(schema, ensure_ascii=False) +
-                                 '\nQuestion:\n' + task['nl_question']}]
-                    record = {'qid': task['qid'], 'arm': arm, 'views': []}
+                                {'role': 'user', 'content': shared_context}]
+                    record = {'qid': task['qid'], 'arm': arm, 'views': [], 'lookup_seconds': lookup_seconds}
                     for step in range(2):
                         reply = transport.complete(messages, purpose=f'cypherbench TRAIN preparation {arm} step{step}')
                         outcome = interpret(reply['content'], reply['usable'], arm, schema, worker)
@@ -266,11 +294,15 @@ if __name__ == '__main__':
     for option in ['data', 'output', 'ssh-key', 'official-source']:
         p.add_argument('--' + option, type=Path, required=True)
     p.add_argument('--models', action='store_true')
+    p.add_argument('--train-tasks', type=Path)
+    p.add_argument('--entity-candidates', action='store_true')
+    p.add_argument('--max-output-tokens', type=int, default=4096, choices=[4096, 8192, 16384])
+    p.add_argument('--read-timeout', type=int, default=120, choices=[120, 240, 360])
     p.add_argument('--model-config', type=Path)
     p.add_argument('--budget', type=Path)
     p.add_argument('--approval', type=Path)
     p.add_argument('--private-data', type=Path)
-    p.add_argument('--max-model-calls', type=int, default=12, choices=range(1, 13))
+    p.add_argument('--max-model-calls', type=int, default=12, choices=range(1, 65))
     a = p.parse_args()
     if a.models and any(getattr(a, k) is None for k in ['model_config', 'budget', 'approval', 'private_data']):
         p.error('Model preparation requires private config, canonical budget and approval')

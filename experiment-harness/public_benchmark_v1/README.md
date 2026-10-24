@@ -61,6 +61,30 @@ service code, predictions and reference freezes are unchanged.
 
 ## Executable preparation v1 (development only)
 
+### T1 execution v4 follow-up
+
+`fetch_graph_assets.py` downloads all seven pinned TEST graph assets in ascending
+file-size order, verifies full size and LFS hash, and persists per-graph receipts.
+It does not load reference answers, start a DB, change the old manifest or make
+predictions. Failed partials remain unpromoted and require an audit.
+
+The development runner now accepts a predeclared `--train-tasks` runtime-only
+file. Every record must exactly match a unique question in the hash-pinned TRAIN
+catalog and the deployed TRAIN graph. TEST tasks are rejected. Task-file hashes
+are recorded before calls. The original three-task regression is the default.
+
+`--entity-candidates` supplies graph-derived lexical name/alias candidates to
+both arms unchanged. Inflection handling affects ranking only, never rewrites
+the question or silently changes a model plan. Candidates can be ambiguous and
+incomplete. This is shared grounding, not gold linking; its cost and protocol
+difference from schema-only reported baselines must be disclosed.
+
+For new development validation use matched `--max-output-tokens 8192` and
+`--read-timeout 240`. The original 4096/120 settings stay the defaults for old
+run provenance; no historical run is rewritten. Every transport policy records
+the actual values. These changes need development checks before formal freeze.
+See the canonical discussion/T1_EXECUTION_PLAN_V4_20261024.md outside this tree.
+
 `dev_preparation.py` has no formal-test mode. It admits exactly the three pinned
 TRAIN smoke questions and refuses a dirty source checkout. Run it first without
 `--models`: this checks the owned remote database, constructed disjoint/overlap
