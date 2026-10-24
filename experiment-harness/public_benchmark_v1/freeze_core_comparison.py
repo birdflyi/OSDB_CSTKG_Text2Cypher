@@ -25,6 +25,7 @@ def build(args):
         raise ValueError('Full graph and core evidence review is not ready')
     evidence = {str(args.review.resolve()): sha(args.review)}
     admitted = {}
+    runtime_tasks = [json.loads(line) for line in (args.data / 'runtime/test.jsonl').read_text(encoding='utf-8').splitlines() if line.strip()]
     for graph, count in GRAPHS.items():
         item = review['graph_reviews'][graph]
         summary_path = Path(item['summary'])
@@ -32,9 +33,12 @@ def build(args):
         checks = list((summary_path.parent / 'references').glob('*.json'))
         failures = [json.loads(p.read_text(encoding='utf-8'))['qid'] for p in checks
                     if json.loads(p.read_text(encoding='utf-8'))['reference_answer_match'] != 1]
+        checked_qids = {json.loads(p.read_text(encoding='utf-8'))['qid'] for p in checks}
+        expected_qids = {r['qid'] for r in runtime_tasks if r['graph'] == graph}
         certified = item.get('certified_reference_issues', [])
         if (summary['graph'] != graph or summary['checked'] != count or len(checks) != count
-            or summary.get('diagnostic_subset') is not False
+            or checked_qids != expected_qids
+            or summary.get('diagnostic_subset', False) is not False
             or not summary['graph_validation']['all_properties_labels_and_endpoints_match']
             or set(failures) != set(certified) or len(certified) != count - summary['passed']):
             raise ValueError('Incomplete reference evidence for ' + graph)
