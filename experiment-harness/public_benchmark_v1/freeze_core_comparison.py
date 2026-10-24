@@ -46,12 +46,13 @@ def build(args):
         if failures:
             path = Path(item['issue_audit'])
             audit = json.loads(path.read_text(encoding='utf-8'))
-            for witness in audit['witnesses']:
+            witnesses = audit.get('witnesses', audit.get('certified_tie_explanations', []))
+            for witness in witnesses:
                 if witness['qid'] not in failures:
                     raise ValueError('Audit contains an unexpected task')
                 if not (witness.get('certified') is True or witness.get('witness', {}).get('certified') is True):
                     raise ValueError('Reference issue lacks an independent witness')
-            if {r['qid'] for r in audit['witnesses']} != set(failures):
+            if {r['qid'] for r in witnesses} != set(failures):
                 raise ValueError('Reference issue audit incomplete')
             evidence[str(path.resolve())] = sha(path)
         admitted[graph] = {'graph_sha256': summary['graph_sha256'], 'reference_tasks': count,
