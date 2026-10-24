@@ -224,6 +224,7 @@ def run(args):
         references = {row['qid']: row for row in lines(data / 'evaluator/train.jsonl')
                       if row['qid'] in {t['qid'] for t in tasks}}
         compare = load_official_comparator(args.official_source)
+        reference_checks = []
         for task in tasks:
             reference = references[task['qid']]
             expected = read_reference_answer(reference['answer_json'])
@@ -233,6 +234,9 @@ def run(args):
                            qid=task['qid'], compare=compare)
             if validation['ex'] != 1:
                 raise RuntimeError('Training reference no longer matches imported database')
+            reference_checks.append({'qid': task['qid'], 'validation': validation,
+                                     'executed_result': actual})
+        immutable_json(output / 'reference_execution_checks.json', reference_checks)
         for record in records:
             reference = references[record['qid']]
             for view in record['views']:

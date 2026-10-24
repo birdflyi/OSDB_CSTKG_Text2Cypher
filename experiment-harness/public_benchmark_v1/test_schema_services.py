@@ -68,6 +68,21 @@ class SchemaSelectionChecks(unittest.TestCase):
         call['edges'][0].update(source='n', target='c')
         self.assertIn('worksAt', compile_selection(call, SCHEMA)['query'])
 
+    def test_literals_reject_schema_type_mismatches_before_execution(self):
+        for field, op, value in [('n.age', 'eq', '21'), ('n.age', 'eq', True),
+                                 ('n.name', 'eq', 21), ('n.age', 'in', [20, '21']),
+                                 ('n.aliases', 'contains', 42),
+                                 ('n.born', 'eq', 'not-a-date')]:
+            call = selection()
+            call['where'] = [{'field': field, 'op': op, 'value': value}]
+            with self.subTest(field=field, op=op, value=value), self.assertRaises(UnsupportedPlan):
+                compile_selection(call, SCHEMA)
+        call = selection()
+        call['where'] = [{'field': 'n.age', 'op': 'in', 'value': [20, 21]},
+                         {'field': 'n.aliases', 'op': 'contains', 'value': 'A'}]
+        compiled = compile_selection(call, SCHEMA)
+        self.assertEqual(compiled['parameters'], {'p0': [20, 21], 'p1': 'A'})
+
     def test_disjoint_counts_and_correct_record_control_agree(self):
         candidate = plan('Alice', 'Bob')
         count = execute_plan(candidate, SCHEMA, queued_results([[[2]], [[1]]]))

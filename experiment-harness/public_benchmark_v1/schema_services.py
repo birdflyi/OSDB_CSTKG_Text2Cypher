@@ -7,11 +7,12 @@ are checked against the supplied graph schema; literal values are parameters.
 from copy import deepcopy
 from datetime import date
 import json
+import math
 import re
 import time
 
 
-VERSION = 'typed-services-dev-0.1'
+VERSION = 'typed-services-dev-0.1.1'
 
 
 class UnsupportedPlan(ValueError):
@@ -39,6 +40,26 @@ def name(value):
     if not isinstance(value, str) or not re.fullmatch(r'[a-zA-Z][a-zA-Z0-9_]{0,31}', value):
         raise UnsupportedPlan('Invalid variable or output alias')
     return value
+
+
+def literal_matches(value, kind):
+    if kind == 'str':
+        return type(value) is str
+    if kind == 'int':
+        return type(value) is int
+    if kind == 'float':
+        return type(value) in (int, float) and math.isfinite(value)
+    if kind == 'list[str]':
+        return type(value) is list and all(type(item) is str for item in value)
+    if kind == 'date':
+        if type(value) is not str:
+            return False
+        try:
+            date.fromisoformat(value)
+            return True
+        except ValueError:
+            return False
+    return False
 
 
 def compile_selection(call, schema):
@@ -124,6 +145,14 @@ def compile_selection(call, schema):
                 raise UnsupportedPlan('Use explicit null predicates')
             if isinstance(value, list) and any(type(v) not in (str, int, float, bool) for v in value):
                 raise UnsupportedPlan('Nested predicate values unsupported')
+            if op == 'in':
+                typed = type(value) is list and all(literal_matches(v, kind) for v in value)
+            elif op == 'contains' and kind == 'list[str]':
+                typed = type(value) is str
+            else:
+                typed = literal_matches(value, kind)
+            if not typed:
+                raise UnsupportedPlan('Literal type does not match schema property')
             if kind == 'date':
                 if not isinstance(value, str) or op not in comparisons:
                     raise UnsupportedPlan('Date predicates require scalar ISO date')

@@ -95,12 +95,27 @@ Every attempt is charged, and unknown usage stays unknown. An interrupted or
 stopped run is not automatically restarted. Private credentials are never saved
 with request payloads or committed to Git.
 
-The current 32 local checks cover schema validation, disjointness/overlap,
+The current 33 local checks cover schema validation, disjointness/overlap,
 full-detail agreement, output completeness, read guards, UTF-8, bounded retries,
 history/cap enforcement, and official answer-equivalence semantics. They do not
 replace real database and model development checks. Every preparation summary
 keeps `full_main_table_ready=false`; formal admission needs a fresh independent
 review of all required gates.
+
+The initial real TRAIN model preparation used source commit `a4fc612` and v0.1.
+All seven physical calls returned HTTP200. Direct answered 3/3 smoke tasks;
+Ours answered 1/3, returned a wrong empty answer on one, and exhausted the 4096
+completion-token allowance twice on the third. These are developer-visible
+diagnostics, not independent paper results or an overall superiority estimate.
+The wrong plan equated a plural question phrase with a singular graph entity
+name. No per-question literal patch or hidden gold-driven repair was applied.
+Both valid Ours plans agreed with their full-detail replay, including the wrong
+one: execution strategy agreement is not natural-language correctness.
+
+v0.1.1 hardens literal type validation and persists reference-execution receipts;
+it does not fix entity binding or claim improved model results. Those issues,
+semantic coverage and nontrivial comparison against a simple correct policy must
+be resolved on development material before formal main-table admission.
 
 Output data, credentials and runtime files belong outside Git. The runtime
 record split is a runner contract, not an OS security boundary.
