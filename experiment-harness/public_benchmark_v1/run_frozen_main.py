@@ -23,6 +23,18 @@ from entity_candidates import CANDIDATE_NOTICE
 from model_transport import ModelTransport, BatchStopped, immutable_json
 from schema_services import PLAN_INSTRUCTIONS, execute_plan
 
+GRAPHS = {'flight_accident': 189, 'nba': 270, 'fictional_character': 385,
+          'company': 347, 'geography': 366, 'movie': 401, 'politics': 390}
+SOURCE_FOLDER = 'experiment-harness/public_benchmark_v1/'
+REQUIRED_CODE = {SOURCE_FOLDER + name for name in [
+    'run_frozen_main.py', 'dev_preparation.py', 'schema_services.py', 'model_transport.py',
+    'attempt_budget.py', 'answer_scoring.py', 'entity_candidates.py', 'public_query_worker.py',
+    'public_read_guard.py', 'public_graph_runtime.py', 'smoke_train_database.py',
+    'schema_identity.py', 'import_recovery.py']}
+REQUIRED_DATA = {'runtime/test.jsonl', 'evaluator/test.jsonl', 'evaluator/task_groups_v1.jsonl',
+                 'evaluator/reference_flags_v1.jsonl', 'manifest.json'} | {
+                 'upstream/graphs/schemas/' + graph + '_schema.json' for graph in GRAPHS}
+
 
 def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -31,6 +43,24 @@ def sha(path):
 def check_admission(freeze_path, admission_path, data, code_root, graph):
     freeze = json.loads(freeze_path.read_text(encoding='utf-8'))
     admission = json.loads(admission_path.read_text(encoding='utf-8'))
+    if (freeze.get('graphs') != GRAPHS or not REQUIRED_CODE <= freeze.get('code_files', {}).keys()
+        or not REQUIRED_DATA <= freeze.get('data_files', {}).keys()):
+        raise ValueError('Freeze omits required full-benchmark source/data dependencies')
+    remote = freeze.get('remote_worker', {})
+    if (not re.fullmatch(r'public_query_[a-z0-9_]+', remote.get('code_folder', ''))
+        or not remote.get('files') or any(not re.fullmatch(r'[a-z_]+\.py', n) for n in remote['files'])
+        or any(freeze['code_files'].get(SOURCE_FOLDER + n) != h for n, h in remote['files'].items())):
+        raise ValueError('Remote worker source is not covered by the same freeze')
+    if not {'public_query_worker.py', 'public_graph_runtime.py', 'public_read_guard.py',
+            'entity_candidates.py'} <= remote['files'].keys():
+        raise ValueError('Incomplete remote worker dependency list')
+    if freeze.get('prompt_sha256') != {
+        'direct': hashlib.sha256(DIRECT_INSTRUCTIONS.encode()).hexdigest(),
+        'ours': hashlib.sha256(PLAN_INSTRUCTIONS.encode()).hexdigest()}:
+        raise ValueError('Loaded prompts do not match frozen source')
+    for absolute, digest in freeze.get('evidence_files', {}).items():
+        if sha(absolute) != digest:
+            raise ValueError('Admitted evidence/protocol file changed')
     if (admission.get('formal_run_ready') is not True or
         admission.get('freeze_sha256') != sha(freeze_path)):
         raise ValueError('Formal comparison is not admitted for this freeze')
@@ -57,12 +87,21 @@ def check_admission(freeze_path, admission_path, data, code_root, graph):
 
 
 class PublicWorker:
-    def __init__(self, key, graph, log):
+    def __init__(self, key, graph, log, remote):
         self.queue = Queue()
         self.log = log.open('x', encoding='utf-8')
-        command = ['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=12', '-p', '2491',
-                   '-i', str(key), 'root@117.50.195.94', REMOTE_ROOT + '/.venv/bin/python',
-                   REMOTE_ROOT + '/public_runtime_v1_code/public_query_worker.py',
+        ssh = ['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=12', '-p', '2491',
+               '-i', str(key), 'root@117.50.195.94']
+        remote_dir = REMOTE_ROOT + '/' + remote['code_folder']
+        # All names are restricted by check_admission before entering this path.
+        hashes = subprocess.check_output(ssh + ['sha256sum ' + ' '.join(
+                 remote_dir + '/' + name for name in remote['files'])], text=True)
+        actual = {Path(row.split(None, 1)[1].strip()).name: row.split()[0] for row in hashes.splitlines()}
+        if actual != remote['files']:
+            self.log.close()
+            raise ValueError('Remote executable dependencies changed')
+        command = ssh + [REMOTE_ROOT + '/.venv/bin/python',
+                   remote_dir + '/public_query_worker.py',
                    '--root', REMOTE_ROOT, '--graph', graph]
         options = {'creationflags': subprocess.CREATE_NO_WINDOW} if os.name == 'nt' else {}
         self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -112,6 +151,28 @@ class PublicWorker:
             self.log.close()
 
 
+class TracedExecutor:
+    """Retain every database attempt even when compilation/composition fails later."""
+    def __init__(self, worker, folder):
+        self.worker, self.folder, self.count = worker, folder, 0
+
+    def execute(self, query, parameters):
+        folder = self.folder / f'{self.count:03d}'
+        self.count += 1
+        immutable_json(folder / 'intent.json', {'query': query, 'parameters': parameters})
+        started = time.monotonic()
+        try:
+            result = self.worker.execute(query, parameters)
+        except Exception as error:
+            immutable_json(folder / 'transport_error.json', {
+                'error_type': type(error).__name__, 'roundtrip_seconds': time.monotonic() - started,
+                'completion_unknown': True})
+            raise
+        immutable_json(folder / 'result.json', {'result': result,
+                       'trace_roundtrip_seconds': time.monotonic() - started})
+        return result
+
+
 def run(args):
     code_root = Path(__file__).resolve().parents[2]
     freeze, admission, tasks = check_admission(args.freeze, args.admission, args.data, code_root, args.graph)
@@ -120,6 +181,8 @@ def run(args):
     if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', args.segment):
         raise ValueError('Invalid segment identity')
     config = json.loads(args.model_config.read_text(encoding='utf-8'))
+    if hashlib.sha256(config['endpoint'].encode()).hexdigest() != freeze['endpoint_sha256']:
+        raise ValueError('Private model endpoint differs from freeze')
     for field in ['model', 'temperature', 'top_p', 'reasoning_effort']:
         if config[field] != freeze['model_settings'][field]:
             raise ValueError('Private model settings differ from freeze')
@@ -128,6 +191,8 @@ def run(args):
     budget = AttemptBudget(args.budget, args.approval, path_rewrites=[
              (r'C:\Users\10651\Documents\trae_projects\ch7_private', args.private_data)])
     snapshot = budget.inspect()
+    if snapshot['cap'] != freeze['budget']['cumulative_cap'] or args.max_physical_calls < 1:
+        raise ValueError('Budget policy differs from frozen scope')
     if snapshot['pending']:
         raise ValueError('Pending model attempt; audit before dispatch')
     output = args.output
@@ -144,10 +209,12 @@ def run(args):
     transport = worker = None
     stop = None
     try:
-        worker = PublicWorker(args.ssh_key, args.graph, segment / 'worker_stderr.log')
+        startup_started = time.monotonic()
+        worker = PublicWorker(args.ssh_key, args.graph, segment / 'worker_stderr.log', freeze['remote_worker'])
         if worker.ready['graph_sha256'] != admission['admitted_graphs'][args.graph]['graph_sha256']:
             raise ValueError('Execution graph differs from admitted graph')
-        immutable_json(segment / 'worker_ready.json', worker.ready)
+        immutable_json(segment / 'worker_ready.json', {**worker.ready,
+                       'startup_roundtrip_seconds': time.monotonic() - startup_started})
         transport = ModelTransport(config, budget, segment / 'model_calls',
                     max_physical_calls=min(args.max_physical_calls, snapshot['remaining']))
         schema = json.loads((args.data / 'upstream/graphs/schemas' /
@@ -187,7 +254,8 @@ def run(args):
                                f'{args.graph} {task["qid"]} {arm} step{step}'))
                     generation_seconds = time.monotonic() - generation_started
                     immutable_json(folder / f'reply_{step}.json', reply)
-                    outcome = interpret(reply['content'], reply['usable'], arm, schema, worker)
+                    traced = TracedExecutor(worker, folder / 'query_trace' / f'step_{step}')
+                    outcome = interpret(reply['content'], reply['usable'], arm, schema, traced)
                     record['views'].append({'step': step, 'reply': reply, 'outcome': outcome,
                                             'generation_wall_seconds': generation_seconds})
                     immutable_json(folder / f'view_{step}.json', record['views'][-1])
@@ -198,12 +266,15 @@ def run(args):
                                   'diagnostic, not correctness feedback: ' + outcome.get('error', 'Execution failed')[:1000]}]
                 record['model_and_execution_wall_seconds'] = time.monotonic() - started
                 if arm == 'ours' and outcome['status'] == 'EXECUTED':
+                    control_started = time.monotonic()
+                    traced = TracedExecutor(worker, folder / 'query_trace' / 'full_detail_control')
                     try:
-                        record['fixed_plan_full_detail'] = execute_plan(outcome['plan'], schema, worker.execute,
+                        record['fixed_plan_full_detail'] = execute_plan(outcome['plan'], schema, traced.execute,
                                                                        strategy='full_detail')
                     except Exception as error:
                         record['fixed_plan_full_detail'] = {'status': 'EXECUTION_ERROR', 'rows': None,
                                                              'error_type': type(error).__name__}
+                    record['fixed_plan_full_detail_wall_seconds'] = time.monotonic() - control_started
                 immutable_json(folder / 'record.json', record)
         # No evaluator references were read while making predictions.
         refs = {r['qid']: r for r in lines(args.data / 'evaluator/test.jsonl') if r['graph'] == args.graph}
@@ -223,7 +294,7 @@ def run(args):
                         status=control['status'], predicted_rows=control['rows'],
                         reference_rows=read_reference_answer(ref['answer_json']),
                         order_matters='order by' in ref['gold_cypher'].lower(), qid=task['qid'], compare=compare)
-                    record['static_safe_policy_equivalent_to_full_detail_in_v01'] = True
+                    record['simple_safe_policy'] = 'always sufficient entity records; same fixed-plan result as full_detail'
                 results.append(record)
         immutable_json(output / 'scores' / (args.graph + '.json'), results)
     except BatchStopped as error:
