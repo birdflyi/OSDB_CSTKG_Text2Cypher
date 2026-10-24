@@ -1,0 +1,15 @@
+{
+  "kind": "ACTUAL_ORIGINAL_WORKER_TRANSPORT_CONFORMANCE",
+  "timestamp_utc": "2026-10-24T19:08:34.001112+00:00",
+  "graph": "company",
+  "graph_sha256": "54d15b5db4c30b9d7d0e31cbc30ca7c144d3e2cad30bddf8d92390a095f0b82b",
+  "saved_direct_answer_exact_match": true,
+  "saved_candidate_context_exact_match": true,
+  "write_denied": true,
+  "node_count_before_after_unchanged": true,
+  "original_frozen_remote_dependencies_verified": true,
+  "new_model_calls": 0,
+  "elapsed_seconds": 19.92200000002049,
+  "transport_source_sha256": "4f91b2b6e0d340a05ac94456f591684dad267b2f796e0fdcf22638943d6e5a3d",
+  "limitations": "One bounded transport conformance run; not proof of future network reliability or a method improvement."
+}

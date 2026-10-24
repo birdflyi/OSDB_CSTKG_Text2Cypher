@@ -9,7 +9,7 @@ GRAPHS={'flight_accident':189,'nba':270,'fictional_character':385,'company':347,
         'geography':366,'movie':401,'politics':390}
 
 
-def render(active_graph):
+def render(active_graph,stopped_graph=None):
     audit=json.loads((ROOT/'reports/t1_core_integrity_cost_live_20261024.json').read_text(encoding='utf-8'))
     scores=audit['graph_scores'];full=audit['full2348_score_ready']
     lines=['# T1 主表：本项目实测与缺项', '',
@@ -35,7 +35,7 @@ def render(active_graph):
             vals=[f"{cells[k]['correct']:g}/{n}（{cells[k]['ex_percent']:.2f}%）" for k in ['Direct','Direct+feedback','Ours','Full-detail(shared-plan)']]
             lines.append(f"| {graph} | {n} | {' | '.join(vals)} | {cells['Ours']['coverage_percent']:.2f}% | 已完成并评分 |")
         else:
-            state='运行中' if graph==active_graph else '未派发'
+            state='已停止，待审计接续' if graph==stopped_graph else '运行中' if graph==active_graph else '未派发'
             lines.append(f'| {graph} | {n} | — | — | — | — | — | {state} |')
     lines += ['',
         f"路径快照：计划 4,696；已终结 {audit['terminal_primary_paths']}；已派发 {audit['dispatched_primary_paths']}；未派发 {4696-audit['dispatched_primary_paths']}。各统计在活动队列中顺序读取，可能有秒级差异。拒答、不支持和错误保留在固定分母；未派发不伪装成失败。",'',
@@ -73,7 +73,8 @@ def render(active_graph):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--active-graph',required=True)
+    p.add_argument('--stopped-graph')
     a=p.parse_args()
     output=ROOT/'discussion/T1_MAIN_TABLE_LIVE_20261024.md'
-    output.write_text(render(a.active_graph),encoding='utf-8')
+    output.write_text(render(a.active_graph,a.stopped_graph),encoding='utf-8')
     print(str(output))

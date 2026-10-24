@@ -1,0 +1,33 @@
+{
+  "kind": "OPERATIONAL_TRANSPORT_AMENDMENT_NOT_METHOD_REVISION",
+  "timestamp_utc": "2026-10-24T19:09:57.861294+00:00",
+  "source_freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "source_commit": "c6143670a9949ec3b366ef513291740d1b8c4134",
+  "transport_files": {
+    "paramiko_public_worker.py": "4f91b2b6e0d340a05ac94456f591684dad267b2f796e0fdcf22638943d6e5a3d",
+    "core_paramiko_resume_v1.py": "85dc55c8be1a482f3f99643a4fe78412a693081fc0c9d9a73c5bd4768826c6e9"
+  },
+  "environment": {
+    "paramiko": "3.5.0",
+    "cryptography": "43.0.3"
+  },
+  "conformance_report": "D:\\ch7\\reports\\paramiko_transport_conformance_v1_20261025\\result.json",
+  "conformance_sha256": "4cb885c29b4b79db58b447a7d28bfceaa3be27f2295f16f9ebf7984761d0f4ff",
+  "cached_recovery_receipt": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\infra_recovery_company_ours_paramiko_v1_20261025\\complete.json",
+  "cached_recovery_sha256": "c5dd1f428a869a28864f8408b824d508ea79c50f63bf10e665804229cbc453a4",
+  "budget_at_acceptance": {
+    "reserved": 2541,
+    "cap": 12000,
+    "remaining": 9459,
+    "pending": []
+  },
+  "formal_method_prompt_model_metric_changes": false,
+  "original_native_worker_and_guards_unchanged": true,
+  "old_failed_segments_and_unknown_costs_preserved": true,
+  "prior_three_scores_preserved": true,
+  "new_queue": "infra_paramiko_queue_v1_20261025",
+  "new_segment": "paramiko_company_v1",
+  "automatic_ssh_reconnect": false,
+  "model_transport_retry_rules_unchanged": true,
+  "caveat": "Backend equivalence checks pass; future network reliability not guaranteed. Transport/version latency must be disclosed."
+}
