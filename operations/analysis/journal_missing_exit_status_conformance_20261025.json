@@ -1,0 +1,25 @@
+{
+  "kind": "DURABLE_NATIVE_JOURNAL_ACTUAL_CONFORMANCE",
+  "timestamp_utc": "2026-10-24T22:01:50.121708+00:00",
+  "session": "company_ceb26a791fa64465b85afa02ccbb93d1",
+  "graph": "company",
+  "graph_sha256": "54d15b5db4c30b9d7d0e31cbc30ca7c144d3e2cad30bddf8d92390a095f0b82b",
+  "exact_saved_answer_and_candidates": true,
+  "write_denied": true,
+  "original_native_dependency_hashes_checked": true,
+  "node_count_unchanged": true,
+  "missing_ssh_exit_status_injected": true,
+  "missing_exit_status_retried_same_id": true,
+  "lost_response_injected": true,
+  "replayed_same_journal_receipt_byte_identical": true,
+  "native_writes_for_replayed_id": 1,
+  "payload_conflict_rejected": true,
+  "new_model_calls": 0,
+  "elapsed_seconds": 39.85900000005495,
+  "files": {
+    "durable_native_journal_v1.py": "a44b3b00158ff9ceb5a54d04538841c8185d883dc6010b147594723856b1ff56",
+    "journal_public_worker_v2.py": "a7f2d3acc911daac688be9f6773b6406917e5d912eb6c67cb221a0273398fb55",
+    "core_journal_resume_v3.py": "20488d9ab76c44baa485aad8149c8ff25e0494464b2e68e88ae84b5a1a926855"
+  },
+  "limits": "Original native budgets/guards/limits unchanged; remote daemon death remains a stop/unknown, never auto-replayed. Transport overhead retained, not a speed claim."
+}

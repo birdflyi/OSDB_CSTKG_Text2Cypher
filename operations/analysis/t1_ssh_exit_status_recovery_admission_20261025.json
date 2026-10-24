@@ -1,0 +1,28 @@
+{
+  "time_local": "2026-10-25T06:02:32.922700+08:00",
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "frozen_source_files_verified": 32,
+  "method_prompt_model_score_changes": false,
+  "native_daemon_guard_limits_unchanged": true,
+  "local_transport_change": "Treat missing SSH exit status/inactive channel as transport failure, bounded SAME-id max3 RPC attempts with10s wait; genuine nonzero remote application errors still stop.",
+  "field_limit": "Original failure did not save numeric exit status; negative-exit branch is a code gap/inference, reproduced in controlled actual-native-worker check, not a retrospective numeric measurement.",
+  "proof_path": "D:\\ch7\\reports\\durable_journal_conformance_v3_20261025\\result.json",
+  "proof_sha256": "eecd8b563ba1a8366df86f45d8370fd4a67db49d1e43578cf058529f0cb47a8c",
+  "candidate_recovery_path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\infra_recovery_geography_candidates_v1_20261025\\complete.json",
+  "candidate_recovery_sha256": "8097d327bc26dfc55a5383f7c357e0fe10bb22528a086ec9d090e4c772c32cc9",
+  "candidate_native_writes": 1,
+  "recovery_model_calls": 0,
+  "recovery_native_queries": 0,
+  "context_wire_serialization_verified": true,
+  "pre_model_artifact_order_correction": true,
+  "old_artifact_backup_retained": true,
+  "files": {
+    "journal_public_worker_v2.py": "a7f2d3acc911daac688be9f6773b6406917e5d912eb6c67cb221a0273398fb55",
+    "core_journal_resume_v3.py": "20488d9ab76c44baa485aad8149c8ff25e0494464b2e68e88ae84b5a1a926855",
+    "durable_native_journal_v1.py": "a44b3b00158ff9ceb5a54d04538841c8185d883dc6010b147594723856b1ff56"
+  },
+  "queue_id": "infra_journal_channel_status_queue_v3_20261025",
+  "segment": "journal_channel_status_v3",
+  "scope": "Remaining geography then movie then politics only; stop/audit on bounded failures, no unlimited restart",
+  "entire_T1_complete": false
+}

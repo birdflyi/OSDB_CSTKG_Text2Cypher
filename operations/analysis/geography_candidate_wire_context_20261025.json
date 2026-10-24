@@ -1,0 +1,8 @@
+{
+  "context_matches_original_wire_serialization": true,
+  "ordering_correction_before_any_model_input": true,
+  "model_calls": 0,
+  "native_queries": 0,
+  "candidate_values_or_list_order_changed": false,
+  "context_sha256": "5dd3e010e6a82c58f8b159b3143ce1e97cd7b7e8e5998c99ab5905827a25bdce"
+}

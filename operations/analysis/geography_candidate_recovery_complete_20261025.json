@@ -1,0 +1,17 @@
+{
+  "time_local": "2026-10-25T06:00:24.360268+08:00",
+  "state": "DURABLE_CANDIDATES_RESTORED",
+  "qid": "8af9505d-3015-405c-a5d1-c9426e59b9c8",
+  "session": "geography_e812665703d44fb9baa67046ba24cbf1",
+  "journal_id": 175,
+  "native_writes": 1,
+  "new_model_calls": 0,
+  "new_native_queries": 0,
+  "original_roundtrip_clock": "unknown",
+  "gold_read": false,
+  "all176_requests_have_receipts": true,
+  "exact_context_builder": "original frozen run_frozen_main.py formula",
+  "shared_path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\geography\\shared_inputs\\8af9505d-3015-405c-a5d1-c9426e59b9c8.json",
+  "old_worker_closed_by_own_finally": true,
+  "manual_lock_unlink": false
+}
