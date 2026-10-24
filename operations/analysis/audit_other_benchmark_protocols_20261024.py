@@ -1,5 +1,5 @@
 """Pinned public assets and split metadata only; never execute author code or queries."""
-from collections import Counter
+from collections import Counter, defaultdict
 import csv
 from datetime import datetime, timezone
 import hashlib
@@ -66,6 +66,9 @@ def inventory():
     partitions={'IID':[r for r in test if r['id'] in set(iid)],
                 'COMP':[r for r in test if r['id'] in set(comp)],'LEN':length_test}
     train_templates={r['template_id'] for r in train}
+    template_shapes=defaultdict(set)
+    for row in train+test:
+        template_shapes[row['template_id']].add((row['num_nodes'],row['type']))
     result=dict(kind='PINNED_SPLIT_METADATA_NOT_MODEL_RESULTS',timestamp_utc=datetime.now(timezone.utc).isoformat(),
         repository=SOURCES['Zograscope'][0],commit=SOURCES['Zograscope'][1],model_calls=0,
         rows_by_file={k:metadata(v) for k,v in tables.items()},
@@ -82,6 +85,10 @@ def inventory():
             row==standard_corpus_by_id[row['id']] for row in length_test),
         partitions={k:metadata(v) for k,v in partitions.items()},
         template_id_overlap_with_standard_train={k:len({r['template_id'] for r in v}&train_templates) for k,v in partitions.items()},
+        raw_template_ids_total=len(template_shapes),
+        raw_template_ids_spanning_multiple_node_counts=sum(len({n for n,t in v})>1 for v in template_shapes.values()),
+        raw_template_ids_spanning_multiple_return_types=sum(len({t for n,t in v})>1 for v in template_shapes.values()),
+        raw_template_id_caveat='This field does not uniquely determine even node count or return type; do not use it as a validated structural family or infer author split leakage from raw ID overlap.',
         zero_shot_partition_independence_caveat='IID/COMP/LEN are author partitions relative to author training data, not independent graph domains.',
         entity_linking_protocol='README reported scores use nl_gold_linked; raw nl requires a separately labelled track. Never give gold links to one method only.',
         reference_execution_completed=False,prediction_admitted=False)

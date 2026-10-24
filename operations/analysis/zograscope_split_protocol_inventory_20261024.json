@@ -1,6 +1,6 @@
 {
   "kind": "PINNED_SPLIT_METADATA_NOT_MODEL_RESULTS",
-  "timestamp_utc": "2026-10-24T13:58:26.219519+00:00",
+  "timestamp_utc": "2026-10-24T15:57:08.789711+00:00",
   "repository": "interact-erc/ZOGRASCOPE",
   "commit": "b2f91718b1324fdf8c759131d0d7c47c0eb33373",
   "model_calls": 0,
@@ -265,6 +265,10 @@
     "COMP": 62,
     "LEN": 102
   },
+  "raw_template_ids_total": 378,
+  "raw_template_ids_spanning_multiple_node_counts": 113,
+  "raw_template_ids_spanning_multiple_return_types": 104,
+  "raw_template_id_caveat": "This field does not uniquely determine even node count or return type; do not use it as a validated structural family or infer author split leakage from raw ID overlap.",
   "zero_shot_partition_independence_caveat": "IID/COMP/LEN are author partitions relative to author training data, not independent graph domains.",
   "entity_linking_protocol": "README reported scores use nl_gold_linked; raw nl requires a separately labelled track. Never give gold links to one method only.",
   "reference_execution_completed": false,

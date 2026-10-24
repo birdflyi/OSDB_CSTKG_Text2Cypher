@@ -39,6 +39,12 @@ Text2GQL 六图题量：Financial_Payment 776；Information_Technology_IT_Asset_
 
 ## 必须保留的两项区别
 
+### ZOGRASCOPE 的统计族键核验补充
+
+对固定版本的标准 TRAIN+TEST 仅检查元数据：378 个原始 template_id 中，113 个对应多个节点数，104 个对应多个返回类型。因此，这个字段不能直接用作已验证的匿名结构族。此前观察到的 ID 重叠，也不能直接解释为作者结构划分泄露。正式统计前需要另行验证结构分组；不修改作者 IID/COMP/LEN 成员，不读取模型成绩来决定分组。
+
+证据：`Zograscope/split_protocol_inventory_20261024.json`。本次没有执行作者代码、查询数据库或调用模型。
+
 ### Text2GQL 图 CSV 离线结构核验补充
 
 | 图 | 节点行 | 边行 | 节点类型 | 边类型 | 边属性声明 | 重复的有类型端点对 |
