@@ -1,0 +1,23 @@
+{
+  "kind": "DURABLE_NATIVE_JOURNAL_ACTUAL_CONFORMANCE",
+  "timestamp_utc": "2026-10-24T19:59:17.430744+00:00",
+  "session": "company_e7e3c5df45a845bdbba0d555b8f135a0",
+  "graph": "company",
+  "graph_sha256": "54d15b5db4c30b9d7d0e31cbc30ca7c144d3e2cad30bddf8d92390a095f0b82b",
+  "exact_saved_answer_and_candidates": true,
+  "write_denied": true,
+  "original_native_dependency_hashes_checked": true,
+  "node_count_unchanged": true,
+  "lost_response_injected": true,
+  "replayed_same_journal_receipt_byte_identical": true,
+  "native_writes_for_replayed_id": 1,
+  "payload_conflict_rejected": true,
+  "new_model_calls": 0,
+  "elapsed_seconds": 26.73499999998603,
+  "files": {
+    "durable_native_journal_v1.py": "a44b3b00158ff9ceb5a54d04538841c8185d883dc6010b147594723856b1ff56",
+    "journal_public_worker_v1.py": "afed7c6f05dc758aff9138351134caf09999507d3418deb11e35b19ebafc96ee",
+    "core_journal_resume_v1.py": "449dfa81e177e8a346c01366fdeff30848063bf0d4c08424b15a7f8948d2c808"
+  },
+  "limits": "Original native budgets/guards/limits unchanged; remote daemon death remains a stop/unknown, never auto-replayed. Transport overhead retained, not a speed claim."
+}

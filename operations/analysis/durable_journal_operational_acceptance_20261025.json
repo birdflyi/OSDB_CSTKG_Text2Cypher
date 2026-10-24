@@ -1,0 +1,47 @@
+{
+  "kind": "OPERATIONAL_TRANSPORT_AMENDMENT",
+  "timestamp_local": "2026-10-25T04:00:40.960069+08:00",
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "original_frozen_source_files_verified": 32,
+  "method_prompt_model_metric_changes": false,
+  "native_query_budgets_unchanged": true,
+  "native_worker_dependencies_unchanged": true,
+  "graph_identity_unchanged": true,
+  "journal_scope": "Remote original native worker plus stable durable request ids; short SSH RPCs replay result only, no native replay after unknown daemon death.",
+  "rpc_attempts_per_id": 3,
+  "rpc_retry_wait_seconds": 10,
+  "remote_model_generation": false,
+  "remote_gpu_changes": false,
+  "rpc_failures_and_journal_receipts_logged": true,
+  "extra_transport_time_included": true,
+  "conformance": {
+    "path": "D:\\ch7\\reports\\durable_journal_conformance_v2_20261025\\result.json",
+    "sha256": "1e5d43bb562ececb8a638ecc27628742659cd56e965547f24612511bbc248c1c"
+  },
+  "cached_recovery": {
+    "path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\infra_recovery_company_ours_journal_v1_20261025\\complete.json",
+    "sha256": "c5dd1f428a869a28864f8408b824d508ea79c50f63bf10e665804229cbc453a4",
+    "new_model_calls": 0,
+    "answer_rows": 1,
+    "full_detail_equal": true
+  },
+  "files": {
+    "durable_native_journal_v1.py": "a44b3b00158ff9ceb5a54d04538841c8185d883dc6010b147594723856b1ff56",
+    "journal_public_worker_v1.py": "afed7c6f05dc758aff9138351134caf09999507d3418deb11e35b19ebafc96ee",
+    "core_journal_resume_v1.py": "449dfa81e177e8a346c01366fdeff30848063bf0d4c08424b15a7f8948d2c808"
+  },
+  "past_stops_preserved": true,
+  "limitations": [
+    "Network failure remains possible; stop after bounded failures.",
+    "Daemon crash after native dispatch before durable result remains unknown, never automatic re-execution.",
+    "No accuracy/cost advantage inferred from infrastructure change."
+  ],
+  "development_failures": [
+    {
+      "stage": "no-model deployment",
+      "error": "Paramiko exclusive open requires wx writing mode",
+      "fix": "wx mode and new deployment file; old empty temp retained",
+      "model_calls": 0
+    }
+  ]
+}
