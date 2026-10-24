@@ -39,6 +39,23 @@ Text2GQL 六图题量：Financial_Payment 776；Information_Technology_IT_Asset_
 
 ## 必须保留的两项区别
 
+### Text2GQL 图 CSV 离线结构核验补充
+
+| 图 | 节点行 | 边行 | 节点类型 | 边类型 | 边属性声明 | 重复的有类型端点对 |
+|---|---:|---:|---:|---:|---:|---:|
+| Financial_Payment | 8,420 | 17,184 | 8 | 8 | 0 | 0 |
+| IT_Asset_Management | 815 | 3,107 | 7 | 8 | 11 | 0 |
+| Knowledge_Graph_Geography | 1,100 | 9,715 | 7 | 7 | 0 | 0 |
+| Manufacturing_BOM | 1,500 | 2,648 | 8 | 7 | 19 | 10 |
+| Manufacturing_Production_Process | 1,030 | 1,595 | 9 | 8 | 6 | 0 |
+| Social_Network_Twitter | 8,450 | 56,577 | 7 | 8 | 16 | 0 |
+
+这些是 CSV 行和 schema 声明的盘点，不是已导入数据库的实体数。离线核验未发现重复节点主键、悬空端点、端点类型约束冲突、列宽问题或本次基础类型检查异常。BOM 的重复端点边保留，没有合并。空字段已计数；空字符串/NULL、日期和关系多重性的实际引擎语义仍待核验。
+
+这为“异质、带属性、带时间数据”的互补性提供了数据层依据，但不证明测试题实际使用这些特征，也不证明当前服务能完整支持它们。下一步先做原生引擎/参考验收和任务特征盘点，不能按我们已经观察到的胜负决定选哪些图。
+
+证据：`Text2GQL-Bench/offline_csv_graph_audit_20261024.json`；脚本 `D:\ch7\reports\audit_text2gql_csv_graphs_20261024.py`。没有部署数据库、执行作者代码或调用模型。
+
 1. **MindTheQuery 的两个轨道不能混算。** 当前 Manual 测试文件中的 `logical [0/1]` 标签为：1共1,316条，0共85条，空白428条。标签含义和作者评测筛选规则仍待核对。不能把全部1,829条直接当作语义正确的NL—Cypher参考，也不能现在自行取1,316条作为正式分母。先核验协议，再在预测前固定纳入规则；不根据我们的方法成绩筛题。
 2. **MindTheQuery 与 ZOGRASCOPE 的POLE图同源。** 两个仓库的 `pole-50.dump` 都是4,603,972字节，Git blob均为 `c284924aa7f16ed2ae8b0b3bcfceb141bb1f426e`。它们可以验证不同任务与结构划分，但不能据此声称两个独立图域。
 

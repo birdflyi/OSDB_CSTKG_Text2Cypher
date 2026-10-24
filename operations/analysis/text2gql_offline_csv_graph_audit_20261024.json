@@ -1,0 +1,1040 @@
+{
+  "kind": "OFFLINE_NATIVE_CSV_STRUCTURE_AUDIT",
+  "timestamp_utc": "2026-10-24T14:12:24.640408+00:00",
+  "graphs": [
+    {
+      "graph": "Financial_Payment",
+      "vertex_types": 8,
+      "edge_types": 8,
+      "vertex_rows": 8420,
+      "edge_rows": 17184,
+      "vertices_by_label": {
+        "PaymentTransaction": 2000,
+        "Account": 600,
+        "Customer": 500,
+        "PaymentMethod": 700,
+        "Merchant": 100,
+        "ComplianceRule": 20,
+        "AuditLog": 2500,
+        "RiskAssessment": 2000
+      },
+      "edges_by_label": {
+        "Initiates": 2000,
+        "FundsFrom": 2000,
+        "ReceivesTo": 2000,
+        "AuthorizedBy": 2000,
+        "ProcessedFor": 2000,
+        "GovernedBy": 2684,
+        "HasAuditLog": 2500,
+        "HasRiskAssessment": 2000
+      },
+      "property_declarations_by_type": {
+        "STRING": 34,
+        "DOUBLE": 2,
+        "DATETIME": 5,
+        "DATE": 3,
+        "BOOL": 1,
+        "INT32": 1
+      },
+      "edge_property_declarations": 0,
+      "repeated_typed_endpoint_pairs": 0,
+      "extra_edge_rows_on_repeated_typed_pairs": 0,
+      "empty_property_fields": 2755,
+      "empty_fields_by_property": {
+        "PaymentTransaction.reference_number": 628,
+        "PaymentTransaction.completed_at": 654,
+        "Account.last_activity": 164,
+        "Customer.phone": 66,
+        "Customer.address": 109,
+        "PaymentMethod.expiry_date": 177,
+        "Merchant.contract_terms": 23,
+        "AuditLog.details": 934
+      },
+      "diagnostics": {},
+      "first_diagnostics": [],
+      "file_receipts": [
+        {
+          "file": "PaymentTransaction.csv",
+          "label": "PaymentTransaction",
+          "bytes": 145697,
+          "sha256": "e82a5f189b84b4b950cd4fa1c398c357eb3c974926a55a1eeabbd0b5ac29bf19"
+        },
+        {
+          "file": "Account.csv",
+          "label": "Account",
+          "bytes": 38837,
+          "sha256": "b3be37c94027b88721cb5e2e64995ec10d2de0e9f9d26c746d9ac5b623917aca"
+        },
+        {
+          "file": "Customer.csv",
+          "label": "Customer",
+          "bytes": 60752,
+          "sha256": "fb751aeab459469ebed826aaea66661ef92558f76477e351d4e73eecdbec8bab"
+        },
+        {
+          "file": "PaymentMethod.csv",
+          "label": "PaymentMethod",
+          "bytes": 46407,
+          "sha256": "637726ebdb9aefb9b65ba9ef2f0be56f42e86e6576e892a8f5cf0ed005eec33e"
+        },
+        {
+          "file": "Merchant.csv",
+          "label": "Merchant",
+          "bytes": 6807,
+          "sha256": "dc2cd3bef61738eaf67c55ae984e49ccf03f074d90ef8cea647940dd0a8581dc"
+        },
+        {
+          "file": "ComplianceRule.csv",
+          "label": "ComplianceRule",
+          "bytes": 1616,
+          "sha256": "179b8bc1f3f41c357f8ae01a73b54584cdd8e0f22097432a86a3bbeb427169f5"
+        },
+        {
+          "file": "AuditLog.csv",
+          "label": "AuditLog",
+          "bytes": 191806,
+          "sha256": "87cc8faab6106ddc668a3048c4806f5d22fbe907f65ae61f8594908f0f1ca6ae"
+        },
+        {
+          "file": "RiskAssessment.csv",
+          "label": "RiskAssessment",
+          "bytes": 78414,
+          "sha256": "8df4b0a70142bc4d629213c6d55bef9ca07a1d368c9587f2cd59891132dce6d3"
+        },
+        {
+          "file": "Initiates.csv",
+          "label": "Initiates",
+          "bytes": 46029,
+          "sha256": "025b7b1254998bd9dd90da8d4356c9d83b524b6b6f238ed738add6609275c9ec"
+        },
+        {
+          "file": "FundsFrom.csv",
+          "label": "FundsFrom",
+          "bytes": 44028,
+          "sha256": "0c7c5fd990a0a34004617eb9f9f08e21aff063ee248f44b4817bf69dc9dd3034"
+        },
+        {
+          "file": "ReceivesTo.csv",
+          "label": "ReceivesTo",
+          "bytes": 44028,
+          "sha256": "827749fe19405c14f25683875764fa3f91ebae608640339d7ab47b5b07f0935e"
+        },
+        {
+          "file": "AuthorizedBy.csv",
+          "label": "AuthorizedBy",
+          "bytes": 42034,
+          "sha256": "aa57f0451b7f4186be01bc0c87faefd0d75ae64539a96cd5d70745738cba6418"
+        },
+        {
+          "file": "ProcessedFor.csv",
+          "label": "ProcessedFor",
+          "bytes": 44029,
+          "sha256": "4787af7b6224141f9b540d0d9bf864858423e839ad1829520b17735b3bdb60c0"
+        },
+        {
+          "file": "GovernedBy.csv",
+          "label": "GovernedBy",
+          "bytes": 56399,
+          "sha256": "f8152b2be53fa4baf8daa717a66660459b27fac78c81d467879aeb302e134d14"
+        },
+        {
+          "file": "HasAuditLog.csv",
+          "label": "HasAuditLog",
+          "bytes": 57529,
+          "sha256": "c22bf21ffb2e75869b4eced10fb26072232f9d22c2cb81b1131ff4561690d4bb"
+        },
+        {
+          "file": "HasRiskAssessment.csv",
+          "label": "HasRiskAssessment",
+          "bytes": 42035,
+          "sha256": "7b809c863fb4ab64f33debc8486d418099987f1aea58dcb8a8f89a31ba05e36e"
+        }
+      ],
+      "config_sha256": "2e0764cd71b1b8429cd1cbc190982ddad95d727dc77f988b198755304b85c3af"
+    },
+    {
+      "graph": "Information_Technology_IT_Asset_Management",
+      "vertex_types": 7,
+      "edge_types": 8,
+      "vertex_rows": 815,
+      "edge_rows": 3107,
+      "vertices_by_label": {
+        "ASSET": 500,
+        "VENDOR": 30,
+        "LOCATION": 20,
+        "EMPLOYEE": 150,
+        "CONTRACT": 40,
+        "SOFTWARE_LICENSE": 60,
+        "COST_CENTER": 15
+      },
+      "edges_by_label": {
+        "OWNED_BY": 500,
+        "LOCATED_AT": 500,
+        "ASSIGNED_TO": 350,
+        "COVERED_BY": 395,
+        "LICENSED_FOR": 175,
+        "PROVIDES": 40,
+        "HOSTS": 512,
+        "REQUESTS": 635
+      },
+      "property_declarations_by_type": {
+        "STRING": 29,
+        "DATE": 12,
+        "FLOAT": 1,
+        "INT32": 3,
+        "DOUBLE": 2
+      },
+      "edge_property_declarations": 11,
+      "repeated_typed_endpoint_pairs": 0,
+      "extra_edge_rows_on_repeated_typed_pairs": 0,
+      "empty_property_fields": 466,
+      "empty_fields_by_property": {
+        "ASSET.serial_number": 20,
+        "ASSET.purchase_date": 24,
+        "ASSET.model": 22,
+        "VENDOR.rating": 3,
+        "EMPLOYEE.department": 8,
+        "EMPLOYEE.role": 9,
+        "CONTRACT.renewal_date": 11,
+        "CONTRACT.value": 3,
+        "SOFTWARE_LICENSE.expiration_date": 14,
+        "SOFTWARE_LICENSE.entitled_devices": 9,
+        "SOFTWARE_LICENSE.license_type": 3,
+        "SOFTWARE_LICENSE.entitled_users": 9,
+        "COST_CENTER.budget": 5,
+        "LOCATED_AT.rack_position": 136,
+        "LOCATED_AT.installed_date": 40,
+        "ASSIGNED_TO.return_date": 132,
+        "LICENSED_FOR.installation_date": 10,
+        "LICENSED_FOR.activation_key": 8
+      },
+      "diagnostics": {},
+      "first_diagnostics": [],
+      "file_receipts": [
+        {
+          "file": "ASSET.csv",
+          "label": "ASSET",
+          "bytes": 31521,
+          "sha256": "1172830c3e37331384f4adbd478550120daf0921805d6b66579671a9c22f815b"
+        },
+        {
+          "file": "VENDOR.csv",
+          "label": "VENDOR",
+          "bytes": 2009,
+          "sha256": "39269672fb1fc612fbcd058a589c3a277cc9b83ebbe6e96aac3de9e8b8a6bc69"
+        },
+        {
+          "file": "LOCATION.csv",
+          "label": "LOCATION",
+          "bytes": 1757,
+          "sha256": "5da4a7eb124dfeacec80e0ea8182d055be2760605223b29e65b4cf62be742308"
+        },
+        {
+          "file": "EMPLOYEE.csv",
+          "label": "EMPLOYEE",
+          "bytes": 8950,
+          "sha256": "014abe20e9d1f4a4d9bc14f4c16abba07e843cd66258f9868ecdeeb8e6e823bb"
+        },
+        {
+          "file": "CONTRACT.csv",
+          "label": "CONTRACT",
+          "bytes": 2932,
+          "sha256": "9c6f95c551f2a00bd600339d80bca418e2ae8a685ae50bd3f56be718da7761ad"
+        },
+        {
+          "file": "SOFTWARE_LICENSE.csv",
+          "label": "SOFTWARE_LICENSE",
+          "bytes": 3146,
+          "sha256": "298df07351d39f3e600e279fb303c3b3f8cc844189956e5d81ad1ce2c76c5f25"
+        },
+        {
+          "file": "COST_CENTER.csv",
+          "label": "COST_CENTER",
+          "bytes": 708,
+          "sha256": "a832b59a5507620e99b8f4358a077b82031563121dfda30d8a09d6e95b97ada8"
+        },
+        {
+          "file": "OWNED_BY.csv",
+          "label": "OWNED_BY",
+          "bytes": 13029,
+          "sha256": "3e2df490c0abe6be6e6d643753896277239b771938f0429332f2b93692386040"
+        },
+        {
+          "file": "LOCATED_AT.csv",
+          "label": "LOCATED_AT",
+          "bytes": 17874,
+          "sha256": "b884a83bae8c31ef0548e344eadefa860b14570985eb972aee2abbabc842151f"
+        },
+        {
+          "file": "ASSIGNED_TO.csv",
+          "label": "ASSIGNED_TO",
+          "bytes": 11324,
+          "sha256": "e40a75f5a2341df5bc0e69debfcc29d7a6b9d6e45b9b45b0c927fa3070eacee8"
+        },
+        {
+          "file": "COVERED_BY.csv",
+          "label": "COVERED_BY",
+          "bytes": 14659,
+          "sha256": "c2402228e8fcd2f5ce4b56bd44fdabf8072db627c4f5e1b25e9b7763b3fcfdce"
+        },
+        {
+          "file": "LICENSED_FOR_Asset.csv",
+          "label": "LICENSED_FOR",
+          "bytes": 4435,
+          "sha256": "f06a77d7fa12ebcc59921e7b85758350e9d37f7184fae595cb3d008b06d5289f"
+        },
+        {
+          "file": "LICENSED_FOR_Employee.csv",
+          "label": "LICENSED_FOR",
+          "bytes": 3053,
+          "sha256": "941e86f3c4f94d6186584a30f72a33cbb5183c6842c58616d9673a306aee4836"
+        },
+        {
+          "file": "PROVIDES.csv",
+          "label": "PROVIDES",
+          "bytes": 577,
+          "sha256": "77ad23a5c0abd9f22d6977ceeb3eda0f8bcf146a405d6e18b1efdd129fff0d6e"
+        },
+        {
+          "file": "HOSTS.csv",
+          "label": "HOSTS",
+          "bytes": 7184,
+          "sha256": "fc46640bb5db0025467606444bf7cac8f65cb8e3b0b5b15c893fcd49b4ff5bc9"
+        },
+        {
+          "file": "REQUESTS.csv",
+          "label": "REQUESTS",
+          "bytes": 21512,
+          "sha256": "e61df5a4164f13d101a48eaa2f4348c5223e2978e1399d9ff6e90fa92ae7e98b"
+        }
+      ],
+      "config_sha256": "d887380effa5742cd3371ea3766a98092315489d0f8aec4439140ef88fbb86ff"
+    },
+    {
+      "graph": "Knowledge_Graph_Geography",
+      "vertex_types": 7,
+      "edge_types": 7,
+      "vertex_rows": 1100,
+      "edge_rows": 9715,
+      "vertices_by_label": {
+        "Location": 500,
+        "AdministrativeArea": 100,
+        "PointOfInterest": 300,
+        "GeographicZone": 50,
+        "DemographicRegion": 80,
+        "InfrastructureNetwork": 60,
+        "CoordinateSystem": 10
+      },
+      "edges_by_label": {
+        "LocatedIn": 500,
+        "Borders": 1504,
+        "ContainsPoi": 300,
+        "OverlapsWith": 3404,
+        "ServesDemographic": 2862,
+        "Spans": 595,
+        "UsesCoordinateSystem": 550
+      },
+      "property_declarations_by_type": {
+        "STRING": 35,
+        "DOUBLE": 4,
+        "INT64": 1,
+        "DATE": 2,
+        "INT32": 1
+      },
+      "edge_property_declarations": 0,
+      "repeated_typed_endpoint_pairs": 0,
+      "extra_edge_rows_on_repeated_typed_pairs": 0,
+      "empty_property_fields": 625,
+      "empty_fields_by_property": {
+        "Location.elevation": 174,
+        "Location.precision_level": 128,
+        "AdministrativeArea.code": 17,
+        "AdministrativeArea.establishment_date": 17,
+        "AdministrativeArea.area_km2": 6,
+        "AdministrativeArea.governing_body": 3,
+        "AdministrativeArea.population": 1,
+        "PointOfInterest.contact_info": 27,
+        "PointOfInterest.capacity": 63,
+        "PointOfInterest.address": 24,
+        "PointOfInterest.operating_hours": 31,
+        "PointOfInterest.category": 9,
+        "GeographicZone.coverage_area": 12,
+        "GeographicZone.description": 7,
+        "GeographicZone.responsible_party": 4,
+        "DemographicRegion.cultural_metrics": 23,
+        "DemographicRegion.survey_date": 12,
+        "DemographicRegion.economic_indicators": 23,
+        "DemographicRegion.population_stats": 7,
+        "InfrastructureNetwork.connectivity_map": 16,
+        "InfrastructureNetwork.capacity": 6,
+        "InfrastructureNetwork.maintenance_schedule": 13,
+        "InfrastructureNetwork.status": 2
+      },
+      "diagnostics": {},
+      "first_diagnostics": [],
+      "file_receipts": [
+        {
+          "file": "Location.csv",
+          "label": "Location",
+          "bytes": 30622,
+          "sha256": "ee5009d1033fb166ce5bf87d3ad7ba69ac411d070b7962e3f7a20e14df2858f6"
+        },
+        {
+          "file": "AdministrativeArea.csv",
+          "label": "AdministrativeArea",
+          "bytes": 8681,
+          "sha256": "59542636bb3d3b15c91b7bc72e674b2e059c7923d6cdc67d8d9866934b5e1ac2"
+        },
+        {
+          "file": "PointOfInterest.csv",
+          "label": "PointOfInterest",
+          "bytes": 31616,
+          "sha256": "c2ca471ea602a1709994240661ed1fd5a2c8906d6da8e24ec3312d712d1f30e4"
+        },
+        {
+          "file": "GeographicZone.csv",
+          "label": "GeographicZone",
+          "bytes": 5728,
+          "sha256": "ed6d2232438a33ff508aa48e085872becda6533cd6b649b7db00f99bf0517d7d"
+        },
+        {
+          "file": "DemographicRegion.csv",
+          "label": "DemographicRegion",
+          "bytes": 11202,
+          "sha256": "58f6e3e95b951bccff9ee6feb28987b0f96bd805822acbb23955222f1cf659a4"
+        },
+        {
+          "file": "InfrastructureNetwork.csv",
+          "label": "InfrastructureNetwork",
+          "bytes": 4357,
+          "sha256": "0a3f4918c93a3f56c2ac8434b4e00ff7e86db0450f4cae6f36b17089991de1f6"
+        },
+        {
+          "file": "CoordinateSystem.csv",
+          "label": "CoordinateSystem",
+          "bytes": 662,
+          "sha256": "1ec489af1aebd1657069790523850d12af0aed03e408fbe6b50a78b4844da874"
+        },
+        {
+          "file": "LocatedIn.csv",
+          "label": "LocatedIn",
+          "bytes": 7029,
+          "sha256": "a7c5dff68d8a57a911d3a238bee2819849ed9c0a8af507f9842883634cbd883a"
+        },
+        {
+          "file": "Borders.csv",
+          "label": "Borders",
+          "bytes": 19591,
+          "sha256": "982fd79e1a35b580e44ac79a988f461c2125acdee8ca7505351bb0294848e141"
+        },
+        {
+          "file": "ContainsPoi_AA.csv",
+          "label": "ContainsPoi",
+          "bytes": 3915,
+          "sha256": "2158f6bcd517618e9517290906b8306670b92cc487e23d103854e3436c79175a"
+        },
+        {
+          "file": "OverlapsWith_AA_AA.csv",
+          "label": "OverlapsWith",
+          "bytes": 29746,
+          "sha256": "03424e0b6b5fe8362c641f976c3e0d1180b73b273e621b1144534988d87b203e"
+        },
+        {
+          "file": "OverlapsWith_GZ_GZ.csv",
+          "label": "OverlapsWith",
+          "bytes": 5235,
+          "sha256": "f140e6d49ef83099a632faf53ee289b22e4dee6f0bf0bafa9d02f201d4dc1b46"
+        },
+        {
+          "file": "OverlapsWith_GZ_AA.csv",
+          "label": "OverlapsWith",
+          "bytes": 7085,
+          "sha256": "daebb4ac6d2d49a106e5834f70eb1448b10d272d4625f7f1ac55d58139f6e1c2"
+        },
+        {
+          "file": "OverlapsWith_AA_GZ.csv",
+          "label": "OverlapsWith",
+          "bytes": 3711,
+          "sha256": "dc05ac94ec1f04baac7b806aad2d6e1cd11a1be5565cfea849d4b73ff2bb45f4"
+        },
+        {
+          "file": "ServesDemographic_AA.csv",
+          "label": "ServesDemographic",
+          "bytes": 24025,
+          "sha256": "b209ecb62a265efded382d93de94adab5593fc8f78bbd92fbde9bf58f9cd4e2f"
+        },
+        {
+          "file": "ServesDemographic_GZ.csv",
+          "label": "ServesDemographic",
+          "bytes": 17220,
+          "sha256": "e6b3ee2b903bd72fa7c6e9a5b99b9c0d72e98e55a0aaf31652b084645fcd03d8"
+        },
+        {
+          "file": "Spans.csv",
+          "label": "Spans",
+          "bytes": 8372,
+          "sha256": "6f25608ef0b82048627f9cd05f2af9cdbc018c01116c6cc558d596703a90055b"
+        },
+        {
+          "file": "UsesCoordinateSystem_Location.csv",
+          "label": "UsesCoordinateSystem",
+          "bytes": 7515,
+          "sha256": "444d0dc816bc086760baa289610c38d53be866fd105787c3310516dfc1b543bb"
+        },
+        {
+          "file": "UsesCoordinateSystem_GZ.csv",
+          "label": "UsesCoordinateSystem",
+          "bytes": 765,
+          "sha256": "541d7e0192933aac7902981760fb592e9a7a77cc54f318edbdce6046ed6917a7"
+        }
+      ],
+      "config_sha256": "50d7fd0136473b2d39a9ef12bc30a98d179d6d2f1338a7c07bd2ef0001c0bb0e"
+    },
+    {
+      "graph": "Manufacturing_BOM(Bill_Of_Materials)",
+      "vertex_types": 8,
+      "edge_types": 7,
+      "vertex_rows": 1500,
+      "edge_rows": 2648,
+      "vertices_by_label": {
+        "Product": 200,
+        "Material": 500,
+        "Assembly": 150,
+        "WorkCenter": 50,
+        "EngineeringChange": 100,
+        "Supplier": 80,
+        "BomVersion": 120,
+        "ManufacturingOrder": 300
+      },
+      "edges_by_label": {
+        "ConsistsOf": 1000,
+        "ManufacturedAt": 400,
+        "SubstitutesFor": 48,
+        "ModifiedBy": 200,
+        "SourcedFrom": 400,
+        "HasBomVersion": 250,
+        "OrderedFor": 350
+      },
+      "property_declarations_by_type": {
+        "STRING": 44,
+        "DATETIME": 2,
+        "DOUBLE": 6,
+        "INT32": 7,
+        "DATE": 6,
+        "BOOL": 1
+      },
+      "edge_property_declarations": 19,
+      "repeated_typed_endpoint_pairs": 10,
+      "extra_edge_rows_on_repeated_typed_pairs": 10,
+      "empty_property_fields": 252,
+      "empty_fields_by_property": {
+        "Product.name": 6,
+        "Product.last_modified": 4,
+        "Product.revision_level": 7,
+        "Product.created_date": 2,
+        "Product.status": 5,
+        "Product.unit_of_measure": 4,
+        "Product.description": 3,
+        "Material.unit_cost": 11,
+        "Material.category": 11,
+        "Material.name": 9,
+        "Material.supplier_reference": 14,
+        "Material.specification": 14,
+        "Material.lead_time": 15,
+        "Assembly.weight": 7,
+        "Assembly.dimensions": 6,
+        "Assembly.drawing_number": 3,
+        "Assembly.assembly_type": 4,
+        "Assembly.name": 7,
+        "WorkCenter.capacity": 3,
+        "WorkCenter.name": 2,
+        "WorkCenter.location": 1,
+        "WorkCenter.capabilities": 1,
+        "EngineeringChange.description": 6,
+        "EngineeringChange.effective_date": 2,
+        "EngineeringChange.approval_status": 5,
+        "EngineeringChange.reason_code": 6,
+        "EngineeringChange.implementation_deadline": 1,
+        "Supplier.name": 5,
+        "Supplier.contact_info": 7,
+        "Supplier.address": 7,
+        "BomVersion.effective_date": 7,
+        "BomVersion.expiration_date": 31,
+        "BomVersion.version_number": 3,
+        "BomVersion.status": 2,
+        "ManufacturingOrder.order_date": 8,
+        "ManufacturingOrder.status": 7,
+        "ManufacturingOrder.quantity": 8,
+        "ManufacturingOrder.due_date": 8
+      },
+      "diagnostics": {},
+      "first_diagnostics": [],
+      "file_receipts": [
+        {
+          "file": "Product.csv",
+          "label": "Product",
+          "bytes": 27640,
+          "sha256": "28522409e1dff4f090edc9ed5181c4e3c3898f1133862e491af8dbfb2e1614ed"
+        },
+        {
+          "file": "Material.csv",
+          "label": "Material",
+          "bytes": 39545,
+          "sha256": "b662568598769505ace3d4a58a87b3423108e3154959ebb431bede6dcd75652a"
+        },
+        {
+          "file": "Assembly.csv",
+          "label": "Assembly",
+          "bytes": 9917,
+          "sha256": "fc4f2b6f427e47d6b5e13365eeccb406085fee5263844b4e5cd3f66ffa1ac284"
+        },
+        {
+          "file": "WorkCenter.csv",
+          "label": "WorkCenter",
+          "bytes": 3560,
+          "sha256": "bfed5becfedf681ff3c16509fe1310243d120a80f0e37ba1bf93559582f22595"
+        },
+        {
+          "file": "EngineeringChange.csv",
+          "label": "EngineeringChange",
+          "bytes": 9564,
+          "sha256": "6f5a48018955548add561127c5a897813a112e955a6f321af8358a995f2c0798"
+        },
+        {
+          "file": "Supplier.csv",
+          "label": "Supplier",
+          "bytes": 7157,
+          "sha256": "76a25c80ff7118e46dc7e4fceee8cc5535287c8620e2607ffef8bbb8a87e3246"
+        },
+        {
+          "file": "BomVersion.csv",
+          "label": "BomVersion",
+          "bytes": 5029,
+          "sha256": "ca259c38816e5f6a2d82e9726d8536cc01a772057435ac93f352d868ddf77334"
+        },
+        {
+          "file": "ManufacturingOrder.csv",
+          "label": "ManufacturingOrder",
+          "bytes": 13549,
+          "sha256": "c4dcc64583dcf52d9841c7be2e54e46c7f4b370fb64aa40ff91ae7824d28232c"
+        },
+        {
+          "file": "ConsistsOf_Product_Material.csv",
+          "label": "ConsistsOf",
+          "bytes": 25558,
+          "sha256": "e53e1ce8a26326269b76e549c22ff2c9ac9f20adae722939f52c91f63b8a15cf"
+        },
+        {
+          "file": "ConsistsOf_Product_Assembly.csv",
+          "label": "ConsistsOf",
+          "bytes": 8517,
+          "sha256": "39fabe2372041656067463d3b7f6fc00bf36abb9deb5ef6cd522c3bf115f5109"
+        },
+        {
+          "file": "ManufacturedAt_Product.csv",
+          "label": "ManufacturedAt",
+          "bytes": 11763,
+          "sha256": "323a4c013e2ec0076b8335f141447ac9df6c36bbdd17bc5a1a371a7fba8e3980"
+        },
+        {
+          "file": "ManufacturedAt_Assembly.csv",
+          "label": "ManufacturedAt",
+          "bytes": 8987,
+          "sha256": "08a9ddd7ef4b3faa1b0dcf3f98e4b1d07123ea1786763d38dc5023cb3909403a"
+        },
+        {
+          "file": "SubstitutesFor_Material.csv",
+          "label": "SubstitutesFor",
+          "bytes": 737,
+          "sha256": "b5f38efd4956313caf2624b9da7878c518cdf273c776db1d8232c41afc637bae"
+        },
+        {
+          "file": "SubstitutesFor_Product.csv",
+          "label": "SubstitutesFor",
+          "bytes": 862,
+          "sha256": "086eb301c81cf99289154b3a205fef21160987054f63c0bc9107aa0ccbe26f2a"
+        },
+        {
+          "file": "SubstitutesFor_Assembly.csv",
+          "label": "SubstitutesFor",
+          "bytes": 610,
+          "sha256": "3e2cd4a755ff88732b933e8021dfe820bf60f3bae723e8ef264e454f0902c164"
+        },
+        {
+          "file": "ModifiedBy_Product.csv",
+          "label": "ModifiedBy",
+          "bytes": 2492,
+          "sha256": "801a9ad4537b8119a26967315fd00fa2163562b0a37fb2b8c49e05fb396639b1"
+        },
+        {
+          "file": "ModifiedBy_Material.csv",
+          "label": "ModifiedBy",
+          "bytes": 8034,
+          "sha256": "3b327a985480a4f3d98889c7a8422520cf8411d4ec891e3116fbe6a7be5955b3"
+        },
+        {
+          "file": "ModifiedBy_Assembly.csv",
+          "label": "ModifiedBy",
+          "bytes": 2397,
+          "sha256": "e6e950b719338eb39ffa57cb369cbd2fb71fe2b8d8f0e110ed83c75cc0d3ffc7"
+        },
+        {
+          "file": "SourcedFrom.csv",
+          "label": "SourcedFrom",
+          "bytes": 20002,
+          "sha256": "c729b88a1dafaacd6072096af73c5b22d79f57342dfadaabf07bb5c2e735759b"
+        },
+        {
+          "file": "HasBomVersion_Product.csv",
+          "label": "HasBomVersion",
+          "bytes": 2625,
+          "sha256": "234dd94279dd509cd7a0e51870355b28a2eab33d3f2d92111d6dbf2cbfe15e91"
+        },
+        {
+          "file": "HasBomVersion_Assembly.csv",
+          "label": "HasBomVersion",
+          "bytes": 1905,
+          "sha256": "233520fd39ac4135f92a1ec564dee7ad0cf8bc749d6d0b727e810a25598d4e24"
+        },
+        {
+          "file": "OrderedFor_Product.csv",
+          "label": "OrderedFor",
+          "bytes": 4440,
+          "sha256": "7b46caa6537b37fc64819f2f2f2d0a2f86bec46b117758e406b65e317e5b43b9"
+        },
+        {
+          "file": "OrderedFor_Assembly.csv",
+          "label": "OrderedFor",
+          "bytes": 3258,
+          "sha256": "a3f7361a12e63c5706a7a578aaa2cf8b1e30bc3a280bbfb941f3b5a8889bdc46"
+        }
+      ],
+      "config_sha256": "6239346a845bed7e03fc8c86f67b1a9b14ef92c152cb10337e34f9ec1baf7cf1"
+    },
+    {
+      "graph": "Manufacturing_Production_Process",
+      "vertex_types": 9,
+      "edge_types": 8,
+      "vertex_rows": 1030,
+      "edge_rows": 1595,
+      "vertices_by_label": {
+        "WorkOrder": 200,
+        "ManufacturingOperation": 150,
+        "EquipmentResource": 100,
+        "MaterialBatch": 300,
+        "QualityCheckpoint": 40,
+        "ProductionStation": 30,
+        "Product": 50,
+        "BillOfMaterials": 80,
+        "Personnel": 80
+      },
+      "edges_by_label": {
+        "TRIGGERS": 406,
+        "REQUIRES": 231,
+        "CONSUMES": 308,
+        "PROCESSED_AT": 150,
+        "VERIFIES_AGAINST": 192,
+        "DEFINED_BY": 200,
+        "USES_BOM": 50,
+        "OPERATED_BY": 58
+      },
+      "property_declarations_by_type": {
+        "STRING": 33,
+        "DOUBLE": 5,
+        "DATE": 3,
+        "INT8": 1,
+        "INT32": 1,
+        "DATETIME": 3
+      },
+      "edge_property_declarations": 6,
+      "repeated_typed_endpoint_pairs": 0,
+      "extra_edge_rows_on_repeated_typed_pairs": 0,
+      "empty_property_fields": 552,
+      "empty_fields_by_property": {
+        "ManufacturingOperation.resource_requirements": 24,
+        "ManufacturingOperation.quality_specifications": 22,
+        "EquipmentResource.maintenance_schedule": 16,
+        "MaterialBatch.expiration_date": 217,
+        "MaterialBatch.supplier_info": 43,
+        "MaterialBatch.quality_certificates": 57,
+        "QualityCheckpoint.frequency_requirements": 8,
+        "ProductionStation.capacity_constraints": 4,
+        "ProductionStation.safety_protocols": 6,
+        "Personnel.certifications": 18,
+        "VERIFIES_AGAINST.verified_at": 53,
+        "VERIFIES_AGAINST.verification_result": 45,
+        "OPERATED_BY.start_time": 13,
+        "OPERATED_BY.end_time": 26
+      },
+      "diagnostics": {},
+      "first_diagnostics": [],
+      "file_receipts": [
+        {
+          "file": "WorkOrder.csv",
+          "label": "WorkOrder",
+          "bytes": 8617,
+          "sha256": "4618e20ddec77d856472d81fb5afb918c1d74d60ceb13c226ff6e3f794d542f0"
+        },
+        {
+          "file": "ManufacturingOperation.csv",
+          "label": "ManufacturingOperation",
+          "bytes": 7457,
+          "sha256": "a30d0d8b369951e04b4854ff2663c5cc3cc5f65d1e5fd4aa5262e759199471d4"
+        },
+        {
+          "file": "EquipmentResource.csv",
+          "label": "EquipmentResource",
+          "bytes": 5022,
+          "sha256": "a6f09fd3fc0d26f81ab59de1088b97559c9ee688bd9410e84ed562cd047c90b0"
+        },
+        {
+          "file": "MaterialBatch.csv",
+          "label": "MaterialBatch",
+          "bytes": 18959,
+          "sha256": "70011d60e331841c4ebe17b16c6b9a09d33fd02e1caaca58276b7976a46ca82d"
+        },
+        {
+          "file": "QualityCheckpoint.csv",
+          "label": "QualityCheckpoint",
+          "bytes": 2273,
+          "sha256": "515e72a38c2630f28f478cf898865bf489ade7b26a06070cf2af443cdf357591"
+        },
+        {
+          "file": "ProductionStation.csv",
+          "label": "ProductionStation",
+          "bytes": 1441,
+          "sha256": "4e5163d8c2abce2e3ce409127a34e97073a2612b7a665e4d48fa2d868062a141"
+        },
+        {
+          "file": "Product.csv",
+          "label": "Product",
+          "bytes": 2486,
+          "sha256": "9f5aa34a50bf343adca1ed9eac68460ba8b5a65e1b729eb8a810d3dd5852888f"
+        },
+        {
+          "file": "BillOfMaterials.csv",
+          "label": "BillOfMaterials",
+          "bytes": 2043,
+          "sha256": "b3e43ae8faf6a70a390e3691fd087ae8076a59c4c3ef540e0370ed9b9bb9da0d"
+        },
+        {
+          "file": "Personnel.csv",
+          "label": "Personnel",
+          "bytes": 4674,
+          "sha256": "70f77be9b79eec824bcd1e092e3a870c129d96c5467119c41394334edd2beb7f"
+        },
+        {
+          "file": "TRIGGERS.csv",
+          "label": "TRIGGERS",
+          "bytes": 6936,
+          "sha256": "a64da2e48c7be1c873a883cd952000c89e9b4b38233bf79f1d7393e3d51fc139"
+        },
+        {
+          "file": "REQUIRES.csv",
+          "label": "REQUIRES",
+          "bytes": 5112,
+          "sha256": "b8afa26117577b6c6ab9f6c08a030abec98821836f7be3259f0e553ddbb446f2"
+        },
+        {
+          "file": "CONSUMES.csv",
+          "label": "CONSUMES",
+          "bytes": 6928,
+          "sha256": "e40810163ee970b14f75e2b50469c7c0a24c1be519751108bd2c4a50fb3140a0"
+        },
+        {
+          "file": "PROCESSED_AT.csv",
+          "label": "PROCESSED_AT",
+          "bytes": 2592,
+          "sha256": "bedc259b4b2112d7a1cd60a89dfc8fcec6bf5db7cb8d4530cbf2deb21c464559"
+        },
+        {
+          "file": "VERIFIES_AGAINST.csv",
+          "label": "VERIFIES_AGAINST",
+          "bytes": 7551,
+          "sha256": "d96d03f69740a575bbc9b37491f0f3a3f46c11fd04284975a5d20b9410852d3e"
+        },
+        {
+          "file": "DEFINED_BY.csv",
+          "label": "DEFINED_BY",
+          "bytes": 3219,
+          "sha256": "6ac826d52761260b6a68f80db18d2d810427ddc853a14f952a40db1072dbd94b"
+        },
+        {
+          "file": "USES_BOM.csv",
+          "label": "USES_BOM",
+          "bytes": 875,
+          "sha256": "b45e40c08251cd75bf71a0244173bc2e327e2976d8f58e59e8d122f88cf0f6d7"
+        },
+        {
+          "file": "OPERATED_BY.csv",
+          "label": "OPERATED_BY",
+          "bytes": 2672,
+          "sha256": "20411063927ad496cd45aeb71332089abc41051ec97f2654cabb21cbacdacc23"
+        }
+      ],
+      "config_sha256": "552b41395f4aaae5c8fac6560fc80fe39ecca8a44d8b24a28f9661e88add3d85"
+    },
+    {
+      "graph": "Social_Network_Twitter",
+      "vertex_types": 7,
+      "edge_types": 8,
+      "vertex_rows": 8450,
+      "edge_rows": 56577,
+      "vertices_by_label": {
+        "USER": 1000,
+        "TWEET": 5000,
+        "HASHTAG": 500,
+        "TREND": 100,
+        "LIST": 200,
+        "MEDIA_ATTACHMENT": 1500,
+        "LOCATION": 150
+      },
+      "edges_by_label": {
+        "POSTS": 5000,
+        "FOLLOWS": 4969,
+        "ENGAGES_WITH": 24696,
+        "CONTAINS_HASHTAG": 14762,
+        "BELONGS_TO_TREND": 150,
+        "ATTACHES_MEDIA": 1500,
+        "ORIGINATES_FROM": 1500,
+        "MEMBER_OF_LIST": 4000
+      },
+      "property_declarations_by_type": {
+        "STRING": 29,
+        "DATETIME": 12,
+        "INT32": 13,
+        "BOOL": 6,
+        "INT64": 2,
+        "FLOAT": 1
+      },
+      "edge_property_declarations": 16,
+      "repeated_typed_endpoint_pairs": 0,
+      "extra_edge_rows_on_repeated_typed_pairs": 0,
+      "empty_property_fields": 8713,
+      "empty_fields_by_property": {
+        "USER.profile_image_url": 333,
+        "USER.bio": 266,
+        "TWEET.like_count": 279,
+        "TWEET.view_count": 659,
+        "TWEET.language": 266,
+        "TREND.location": 63,
+        "TREND.url": 23,
+        "TREND.tweet_volume": 8,
+        "TREND.query": 10,
+        "LIST.description": 75,
+        "MEDIA_ATTACHMENT.alt_text": 687,
+        "LOCATION.country_code": 49,
+        "LOCATION.woeid": 14,
+        "POSTS.device_type": 1254,
+        "POSTS.location_coordinates": 2603,
+        "FOLLOWS.notification_preference": 1843,
+        "ATTACHES_MEDIA.position": 281
+      },
+      "diagnostics": {},
+      "first_diagnostics": [],
+      "file_receipts": [
+        {
+          "file": "USER.csv",
+          "label": "USER",
+          "bytes": 172690,
+          "sha256": "cb5073b3d369402d5b721fda69432073177738397b370df92eba696d2bb16cd2"
+        },
+        {
+          "file": "TWEET.csv",
+          "label": "TWEET",
+          "bytes": 1382346,
+          "sha256": "e06c584f083bcd477fe15722bc4052443f77cb0fb0012b31507eaf00abbd40ee"
+        },
+        {
+          "file": "HASHTAG.csv",
+          "label": "HASHTAG",
+          "bytes": 19478,
+          "sha256": "4c38ea8b07037a7bb76be653fa13cf11d215dfe762a55247b17860d41c78907b"
+        },
+        {
+          "file": "TREND.csv",
+          "label": "TREND",
+          "bytes": 9422,
+          "sha256": "465a964e11d81d7a0adeb308d468abce370af999a39a47667a788e4f39bcc635"
+        },
+        {
+          "file": "LIST.csv",
+          "label": "LIST",
+          "bytes": 25555,
+          "sha256": "6af545a8c9f8e21b46b29033df767cdc9bfd6bb5831e237077b1ccd287096483"
+        },
+        {
+          "file": "MEDIA_ATTACHMENT.csv",
+          "label": "MEDIA_ATTACHMENT",
+          "bytes": 136048,
+          "sha256": "21e1a71c13e3222935b7044ebbad6f3d622d0ea181756a3d873436a26f29e3db"
+        },
+        {
+          "file": "LOCATION.csv",
+          "label": "LOCATION",
+          "bytes": 4706,
+          "sha256": "7d0a3fd42231c3c070b7ec9c9696cc76405decde4003103150f16e41ff85ee8a"
+        },
+        {
+          "file": "POSTS.csv",
+          "label": "POSTS",
+          "bytes": 273523,
+          "sha256": "12cb3932ed96bc0cafedd17507df3e31e387290ed6157d0819b55c336c3fda3e"
+        },
+        {
+          "file": "FOLLOWS.csv",
+          "label": "FOLLOWS",
+          "bytes": 204467,
+          "sha256": "77a7f28efc45693dd7e13c7965f70cf13ac218bb24ae2dd36be90d6e4747628b"
+        },
+        {
+          "file": "ENGAGES_WITH.csv",
+          "label": "ENGAGES_WITH",
+          "bytes": 1211269,
+          "sha256": "a74ef16baecc1bc79d001a03f05068f2ec4c1d1746b3eee728cbc670914fe420"
+        },
+        {
+          "file": "CONTAINS_HASHTAG.csv",
+          "label": "CONTAINS_HASHTAG",
+          "bytes": 368337,
+          "sha256": "bed797e3898bae98adba019847e5c908b5e519f25ad3b58673f125ac0a078bc2"
+        },
+        {
+          "file": "BELONGS_TO_TREND.csv",
+          "label": "BELONGS_TO_TREND",
+          "bytes": 3387,
+          "sha256": "4d2322c46a0281d189438b41e507ed00ef7e0563cb517cb9642ad4635e71f832"
+        },
+        {
+          "file": "ATTACHES_MEDIA.csv",
+          "label": "ATTACHES_MEDIA",
+          "bytes": 59764,
+          "sha256": "6750bb579a93aabcfd752b3ae70d83334ffa5e35edef44d0acee3d5da2b9e573"
+        },
+        {
+          "file": "ORIGINATES_FROM.csv",
+          "label": "ORIGINATES_FROM",
+          "bytes": 57030,
+          "sha256": "2bc24697818c31685d122f3137c108bdf48d3ecf5dbe32cd492ebac2b965a511"
+        },
+        {
+          "file": "MEMBER_OF_LIST.csv",
+          "label": "MEMBER_OF_LIST",
+          "bytes": 144020,
+          "sha256": "ec796ee5b01c0a26d2acf7535682613a6c325edb44a12df17b12de46ba22a89c"
+        }
+      ],
+      "config_sha256": "16231c757926e9578a7cb0bceea8f2f283020f4b0b63530c0d1c4e5f3935e203"
+    }
+  ],
+  "source_executed": false,
+  "model_calls": 0,
+  "database_imported": false,
+  "full_engine_semantics_certified": false,
+  "caveats": [
+    "lexical ISO date diagnostics do not establish TuGraph rejection",
+    "empty fields counted; NULL versus empty-string policy still needs native engine verification",
+    "repeated edge endpoints are counted, never silently collapsed",
+    "no test questions or reference queries used to tune methods"
+  ]
+}
