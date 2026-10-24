@@ -1,0 +1,21 @@
+{
+  "kind": "INFRASTRUCTURE_ONLY_AMENDMENT_V2",
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "adapter_sha256": "8fd581da9a9b42846e138766decc5e08a4f1796bb10c7397e12cf5b71eba4c1b",
+  "pid": 76200,
+  "changes": [
+    "SSH ServerAliveInterval=15/ServerAliveCountMax=3",
+    "broken-pipe cleanup cannot suppress stop receipt"
+  ],
+  "method_prompt_model_metric_changes": false,
+  "old_failed_trace_preserved": true,
+  "automatic_transport_retry": false,
+  "qid": "885ff11b-d708-451e-80e4-493fdff56895",
+  "arm": "direct",
+  "new_model_calls": 0,
+  "original_budget_slot": 2535,
+  "all_physical_budget_slots": [
+    2534,
+    2535
+  ]
+}

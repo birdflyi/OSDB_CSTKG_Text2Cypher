@@ -11,7 +11,7 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def accept(run, data, freeze, graph):
+def accept(run, data, freeze, graph, queue_state='infra_resume_queue_v1'):
     digest = sha(freeze)
     tasks = [json.loads(s) for s in (data/'runtime/test.jsonl').read_text(encoding='utf-8').splitlines() if s.strip()]
     ids = {t['qid'] for t in tasks if t['graph'] == graph}
@@ -21,7 +21,7 @@ def accept(run, data, freeze, graph):
     actual = [(r['qid'], r['arm']) for r in rows]
     assert len(actual) == len(expected) and set(actual) == expected
     assert all(r['freeze_sha256'] == digest for r in rows)
-    summary = json.loads((run/'infra_resume_queue_v1'/f'{graph}_completed.json').read_text())
+    summary = json.loads((run/queue_state/f'{graph}_completed.json').read_text())
     assert summary['state'] == 'COMPLETE' and summary['remaining_paths'] == 0
     for row in rows:
         original = json.loads((run/graph/'tasks'/row['qid']/row['arm']/'record.json').read_text(encoding='utf-8'))
@@ -84,7 +84,8 @@ if __name__ == '__main__':
     for name in ('run','data','freeze','output'):
         p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--graph',required=True)
+    p.add_argument('--queue-state',default='infra_resume_queue_v1')
     a=p.parse_args()
-    result=accept(a.run,a.data,a.freeze,a.graph)
+    result=accept(a.run,a.data,a.freeze,a.graph,a.queue_state)
     a.output.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(result,ensure_ascii=False))
