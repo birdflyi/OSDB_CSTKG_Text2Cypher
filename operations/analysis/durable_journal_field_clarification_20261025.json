@@ -1,0 +1,8 @@
+{
+  "timestamp_local": "2026-10-25T04:03:10.613161+08:00",
+  "legacy_field": "automatic_transport_retry:false",
+  "clarification": "No automatic queue restart. Actual stable-id RPC transport attempts max3, wait>=10s, original model retries unchanged.",
+  "source_version": "a989a61",
+  "native_reexecution_after_unknown_daemon_death": false,
+  "original_plan_unchanged": true
+}
