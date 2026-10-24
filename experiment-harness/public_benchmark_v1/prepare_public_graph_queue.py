@@ -25,6 +25,12 @@ def run(args):
         jobs = jobs[jobs.index(args.start_at):]
     if args.reuse_verified_assets and not args.recovery_reason:
         raise ValueError('Verified asset reuse requires an explicit recovery reason')
+    if not re.fullmatch(r'[a-z][a-z0-9_]+', args.preflight_label):
+        raise ValueError('Invalid preflight output label')
+    if not re.fullmatch(r'[a-z][a-z0-9_]+', args.remote_code_folder):
+        raise ValueError('Invalid remote code folder')
+    if args.recover_existing_graph and args.recover_existing_graph not in jobs:
+        raise ValueError('Recovery graph must be in this queue')
     if any(not re.fullmatch(r'[a-z_]+', name) for name in jobs):
         raise ValueError('Unexpected graph name')
     args.output.mkdir(parents=True, exist_ok=False)
@@ -32,11 +38,14 @@ def run(args):
     remote_hashes = {name: hashlib.sha256((source_dir / name).read_bytes()).hexdigest()
                      for name in ['public_graph_runtime.py', 'answer_scoring.py',
                                   'smoke_train_database.py', 'model_transport.py', 'attempt_budget.py',
-                                  'schema_identity.py']}
+                                  'schema_identity.py', 'import_recovery.py']}
     immutable_json(args.output / 'plan.json', {'kind': 'PUBLIC_DATA_ONLY_NO_MODEL_QUEUE',
                    'pid': os.getpid(), 'graphs': jobs, 'model_calls': 0,
                    'remote_module_hashes': remote_hashes,
                    'recovery_reason': args.recovery_reason,
+                   'recover_existing_graph': args.recover_existing_graph,
+                   'preflight_label': args.preflight_label,
+                   'remote_code_folder': args.remote_code_folder,
                    'source_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()})
     ssh = ['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=12', '-p', '2491',
            '-i', str(args.ssh_key), 'root@117.50.195.94']
@@ -53,7 +62,7 @@ def run(args):
         immutable_json(local_entry, entry)
         remote_graph = REMOTE + '/cypherbench_data/upstream/' + entry['path']
         remote_entry = REMOTE + '/graph_receipts/' + name + '.json'
-        output = REMOTE + '/test_runtime_v1/' + name + '/reference_preflight_v1'
+        output = REMOTE + '/test_runtime_v1/' + name + '/' + args.preflight_label
         # Refuse overwrite/re-execution of any prior graph attempt in this queue.
         owner_code = ('import json,socket;from pathlib import Path;'
                       'assert json.loads(Path(' + repr(REMOTE + '/execution_owner.json') +
@@ -62,7 +71,7 @@ def run(args):
         precheck = (owner_check + ' && test ! -e ' + shlex.quote(remote_graph + '.partial') +
                     ' && test ! -e ' + shlex.quote(output))
         try:
-            hash_command = 'sha256sum ' + ' '.join(shlex.quote(REMOTE + '/public_runtime_v1_code/' + name)
+            hash_command = 'sha256sum ' + ' '.join(shlex.quote(REMOTE + '/' + args.remote_code_folder + '/' + name)
                                                   for name in remote_hashes)
             remote_output = subprocess.check_output(ssh + [hash_command], text=True)
             actual_hashes = {Path(line.split(None, 1)[1].strip()).name: line.split()[0]
@@ -97,8 +106,13 @@ def run(args):
             else:
                 subprocess.run(ssh + [promote], check=True, capture_output=True)
             command = ' '.join(shlex.quote(x) for x in [REMOTE + '/.venv/bin/python',
-                       REMOTE + '/public_runtime_v1_code/public_graph_runtime.py', '--root', REMOTE,
+                       REMOTE + '/' + args.remote_code_folder + '/public_graph_runtime.py', '--root', REMOTE,
                        '--graph', name, '--output', output])
+            if name == args.recover_existing_graph:
+                if args.preflight_label == 'reference_preflight_v1':
+                    raise ValueError('Recovery needs a fresh versioned output')
+                command += ' ' + shlex.join(['--recover-from', REMOTE + '/test_runtime_v1/' + name +
+                                            '/reference_preflight_v1', '--recovery-reason', args.recovery_reason])
             with (stage / 'remote_preflight.log').open('xb') as log:
                 subprocess.run(ssh + [command], stdout=log, stderr=subprocess.STDOUT, check=True)
             subprocess.run(scp + ['-r', 'root@117.50.195.94:' + output, str(stage / 'result')],
@@ -127,4 +141,7 @@ if __name__ == '__main__':
     parser.add_argument('--start-at')
     parser.add_argument('--reuse-verified-assets', action='store_true')
     parser.add_argument('--recovery-reason')
+    parser.add_argument('--preflight-label', default='reference_preflight_v1')
+    parser.add_argument('--remote-code-folder', default='public_runtime_v1_code')
+    parser.add_argument('--recover-existing-graph')
     run(parser.parse_args())

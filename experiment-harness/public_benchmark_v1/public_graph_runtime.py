@@ -22,6 +22,7 @@ from answer_scoring import load_official_comparator, read_reference_answer, scor
 from model_transport import immutable_json
 from smoke_train_database import properties, normalize, identifier
 from schema_identity import canonical_schema
+from import_recovery import recovery_evidence
 
 
 ROOT = Path('/mnt/data/louzehua/ch7_t1_public_benchmark_20261023')
@@ -32,7 +33,7 @@ def chunks(rows, size=1000):
         yield rows[start:start + size]
 
 
-def import_verify(session, graph, folder):
+def import_verify(session, graph, folder, *, verify_existing=False):
     nodes, edges = graph['entities'], graph['relations']
     by_node = {r['eid']: r for r in nodes}
     by_edge = {r['rid']: r for r in edges}
@@ -43,7 +44,7 @@ def import_verify(session, graph, folder):
     es = {r['label']: r for r in graph['schema']['entities']}
     rs = {r['label']: r for r in graph['schema']['relations']}
     receipt = folder / 'graph_validation.json'
-    if not receipt.exists():
+    if not receipt.exists() and not verify_existing:
         if (folder / 'import_started.json').exists():
             raise RuntimeError('Prior import is incomplete; audit without clearing/resuming')
         if session.run('MATCH (n) RETURN count(n) AS n').single()['n']:
@@ -72,7 +73,9 @@ def import_verify(session, graph, folder):
                 session.run(query, rows=values).consume()
     # Stream actual values; compare every identity, property, type and endpoint.
     seen = set()
-    for row in session.run('MATCH (n) RETURN n.eid AS eid,labels(n) AS labels,properties(n) AS props'):
+    # Exhaustive offline validation is not a benchmark query. Large complete
+    # scans get their own explicit budget without changing the formal 60s cap.
+    for row in session.run(Query('MATCH (n) RETURN n.eid AS eid,labels(n) AS labels,properties(n) AS props', timeout=600)):
         expected = by_node.get(row['eid'])
         if (expected is None or row['eid'] in seen or row['labels'] != [expected['label']]
             or normalize(row['props']) != normalize(properties(expected, es[expected['label']], True))):
@@ -81,8 +84,8 @@ def import_verify(session, graph, folder):
     if len(seen) != len(nodes):
         raise ValueError('Missing imported nodes')
     seen = set()
-    for row in session.run('MATCH (a)-[r]->(b) RETURN r.rid AS rid,type(r) AS label,'
-                           'a.eid AS subj,b.eid AS obj,properties(r) AS props'):
+    for row in session.run(Query('MATCH (a)-[r]->(b) RETURN r.rid AS rid,type(r) AS label,'
+                           'a.eid AS subj,b.eid AS obj,properties(r) AS props', timeout=600)):
         expected = by_edge.get(row['rid'])
         if (expected is None or row['rid'] in seen or row['label'] != expected['label']
             or row['subj'] != expected['subj_id'] or row['obj'] != expected['obj_id']
@@ -98,7 +101,7 @@ def import_verify(session, graph, folder):
     return validation
 
 
-def preflight(root, graph_name, output, only_qids=None):
+def preflight(root, graph_name, output, only_qids=None, recover_from=None, recovery_reason=''):
     root = root.resolve()
     if root != ROOT or json.loads((root / 'execution_owner.json').read_text())['hostname'] != socket.gethostname():
         raise ValueError('Wrong runtime owner/host')
@@ -129,6 +132,11 @@ def preflight(root, graph_name, output, only_qids=None):
     if folder not in output.parents:
         raise ValueError('Preflight output must remain in owned graph runtime')
     output.mkdir(parents=True, exist_ok=False)
+    if recover_from:
+        evidence = recovery_evidence(folder, recover_from, graph, recovery_reason)
+        immutable_json(output / 'existing_import_recovery.json', evidence)
+    elif recovery_reason:
+        raise ValueError('Recovery reason requires a specific prior failed output')
     lock = root / '.public-runtime.lock'
     with lock.open('x') as stream:
         json.dump({'pid': os.getpid(), 'host': socket.gethostname(), 'graph': graph_name}, stream)
@@ -194,7 +202,7 @@ def preflight(root, graph_name, output, only_qids=None):
         if driver is None:
             raise RuntimeError('Public database startup timeout')
         with driver.session() as session:
-            validation = import_verify(session, graph, folder)
+            validation = import_verify(session, graph, folder, verify_existing=bool(recover_from))
         immutable_json(output / 'graph_validation.json', validation)
         compare = load_official_comparator(root / 'official_source')
         refs = [json.loads(s) for s in (data / 'evaluator/test.jsonl').read_text().splitlines()
@@ -262,6 +270,8 @@ if __name__ == '__main__':
     parser.add_argument('--graph', required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--qid', action='append')
+    parser.add_argument('--recover-from', type=Path)
+    parser.add_argument('--recovery-reason', default='')
     args = parser.parse_args()
     logging.getLogger('neo4j.notifications').setLevel(logging.ERROR)
-    preflight(args.root, args.graph, args.output, args.qid)
+    preflight(args.root, args.graph, args.output, args.qid, args.recover_from, args.recovery_reason)
