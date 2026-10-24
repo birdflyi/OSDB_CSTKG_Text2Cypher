@@ -21,6 +21,7 @@ from neo4j import GraphDatabase, Query
 from answer_scoring import load_official_comparator, read_reference_answer, score_executed_answer
 from model_transport import immutable_json
 from smoke_train_database import properties, normalize, identifier
+from schema_identity import canonical_schema
 
 
 ROOT = Path('/mnt/data/louzehua/ch7_t1_public_benchmark_20261023')
@@ -119,7 +120,8 @@ def preflight(root, graph_name, output, only_qids=None):
         if hashlib.sha256((data / relative).read_bytes()).hexdigest() != expected:
             raise ValueError('Public evaluation artifact changed')
     graph = json.loads(source.read_text())
-    if graph['schema'] != json.loads((data / 'upstream/graphs/schemas' / (graph_name + '_schema.json')).read_text()):
+    standalone_schema = json.loads((data / 'upstream/graphs/schemas' / (graph_name + '_schema.json')).read_text())
+    if canonical_schema(graph['schema']) != canonical_schema(standalone_schema):
         raise ValueError('Embedded/public schema mismatch')
     folder = root / 'test_runtime_v1' / graph_name
     folder.mkdir(parents=True, exist_ok=True)
@@ -232,6 +234,7 @@ def preflight(root, graph_name, output, only_qids=None):
                    'tasks': len(refs), 'checked': len(checked),
                    'passed': sum(r['reference_answer_match'] == 1 for r in checked),
                    'graph_validation': validation, 'model_calls': 0, 'formal_predictions': 0,
+                   'schema_declaration_order_differs': graph['schema'] != standalone_schema,
                    'graph_sha256': h.hexdigest(), 'status': 'PASS' if all(r['reference_answer_match'] == 1 for r in checked) else 'REFERENCE_REVIEW_REQUIRED'}
         immutable_json(output / 'summary.json', summary)
         print(json.dumps(summary), flush=True)

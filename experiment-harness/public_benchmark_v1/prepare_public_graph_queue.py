@@ -21,16 +21,22 @@ def run(args):
                   key=lambda name: entries[f'graphs/simplekg/{name}_simplekg.json']['size'])
     if args.skip_flight:
         jobs.remove('flight_accident')
+    if args.start_at:
+        jobs = jobs[jobs.index(args.start_at):]
+    if args.reuse_verified_assets and not args.recovery_reason:
+        raise ValueError('Verified asset reuse requires an explicit recovery reason')
     if any(not re.fullmatch(r'[a-z_]+', name) for name in jobs):
         raise ValueError('Unexpected graph name')
     args.output.mkdir(parents=True, exist_ok=False)
     source_dir = Path(__file__).resolve().parent
     remote_hashes = {name: hashlib.sha256((source_dir / name).read_bytes()).hexdigest()
                      for name in ['public_graph_runtime.py', 'answer_scoring.py',
-                                  'smoke_train_database.py', 'model_transport.py', 'attempt_budget.py']}
+                                  'smoke_train_database.py', 'model_transport.py', 'attempt_budget.py',
+                                  'schema_identity.py']}
     immutable_json(args.output / 'plan.json', {'kind': 'PUBLIC_DATA_ONLY_NO_MODEL_QUEUE',
                    'pid': os.getpid(), 'graphs': jobs, 'model_calls': 0,
                    'remote_module_hashes': remote_hashes,
+                   'recovery_reason': args.recovery_reason,
                    'source_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()})
     ssh = ['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=12', '-p', '2491',
            '-i', str(args.ssh_key), 'root@117.50.195.94']
@@ -53,8 +59,7 @@ def run(args):
                       'assert json.loads(Path(' + repr(REMOTE + '/execution_owner.json') +
                       ').read_text())["hostname"]==socket.gethostname()')
         owner_check = ' '.join(shlex.quote(x) for x in [REMOTE + '/.venv/bin/python', '-c', owner_code])
-        precheck = (owner_check + ' && test ! -e ' + shlex.quote(remote_graph) +
-                    ' && test ! -e ' + shlex.quote(remote_graph + '.partial') +
+        precheck = (owner_check + ' && test ! -e ' + shlex.quote(remote_graph + '.partial') +
                     ' && test ! -e ' + shlex.quote(output))
         try:
             hash_command = 'sha256sum ' + ' '.join(shlex.quote(REMOTE + '/public_runtime_v1_code/' + name)
@@ -65,9 +70,14 @@ def run(args):
             if actual_hashes != remote_hashes:
                 raise RuntimeError('Remote preflight source changed; do not run under stale freeze')
             subprocess.run(ssh + [precheck], check=True, capture_output=True)
+            source_exists = subprocess.run(ssh + ['test -e ' + shlex.quote(remote_graph)],
+                                           capture_output=True).returncode == 0
+            if source_exists and not args.reuse_verified_assets:
+                raise RuntimeError('Existing source requires documented verified reuse')
             with (stage / 'transfer.log').open('xb') as log:
-                subprocess.run(scp + [str(source), 'root@117.50.195.94:' + remote_graph + '.partial'],
-                               check=True, stdout=log, stderr=subprocess.STDOUT)
+                if not source_exists:
+                    subprocess.run(scp + [str(source), 'root@117.50.195.94:' + remote_graph + '.partial'],
+                                   check=True, stdout=log, stderr=subprocess.STDOUT)
                 subprocess.run(scp + [str(local_entry), 'root@117.50.195.94:' + remote_entry],
                                check=True, stdout=log, stderr=subprocess.STDOUT)
             promote_code = ('from pathlib import Path\nimport hashlib\n'
@@ -78,7 +88,14 @@ def run(args):
                 ' for b in iter(lambda:f.read(1048576),b""): h.update(b)\n'
                 'assert h.hexdigest()==' + repr(entry['lfs']['oid']) + '\np.rename(q)')
             promote = ' '.join(shlex.quote(x) for x in [REMOTE + '/.venv/bin/python', '-c', promote_code])
-            subprocess.run(ssh + [promote], check=True, capture_output=True)
+            if source_exists:
+                reused_hash = subprocess.check_output(ssh + ['sha256sum ' + shlex.quote(remote_graph)], text=True).split()[0]
+                if reused_hash != entry['lfs']['oid']:
+                    raise RuntimeError('Previously transferred graph is not the pinned asset')
+                immutable_json(stage / 'verified_source_reuse.json', {'sha256': reused_hash,
+                               'reason': args.recovery_reason, 'database_import_reused': False})
+            else:
+                subprocess.run(ssh + [promote], check=True, capture_output=True)
             command = ' '.join(shlex.quote(x) for x in [REMOTE + '/.venv/bin/python',
                        REMOTE + '/public_runtime_v1_code/public_graph_runtime.py', '--root', REMOTE,
                        '--graph', name, '--output', output])
@@ -107,4 +124,7 @@ if __name__ == '__main__':
     for field in ['metadata', 'data', 'output', 'ssh-key']:
         parser.add_argument('--' + field, type=Path, required=True)
     parser.add_argument('--skip-flight', action='store_true')
+    parser.add_argument('--start-at')
+    parser.add_argument('--reuse-verified-assets', action='store_true')
+    parser.add_argument('--recovery-reason')
     run(parser.parse_args())
