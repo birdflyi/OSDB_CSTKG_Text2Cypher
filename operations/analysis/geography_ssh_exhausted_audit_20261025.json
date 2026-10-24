@@ -1,0 +1,22 @@
+{
+  "time_local": "2026-10-25T07:00:37.092287+08:00",
+  "kind": "EXHAUSTED_SSH_CONNECT_AUDIT",
+  "qid": "8c848e89-3f3f-4198-9953-dccbe326fa4a",
+  "arm": "direct",
+  "graph": "geography",
+  "cached_model_output_usable": true,
+  "successful_model_budget_slot": 3266,
+  "physical_rpc_attempts": 3,
+  "failed_at": "SSH connect before authentication/request submission",
+  "journal_id": 12,
+  "native_request_file_absent": true,
+  "prior12_requests_have_receipts": true,
+  "native_query_dispatched": false,
+  "recovery_model_calls": 0,
+  "recovery_native_queries": 0,
+  "fourth_rpc_sent": false,
+  "raw_trace_preserved": true,
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "old_worker_closed_by_own_finally": true,
+  "manual_lock_unlink": false
+}
