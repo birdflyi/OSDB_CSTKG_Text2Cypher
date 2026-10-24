@@ -1,0 +1,23 @@
+{
+  "kind": "EXHAUSTED_TRANSPORT_FINALIZATION",
+  "time_local": "2026-10-25T05:29:49.255830+08:00",
+  "qid": "713e538e-8c46-4907-8cce-f2022389e195",
+  "arm": "ours",
+  "graph": "geography",
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "physical_budget_slots": [
+    3171,
+    3172,
+    3173
+  ],
+  "request_sha256": "f7b9030668daecbaa6066cdf51eaaef110bea54ecac4ea619027e430dbbb32ff",
+  "no_model_response_available": true,
+  "no_query_dispatched": true,
+  "fourth_attempt_sent": false,
+  "status": "INFRASTRUCTURE_ERROR",
+  "new_model_calls": 0,
+  "gold_read": false,
+  "protocol_basis": "Pre-frozen metrics: all tasks retained, infrastructure failures reported separately, not correct; same request max3 physical attempts.",
+  "original_wrapper_clock": "unknown",
+  "all_original_attempts_preserved": true
+}

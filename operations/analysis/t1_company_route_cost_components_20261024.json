@@ -1,0 +1,88 @@
+{
+  "kind": "COMPLETED_GRAPH_DESCRIPTIVE_ROUTE_AND_COST_COMPONENTS",
+  "timestamp_utc": "2026-10-24T21:27:37.955290+00:00",
+  "graph": "company",
+  "n": 347,
+  "observed_ours_routes": {
+    "entity_records": 55,
+    "native_selection": 290,
+    "UNSUPPORTED": 2
+  },
+  "executed_plan_control_comparison": {
+    "identical_intermediate_columns_rows": 345
+  },
+  "certified_disjoint_summary_executions": 0,
+  "per_arm": {
+    "direct": {
+      "n": 347,
+      "physical_model_attempts": 348,
+      "known_usage": {
+        "prompt_tokens": 346878,
+        "completion_tokens": 202811,
+        "total_tokens": 549689
+      },
+      "unknown_usage_attempts": 1,
+      "known_model_transport_seconds": 2317.586999999825,
+      "retry_wait_seconds": 10.015999999945052,
+      "known_wrapper_seconds_sum": 2682.7569999995176,
+      "known_wrapper_records": 346,
+      "unknown_wrapper_records": 1,
+      "database_trace_components": {
+        "primary": {
+          "completed_result_traces": 347,
+          "result_bytes": 2053773,
+          "explain_seconds": 16.278866097331047,
+          "db_seconds": 29.18514807894826,
+          "worker_roundtrip_seconds": 82.65599999995902,
+          "database_attempts_unknown_completion": 1
+        },
+        "shared_plan_full_detail_control": {}
+      }
+    },
+    "ours": {
+      "n": 347,
+      "physical_model_attempts": 352,
+      "known_usage": {
+        "prompt_tokens": 590910,
+        "completion_tokens": 382035,
+        "total_tokens": 972945
+      },
+      "unknown_usage_attempts": 0,
+      "known_model_transport_seconds": 3949.883000000729,
+      "retry_wait_seconds": 0.0,
+      "known_wrapper_seconds_sum": 4510.242999999202,
+      "known_wrapper_records": 345,
+      "unknown_wrapper_records": 2,
+      "database_trace_components": {
+        "primary": {
+          "completed_result_traces": 400,
+          "result_bytes": 7206868,
+          "explain_seconds": 16.936235815286636,
+          "db_seconds": 17.602970123291016,
+          "worker_roundtrip_seconds": 86.44799999915995,
+          "database_attempts_unknown_completion": 2
+        },
+        "shared_plan_full_detail_control": {
+          "completed_result_traces": 400,
+          "result_bytes": 7206868,
+          "explain_seconds": 1.455352544784546,
+          "db_seconds": 12.51910263672471,
+          "worker_roundtrip_seconds": 66.90500000130851
+        }
+      }
+    }
+  },
+  "physical_billed_model_attempts": 700,
+  "shared_plan_control_generations_are_reused": true,
+  "monetary_cost": "unknown",
+  "this_is_not_complete_T4_acceptance": true,
+  "caveats": [
+    "Observed routes reflect model-produced plans; they are not oracle task applicability labels.",
+    "A zero trigger count provides no empirical evidence of summary-selection savings on this graph.",
+    "Full-detail is always replayed after Ours; cache/order confound prevents a causal speed claim.",
+    "Wrapper sums omit explicitly counted unknown clocks; they are not complete E2E totals.",
+    "Candidate index/lookup, startup, outage and infrastructure costs require the full cost ledger.",
+    "Failed and replayed database attempts remain included in available traces; unknown completions stay unknown.",
+    "No method changes or new model/database calls were performed."
+  ]
+}

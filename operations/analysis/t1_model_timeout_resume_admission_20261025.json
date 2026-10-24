@@ -1,0 +1,22 @@
+{
+  "time_local": "2026-10-25T05:30:33.729967+08:00",
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "method_prompt_model_score_changes": false,
+  "frozen_source_files_verified": 32,
+  "previous_batch_preserved": true,
+  "three_failed_attempts_retained": true,
+  "failed_request_fourth_attempt": false,
+  "exhausted_request_status": "INFRASTRUCTURE_ERROR",
+  "all_task_denominator_unchanged": true,
+  "bounded_probe_physical_attempts": 1,
+  "probe_result_sha256": "3affec29e82f2caba3a695d9c02359e28c57e26ecc6a5e14ed7c7803716dfd23",
+  "old_remote_session_closed_by_own_finally": true,
+  "idle_session_close_sha256": "c56e0f2cd8f451fe52b28431507b1f2e0e78343900263b911fb03746f9c8298d",
+  "queue_adapter": "core_journal_resume_v2.py",
+  "queue_adapter_sha256": "d831b7f940c1088441755e38f2aca378f5beddeb0d3c3f3f05a39ef1280b9624",
+  "native_and_journal_transport_code_unchanged": true,
+  "resume_scope": "Next uncompleted tasks only, geography then movie then politics",
+  "queue_id": "infra_journal_after_timeout_queue_v2_20261025",
+  "segment": "journal_after_model_timeout_v2",
+  "notes": "Adapter differs only receipt directories and clear RPC versus queue retry metadata. No new method or benchmark variant. Failed task remains zero EX as infrastructure failure, not missing or unsupported."
+}

@@ -1,0 +1,7 @@
+{
+  "time_local": "2026-10-25T05:29:12.684878+08:00",
+  "returncode": 0,
+  "stdout": "{\"state\": \"VERIFIED_IDLE_STOPPED_SESSION\", \"requests\": 689, \"pending\": [], \"owner\": {\"graph\": \"geography\", \"hostname\": \"interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj\", \"pid\": 215610}}\n{\"state\": \"OWN_FINALLY_CLOSED\", \"receipt\": {\"native_pid\": 215611, \"returncode\": 0}, \"manual_lock_unlink\": false, \"model_calls\": 0}\n",
+  "stderr": "",
+  "model_calls": 0
+}
