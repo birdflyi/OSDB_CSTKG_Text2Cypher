@@ -1,0 +1,249 @@
+{
+  "kind": "TEXT2GQL_DRIVER_CONTRACT_PREPARATION_NOT_BENCHMARK_RESULTS",
+  "time_local": "2026-10-26T02:29:37.634025+08:00",
+  "requested_repository": "TuGraph-family/text2graphquery-driver",
+  "canonical_repository": "ldbc/Text2GraphQuery-Driver",
+  "repository_id": 1097978652,
+  "commit": "ab296fab179e806cd3ad2e659e9f5dc61bd1af3e",
+  "paper_reported_driver_version_established": false,
+  "complete_repository_entrypoint_audit": false,
+  "source_receipts": [
+    {
+      "path": "README.md",
+      "git_blob_sha": "55f86f7ccca1a42df958ffb368bdef3ba420a9e9",
+      "sha256": "ea8db88a39993abb75f53955950f3cb335b35aff23628b13d3af9a94a5def8cc",
+      "bytes": 8156,
+      "url": "https://raw.githubusercontent.com/ldbc/Text2GraphQuery-Driver/ab296fab179e806cd3ad2e659e9f5dc61bd1af3e/README.md"
+    },
+    {
+      "path": "contrib/standalone_text2graph_scripts/reference/ea_cypher.py",
+      "git_blob_sha": "3de362bb48e69973589056406e9557ba0d6dd968",
+      "sha256": "f88f10991941002a9a2fd9f3b8bdb49a2751705331fe717ee9fe5f5e9d59ced8",
+      "bytes": 13121,
+      "url": "https://raw.githubusercontent.com/ldbc/Text2GraphQuery-Driver/ab296fab179e806cd3ad2e659e9f5dc61bd1af3e/contrib/standalone_text2graph_scripts/reference/ea_cypher.py"
+    },
+    {
+      "path": "driver/evaluation.py",
+      "git_blob_sha": "dd87f22a10c856e05bd236d8d536cca7bc6127f9",
+      "sha256": "862d266a4b90d7bcf39d1a75d7f92cd79d26ebd8f87e2fbee7aec181e4775047",
+      "bytes": 730,
+      "url": "https://raw.githubusercontent.com/ldbc/Text2GraphQuery-Driver/ab296fab179e806cd3ad2e659e9f5dc61bd1af3e/driver/evaluation.py"
+    },
+    {
+      "path": "impl/db_driver/spanner_driver.py",
+      "git_blob_sha": "0593df0a792e88b5eae4fc23658e47cf12649faf",
+      "sha256": "9be10c3a9807ec84f534b31be1eac6dd878e59ac189b754aadb919fb926d0d47",
+      "bytes": 1266,
+      "url": "https://raw.githubusercontent.com/ldbc/Text2GraphQuery-Driver/ab296fab179e806cd3ad2e659e9f5dc61bd1af3e/impl/db_driver/spanner_driver.py"
+    },
+    {
+      "path": "impl/db_driver/sqlite_driver.py",
+      "git_blob_sha": "15426d2eb9fc7c44fe9c67e6b4020085a273e835",
+      "sha256": "69fc2147667801037568cd2d3cec11f0eefb9b2e990eb6ee672e2956a13b639d",
+      "bytes": 1134,
+      "url": "https://raw.githubusercontent.com/ldbc/Text2GraphQuery-Driver/ab296fab179e806cd3ad2e659e9f5dc61bd1af3e/impl/db_driver/sqlite_driver.py"
+    },
+    {
+      "path": "impl/db_driver/tugraph_driver.py",
+      "git_blob_sha": "de910a47017756d34abb56f59c559ee9c2797e09",
+      "sha256": "4329310e0ccf4d6a081639d1add94ada12288a90f2f27e2afe6454806a45e65a",
+      "bytes": 1230,
+      "url": "https://raw.githubusercontent.com/ldbc/Text2GraphQuery-Driver/ab296fab179e806cd3ad2e659e9f5dc61bd1af3e/impl/db_driver/tugraph_driver.py"
+    },
+    {
+      "path": "impl/evaluation/__init__.py",
+      "git_blob_sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "url": "https://raw.githubusercontent.com/ldbc/Text2GraphQuery-Driver/ab296fab179e806cd3ad2e659e9f5dc61bd1af3e/impl/evaluation/__init__.py"
+    },
+    {
+      "path": "impl/evaluation/metrics.py",
+      "git_blob_sha": "505e3f7fb2b058247465ef498d92ad3b3d632160",
+      "sha256": "e7d388caec60deff459fa887919c657270f10585a241efc9a70cd3ae6b4436c8",
+      "bytes": 8254,
+      "url": "https://raw.githubusercontent.com/ldbc/Text2GraphQuery-Driver/ab296fab179e806cd3ad2e659e9f5dc61bd1af3e/impl/evaluation/metrics.py"
+    },
+    {
+      "path": "requirements.txt",
+      "git_blob_sha": "6c7d8d3e5b011140284d01f28519b9897be88a3d",
+      "sha256": "588468fc451790193b74dd0341a7de16734627ed00d3ff6f7602434b941ef84d",
+      "bytes": 196,
+      "url": "https://raw.githubusercontent.com/ldbc/Text2GraphQuery-Driver/ab296fab179e806cd3ad2e659e9f5dc61bd1af3e/requirements.txt"
+    },
+    {
+      "path": "run_pipeline.py",
+      "git_blob_sha": "17b2f8b2fe653f3ec2ff147649d517d292f36b6a",
+      "sha256": "43b24237c72f21799ef09fc58852d5f4ec762a04ddf982efd7a746d5139cef26",
+      "bytes": 8927,
+      "url": "https://raw.githubusercontent.com/ldbc/Text2GraphQuery-Driver/ab296fab179e806cd3ad2e659e9f5dc61bd1af3e/run_pipeline.py"
+    }
+  ],
+  "conformance": {
+    "kind": "PINNED_AUTHOR_SCORING_CONFORMANCE_NOT_BENCHMARK_RESULTS",
+    "time_local": "2026-10-26T02:29:37.154401+08:00",
+    "repository": "ldbc/Text2GraphQuery-Driver",
+    "commit": "ab296fab179e806cd3ad2e659e9f5dc61bd1af3e",
+    "executed_author_subset": true,
+    "full_author_pipeline_executed": false,
+    "author_imports_or_recovery_executed": false,
+    "new_model_calls": 0,
+    "new_database_queries": 0,
+    "source_methods": {
+      "oop": [
+        {
+          "method": "__init__",
+          "line": 14,
+          "end_line": 15
+        },
+        {
+          "method": "_normalize",
+          "line": 17,
+          "end_line": 30
+        },
+        {
+          "method": "_compare_results",
+          "line": 32,
+          "end_line": 43
+        },
+        {
+          "method": "compute",
+          "line": 45,
+          "end_line": 60
+        }
+      ],
+      "standalone_reference": [
+        {
+          "method": "compare_results",
+          "line": 212,
+          "end_line": 229
+        }
+      ]
+    },
+    "source_sha256": {
+      "oop": "e7d388caec60deff459fa887919c657270f10585a241efc9a70cd3ae6b4436c8",
+      "standalone_reference": "f88f10991941002a9a2fd9f3b8bdb49a2751705331fe717ee9fe5f5e9d59ced8",
+      "pipeline": "43b24237c72f21799ef09fc58852d5f4ec762a04ddf982efd7a746d5139cef26"
+    },
+    "synthetic_checks": [
+      {
+        "case": "unordered_row_permutation",
+        "oop": true,
+        "standalone_reference": true
+      },
+      {
+        "case": "duplicate_multiplicity",
+        "oop": false,
+        "standalone_reference": true
+      },
+      {
+        "case": "ordered_row_permutation",
+        "oop": false,
+        "standalone_reference": true
+      },
+      {
+        "case": "ordering_marker_removed",
+        "oop": true,
+        "standalone_reference": true
+      },
+      {
+        "case": "order_by_inside_string",
+        "oop": false,
+        "standalone_reference": true
+      },
+      {
+        "case": "nine_decimal_rounding",
+        "oop": true,
+        "standalone_reference": true
+      },
+      {
+        "case": "boolean_integer_python_equality",
+        "oop": true,
+        "standalone_reference": true
+      },
+      {
+        "case": "empty_results",
+        "oop": true,
+        "standalone_reference": true
+      },
+      {
+        "case": "batch_average",
+        "observed": 0.5
+      },
+      {
+        "case": "unequal_input_lengths_zip_truncates",
+        "observed_score": 1.0,
+        "paired_examples_evaluated": 1,
+        "declared_gold_examples": 2,
+        "default_database": "default"
+      },
+      {
+        "case": "error_vs_valid_empty_and_explicit_database",
+        "observed_score": 0.5
+      }
+    ],
+    "checks_passed": 11,
+    "static_per_record_ea_assignments": [
+      {
+        "line": 189,
+        "value_variable": "ea"
+      }
+    ],
+    "formal_scoring_contract_frozen": false,
+    "actual_reference_answers_verified": false,
+    "limits": [
+      "Fabricated rows and stub query responses only, no actual database semantics verified.",
+      "Current pinned driver implementations differ; paper-reported version not established.",
+      "Nine-decimal normalization is a contract, not automatically a defect.",
+      "Ordering detection is a query-text heuristic; dataset impact remains unmeasured.",
+      "Do not change the already completed CypherBench metric or use these checks as EX gains."
+    ]
+  },
+  "static_findings": {
+    "standalone_gold_error_score": -1,
+    "standalone_excludes_gold_error_from_evaluated_count": true,
+    "standalone_valid_ids_filter_optional": true,
+    "oop_pipeline_batch_average_copied_into_records": true,
+    "oop_pipeline_omits_db_id_argument": true,
+    "dataset_impact_measured": false
+  },
+  "environment_observation": {
+    "time_local": "2026-10-26T02:23:23.709083+08:00",
+    "owner_hostname_match": true,
+    "runtime_lock_present": false,
+    "arch": "x86_64",
+    "available_commands": {
+      "docker": null,
+      "podman": null,
+      "lgraph_server": null,
+      "lgraph_import": null,
+      "python3": "/usr/bin/python3"
+    },
+    "path_absence_is_not_whole_host_absence": true,
+    "shared_free_space_is_not_user_quota_proof": true,
+    "files_written_remote": 0,
+    "gpu_or_service_changes": 0
+  },
+  "budget": {
+    "reserved": 5192,
+    "cap": 12000,
+    "remaining": 6808,
+    "pending": [],
+    "current_reservation_file_count": 5192
+  },
+  "formal_prediction_admitted": false,
+  "formal_metric_frozen": false,
+  "native_engine_deployed": false,
+  "actual_gold_answers_verified": false,
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "original_cypherbench_results_unchanged": true,
+  "entire_T1_complete": false,
+  "next_gates": [
+    "Establish author entrypoint/version and native engine/import contract",
+    "Private-prefix CPU preparation with owner/lock/process/port/quota checks; preserve existing services",
+    "Verify actual graph identity/types/edges and per-question reference executions",
+    "Freeze full denominator, author-compatible scoring and separately named semantic diagnostics before any predictions",
+    "Admit generic adaptation, inputs, task exposure, fair inference and separately scoped model budget"
+  ]
+}
