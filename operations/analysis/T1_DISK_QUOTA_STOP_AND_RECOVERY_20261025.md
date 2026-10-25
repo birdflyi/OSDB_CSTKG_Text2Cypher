@@ -10,7 +10,7 @@
 | 核心比较 | 计划 4,696；已派发并终结 3,092；尚未派发 1,604。movie、politics 均未派发 |
 | 预算 | 累计 3,566／12,000；剩余 8,434；pending=0。原始账本不变 |
 | 未完成生成 | 没有缺少 record 的模型 intent；下一题的候选上下文尚未创建 |
-| 中断位置 | journal id 634；日志最后成功 id 633。远程出现 3 个零字节 request 临时文件；未见 id 634 正式 request／dispatch／result／receipt。最终按完整 journal 清单复核 |
+| 中断位置 | journal id 634；日志最后成功 id 633。全量证据复核通过：634 组已发布请求（id 0–633）均有匹配 dispatch／result／receipt，每组 native_writes=1。id 634 只有 3 个零字节临时文件，没有正式 request／dispatch／result／receipt，未执行该候选请求 |
 | 原进程 | daemon 296235、native 296237、Java 296255 均不存在；未发现其他该实验 worker；17688 端口未监听 |
 | 当前写入检查 | 在授权根目录一次写入 64 KiB、fsync、读回一致，通过；仅删除了此次检查自身的临时文件。这个小检查不证明后续大规模写入一直有空间 |
 | 失效锁 | `.public-runtime.lock` 仍存在，69 字节，内容指向已退出的 native 296237／geography |
@@ -37,7 +37,7 @@
 - 同目录 `quota_owner_detail.json`：Ceph 属性与原锁内容。该次广义进程字符串匹配包含检查进程自身；不能据此认定有 worker 存活。
 - 同目录 `storage_health_and_stale_lock.json`：排除检查进程自身后的精确 worker 检查、原三个 PID、端口、锁 SHA、小文件写入检查。
 - 同目录 `local_unfinished_audit.json`：原预算和未派发题检查。
-- 同目录 `session_evidence/`：只读下载原 journal；下载完成清单另存，期间不删除远程证据。
+- 同目录 `session_evidence/`：已完成只读下载并核验 2,547 份原文件；远程证据不删除。`session_download_manifest.json` SHA-256：0733e38edcd94591f48a9a2f942f5f3d5be8b85d7beca7a0b25e1358a10d2398；`journal_evidence_acceptance.json` 为完整配对复核结果。
 - `D:/ch7/reports/t1_core_integrity_cost_live_20261024.json`：全量进度及已完成四图成绩。
 
 整张 T1 未完成。geography 尚无整图成绩；不报告局部 EX 或全 2,348 题结论。

@@ -1,0 +1,32 @@
+{
+  "kind": "QUIESCENT_QUOTA_STOP_JOURNAL_AUDIT",
+  "time_local": "2026-10-25T15:17:17.502528+08:00",
+  "files_downloaded_and_local_hash_verified": 2547,
+  "manifest_sha256": "0733e38edcd94591f48a9a2f942f5f3d5be8b85d7beca7a0b25e1358a10d2398",
+  "request_indices": {
+    "first": 0,
+    "last": 633,
+    "count": 634
+  },
+  "all_published_requests_have_matching_dispatch_result_receipt": true,
+  "all_receipts_native_writes_one": true,
+  "failed_id634_published_request_dispatch_result_receipt_absent": true,
+  "id634_tempfiles": [
+    {
+      "name": "000634.request.json.tmp.311908",
+      "bytes": 0
+    },
+    {
+      "name": "000634.request.json.tmp.311919",
+      "bytes": 0
+    },
+    {
+      "name": "000634.request.json.tmp.311924",
+      "bytes": 0
+    }
+  ],
+  "new_model_calls": 0,
+  "new_native_queries": 0,
+  "remote_files_deleted_or_moved": 0,
+  "stale_lock_untouched": true
+}
