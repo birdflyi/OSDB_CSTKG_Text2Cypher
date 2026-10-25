@@ -1,0 +1,17 @@
+{
+  "kind": "ORIGINAL_FROZEN_GIT_BUNDLE_LOCAL_CHECK",
+  "time_local": "2026-10-25T12:17:02.723719+08:00",
+  "pass": true,
+  "commit": "c6143670a9949ec3b366ef513291740d1b8c4134",
+  "complete_git_history": true,
+  "bundle_bytes": 2102796,
+  "bundle_sha256": "1494b9aab295b7689ffc9e4e63c83ffe5139e6c3bcf6732e243c5db22a6466e0",
+  "local_clone_clean": true,
+  "all_32_frozen_source_hashes_match": true,
+  "git_blobs_match_frozen_bytes_without_newline_conversion": 32,
+  "clone_core_autocrlf": false,
+  "uploaded": false,
+  "actual_linux_checkout_verified": false,
+  "new_model_calls": 0,
+  "original_source_modified": false
+}

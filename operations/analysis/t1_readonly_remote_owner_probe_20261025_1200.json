@@ -1,0 +1,19 @@
+{
+  "kind": "SINGLE_READONLY_AUTHORIZED_REMOTE_OWNER_PROBE",
+  "time_local": "2026-10-25T12:15:09.083646+08:00",
+  "attempts": 1,
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "remote_files_written": 0,
+  "queue_started": false,
+  "retry": false,
+  "model_service_health_tested": false,
+  "pass_owner_check": true,
+  "observation": {
+    "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+    "owner_hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+    "public_runtime_lock_present": false,
+    "matching_workers": []
+  },
+  "seconds": 0.531
+}

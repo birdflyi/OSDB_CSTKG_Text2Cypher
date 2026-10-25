@@ -1,0 +1,57 @@
+{
+  "kind": "DRAFT_FULL_HISTORY_PORTABILITY_AND_MIRROR_PREPARATION",
+  "time_local": "2026-10-25T12:22:38.952017+08:00",
+  "pass": true,
+  "original_budget_counter_reused": true,
+  "new_fragment_counter_used": false,
+  "snapshot": {
+    "reserved": 3266,
+    "cap": 12000,
+    "remaining": 8734,
+    "pending": []
+  },
+  "source_unchanged": true,
+  "real_execution_lease_created": false,
+  "source_request_and_terminal_hashes_verified_twice": true,
+  "existing_draft_revalidated_without_overwriting_raw_evidence": true,
+  "copied_files": 9799,
+  "archive_files": 9800,
+  "archive_bytes": 14940350,
+  "archive_sha256": "e30884a58f09de8613d3327a2603fd91b936c7174af2240a82326806e7b687f1",
+  "manifest_sha256": "fe58fdbb385d2b99be299582d7e0a8ad51e163d375396a07aded1167ddc4d30e",
+  "tests_run": 10,
+  "test_names": [
+    "test_altered_delta_slot_rejected_before_append",
+    "test_complete_mirror_idempotent_and_cap_still_cumulative",
+    "test_historical_missing_evidence_is_not_an_empty_new_budget",
+    "test_legacy_c_drive_paths_translate_without_modifying_slots",
+    "test_long_windows_destination_rejected_before_copy",
+    "test_mirror_conflict_preserves_existing_bytes",
+    "test_missing_transferred_terminal_blocks_before_slot_copy",
+    "test_nested_historical_directories_use_longest_prefix_first",
+    "test_pending_source_is_not_mirrored_or_resent",
+    "test_raw_historical_slots_and_counter_are_preserved"
+  ],
+  "all_archive_crc_and_each_sha_verified": true,
+  "frozen_source_hashes_pass": 32,
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "experiment_network_requests": 0,
+  "uploaded": false,
+  "execution_authority": false,
+  "formal_prediction_admitted": false,
+  "limitations": [
+    "Draft double-checked snapshot is not a fenced authority handover",
+    "Mirror fault checks used isolated local files, not a live remote server",
+    "New request paths need most-specific native/remote root mapping before historical drive mapping",
+    "Mirror mapping stays in analysis/adapters; stored historical/new records are never rewritten",
+    "Native IPC and actual source checkout/server owner/model/graph cutover gates remain"
+  ],
+  "candidate_sha256": {
+    "portable_attempt_history.py": "6e40a63b4ddfac57da9dc012b44dfe176555363b33ca8f670800946cf7668459",
+    "test_portable_attempt_history.py": "834ecc106fc19646fddfd25ebd158c4b347810bf5922c838fda1e7efb32a29f8"
+  },
+  "current_api_key_absence_checked": true,
+  "private_model_configuration_copied": false,
+  "SSH_private_key_read_or_copied": false
+}
