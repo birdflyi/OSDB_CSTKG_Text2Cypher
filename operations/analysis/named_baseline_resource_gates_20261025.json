@@ -1,0 +1,263 @@
+{
+  "kind": "NAMED_BASELINE_RESOURCE_IDENTITY_GATE_AUDIT",
+  "sources": [
+    {
+      "name": "openreview_note",
+      "url": "https://api2.openreview.net/notes?id=4zhhgKkVzY",
+      "time_local": "2026-10-25T19:08:52.968410+08:00",
+      "http_error": 403
+    },
+    {
+      "name": "hf_readme",
+      "url": "https://huggingface.co/Anonymous234/Cypher-RI/raw/34ca521/README.md",
+      "time_local": "2026-10-25T19:08:53.918739+08:00",
+      "status": 200,
+      "final_url": "https://huggingface.co/Anonymous234/Cypher-RI/raw/34ca521/README.md",
+      "bytes": 31,
+      "sha256": "4bcf87ecfbbb8e07a01b21415a970c8b53a5283bf6872b657040d3f45c9241f7",
+      "readme_text": "---\r\nlicense: apache-2.0\r\n---\r\n"
+    },
+    {
+      "name": "pypi_metadata",
+      "url": "https://pypi.org/pypi/cyphersmith/json",
+      "time_local": "2026-10-25T19:08:54.719706+08:00",
+      "status": 200,
+      "final_url": "https://pypi.org/pypi/cyphersmith/json",
+      "bytes": 11741,
+      "sha256": "742f12a50fc2cdc3cdd5a0c7ccfb01d47fcf3bf0d1ffd3fa18c8062984275df5",
+      "metadata": {
+        "name": "cyphersmith",
+        "version": "0.2.0",
+        "author": "Aswin K V",
+        "author_email": null,
+        "project_urls": {
+          "Homepage": "https://github.com/Aswin-K-V/Neo4j-Cypher-generator",
+          "Issues": "https://github.com/Aswin-K-V/Neo4j-Cypher-generator/issues",
+          "Repository": "https://github.com/Aswin-K-V/Neo4j-Cypher-generator"
+        }
+      }
+    },
+    {
+      "name": "author_publications",
+      "url": "https://yangy.org/",
+      "time_local": "2026-10-25T19:08:55.423035+08:00",
+      "status": 200,
+      "final_url": "https://yangy.org/",
+      "bytes": 128789,
+      "sha256": "1a378f76c92e886796f172c8ed676384383e43f1fb4a274de37e98549e43acf4"
+    }
+  ],
+  "cyquark": {
+    "repo": "interact-erc/Text-To-Cypher-knowledge-graph-data-generation",
+    "commit": "013eab46e71aa1b5cfbd3ed91a44c030b17931ea",
+    "time_local": "2026-10-25T19:09:23.429397+08:00",
+    "files": [
+      "README.md",
+      "config/config.yaml",
+      "cypher-gen/decompose_queries.py",
+      "cypher-gen/filter.py",
+      "cypher-gen/generate_batch.py",
+      "cypher-gen/graph.py",
+      "cypher-gen/grounder.py",
+      "cypher-gen/nl_provider.py",
+      "cypher-gen/pattern_generator.py",
+      "cypher-gen/query.py",
+      "cypher-gen/query_writer.py",
+      "cypher-gen/utils.py",
+      "docs/ConfigParameters.md",
+      "docs/Example.md",
+      "docs/Method.md",
+      "docs/Schema.md",
+      "docs/SupportedFeatures.md",
+      "docs/imgs/config_1.png",
+      "docs/imgs/config_2.png",
+      "docs/imgs/config_3.png",
+      "docs/imgs/pattern_1.png",
+      "docs/imgs/pattern_2.png",
+      "docs/imgs/pattern_3.png",
+      "docs/imgs/protonl.png",
+      "docs/imgs/schema_classes.png",
+      "docs/imgs/schema_empty.png",
+      "docs/imgs/schema_filled.png",
+      "docs/imgs/schema_properties.png",
+      "docs/imgs/schema_relations.png",
+      "docs/parameters.md",
+      "requirements.txt",
+      "schema_utils/create_advanced_spot_cypher_schema_from_graph.py",
+      "templates/prompt_filtering.txt",
+      "templates/prompt_paraphrasing.txt",
+      "templates/template_schema.json"
+    ],
+    "weight_file_candidates": [],
+    "training_or_inference_filename_candidates": [],
+    "file_count": 35,
+    "no_author_code_executed": true,
+    "downloaded_documents": [
+      {
+        "path": "README.md",
+        "local": "cyquark_doc_0.response",
+        "sha256": "75ef8358265e0ca8dce9dddfc9ff6b9af1d421c843d3f27bca9ad8cb5c3adaf5",
+        "bytes": 3386
+      },
+      {
+        "path": "docs/ConfigParameters.md",
+        "local": "cyquark_doc_1.response",
+        "sha256": "7676a4233e0d9a9d01e6f1a493ea8b32ccdb79e9a156a67ef346ccf5f0eca48b",
+        "bytes": 23733
+      },
+      {
+        "path": "docs/Example.md",
+        "local": "cyquark_doc_2.response",
+        "sha256": "bc425f12871aaa9b19368ba597691dc823c3dd2045375ae25a36852199212848",
+        "bytes": 4019
+      },
+      {
+        "path": "docs/Method.md",
+        "local": "cyquark_doc_3.response",
+        "sha256": "145709463d99dfcd9fc141a4ba4e502c85df399eee924e956783ffd5257197dd",
+        "bytes": 2781
+      },
+      {
+        "path": "docs/Schema.md",
+        "local": "cyquark_doc_4.response",
+        "sha256": "f6cdd6aa0ce752daffb5316b652ed08c7266d477318f5a47dc3b77c8677fe1cb",
+        "bytes": 4242
+      },
+      {
+        "path": "docs/SupportedFeatures.md",
+        "local": "cyquark_doc_5.response",
+        "sha256": "8e1bac0d79d28dfe60e3d24a10cb334a2318f66e0366bff52a559dfcb13855e8",
+        "bytes": 9177
+      },
+      {
+        "path": "docs/imgs/config_1.png",
+        "local": "cyquark_doc_6.response",
+        "sha256": "e14c99dc8c9687a72ec521205073275cd9f76dddaf186bcdd8e31fc0af1b8b8e",
+        "bytes": 50893
+      },
+      {
+        "path": "docs/imgs/config_2.png",
+        "local": "cyquark_doc_7.response",
+        "sha256": "334151096a4adde9d3ec0cfa9f7824de8800bf4a58944d220e7f8021a85b86df",
+        "bytes": 30030
+      },
+      {
+        "path": "docs/imgs/config_3.png",
+        "local": "cyquark_doc_8.response",
+        "sha256": "1230f9fb4c43fbfdffa9ca58bcb4188fdc78935add3c929785dc5c06fb66b924",
+        "bytes": 50050
+      },
+      {
+        "path": "docs/imgs/pattern_1.png",
+        "local": "cyquark_doc_9.response",
+        "sha256": "d7d2f0b8ab35604699e90379dace0a069f69380ac6f573438af4acd6f9e57688",
+        "bytes": 40274
+      },
+      {
+        "path": "docs/imgs/pattern_2.png",
+        "local": "cyquark_doc_10.response",
+        "sha256": "6b09a9f18c3045d43971511b7b9dff8897d1b652a21f1b5e16c38f960483564f",
+        "bytes": 85260
+      },
+      {
+        "path": "docs/imgs/pattern_3.png",
+        "local": "cyquark_doc_11.response",
+        "sha256": "f0976f1f441bb1d59cc6978587ddf28a50e7d224c1d535bba49eb5bf9b7ebea1",
+        "bytes": 85440
+      },
+      {
+        "path": "docs/imgs/protonl.png",
+        "local": "cyquark_doc_12.response",
+        "sha256": "dd52b3b1b39f6b11a1e479e6f83b142feb8db9e2d76e3aaed9a01ac181c761b9",
+        "bytes": 201719
+      },
+      {
+        "path": "docs/imgs/schema_classes.png",
+        "local": "cyquark_doc_13.response",
+        "sha256": "d7c1b61884af95c096e943950b898d2795def628112c344125fab33e12bf4133",
+        "bytes": 29641
+      },
+      {
+        "path": "docs/imgs/schema_empty.png",
+        "local": "cyquark_doc_14.response",
+        "sha256": "ff85e2eefff59850e2a958cef00a6d7ae4f72a75de09ae975d9fa3e24ca288ff",
+        "bytes": 62876
+      },
+      {
+        "path": "docs/imgs/schema_filled.png",
+        "local": "cyquark_doc_15.response",
+        "sha256": "39c7179ddb5b87b868d06918a17228d3499a9c0264c09daf9b344e14bc87b853",
+        "bytes": 103639
+      },
+      {
+        "path": "docs/imgs/schema_properties.png",
+        "local": "cyquark_doc_16.response",
+        "sha256": "4bbde084567c9e0e09eecd7ac41e5cbca81b5bb4b7c6b9c2d45509d761d5f4d6",
+        "bytes": 96752
+      },
+      {
+        "path": "docs/imgs/schema_relations.png",
+        "local": "cyquark_doc_17.response",
+        "sha256": "3b239755afc2383d5d23147516d2be0182a978b5dc572466b9df9b5f9963fb67",
+        "bytes": 65435
+      },
+      {
+        "path": "docs/parameters.md",
+        "local": "cyquark_doc_18.response",
+        "sha256": "1896eaa491bf7579747d87463f275fd8fcb4f84a8240143932803e4c164f7a9b",
+        "bytes": 17350
+      },
+      {
+        "path": "requirements.txt",
+        "local": "cyquark_doc_19.response",
+        "sha256": "e31b288d6e0519cbcce73f69324f86a3d0cd49086eca0c33511e169fd4e83928",
+        "bytes": 103
+      }
+    ],
+    "all_downloaded_assets_match_pinned_git_blob": true,
+    "text_document_external_links": [
+      {
+        "path": "README.md",
+        "external_urls": [
+          "https://aclanthology.org/2025.findings-acl.524/",
+          "https://aclanthology.org/2025.findings-acl.524/\",",
+          "https://arxiv.org/abs/2606.14325",
+          "https://arxiv.org/abs/2606.14325},"
+        ]
+      },
+      {
+        "path": "docs/ConfigParameters.md",
+        "external_urls": []
+      },
+      {
+        "path": "docs/Example.md",
+        "external_urls": []
+      },
+      {
+        "path": "docs/Method.md",
+        "external_urls": []
+      },
+      {
+        "path": "docs/Schema.md",
+        "external_urls": []
+      },
+      {
+        "path": "docs/SupportedFeatures.md",
+        "external_urls": []
+      },
+      {
+        "path": "docs/parameters.md",
+        "external_urls": []
+      },
+      {
+        "path": "requirements.txt",
+        "external_urls": []
+      }
+    ]
+  },
+  "author_identity_of_anonymous_model_confirmed": false,
+  "pypi_package_not_accepted_as_acl_paper_implementation": true,
+  "new_model_calls": 0,
+  "prediction_admitted": false,
+  "all_methods_preserved_as_pending": true
+}
