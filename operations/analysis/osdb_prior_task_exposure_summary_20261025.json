@@ -1,0 +1,596 @@
+{
+  "kind": "SCOPED_HISTORICAL_OSDB_TASK_EXPOSURE_INVENTORY",
+  "time_local": "2026-10-25T18:15:05.816369+08:00",
+  "scope": [
+    "e5_tasks",
+    "e6_tasks",
+    "e7_blind_intake_v1/tasks",
+    "e7_grounded_tasks_v1",
+    "e7_source_tasks_v1",
+    "e8_known_goal_transfer_v1"
+  ],
+  "task_packages": 18,
+  "task_positions": 167,
+  "positions_with_historical_records": 99,
+  "projects": {
+    "duckdb": {
+      "task_positions": 49,
+      "strata": [
+        "e5_tasks",
+        "e6_tasks",
+        "e7_blind_intake_v1/tasks",
+        "e7_grounded_tasks_v1",
+        "e7_source_tasks_v1"
+      ],
+      "positions_with_historical_records": 35
+    },
+    "redis": {
+      "task_positions": 49,
+      "strata": [
+        "e5_tasks",
+        "e6_tasks",
+        "e7_blind_intake_v1/tasks",
+        "e7_grounded_tasks_v1",
+        "e7_source_tasks_v1"
+      ],
+      "positions_with_historical_records": 32
+    },
+    "elasticsearch": {
+      "task_positions": 34,
+      "strata": [
+        "e7_blind_intake_v1/tasks",
+        "e7_grounded_tasks_v1",
+        "e7_source_tasks_v1",
+        "e8_known_goal_transfer_v1"
+      ],
+      "positions_with_historical_records": 14
+    },
+    "iotdb": {
+      "task_positions": 35,
+      "strata": [
+        "e7_blind_intake_v1/tasks",
+        "e7_grounded_tasks_v1",
+        "e7_source_tasks_v1",
+        "e8_known_goal_transfer_v1"
+      ],
+      "positions_with_historical_records": 18
+    }
+  },
+  "historical_inputs_stable_during_audit": true,
+  "prediction_admitted": false,
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "limits": [
+    "Scoped six historical strata, not exhaustive project/session exposure history.",
+    "Task positions and repeated variants are not independent task counts.",
+    "Record presence does not establish successful model inference or answer correctness.",
+    "Missing records do not establish unseen task, model non-exposure, or valid independence.",
+    "Exact question duplicates do not establish semantic equivalence or leakage.",
+    "Source hashes are historical declarations; graph/source bytes not reverified here.",
+    "No prior task is newly admitted to the independent T1 denominator by this inventory.",
+    "No scoring, raw question/answer publication, old queue restart, or budget scope change."
+  ],
+  "full_local_report_sha256": "a9f91610392dec0b82100fd3bdd63d0684635e6b7982c3db6c9a01916fd07db7",
+  "same_project_exact_question_repeated_keys": 28,
+  "inventory": [
+    {
+      "stratum": "e5_tasks",
+      "project": "duckdb",
+      "mode": "E5_DEVELOPMENT_ONLY",
+      "task_count": 14,
+      "manifest_path": "e5_tasks\\duckdb\\manifest.json",
+      "manifest_sha256": "fe71c2c9155532dca6b56f7deb03d2be90a7163bca786f6d524f7d3aae424376",
+      "specification_sha256": "2979b7dc8c75b622dc8b8863f72e79b6f3c2c784608e737146860b9a4560cb8c",
+      "schema_sha256": "f7bbd36b396fc875451161d1c29f2012a19e2839281d3c5759037460f6db0e41",
+      "source_hashes_declared": {
+        "nodes.csv": "dd20114217334c157f251631d8f7340b443c94806d57f9a4cfd9490a50753518",
+        "edges.csv": "d71c29c7dd8ecbd28a1bec93d16b53ed60bf28fd5db76e01c81dfd7d7d07c845"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 14,
+      "matched_historical_runs": [
+        {
+          "run": "e5_duckdb_v1",
+          "manifest_sha256": "04520b61f2c04fd1a84c80db875c7543a72843c86cabbbdd3c044af91b5d5790",
+          "record_count_by_arm": {
+            "P0": 14,
+            "P1": 14,
+            "S0": 14,
+            "S1": 14
+          }
+        }
+      ],
+      "original_limit_statement": "First canonical request in each of six existing E1 families; all six E3 scope goals; missing-anchor and unsupported-causality developer probes. Fixed before new predictions."
+    },
+    {
+      "stratum": "e5_tasks",
+      "project": "redis",
+      "mode": "E5_DEVELOPMENT_ONLY",
+      "task_count": 14,
+      "manifest_path": "e5_tasks\\redis\\manifest.json",
+      "manifest_sha256": "c0e79737a06ef0997d230c11db21f5c96789858ae17855958638570424fc2096",
+      "specification_sha256": "4ae54559b4ca0c73bae2f54c298b3a032891aa6d1d35ed91a7712bf03c94e6b9",
+      "schema_sha256": "9a1bbfd1b1d566eaf2507c0445f96e3e7813537f34d9f2a584dc37763be6badc",
+      "source_hashes_declared": {
+        "nodes.csv": "283e6e74fc9c31db09c0fa55bf5b38d3f871f7cc46b7879fe5e257df3e4aa1da",
+        "edges.csv": "7964e5633375a76d8fc8d6e845db68cf442f6a7966b84882d1aca53c0069b262"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 14,
+      "matched_historical_runs": [
+        {
+          "run": "e5_redis_v1",
+          "manifest_sha256": "c0d0a0b37925e86fe0e6fd565fa56bac8e783b70a67c6452d619ebf9156279fe",
+          "record_count_by_arm": {
+            "P0": 1,
+            "P1": 1,
+            "S0": 1,
+            "S1": 1
+          }
+        },
+        {
+          "run": "e5_redis_v2",
+          "manifest_sha256": "e14136e65e085d8f58136f46d7838fd5e5ed1ca8f3d11c1f5d3a74261b3b584c",
+          "record_count_by_arm": {
+            "P0": 14,
+            "P1": 14,
+            "S0": 14,
+            "S1": 14
+          }
+        }
+      ],
+      "original_limit_statement": "First canonical request in each of six existing E1 families; all six E3 scope goals; missing-anchor and unsupported-causality developer probes. Fixed before new predictions."
+    },
+    {
+      "stratum": "e6_tasks",
+      "project": "duckdb",
+      "mode": "E6_KNOWN_DEVELOPMENT_NOT_INDEPENDENT",
+      "task_count": 14,
+      "manifest_path": "e6_tasks\\duckdb\\manifest.json",
+      "manifest_sha256": "2392cb9d97f987adb880d6406f4a7aae817e14b8a185a88a24349bb061db48c3",
+      "specification_sha256": "e65f6460868a29c2a87013b0cdd8c24b74aa111fc178fd4db87fc6ccb890d4e0",
+      "schema_sha256": "f7bbd36b396fc875451161d1c29f2012a19e2839281d3c5759037460f6db0e41",
+      "source_hashes_declared": {
+        "nodes.csv": "dd20114217334c157f251631d8f7340b443c94806d57f9a4cfd9490a50753518",
+        "edges.csv": "d71c29c7dd8ecbd28a1bec93d16b53ed60bf28fd5db76e01c81dfd7d7d07c845"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 14,
+      "matched_historical_runs": [
+        {
+          "run": "e6_duckdb_v1",
+          "manifest_sha256": "73082703819230c8936d725feb01ec92396e66c0332a05d98036f53a5ae7175d",
+          "record_count_by_arm": {
+            "G0": 1,
+            "G1": 1,
+            "I0": 1,
+            "I1": 1,
+            "P0": 1,
+            "P1": 1
+          }
+        },
+        {
+          "run": "e6_duckdb_v2",
+          "manifest_sha256": "6deebc32b8b89f67845bbd1180ef817fb60805e105d43f62616045215efb2560",
+          "record_count_by_arm": {
+            "G0": 14,
+            "G1": 14,
+            "I0": 14,
+            "I1": 14,
+            "P0": 14,
+            "P1": 14
+          }
+        }
+      ],
+      "original_limit_statement": "Old E1/E3 developer-known goals plus two boundary checks. No independent effect estimate."
+    },
+    {
+      "stratum": "e6_tasks",
+      "project": "redis",
+      "mode": "E6_KNOWN_DEVELOPMENT_NOT_INDEPENDENT",
+      "task_count": 14,
+      "manifest_path": "e6_tasks\\redis\\manifest.json",
+      "manifest_sha256": "bc7e2e2c0b792136c3aae728d1be76d48e5ebfa4f2a12435abe97918231709ac",
+      "specification_sha256": "a85965c59df3173ae29a0f8b7618ecde279f92aa9bd864d221e77e50c6e2fddb",
+      "schema_sha256": "9a1bbfd1b1d566eaf2507c0445f96e3e7813537f34d9f2a584dc37763be6badc",
+      "source_hashes_declared": {
+        "nodes.csv": "283e6e74fc9c31db09c0fa55bf5b38d3f871f7cc46b7879fe5e257df3e4aa1da",
+        "edges.csv": "7964e5633375a76d8fc8d6e845db68cf442f6a7966b84882d1aca53c0069b262"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 14,
+      "matched_historical_runs": [
+        {
+          "run": "e6_redis_v1",
+          "manifest_sha256": "f533152b243059dfd698de237e48132d4e3d371ba936a737244107124bdbf5b9",
+          "record_count_by_arm": {
+            "G0": 14,
+            "G1": 14,
+            "I0": 14,
+            "I1": 14,
+            "P0": 14,
+            "P1": 14
+          }
+        },
+        {
+          "run": "e9_compact_redis_dev_v1",
+          "manifest_sha256": "4bd40711cd33df20b4e5af9572287d422ede973610f4d0c1a942aa62e76448c8",
+          "record_count_by_arm": {
+            "G0": 14,
+            "G1": 14,
+            "I0": 14,
+            "I1": 14,
+            "P0": 14,
+            "P1": 14
+          }
+        }
+      ],
+      "original_limit_statement": "Old E1/E3 developer-known goals plus two boundary checks. No independent effect estimate."
+    },
+    {
+      "stratum": "e7_blind_intake_v1/tasks",
+      "project": "duckdb",
+      "mode": "E7_BLIND_ROLE_EVIDENCE_BOUNDARY_STRATUM",
+      "task_count": 6,
+      "manifest_path": "e7_blind_intake_v1\\tasks\\duckdb\\manifest.json",
+      "manifest_sha256": "494e9cc0f38a1a2f191d8b26e59d04ff9e4a673353647875ba6d7d84d42c246a",
+      "specification_sha256": "ee66f75cb17669cb9b928f431b4e315624eda4d6ae778a19b6144f2d6e3714a5",
+      "schema_sha256": "f7bbd36b396fc875451161d1c29f2012a19e2839281d3c5759037460f6db0e41",
+      "source_hashes_declared": {
+        "nodes.csv": "dd20114217334c157f251631d8f7340b443c94806d57f9a4cfd9490a50753518",
+        "edges.csv": "d71c29c7dd8ecbd28a1bec93d16b53ed60bf28fd5db76e01c81dfd7d7d07c845"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 0,
+      "matched_historical_runs": [],
+      "original_limit_statement": "Six clear unanswerable originals. Refusal decisions only; no useful-answer or paraphrase-robustness claim."
+    },
+    {
+      "stratum": "e7_blind_intake_v1/tasks",
+      "project": "elasticsearch",
+      "mode": "E7_BLIND_ROLE_EVIDENCE_BOUNDARY_STRATUM",
+      "task_count": 6,
+      "manifest_path": "e7_blind_intake_v1\\tasks\\elasticsearch\\manifest.json",
+      "manifest_sha256": "edc31176cb56b70d517a3ba372fadb1c32f63a53ce2fbdf3f532b24acc0352a2",
+      "specification_sha256": "9e168e11b5fbc83c774e77c4c429186cad767f9eee0f1fe45a380ea42102452c",
+      "schema_sha256": "af6d8d4db9c6cc922e340ab1edd82acb86c6b5f7f0559bc4db0452f7ff575cf1",
+      "source_hashes_declared": {
+        "nodes.csv": "3a867bb67842275935497bb3f1d6e9c36b7a98d33864a9bc56c3c7b47871c467",
+        "edges.csv": "524364bda48a9216f7aeacf80367e2d51acf0628df44f2633e704caa6d838842"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 0,
+      "matched_historical_runs": [],
+      "original_limit_statement": "Six clear unanswerable originals. Refusal decisions only; no useful-answer or paraphrase-robustness claim."
+    },
+    {
+      "stratum": "e7_blind_intake_v1/tasks",
+      "project": "iotdb",
+      "mode": "E7_BLIND_ROLE_EVIDENCE_BOUNDARY_STRATUM",
+      "task_count": 6,
+      "manifest_path": "e7_blind_intake_v1\\tasks\\iotdb\\manifest.json",
+      "manifest_sha256": "7528a1383da119b5ca772e3db3dc418b22d275bf82bbad8290b9aef33d105f98",
+      "specification_sha256": "c4789ced0a54119cc4cc879dcec91ec5f0edf7e70e74bb646beba9150cadb5c6",
+      "schema_sha256": "9e19e4171ed36123ec151691d09cb0569081d4c3833b3ec268c233d68bab51c8",
+      "source_hashes_declared": {
+        "nodes.csv": "8d76396bc77a34dc7aa6ea94337cdd675aa2ec484ba7cc79cd1a5073ee7aeee3",
+        "edges.csv": "7fa83e8f08d207dde1374717803512da13a0a76f0a1eac3577ba5af64ac94244"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 0,
+      "matched_historical_runs": [],
+      "original_limit_statement": "Six clear unanswerable originals. Refusal decisions only; no useful-answer or paraphrase-robustness claim."
+    },
+    {
+      "stratum": "e7_blind_intake_v1/tasks",
+      "project": "redis",
+      "mode": "E7_BLIND_ROLE_EVIDENCE_BOUNDARY_STRATUM",
+      "task_count": 6,
+      "manifest_path": "e7_blind_intake_v1\\tasks\\redis\\manifest.json",
+      "manifest_sha256": "cc8bf54bd7e644d2ed640dd6fce3926f9e9fe29607e6bd37d2851df0b6795b8f",
+      "specification_sha256": "727ca042a6e340064896b8f7a09b619f89fac3756fa476f65e25341578f6cf8b",
+      "schema_sha256": "9a1bbfd1b1d566eaf2507c0445f96e3e7813537f34d9f2a584dc37763be6badc",
+      "source_hashes_declared": {
+        "nodes.csv": "283e6e74fc9c31db09c0fa55bf5b38d3f871f7cc46b7879fe5e257df3e4aa1da",
+        "edges.csv": "7964e5633375a76d8fc8d6e845db68cf442f6a7966b84882d1aca53c0069b262"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 0,
+      "matched_historical_runs": [],
+      "original_limit_statement": "Six clear unanswerable originals. Refusal decisions only; no useful-answer or paraphrase-robustness claim."
+    },
+    {
+      "stratum": "e7_grounded_tasks_v1",
+      "project": "duckdb",
+      "mode": "E7_ADAPTED_GROUNDED_SYNTHETIC_WITH_DIRECTION_CONTROL",
+      "task_count": 7,
+      "manifest_path": "e7_grounded_tasks_v1\\duckdb\\manifest.json",
+      "manifest_sha256": "340554147eda3d16271981dca5868cae61d5dd7600e85eac02a3b64318908eb8",
+      "specification_sha256": "73a68cdad8d91b8bf07883119ba2b98c7f4f1e9c9f555bde47ad08274b2db477",
+      "schema_sha256": "f7bbd36b396fc875451161d1c29f2012a19e2839281d3c5759037460f6db0e41",
+      "source_hashes_declared": {
+        "nodes.csv": "dd20114217334c157f251631d8f7340b443c94806d57f9a4cfd9490a50753518",
+        "edges.csv": "d71c29c7dd8ecbd28a1bec93d16b53ed60bf28fd5db76e01c81dfd7d7d07c845"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 4,
+      "matched_historical_runs": [
+        {
+          "run": "e10_grounded_duckdb_retry_v1",
+          "manifest_sha256": "6db53260b803aaffa4f7446bd6d22a040ea2949d6e8a0c45f77ba5251090809a",
+          "record_count_by_arm": {
+            "G": 12,
+            "I": 12,
+            "P": 12
+          }
+        }
+      ],
+      "original_limit_statement": "All four received proposals retained, all outside fixed catalogs. Three adapted positive goal families, not eight independent natural-language goals. One zero-result direction control separate from main usefulness. Paraphrases share explicit clarification; no human study."
+    },
+    {
+      "stratum": "e7_grounded_tasks_v1",
+      "project": "elasticsearch",
+      "mode": "E7_ADAPTED_GROUNDED_SYNTHETIC_WITH_DIRECTION_CONTROL",
+      "task_count": 7,
+      "manifest_path": "e7_grounded_tasks_v1\\elasticsearch\\manifest.json",
+      "manifest_sha256": "ddaf122a8af135c252406eab675b19cd0f94d7543860285aa77e59bb3f3637de",
+      "specification_sha256": "ee0941edd154cfd57764ea75085254570059b66847a299fd0a6e6da4db973147",
+      "schema_sha256": "af6d8d4db9c6cc922e340ab1edd82acb86c6b5f7f0559bc4db0452f7ff575cf1",
+      "source_hashes_declared": {
+        "nodes.csv": "3a867bb67842275935497bb3f1d6e9c36b7a98d33864a9bc56c3c7b47871c467",
+        "edges.csv": "524364bda48a9216f7aeacf80367e2d51acf0628df44f2633e704caa6d838842"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 0,
+      "matched_historical_runs": [],
+      "original_limit_statement": "All four received proposals retained, all outside fixed catalogs. Three adapted positive goal families, not eight independent natural-language goals. One zero-result direction control separate from main usefulness. Paraphrases share explicit clarification; no human study."
+    },
+    {
+      "stratum": "e7_grounded_tasks_v1",
+      "project": "iotdb",
+      "mode": "E7_ADAPTED_GROUNDED_SYNTHETIC_WITH_DIRECTION_CONTROL",
+      "task_count": 7,
+      "manifest_path": "e7_grounded_tasks_v1\\iotdb\\manifest.json",
+      "manifest_sha256": "615131cd6d43622187a93378346194709a9b2e8500cd7b0d89630a3508816a4b",
+      "specification_sha256": "42c29b73c58c6923ac5311ae40e1af1dacdad9b7a26476906184096be2bb4280",
+      "schema_sha256": "9e19e4171ed36123ec151691d09cb0569081d4c3833b3ec268c233d68bab51c8",
+      "source_hashes_declared": {
+        "nodes.csv": "8d76396bc77a34dc7aa6ea94337cdd675aa2ec484ba7cc79cd1a5073ee7aeee3",
+        "edges.csv": "7fa83e8f08d207dde1374717803512da13a0a76f0a1eac3577ba5af64ac94244"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 0,
+      "matched_historical_runs": [],
+      "original_limit_statement": "All four received proposals retained, all outside fixed catalogs. Three adapted positive goal families, not eight independent natural-language goals. One zero-result direction control separate from main usefulness. Paraphrases share explicit clarification; no human study."
+    },
+    {
+      "stratum": "e7_grounded_tasks_v1",
+      "project": "redis",
+      "mode": "E7_ADAPTED_GROUNDED_SYNTHETIC_WITH_DIRECTION_CONTROL",
+      "task_count": 7,
+      "manifest_path": "e7_grounded_tasks_v1\\redis\\manifest.json",
+      "manifest_sha256": "883a84c8c0e1fb19a30e203f2a14bacd837edd07063e68cd14ff38b6c84aca79",
+      "specification_sha256": "2f65c0461a4eb643d425c7357869392bcdb41726887da44f63016936d34e4573",
+      "schema_sha256": "9a1bbfd1b1d566eaf2507c0445f96e3e7813537f34d9f2a584dc37763be6badc",
+      "source_hashes_declared": {
+        "nodes.csv": "283e6e74fc9c31db09c0fa55bf5b38d3f871f7cc46b7879fe5e257df3e4aa1da",
+        "edges.csv": "7964e5633375a76d8fc8d6e845db68cf442f6a7966b84882d1aca53c0069b262"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 1,
+      "matched_historical_runs": [
+        {
+          "run": "e7_grounded_redis_v1",
+          "manifest_sha256": "78d0c93cdf01cce0e213943134c31f5cc5fb343f4bed6d13a3fa209a506d3976",
+          "record_count_by_arm": {
+            "G0": 1,
+            "G1": 1,
+            "I0": 1,
+            "I1": 1,
+            "P0": 1,
+            "P1": 1
+          }
+        }
+      ],
+      "original_limit_statement": "All four received proposals retained, all outside fixed catalogs. Three adapted positive goal families, not eight independent natural-language goals. One zero-result direction control separate from main usefulness. Paraphrases share explicit clarification; no human study."
+    },
+    {
+      "stratum": "e7_source_tasks_v1",
+      "project": "duckdb",
+      "mode": "E7_NEW_SOURCE_PROXY_COVERAGE_STRATUM_NOT_USER_SAMPLE",
+      "task_count": 8,
+      "manifest_path": "e7_source_tasks_v1\\duckdb\\manifest.json",
+      "manifest_sha256": "35236ef475aa7b1fc8e46d3a3f9612936b16a080c1eedc4b6b7134ac35f0f572",
+      "specification_sha256": "9a684c35c906e304e1b6ae21c67b9e8c71eee94e7981748a7db00550c22f61d4",
+      "schema_sha256": "f7bbd36b396fc875451161d1c29f2012a19e2839281d3c5759037460f6db0e41",
+      "source_hashes_declared": {
+        "nodes.csv": "dd20114217334c157f251631d8f7340b443c94806d57f9a4cfd9490a50753518",
+        "edges.csv": "d71c29c7dd8ecbd28a1bec93d16b53ed60bf28fd5db76e01c81dfd7d7d07c845"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 3,
+      "matched_historical_runs": [
+        {
+          "run": "e7_source_duckdb_v1",
+          "manifest_sha256": "c85a2a9a478c0a05c7fae1ecf872a41f2cbc8a072301e7e03076693ee3f466cd",
+          "record_count_by_arm": {
+            "G0": 3,
+            "G1": 3,
+            "I0": 3,
+            "I1": 3,
+            "P0": 2,
+            "P1": 2
+          }
+        }
+      ],
+      "original_limit_statement": "This stratum studies graph answerability versus catalog coverage, not a matched-capability primary accuracy contest. Eight tasks are partial operationalizations, not exact CHAOSS/RepoQA reproduction or an independent human sample."
+    },
+    {
+      "stratum": "e7_source_tasks_v1",
+      "project": "elasticsearch",
+      "mode": "E7_NEW_SOURCE_PROXY_COVERAGE_STRATUM_NOT_USER_SAMPLE",
+      "task_count": 8,
+      "manifest_path": "e7_source_tasks_v1\\elasticsearch\\manifest.json",
+      "manifest_sha256": "3a41a4d0bfd97836e191fa8d4297a04134dafad83375dec976d2196522eef7e0",
+      "specification_sha256": "8f3e2f2e703d7b2bde485eb811efc721700c13b45b547a8018d3951ad52bc42d",
+      "schema_sha256": "af6d8d4db9c6cc922e340ab1edd82acb86c6b5f7f0559bc4db0452f7ff575cf1",
+      "source_hashes_declared": {
+        "nodes.csv": "3a867bb67842275935497bb3f1d6e9c36b7a98d33864a9bc56c3c7b47871c467",
+        "edges.csv": "524364bda48a9216f7aeacf80367e2d51acf0628df44f2633e704caa6d838842"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 3,
+      "matched_historical_runs": [
+        {
+          "run": "e7_source_elasticsearch_v1",
+          "manifest_sha256": "13bb79dda77af479f018f715db413104ac16e9bcf3dcbefdf01d5cb2699f568c",
+          "record_count_by_arm": {
+            "G0": 3,
+            "G1": 3,
+            "I0": 3,
+            "I1": 3,
+            "P0": 3,
+            "P1": 3
+          }
+        }
+      ],
+      "original_limit_statement": "This stratum studies graph answerability versus catalog coverage, not a matched-capability primary accuracy contest. Eight tasks are partial operationalizations, not exact CHAOSS/RepoQA reproduction or an independent human sample."
+    },
+    {
+      "stratum": "e7_source_tasks_v1",
+      "project": "iotdb",
+      "mode": "E7_NEW_SOURCE_PROXY_COVERAGE_STRATUM_NOT_USER_SAMPLE",
+      "task_count": 8,
+      "manifest_path": "e7_source_tasks_v1\\iotdb\\manifest.json",
+      "manifest_sha256": "c492172535edb7167e351f6bbaef61e627e0a8ab4885e38b453c35cec69d6499",
+      "specification_sha256": "f011feee2280cf0884963e3d916573003ca789ba4d0fe59647d5681a34414499",
+      "schema_sha256": "9e19e4171ed36123ec151691d09cb0569081d4c3833b3ec268c233d68bab51c8",
+      "source_hashes_declared": {
+        "nodes.csv": "8d76396bc77a34dc7aa6ea94337cdd675aa2ec484ba7cc79cd1a5073ee7aeee3",
+        "edges.csv": "7fa83e8f08d207dde1374717803512da13a0a76f0a1eac3577ba5af64ac94244"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 4,
+      "matched_historical_runs": [
+        {
+          "run": "e7_source_iotdb_v1",
+          "manifest_sha256": "643a2092f7e936bb664a9ca5317e65c86788ec5d4ca79f9a34d701fb79bef5b8",
+          "record_count_by_arm": {
+            "G0": 4,
+            "G1": 4,
+            "I0": 4,
+            "I1": 4,
+            "P0": 4,
+            "P1": 4
+          }
+        }
+      ],
+      "original_limit_statement": "This stratum studies graph answerability versus catalog coverage, not a matched-capability primary accuracy contest. Eight tasks are partial operationalizations, not exact CHAOSS/RepoQA reproduction or an independent human sample."
+    },
+    {
+      "stratum": "e7_source_tasks_v1",
+      "project": "redis",
+      "mode": "E7_NEW_SOURCE_PROXY_COVERAGE_STRATUM_NOT_USER_SAMPLE",
+      "task_count": 8,
+      "manifest_path": "e7_source_tasks_v1\\redis\\manifest.json",
+      "manifest_sha256": "8959fb8b04bff1ab76d2cdd4912a6649c1287c327989728e6c0369ab063b68a4",
+      "specification_sha256": "6069745b9ea8b1dc25308dfee6b1a375f1911414d33fc896e7bb3917180d8f65",
+      "schema_sha256": "9a1bbfd1b1d566eaf2507c0445f96e3e7813537f34d9f2a584dc37763be6badc",
+      "source_hashes_declared": {
+        "nodes.csv": "283e6e74fc9c31db09c0fa55bf5b38d3f871f7cc46b7879fe5e257df3e4aa1da",
+        "edges.csv": "7964e5633375a76d8fc8d6e845db68cf442f6a7966b84882d1aca53c0069b262"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 3,
+      "matched_historical_runs": [
+        {
+          "run": "e7_source_redis_v1",
+          "manifest_sha256": "e1e73a0153d6ace9926e938cfbfeeadb7aeb724f9f01a6cb37afa461432ed8fb",
+          "record_count_by_arm": {
+            "G0": 3,
+            "G1": 3,
+            "I0": 3,
+            "I1": 3,
+            "P0": 2,
+            "P1": 2
+          }
+        },
+        {
+          "run": "e7_source_redis_v2",
+          "manifest_sha256": "e87712373b3212045ab7cce4e44aea0bafc0b80b8a134124964a441518bcd98e",
+          "record_count_by_arm": {
+            "G0": 3,
+            "G1": 3,
+            "I0": 3,
+            "I1": 3,
+            "P0": 2,
+            "P1": 2
+          }
+        }
+      ],
+      "original_limit_statement": "This stratum studies graph answerability versus catalog coverage, not a matched-capability primary accuracy contest. Eight tasks are partial operationalizations, not exact CHAOSS/RepoQA reproduction or an independent human sample."
+    },
+    {
+      "stratum": "e8_known_goal_transfer_v1",
+      "project": "elasticsearch",
+      "mode": "E8_KNOWN_GOAL_PROJECT_TRANSFER_NOT_TASK_GENERALIZATION",
+      "task_count": 13,
+      "manifest_path": "e8_known_goal_transfer_v1\\elasticsearch\\manifest.json",
+      "manifest_sha256": "f571424216e77b9fd4ba293facabea466698bc43547fa3c54c60f8b1c5a7bcde",
+      "specification_sha256": "1cc422760a5b1fa3fe3f3f632bef618dde670d3de594919f4d0461eb3b2187b6",
+      "schema_sha256": "af6d8d4db9c6cc922e340ab1edd82acb86c6b5f7f0559bc4db0452f7ff575cf1",
+      "source_hashes_declared": {
+        "nodes.csv": "3a867bb67842275935497bb3f1d6e9c36b7a98d33864a9bc56c3c7b47871c467",
+        "edges.csv": "524364bda48a9216f7aeacf80367e2d51acf0628df44f2633e704caa6d838842"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 11,
+      "matched_historical_runs": [
+        {
+          "run": "e8_known_transfer_elasticsearch_v1",
+          "manifest_sha256": "413d12859fe3066780942f13e884d6ce36801422bc448cb599c1ec35d9d3ee3a",
+          "record_count_by_arm": {
+            "G0": 10,
+            "G1": 10,
+            "I0": 11,
+            "I1": 11,
+            "P0": 11,
+            "P1": 11
+          }
+        }
+      ],
+      "original_limit_statement": "Known developer goal definitions. No independent task count. All14 retained in intake; over500-row outputs excluded without replacement before prediction."
+    },
+    {
+      "stratum": "e8_known_goal_transfer_v1",
+      "project": "iotdb",
+      "mode": "E8_KNOWN_GOAL_PROJECT_TRANSFER_NOT_TASK_GENERALIZATION",
+      "task_count": 14,
+      "manifest_path": "e8_known_goal_transfer_v1\\iotdb\\manifest.json",
+      "manifest_sha256": "0a2779e8650cf20cbf42c724e6e6e13ced54e09d137c3a20220491cfe9a78e6a",
+      "specification_sha256": "5985dbd539f3c54f96aa7c754c51887816b09c49c3f28a6c074d07b574dd61cb",
+      "schema_sha256": "9e19e4171ed36123ec151691d09cb0569081d4c3833b3ec268c233d68bab51c8",
+      "source_hashes_declared": {
+        "nodes.csv": "8d76396bc77a34dc7aa6ea94337cdd675aa2ec484ba7cc79cd1a5073ee7aeee3",
+        "edges.csv": "7fa83e8f08d207dde1374717803512da13a0a76f0a1eac3577ba5af64ac94244"
+      },
+      "source_files_reverified": false,
+      "positions_with_historical_records": 14,
+      "matched_historical_runs": [
+        {
+          "run": "e8_known_transfer_iotdb_v1",
+          "manifest_sha256": "b0b14cec150570b5ce608f00e04a04cfe5165db8bdb321c2cf979adb3079e8bf",
+          "record_count_by_arm": {
+            "G0": 14,
+            "G1": 14,
+            "I0": 14,
+            "I1": 14,
+            "P0": 14,
+            "P1": 14
+          }
+        }
+      ],
+      "original_limit_statement": "Known developer goal definitions. No independent task count. All14 retained in intake; over500-row outputs excluded without replacement before prediction."
+    }
+  ]
+}

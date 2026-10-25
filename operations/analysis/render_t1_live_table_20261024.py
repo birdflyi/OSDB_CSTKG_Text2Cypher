@@ -63,6 +63,7 @@ def render(active_graph,stopped_graph=None):
         '- [全部物理调用对账：含历史、失败与独立探测，非完整T4](D:/ch7/discussion/T1_ALL_ATTEMPT_RECONCILIATION_20261025.md)',
         '- [冻结清单](D:/ch7/experiments/public_benchmark_v1/core_freeze_v1_20261024/freeze.json)',
         '- [其他候选协议审计](D:/ch7/discussion/T1_OTHER_PUBLIC_CANDIDATES_AUDIT_20261024.md)',
+        '- [OSDB旧任务来源与已用记录](D:/ch7/discussion/T1_OSDB_PRIOR_TASK_EXPOSURE_AUDIT_20261025.md)',
         '- [MindTheQuery训练来源与标签核验](D:/ch7/discussion/T1_MINDTHEQUERY_SPLIT_CONTRACTS_20261025.md)',
         '- [原讨论表，含有来源的 reported 数值](D:/ch7/discussion/DASFAA_EXPERIMENT_TABLES_FILLED_20261023.md)']
     for graph in scores:
