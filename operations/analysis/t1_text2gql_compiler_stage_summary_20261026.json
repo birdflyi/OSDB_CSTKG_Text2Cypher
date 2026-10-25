@@ -1,0 +1,122 @@
+{
+  "kind": "OFFLINE_NATIVE_COMPILER_DEVELOPMENT_NOT_T1_EX",
+  "time_local": "2026-10-26T05:37:45.754842+08:00",
+  "worktree": "D:\\ch7\\code\\OSDB_CSTKG_Text2Cypher_t1_tugraph",
+  "branch": "codex/ch7-t1-tugraph-adapter",
+  "base_commit": "c614367",
+  "source_sha256": {
+    "schema_services.py": "cdc3ff80b5e633d7e1594c5c628805fb0c4f61c12643619b7474ab21ee5c8b04",
+    "tugraph_dialect.py": "edff8b9cb0741d3df57dc9e48e49b52538a40faf53765a2a02ac437b34da1f22",
+    "test_tugraph_dialect.py": "2d86a03e000149e9c1f067633b65a398df0d464d09eb824773f1c69e618e6c32"
+  },
+  "original_core_source_hashes_unchanged": 32,
+  "model_attempts": 5192,
+  "new_model_calls": 0,
+  "original_cumulative_cap": 12000,
+  "remaining_original_scope": 6808,
+  "new_budget_approved": false,
+  "new_budget_question_pending": true,
+  "native_queries_this_stage": 72,
+  "stages": [
+    {
+      "folder": "text2gql_compiler_fixture_v1_20261026",
+      "spec_sha256": "84431112294df17a844ee271e4f3a34383ee47b9a0da928c5bb15ad91cd06524",
+      "receipt_sha256": "360e18159c7f9be4ec8df3bb8f9f59fd13fab22374fd70a9499ce3831ab4f01b",
+      "queries": 18,
+      "fixed_check_denominator": 18,
+      "fixed_matches": 17,
+      "diagnostic_queries": 0,
+      "diagnostic_matches": 0,
+      "retained_mismatches": [
+        "single_match_edge_uniqueness"
+      ],
+      "children_closed": true
+    },
+    {
+      "folder": "text2gql_pattern_diagnostic_v2_20261026",
+      "spec_sha256": "32f8715f7a3244b98b71b0621cc22817ba7c57b1ac264c4e9ea88fcda0b29aef",
+      "receipt_sha256": "0a366445ccc50c7f43f583646d1f56ba23c110c4523376823bcf26fdc5915894",
+      "queries": 9,
+      "fixed_check_denominator": 0,
+      "fixed_matches": 0,
+      "diagnostic_queries": 9,
+      "diagnostic_matches": 4,
+      "retained_mismatches": [
+        "comma_no_standalone",
+        "comma_untyped_end",
+        "standalone_original_filter",
+        "comma_project_weights",
+        "comma_distinct_edge_ids"
+      ],
+      "children_closed": true
+    },
+    {
+      "folder": "text2gql_compiler_fixture_v2_20261026",
+      "spec_sha256": "db10f710eb68762cb00bb84cb8c24e221aea81d84d99dea44324ba935bc2ef55",
+      "receipt_sha256": "e408ee60122d9b29be85c94775595ac33edae5ef22a9bede50c77f1b7c6475ec",
+      "queries": 21,
+      "fixed_check_denominator": 18,
+      "fixed_matches": 17,
+      "diagnostic_queries": 3,
+      "diagnostic_matches": 3,
+      "retained_mismatches": [
+        "count_distinct_required_entity"
+      ],
+      "children_closed": true
+    },
+    {
+      "folder": "text2gql_compiler_fixture_v3_20261026",
+      "spec_sha256": "d9aa4369f8051c22321f18f315bc89ad10611e987dc22a1bb81fb177e9f8e731",
+      "receipt_sha256": "c686a1746424bc0b336eb4281bc739104ffbf4c938736a9ade012f5409d11a2f",
+      "queries": 24,
+      "fixed_check_denominator": 18,
+      "fixed_matches": 18,
+      "diagnostic_queries": 6,
+      "diagnostic_matches": 5,
+      "retained_mismatches": [
+        "node_object_count_diagnostic"
+      ],
+      "children_closed": true
+    }
+  ],
+  "partial_diagnostic_v1": {
+    "phase": "BEFORE_FIRST_RECEIPT",
+    "native_queries": 0,
+    "unknown_worker_start_error": true,
+    "launcher_error_retained": true,
+    "blind_replay": false,
+    "job_preserved": true
+  },
+  "final_fixed_selection_denominator": 18,
+  "final_fixed_selection_matches": 18,
+  "local_unittest_checks": 23,
+  "formal_benchmark_predictions": 0,
+  "backend_fully_adapted": false,
+  "formal_prediction_admitted": false,
+  "newly_observed_engine_differences": [
+    "comma-separated parallel patterns suppress permutations",
+    "node-object COUNT DISTINCT includes isolated vertex in this fixture"
+  ],
+  "closures": {
+    "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+    "runtime_lock_present": false,
+    "processes": [],
+    "listeners": [],
+    "partial_diagnostic_has_receipt": false,
+    "partial_diagnostic_files": [
+      "spec.json",
+      ".client-private.json",
+      "worker.py"
+    ],
+    "read_only": true,
+    "time_local": "2026-10-26T05:37:45.753621+08:00"
+  },
+  "entire_T1_complete": false,
+  "pending": [
+    "native schema/primary-key identity mapping and set composition",
+    "OPTIONAL multi-stage lowering and DATETIME profile",
+    "equal Direct/Ours dialect/schema/entity access and training development",
+    "REST/Bolt typed-answer contract and exact author cohort/scorer audit",
+    "fixed task/metric/statistics/fairness/budget freeze and explicit new model scope"
+  ]
+}

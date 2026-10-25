@@ -12,7 +12,7 @@ import re
 import time
 
 
-VERSION = 'typed-services-dev-0.2'
+VERSION = 'typed-services-dev-0.3-native-profile'
 
 
 class UnsupportedPlan(ValueError):
@@ -67,7 +67,71 @@ def literal_matches(value, kind):
     return False
 
 
-def compile_selection(call, schema):
+def _native_patterns(node_labels, edges, identifier):
+    """Cover bounded connected edges by deterministic maximum-length trails.
+
+    Comma-separated parallel patterns in the measured native engine suppress
+    permutations of distinct physical edges. A single trail retains them. Each
+    logical edge appears once; orientations and repeated node bindings persist.
+    This is backend syntax lowering, not task/gold-dependent query rewriting.
+    """
+    if not edges:
+        return '(' + next(iter(node_labels)) + ':' + identifier(next(iter(node_labels.values()))) + ')'
+    remaining = list(range(len(edges)))
+    trails = []
+    while remaining:
+        best = []
+        def search(node, unused, path):
+            nonlocal best
+            if len(path) > len(best):
+                best = path
+            for index in unused:
+                row = edges[index]
+                for start, end, forward in ((row['source'], row['target'], True),
+                                             (row['target'], row['source'], False)):
+                    if start == node:
+                        search(end, [i for i in unused if i != index],
+                               path + [(index, start, end, forward)])
+        for node in node_labels:
+            search(node, remaining, [])
+        trails.append(best)
+        used = {step[0] for step in best}
+        remaining = [i for i in remaining if i not in used]
+    seen = set()
+    def node_text(node):
+        label = '' if node in seen else ':' + identifier(node_labels[node])
+        seen.add(node)
+        return '(' + node + label + ')'
+    patterns = []
+    for trail in trails:
+        pattern = node_text(trail[0][1])
+        for index, start, end, forward in trail:
+            row = edges[index]
+            edge = '[' + row['id'] + ':' + identifier(row['label']) + ']'
+            pattern += ('-' + edge + '->' if forward else '<-' + edge + '-') + node_text(end)
+        patterns.append(pattern)
+    if seen != set(node_labels):
+        raise UnsupportedPlan('Native pattern omitted a required node')
+    return ','.join(patterns)
+
+
+def compile_selection(call, schema, *, backend='neo4j'):
+    # Preserve the frozen Neo4j default. The explicit native profile is a new
+    # development version, admitted separately from the CypherBench run.
+    if backend not in ('neo4j', 'tugraph-4.5.2'):
+        raise UnsupportedPlan('Unknown backend profile')
+    native = backend == 'tugraph-4.5.2'
+    def ident(value):
+        if not native:
+            return globals()['ident'](value)
+        if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', value):
+            raise UnsupportedPlan('Native identifier needs an independently verified spelling')
+        if value.upper() in {'MATCH', 'RETURN', 'WHERE', 'WITH', 'OPTIONAL', 'CREATE',
+                             'DELETE', 'SET', 'REMOVE', 'MERGE', 'CALL', 'UNION',
+                             'ORDER', 'BY', 'LIMIT', 'SKIP', 'AND', 'OR', 'NOT',
+                             'NULL', 'TRUE', 'FALSE', 'AS', 'IN', 'CASE', 'END'}:
+            raise UnsupportedPlan('Native reserved identifier is not admitted')
+        return value
     object_fields(call, ['nodes', 'edges', 'where', 'returns'],
                   ['distinct', 'order_by', 'limit', 'group_by'])
     entities = {row['label']: row for row in schema['entities']}
@@ -85,8 +149,9 @@ def compile_selection(call, schema):
             raise UnsupportedPlan('Unknown label or duplicate variable')
         node_labels[variable] = row['label']
         variables[variable] = dict(entities[row['label']]['properties'])
-        variables[variable].update({'eid': 'str', 'name': 'str', 'aliases': 'list[str]',
-                                    'description': 'str'})
+        if not native:
+            variables[variable].update({'eid': 'str', 'name': 'str', 'aliases': 'list[str]',
+                                        'description': 'str'})
         types[variable] = 'node'
     adjacency = {v: set() for v in node_labels}
     required_adjacency = {v: set() for v in node_labels}
@@ -103,7 +168,9 @@ def compile_selection(call, schema):
         signature = row['label'], node_labels[a], node_labels[b]
         if signature not in relations:
             raise UnsupportedPlan('Edge type/direction violates schema')
-        variables[v] = {**relations[signature]['properties'], 'rid': 'str'}
+        variables[v] = dict(relations[signature]['properties'])
+        if not native:
+            variables[v]['rid'] = 'str'
         types[v] = 'edge'
         adjacency[a].add(b)
         adjacency[b].add(a)
@@ -124,6 +191,8 @@ def compile_selection(call, schema):
         raise UnsupportedPlan('Disconnected Cartesian patterns are not supported')
     if len(optional_edges) > 1:
         raise UnsupportedPlan('v0.2 admits at most one optional edge')
+    if native and optional_edges:
+        raise UnsupportedPlan('Native multi-MATCH/OPTIONAL lowering is not yet verified')
     reached_required = {next(iter(node_labels))}
     while True:
         grown = reached_required | {b for a in reached_required for b in required_adjacency[a]}
@@ -139,6 +208,8 @@ def compile_selection(call, schema):
     # matching Cypher's default relationship uniqueness semantics.
     for row in required_edges:
         matches[0] += f',({row["source"]})-[{row["id"]}:{ident(row["label"])}]->({row["target"]})'
+    if native:
+        matches = ['MATCH ' + _native_patterns(node_labels, required_edges, ident)]
     for row in optional_edges:
         if not ({row['source'], row['target']} & required_nodes):
             raise UnsupportedPlan('Optional edge needs an already bound endpoint')
@@ -165,10 +236,21 @@ def compile_selection(call, schema):
         object_fields(predicate, ['field', 'op'], ['value', 'other_field', 'negate'])
         if type(predicate.get('negate', False)) is not bool:
             raise UnsupportedPlan('Predicate negate must be boolean')
-        def emit_predicate(value):
-            predicates.append('NOT (' + value + ')' if predicate.get('negate') else value)
         expression, kind = field(predicate['field'])
         op = predicate['op']
+        def emit_predicate(value):
+            if not native or op in ('is_null', 'not_null'):
+                predicates.append('NOT (' + value + ')' if predicate.get('negate') else value)
+                return
+            # Native comparisons treat NULL differently from the IR's WHERE
+            # contract. Require defined operands for positive AND predicates
+            # and their negations. No OR/outer join is admitted by this profile.
+            operands = [expression]
+            if 'other_field' in predicate:
+                operands.append(field(predicate['other_field'])[0])
+            guards = [operand + ' IS NOT NULL' for operand in operands]
+            body = 'NOT (' + value + ')' if predicate.get('negate') else value
+            predicates.append(' AND '.join(guards + ['(' + body + ')']))
         if op in ('is_null', 'not_null'):
             if 'value' in predicate or 'other_field' in predicate:
                 raise UnsupportedPlan('Null predicate has no argument')
@@ -242,6 +324,11 @@ def compile_selection(call, schema):
                 raise UnsupportedPlan('COUNT DISTINCT * unsupported')
             if aggregate in ('sum', 'avg') and kind not in ('int', 'float'):
                 raise UnsupportedPlan('Numeric aggregation requires numeric property')
+            if native and kind == 'node' and aggregate == 'count':
+                # Counting native node objects can incorrectly bypass the
+                # relationship expansion in this engine. Physical IDs preserve
+                # non-null node identity and relationship-bag multiplicity.
+                expression = 'id(' + expression + ')'
             expression = aggregate + '(' + ('DISTINCT ' if item.get('distinct') else '') + expression + ')'
             aggregates.append(alias)
         else:
@@ -328,7 +415,7 @@ def _disjoint_equality(left, right, compiled_left, compiled_right, key, schema):
     return False
 
 
-def execute_plan(plan, schema, execute, *, strategy='contract'):
+def execute_plan(plan, schema, execute, *, strategy='contract', backend='neo4j'):
     """execute(query, params) -> {rows,columns,complete,... measured data}.
 
     contract: certified-disjoint union counts may use count summaries.
@@ -352,7 +439,7 @@ def execute_plan(plan, schema, execute, *, strategy='contract'):
     def compile_call(call):
         nonlocal compile_seconds
         start = time.monotonic()
-        value = compile_selection(call, schema)
+        value = compile_selection(call, schema, backend=backend)
         compile_seconds += time.monotonic() - start
         return value
     compiled = [compile_call(call) for call in calls]
