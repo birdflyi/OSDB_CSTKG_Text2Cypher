@@ -1,0 +1,139 @@
+{
+  "kind": "ALL_ATTEMPT_LEDGER_RECONCILIATION",
+  "time_local": "2026-10-25T08:06:11.387548+08:00",
+  "cumulative_reserved": 3266,
+  "approved_cap": 12000,
+  "remaining": 8734,
+  "pending": [],
+  "scope_counts": {
+    "historical_pre_freeze": 434,
+    "formal_core": 2831,
+    "post_freeze_connectivity_probe": 1
+  },
+  "scopes": {
+    "historical_pre_freeze": {
+      "attempts": 434,
+      "usage_known": 342,
+      "usage_unknown": 92,
+      "http_status": {
+        "200": 342,
+        "None": 19,
+        "500": 73
+      },
+      "transport_errors": {
+        "ReadTimeout": 18,
+        "timeout": 1
+      },
+      "known_tokens": {
+        "prompt_tokens": 1172603,
+        "completion_tokens": 283477,
+        "total_tokens": 1456080
+      },
+      "attempt_seconds_known": 10866.790999999386,
+      "attempt_seconds_unknown": 0,
+      "retry_wait_seconds_known": 30.01500000001397,
+      "retry_wait_seconds_unknown": 364
+    },
+    "formal_core": {
+      "attempts": 2831,
+      "usage_known": 2824,
+      "usage_unknown": 7,
+      "http_status": {
+        "200": 2824,
+        "None": 7
+      },
+      "transport_errors": {
+        "timeout": 7
+      },
+      "known_tokens": {
+        "prompt_tokens": 4131892,
+        "completion_tokens": 2151600,
+        "total_tokens": 6283492
+      },
+      "attempt_seconds_known": 22169.803000004147,
+      "attempt_seconds_unknown": 0,
+      "retry_wait_seconds_known": 60.06299999996554,
+      "retry_wait_seconds_unknown": 0
+    },
+    "post_freeze_connectivity_probe": {
+      "attempts": 1,
+      "usage_known": 1,
+      "usage_unknown": 0,
+      "http_status": {
+        "200": 1
+      },
+      "transport_errors": {},
+      "known_tokens": {
+        "prompt_tokens": 35,
+        "completion_tokens": 12,
+        "total_tokens": 47
+      },
+      "attempt_seconds_known": 0.18700000003445894,
+      "attempt_seconds_unknown": 0,
+      "retry_wait_seconds_known": 0.0,
+      "retry_wait_seconds_unknown": 0
+    }
+  },
+  "formal_physical_attempts": 2831,
+  "formal_prediction_receipts": 2795,
+  "logical_generation_receipts": 2825,
+  "feedback_generation_receipts": 30,
+  "exhausted_no_model_response_receipts": 1,
+  "nonstring_response_content_normalized_to_empty_by_frozen_transport": 1,
+  "extra_physical_retry_attempts": 6,
+  "per_graph_arm_physical": {
+    "company:direct": {
+      "physical_attempts": 348,
+      "unknown_usage": 1
+    },
+    "company:ours": {
+      "physical_attempts": 352
+    },
+    "fictional_character:direct": {
+      "physical_attempts": 386
+    },
+    "fictional_character:ours": {
+      "physical_attempts": 399
+    },
+    "flight_accident:direct": {
+      "physical_attempts": 189
+    },
+    "flight_accident:ours": {
+      "physical_attempts": 192
+    },
+    "geography:direct": {
+      "physical_attempts": 208,
+      "unknown_usage": 1
+    },
+    "geography:ours": {
+      "physical_attempts": 213,
+      "unknown_usage": 5
+    },
+    "nba:direct": {
+      "physical_attempts": 270
+    },
+    "nba:ours": {
+      "physical_attempts": 274
+    }
+  },
+  "unique_budget_slot_per_physical_request": true,
+  "all_formal_attempts_attributed_once": true,
+  "retry_bodies_identical": true,
+  "retry_waits_at_least10s": true,
+  "max3_attempts_per_request": true,
+  "saved_successful_replies_match_budgeted_responses_after_frozen_normalization": true,
+  "formal_model_parameters_match_freeze": true,
+  "feedback_messages_match_frozen_non_gold_rule": true,
+  "frozen_source_hashes_unchanged": true,
+  "source_files_verified": 32,
+  "unclassified_new_slots": [],
+  "ledger_unchanged_during_audit": true,
+  "physical_evidence_seal": "b4c2fe4f54af92aff0cec9147f182357529b0e07959dd6607ef0347a0f930b89",
+  "prediction_evidence_seal": "64b7b81ea1c95b3491fd9d2393a3a2852dc7d861eaa7303cbed046d24ccd31ae",
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "network_requests": 0,
+  "money_cost": "unknown; unknown token usage and unavailable unit price not set to zero",
+  "scope_limit": "Retry/model/feedback checks apply to formal core only; history is accounted separately. Attempt accounting only; not full T4 or a method efficiency advantage. Same-plan controls reuse model calls. No full2348 inference before seven graphs."
+}

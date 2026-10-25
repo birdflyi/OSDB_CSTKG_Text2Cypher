@@ -60,6 +60,7 @@ def render(active_graph,stopped_graph=None):
         'OSDB-STKG 必须按项目另列 Direct+反馈、共享计划全明细、Ours 的 EX、覆盖与错误答案率。现有四项目已有历史可见性，不能写成未见项目。旧开发题不填独立任务结果。', '',
         '## 证据入口', '',
         '- [实时完整性与成本报告](D:/ch7/reports/t1_core_integrity_cost_live_20261024.json)',
+        '- [全部物理调用对账：含历史、失败与独立探测，非完整T4](D:/ch7/discussion/T1_ALL_ATTEMPT_RECONCILIATION_20261025.md)',
         '- [冻结清单](D:/ch7/experiments/public_benchmark_v1/core_freeze_v1_20261024/freeze.json)',
         '- [其他候选协议审计](D:/ch7/discussion/T1_OTHER_PUBLIC_CANDIDATES_AUDIT_20261024.md)',
         '- [原讨论表，含有来源的 reported 数值](D:/ch7/discussion/DASFAA_EXPERIMENT_TABLES_FILLED_20261023.md)']
