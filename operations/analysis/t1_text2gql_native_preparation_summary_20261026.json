@@ -1,0 +1,283 @@
+{
+  "kind": "TEXT2GQL_PRIVATE_RUNTIME_PREPARATION_NOT_REFERENCE_OR_MODEL_RESULTS",
+  "time_local": "2026-10-26T03:37:10.243945+08:00",
+  "official_engine": {
+    "url": "https://github.com/TuGraph-family/tugraph-db/releases/download/v4.5.2/tugraph-4.5.2-1.x86_64.deb",
+    "release_tag": "v4.5.2",
+    "asset_id": 237411403,
+    "bytes": 603679022,
+    "sha256": "67f980308cd328c6ddc58097bef7c37b0b6edbc93a8eebdbd3d97c1d81248520",
+    "upstream_digest": null
+  },
+  "source_tag_commit": "4a1c8fb69b7879396f36e491b125d297c7ca79dd",
+  "binary_build_commit_reported": null,
+  "paper_exact_engine_version_established": false,
+  "paper_scope": {
+    "url": "https://arxiv.org/html/2602.11745v1",
+    "time_local": "2026-10-26T03:25:07.177475+08:00",
+    "status": 200,
+    "bytes": 258213,
+    "sha256": "e76f11191768550dfc22f4a5eac6fb42a655a1064077a0fd21a5f1dc0d914aa0",
+    "paper_cross_engine_evaluation_subset": 2783,
+    "paper_other_spanner_unsupported_count": 1044,
+    "cached_cypher_test_records": 3826,
+    "matching_subset_ids_established": false,
+    "exact_engine_version_established": false,
+    "direct_comparison_with_reported_numbers_admitted": false
+  },
+  "graph_input_plan_sha256": "de86fa482ad7168609de5ab8ed264b0583fd33d539df1debc731d263896adf11",
+  "graph_input_seal_sha256": "6f2040bf0f3d758110cc17bc371dd9a5417aa82fdc273a959f43daff73b23a30",
+  "verified_assets": 133,
+  "graph_order": [
+    "Manufacturing_Production_Process",
+    "Information_Technology_IT_Asset_Management",
+    "Manufacturing_BOM(Bill_Of_Materials)",
+    "Knowledge_Graph_Geography",
+    "Financial_Payment",
+    "Social_Network_Twitter"
+  ],
+  "graphs": [
+    {
+      "graph": "Manufacturing_Production_Process",
+      "csv_bytes": 88857,
+      "csv_files": 17,
+      "expected_vertices": 1030,
+      "expected_edges": 1595,
+      "reference_records": 596,
+      "config_sha256": "552b41395f4aaae5c8fac6560fc80fe39ecca8a44d8b24a28f9661e88add3d85",
+      "query_file_sha256": "07b53aa6f6fb02030b5d6bd71d38a7946c974e925597899e2d52e7588c580e72",
+      "preserved_unused_csv_files": []
+    },
+    {
+      "graph": "Information_Technology_IT_Asset_Management",
+      "csv_bytes": 144670,
+      "csv_files": 16,
+      "expected_vertices": 815,
+      "expected_edges": 3107,
+      "reference_records": 726,
+      "config_sha256": "d887380effa5742cd3371ea3766a98092315489d0f8aec4439140ef88fbb86ff",
+      "query_file_sha256": "783fe3b655420cdce6fbe002895c8cd926a785661566840792b33305d8ce8ad4",
+      "preserved_unused_csv_files": [
+        "LICENSED_FOR.csv"
+      ]
+    },
+    {
+      "graph": "Manufacturing_BOM(Bill_Of_Materials)",
+      "csv_bytes": 218148,
+      "csv_files": 23,
+      "expected_vertices": 1500,
+      "expected_edges": 2648,
+      "reference_records": 489,
+      "config_sha256": "6239346a845bed7e03fc8c86f67b1a9b14ef92c152cb10337e34f9ec1baf7cf1",
+      "query_file_sha256": "e6779eca47ce4836f74021b8160794430ec47dd2f103af3dd96343ff07835d11",
+      "preserved_unused_csv_files": [
+        "ConsistsOf.csv",
+        "ConsistsOf_Assembly_Assembly.csv",
+        "ConsistsOf_Assembly_Material.csv",
+        "ConsistsOf_Assembly_Product.csv",
+        "HasBomVersion.csv",
+        "ManufacturedAt.csv",
+        "ModifiedBy.csv",
+        "OrderedFor.csv",
+        "SubstitutesFor.csv"
+      ]
+    },
+    {
+      "graph": "Knowledge_Graph_Geography",
+      "csv_bytes": 227077,
+      "csv_files": 19,
+      "expected_vertices": 1100,
+      "expected_edges": 9715,
+      "reference_records": 642,
+      "config_sha256": "50d7fd0136473b2d39a9ef12bc30a98d179d6d2f1338a7c07bd2ef0001c0bb0e",
+      "query_file_sha256": "45cfe68eb6462556273682f625e08b6081315244a2fca6195d588f2f15729cb8",
+      "preserved_unused_csv_files": [
+        "ContainsPoi.csv",
+        "ContainsPoi_GZ.csv",
+        "OverlapsWith.csv",
+        "ServesDemographic.csv",
+        "UsesCoordinateSystem.csv"
+      ]
+    },
+    {
+      "graph": "Financial_Payment",
+      "csv_bytes": 946447,
+      "csv_files": 16,
+      "expected_vertices": 8420,
+      "expected_edges": 17184,
+      "reference_records": 776,
+      "config_sha256": "2e0764cd71b1b8429cd1cbc190982ddad95d727dc77f988b198755304b85c3af",
+      "query_file_sha256": "1bce7b10e652365245c8743f10cc11871de0625616b468a0243fcf65945cafff",
+      "preserved_unused_csv_files": []
+    },
+    {
+      "graph": "Social_Network_Twitter",
+      "csv_bytes": 4072042,
+      "csv_files": 15,
+      "expected_vertices": 8450,
+      "expected_edges": 56577,
+      "reference_records": 597,
+      "config_sha256": "16231c757926e9578a7cb0bceea8f2f283020f4b0b63530c0d1c4e5f3935e203",
+      "query_file_sha256": "4324f2505480136bc0b3d3338319e5979ee1f20378a175ae645f9286180a927a",
+      "preserved_unused_csv_files": []
+    }
+  ],
+  "total_reference_records": 3826,
+  "os": {
+    "NAME": "Ubuntu",
+    "ID": "ubuntu",
+    "PRETTY_NAME": "Ubuntu 24.04.2 LTS",
+    "VERSION_ID": "24.04",
+    "VERSION": "24.04.2 LTS (Noble Numbat)",
+    "VERSION_CODENAME": "noble",
+    "ID_LIKE": "debian",
+    "HOME_URL": "https://www.ubuntu.com/",
+    "SUPPORT_URL": "https://help.ubuntu.com/",
+    "BUG_REPORT_URL": "https://bugs.launchpad.net/ubuntu/",
+    "PRIVACY_POLICY_URL": "https://www.ubuntu.com/legal/terms-and-policies/privacy-policy",
+    "UBUNTU_CODENAME": "noble",
+    "LOGO": "ubuntu-logo"
+  },
+  "runtime": {
+    "started_local": "2026-10-25T19:35:14.132234+00:00",
+    "pid": 453230,
+    "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+    "prefix": "/mnt/data/louzehua/ch7_t1_public_benchmark_20261023/text2gql_native_v452_prepare_20261026",
+    "phase": "DEPENDENCIES_RESOLVED_NO_SERVER_STARTED",
+    "server_started": false,
+    "new_model_calls": 0,
+    "new_database_queries": 0,
+    "global_install": false,
+    "files": [
+      {
+        "path": "tugraph-4.5.2-1.x86_64.deb",
+        "bytes": 603679022,
+        "sha256": "67f980308cd328c6ddc58097bef7c37b0b6edbc93a8eebdbd3d97c1d81248520"
+      },
+      {
+        "path": "libgfortran4.deb",
+        "bytes": 492148,
+        "sha256": "f89b2473bc251ba0c8eb9479ad31d5f96019e2ea1f8be466beea3a68b11b19fc"
+      },
+      {
+        "path": "bin/lgraph_import",
+        "bytes": 848934168,
+        "sha256": "8ecf872458980d53637adcdfdb45f0ff9962e0e852ea2587a530b7b6360f347c"
+      },
+      {
+        "path": "bin/lgraph_server",
+        "bytes": 935263232,
+        "sha256": "413025638151a2ba91f5ac62db08888dcd2b8fd102245016b50dc6673a5b9f58"
+      },
+      {
+        "path": "lib/liblgraph.so",
+        "bytes": 224952984,
+        "sha256": "4877d9783d56d431834b864e025688fee570fab96c05763ebb76cd20ef37ac93"
+      },
+      {
+        "path": "lib/libvsag.so",
+        "bytes": 178968312,
+        "sha256": "0db2eb9adda2f895f36d5e103a206f47457dd8bccfc3d39ec4518937309065b2"
+      },
+      {
+        "path": "lib/libgfortran.so.4.0.0",
+        "bytes": 1959960,
+        "sha256": "d87b8024db66386051efbabb393cce9b8a580bb9be6e461043f74fd7653c9894"
+      }
+    ],
+    "dynamic_dependency_inspections": [
+      {
+        "file": "lgraph_server",
+        "returncode": 0,
+        "stdout": "\tlinux-vdso.so.1 (0x00007ffc927db000)\n\tlibvsag.so => /mnt/data/louzehua/ch7_t1_public_benchmark_20261023/text2gql_native_v452_prepare_20261026/lib/libvsag.so (0x00007f088de00000)\n\tliblgraph.so => /mnt/data/louzehua/ch7_t1_public_benchmark_20261023/text2gql_native_v452_prepare_20261026/lib/liblgraph.so (0x00007f088c400000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f088e979000)\n\tlibrt.so.1 => /lib/x86_64-linux-gnu/librt.so.1 (0x00007f088e974000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f088e958000)\n\tlibdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f088e951000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f088dd17000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f088c1ed000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f088e987000)\n\tlibgomp.so.1 => /lib/x86_64-linux-gnu/libgomp.so.1 (0x00007f088dcc1000)\n\tlibgfortran.so.4 => /mnt/data/louzehua/ch7_t1_public_benchmark_20261023/text2gql_native_v452_prepare_20261026/lib/libgfortran.so.4 (0x00007f088be00000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f088e923000)\n\tlibquadmath.so.0 => /lib/x86_64-linux-gnu/libquadmath.so.0 (0x00007f088bdb7000)\n",
+        "stderr": ""
+      },
+      {
+        "file": "lgraph_import",
+        "returncode": 0,
+        "stdout": "\tlinux-vdso.so.1 (0x00007ffc1bad0000)\n\tliblgraph.so => /mnt/data/louzehua/ch7_t1_public_benchmark_20261023/text2gql_native_v452_prepare_20261026/lib/liblgraph.so (0x00007f2c52600000)\n\tlibvsag.so => /mnt/data/louzehua/ch7_t1_public_benchmark_20261023/text2gql_native_v452_prepare_20261026/lib/libvsag.so (0x00007f2c51a00000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f2c53f14000)\n\tlibrt.so.1 => /lib/x86_64-linux-gnu/librt.so.1 (0x00007f2c53f0f000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f2c53ef3000)\n\tlibdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f2c53eec000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f2c52517000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f2c517ed000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f2c53f22000)\n\tlibgomp.so.1 => /lib/x86_64-linux-gnu/libgomp.so.1 (0x00007f2c51797000)\n\tlibgfortran.so.4 => /mnt/data/louzehua/ch7_t1_public_benchmark_20261023/text2gql_native_v452_prepare_20261026/lib/libgfortran.so.4 (0x00007f2c51200000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f2c53ebc000)\n\tlibquadmath.so.0 => /lib/x86_64-linux-gnu/libquadmath.so.0 (0x00007f2c5174e000)\n",
+        "stderr": ""
+      }
+    ],
+    "finished_local": "2026-10-25T19:35:26.954645+00:00"
+  },
+  "version": {
+    "time_iso": "2026-10-25T19:36:18.207557+00:00",
+    "version_returncode": 0,
+    "version_stdout": "TuGraph v4.5.2, compiled from \"\" branch, commit \"\" (web commit \"\").\n  CPP compiler version: \"GNU\" \"8.4.0\".\n  Python version : \"3.6.9\".\n",
+    "version_stderr": "",
+    "main_runtime_lock_absent": true
+  },
+  "original_remote_network_failure": {
+    "started_local": "2026-10-25T19:29:57.746867+00:00",
+    "pid": 452364,
+    "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+    "prefix": "/mnt/data/louzehua/ch7_t1_public_benchmark_20261023/text2gql_native_v452_prepare_20261026",
+    "phase": "PREPARATION_STOPPED",
+    "server_started": false,
+    "new_model_calls": 0,
+    "new_database_queries": 0,
+    "global_install": false,
+    "files": [],
+    "error_type": "URLError",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+    "finished_local": "2026-10-25T19:29:58.516285+00:00"
+  },
+  "network_failure_repeated": false,
+  "local_artifact_upload": {
+    "started_local": "2026-10-26T03:30:43.488048+08:00",
+    "gate": {
+      "pass": true,
+      "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+      "old_preparation_pid_absent": true,
+      "lock_absent": true
+    },
+    "destination_prefix": "/mnt/data/louzehua/ch7_t1_public_benchmark_20261023/text2gql_native_v452_prepare_20261026",
+    "files": [
+      {
+        "name": "tugraph-4.5.2-1.x86_64.deb",
+        "returncode": 0,
+        "expected_sha256": "67f980308cd328c6ddc58097bef7c37b0b6edbc93a8eebdbd3d97c1d81248520",
+        "expected_bytes": 603679022,
+        "error": ""
+      },
+      {
+        "name": "libgfortran4.deb",
+        "returncode": 0,
+        "expected_sha256": "f89b2473bc251ba0c8eb9479ad31d5f96019e2ea1f8be466beea3a68b11b19fc",
+        "expected_bytes": 492148,
+        "error": ""
+      }
+    ],
+    "new_model_calls": 0,
+    "server_started": false,
+    "finished_local": "2026-10-26T03:34:55.084083+08:00"
+  },
+  "global_install": false,
+  "existing_gpu_or_model_service_changes": false,
+  "actual_graphs_imported": 0,
+  "actual_reference_queries_executed": 0,
+  "model_predictions_dispatched": 0,
+  "formal_metric_frozen": false,
+  "model_prediction_admitted": false,
+  "new_model_calls": 0,
+  "reserved_attempts": 5192,
+  "cap": 12000,
+  "remaining_attempts": 6808,
+  "pending_attempts": [],
+  "scope_of_existing_model_cap": "Original CypherBench stage only",
+  "original_frozen_source_files_verified": 32,
+  "entire_T1_complete": false,
+  "next_step": "Isolated loopback CPU server and independent semantic fixtures, then fixed six-graph imports/reference audits; no method adaptation on TEST gold.",
+  "receipt_sha256": {
+    "discovery.json": "c491671b3aa5a3608152aec0434e517c8cecd069dfba7285c211452acba5fc36",
+    "artifact_receipt.json": "70d5371106d2c4ab71da73de0091c64a377b0b6b678d3560912a125324bd87d9",
+    "archive_inspection.json": "b4472c1bb91099a3e8dd9f7b0b57829d5de9add4be8b59dddd207122fa292972",
+    "libgfortran4_receipt.json": "ce63120a1fb7d228549e80d744e162c8b3f110824a76b90c55a7dd31a459544a",
+    "six_graph_input_plan.json": "de86fa482ad7168609de5ab8ed264b0583fd33d539df1debc731d263896adf11",
+    "remote_runtime_version_receipt.json": "0841cbdb54040c60ef4f1e4a40517310e1abb552394e47dc830b69e1ad96daad",
+    "engine_doc_receipts.json": "ec755e1c90eb127217656a6b1f339b42b217cbb08473d1ef1da3a20173939a17",
+    "engine_entrypoint_receipts.json": "9191d5bedf579f6e9ada17760e58059daf2ce96f54c1969c98c64554395ec9ae",
+    "engine_config_receipt.json": "53716340534e85499c29721d31409f4ae1d462c03d10bb07bb5b62922b9c30e2"
+  }
+}
