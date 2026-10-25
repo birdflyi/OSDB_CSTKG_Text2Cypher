@@ -1,0 +1,137 @@
+[
+  {
+    "path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\flight_accident\\scores\\flight_accident.json",
+    "bytes": 3755013,
+    "sha256": "4622fe2f58ee4f1b2d19ac7a3fa2580a1c930f1e8d375cc0ff05d4039fd6f609"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_flight_formal_graph_acceptance_20261024.json",
+    "bytes": 2014,
+    "sha256": "3b73210362b8574349f5d88bdaf4383243ee0f46d7d90b68dd55c801cc610f96"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_flight_route_cost_components_20261024.json",
+    "bytes": 3325,
+    "sha256": "1a13e010651b4bd4d72207068dd4a2cf612c46864a8823464d3e2cecaba40f9f"
+  },
+  {
+    "path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\nba\\scores\\nba.json",
+    "bytes": 17775137,
+    "sha256": "cb3fff39873a2ee739e2d5a8ec2a461d0f9bb6991e703966154f353b88206a96"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_nba_formal_graph_acceptance_20261024.json",
+    "bytes": 1927,
+    "sha256": "aac6d6edff7b0207827f073f883d80bba255d40191effa082f95578d63b8653d"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_nba_route_cost_components_20261024.json",
+    "bytes": 3230,
+    "sha256": "c06a57d50bdd251f947968e5a3731e3cbaa119b5db09b51a72e653c1d679e4b5"
+  },
+  {
+    "path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\fictional_character\\scores\\fictional_character.json",
+    "bytes": 15456914,
+    "sha256": "7816445d11ca73155ca5e6601fe058ef65087a5be1c35e6e6a63d56f1c928844"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_fictional_character_formal_graph_acceptance_20261024.json",
+    "bytes": 1976,
+    "sha256": "903fe200b491f04c77fcae97ccd5ca2c73e0d2223b3e1b74d07b26dbbef970c0"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_fictional_character_route_cost_components_20261024.json",
+    "bytes": 3329,
+    "sha256": "6eb5b84fb581175508b0d7cffa80de89d454832a6ec5de416dfbb996c3624d05"
+  },
+  {
+    "path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\company\\scores\\company.json",
+    "bytes": 72150088,
+    "sha256": "e04fa53755b0255611f8565d1664efee7d9ea55cd7eab78d76248f81e26aa65c"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_company_formal_graph_acceptance_20261024.json",
+    "bytes": 1937,
+    "sha256": "42b5fdf8930fce0d650b2ff1e73352e9568dff57415e170fe5fc18fbdab91d52"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_company_route_cost_components_20261024.json",
+    "bytes": 3361,
+    "sha256": "1957f3c0967683cf06fa85dbcab675a8504598fe7118b64996c0742b86ea3410"
+  },
+  {
+    "path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\geography\\scores\\geography.json",
+    "bytes": 33860641,
+    "sha256": "48433d29414b7be8914f732afe31ce7d3785d7e09e3440a8855d057c8ea6f6db"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_geography_formal_graph_acceptance_20261024.json",
+    "bytes": 2166,
+    "sha256": "e99bdb756fc1a97b61c43f32bbf6a33778307984a4753c11345ea0e7d933e95c"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_geography_route_cost_components_20261024.json",
+    "bytes": 3541,
+    "sha256": "59b76c564214f9c8dfacfd6ffccfb3fc81c62b4ef5194ae46c50416ea2ec38ea"
+  },
+  {
+    "path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\movie\\scores\\movie.json",
+    "bytes": 84777068,
+    "sha256": "ced7e9c00533cc5190311dd0e6f5c30263c9e545ea1f502d2c5a5715d5bdf9cf"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_movie_formal_graph_acceptance_20261024.json",
+    "bytes": 1993,
+    "sha256": "67027000a5c7d5f43b6a50d46c52b75994458d019bb19e9fd63de27101eb4b6a"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_movie_route_cost_components_20261024.json",
+    "bytes": 3343,
+    "sha256": "367eb387fe12bbb52c86369837516bfb96ac123610183fb5610eda3848e57992"
+  },
+  {
+    "path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\politics\\scores\\politics.json",
+    "bytes": 16825317,
+    "sha256": "fcadb68e6b909712047efc107f1772b53a0fc8fb1c0a9cd12678d5dc6f9dcbe8"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_politics_formal_graph_acceptance_20261024.json",
+    "bytes": 2002,
+    "sha256": "522cc89ffd60013f981b1c443e627244a00456623109ea2f5264fb7695ef61e9"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_politics_route_cost_components_20261024.json",
+    "bytes": 3424,
+    "sha256": "1c689c0a447432c0a428970fef537571cd4e25963e89755c5515f11f6afaa924"
+  },
+  {
+    "path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_freeze_v1_20261024\\freeze.json",
+    "bytes": 549696,
+    "sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_core_integrity_cost_live_20261024.json",
+    "bytes": 8290,
+    "sha256": "71e7cb08479b738b29611e0c4597a516ff9753c6ed37e0bd4743f9fbecc7c898"
+  },
+  {
+    "path": "D:\\ch7\\experiments\\public_benchmark_v1\\cypherbench\\evaluator\\reference_flags_v1.jsonl",
+    "bytes": 9873,
+    "sha256": "ad8186f2d3656873804e8944983f9ee21eb0bff371a3a29cceef2849a70c740b"
+  },
+  {
+    "path": "D:\\ch7\\experiments\\public_benchmark_v1\\cypherbench\\evaluator\\task_groups_v1.jsonl",
+    "bytes": 531844,
+    "sha256": "96f7761aeaa3bed58fcd64da915cbd908b7142c961a91b1ac2882fd39e10785d"
+  },
+  {
+    "path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\infra_journal_quota_recovery_queue_v5_20261025\\queue_complete.json",
+    "bytes": 213,
+    "sha256": "e077168634ca485ab083411166659dcd1f4651f18edc9740d61a08032e6538bd"
+  },
+  {
+    "path": "D:\\ch7\\reports\\t1_all_attempt_ledger_reconciliation_20261025.json",
+    "bytes": 4689,
+    "sha256": "740c51e918972acf6ef7dc211a10c76603772962c47562d7c36fda7c76a09c4c"
+  }
+]

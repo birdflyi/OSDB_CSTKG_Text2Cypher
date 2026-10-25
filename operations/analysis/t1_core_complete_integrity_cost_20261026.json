@@ -1,0 +1,274 @@
+{
+  "kind": "OFFLINE_FORMAL_CORE_AUDIT",
+  "planned_primary_paths": 4696,
+  "terminal_primary_paths": 4696,
+  "dispatched_primary_paths": 4696,
+  "nonparseable_record_files": [],
+  "final_status_counts": {
+    "direct:EXECUTED": 2347,
+    "ours:EXECUTED": 2287,
+    "ours:UNSUPPORTED": 53,
+    "ours:MODEL_ERROR": 2,
+    "ours:INFRASTRUCTURE_ERROR": 1,
+    "ours:EXECUTION_ERROR": 5,
+    "direct:INFRASTRUCTURE_ERROR": 1
+  },
+  "physical_model_attempts": 4756,
+  "known_token_sums": {
+    "prompt_tokens": 7165726,
+    "completion_tokens": 3715638,
+    "total_tokens": 10881364
+  },
+  "attempts_with_unknown_usage": 7,
+  "http_counts": {
+    "200": 4749,
+    "None": 7
+  },
+  "transport_errors": {
+    "timeout": 7
+  },
+  "database_result_traces": 7682,
+  "known_row_payload_bytes": 44513582,
+  "database_results_without_byte_measure": 15,
+  "database_attempts_with_unknown_completion": 7,
+  "records_with_unknown_primary_wrapper_clock": 6,
+  "graph_scores": {
+    "flight_accident": {
+      "Direct": {
+        "n": 189,
+        "correct": 145.0,
+        "ex_percent": 76.71957671957672,
+        "coverage_percent": 100.0,
+        "wrong_answer_percent": 23.280423280423282
+      },
+      "Direct+feedback": {
+        "n": 189,
+        "correct": 145.0,
+        "ex_percent": 76.71957671957672,
+        "coverage_percent": 100.0,
+        "wrong_answer_percent": 23.280423280423282
+      },
+      "Ours": {
+        "n": 189,
+        "correct": 136.0,
+        "ex_percent": 71.95767195767196,
+        "coverage_percent": 91.53439153439153,
+        "wrong_answer_percent": 19.576719576719576
+      },
+      "Full-detail(shared-plan)": {
+        "n": 189,
+        "correct": 136.0,
+        "ex_percent": 71.95767195767196,
+        "coverage_percent": 91.53439153439153,
+        "wrong_answer_percent": 19.576719576719576
+      }
+    },
+    "nba": {
+      "Direct": {
+        "n": 270,
+        "correct": 207.0,
+        "ex_percent": 76.66666666666667,
+        "coverage_percent": 100.0,
+        "wrong_answer_percent": 23.333333333333332
+      },
+      "Direct+feedback": {
+        "n": 270,
+        "correct": 207.0,
+        "ex_percent": 76.66666666666667,
+        "coverage_percent": 100.0,
+        "wrong_answer_percent": 23.333333333333332
+      },
+      "Ours": {
+        "n": 270,
+        "correct": 207.0,
+        "ex_percent": 76.66666666666667,
+        "coverage_percent": 97.4074074074074,
+        "wrong_answer_percent": 20.74074074074074
+      },
+      "Full-detail(shared-plan)": {
+        "n": 270,
+        "correct": 207.0,
+        "ex_percent": 76.66666666666667,
+        "coverage_percent": 97.4074074074074,
+        "wrong_answer_percent": 20.74074074074074
+      }
+    },
+    "fictional_character": {
+      "Direct": {
+        "n": 385,
+        "correct": 315.0,
+        "ex_percent": 81.81818181818181,
+        "coverage_percent": 99.74025974025975,
+        "wrong_answer_percent": 17.92207792207792
+      },
+      "Direct+feedback": {
+        "n": 385,
+        "correct": 316.0,
+        "ex_percent": 82.07792207792208,
+        "coverage_percent": 100.0,
+        "wrong_answer_percent": 17.92207792207792
+      },
+      "Ours": {
+        "n": 385,
+        "correct": 337.0,
+        "ex_percent": 87.53246753246754,
+        "coverage_percent": 99.74025974025975,
+        "wrong_answer_percent": 12.207792207792208
+      },
+      "Full-detail(shared-plan)": {
+        "n": 385,
+        "correct": 337.0,
+        "ex_percent": 87.53246753246754,
+        "coverage_percent": 99.74025974025975,
+        "wrong_answer_percent": 12.207792207792208
+      }
+    },
+    "company": {
+      "Direct": {
+        "n": 347,
+        "correct": 273.0,
+        "ex_percent": 78.6743515850144,
+        "coverage_percent": 100.0,
+        "wrong_answer_percent": 21.32564841498559
+      },
+      "Direct+feedback": {
+        "n": 347,
+        "correct": 273.0,
+        "ex_percent": 78.6743515850144,
+        "coverage_percent": 100.0,
+        "wrong_answer_percent": 21.32564841498559
+      },
+      "Ours": {
+        "n": 347,
+        "correct": 272.0,
+        "ex_percent": 78.38616714697406,
+        "coverage_percent": 99.42363112391931,
+        "wrong_answer_percent": 21.037463976945244
+      },
+      "Full-detail(shared-plan)": {
+        "n": 347,
+        "correct": 272.0,
+        "ex_percent": 78.38616714697406,
+        "coverage_percent": 99.42363112391931,
+        "wrong_answer_percent": 21.037463976945244
+      }
+    },
+    "geography": {
+      "Direct": {
+        "n": 366,
+        "correct": 271.0,
+        "ex_percent": 74.04371584699453,
+        "coverage_percent": 99.72677595628416,
+        "wrong_answer_percent": 25.683060109289617
+      },
+      "Direct+feedback": {
+        "n": 366,
+        "correct": 271.0,
+        "ex_percent": 74.04371584699453,
+        "coverage_percent": 99.72677595628416,
+        "wrong_answer_percent": 25.683060109289617
+      },
+      "Ours": {
+        "n": 366,
+        "correct": 271.0,
+        "ex_percent": 74.04371584699453,
+        "coverage_percent": 93.44262295081967,
+        "wrong_answer_percent": 19.398907103825138
+      },
+      "Full-detail(shared-plan)": {
+        "n": 366,
+        "correct": 271.0,
+        "ex_percent": 74.04371584699453,
+        "coverage_percent": 93.44262295081967,
+        "wrong_answer_percent": 19.398907103825138
+      }
+    },
+    "movie": {
+      "Direct": {
+        "n": 401,
+        "correct": 323.0,
+        "ex_percent": 80.54862842892769,
+        "coverage_percent": 100.0,
+        "wrong_answer_percent": 19.45137157107232
+      },
+      "Direct+feedback": {
+        "n": 401,
+        "correct": 323.0,
+        "ex_percent": 80.54862842892769,
+        "coverage_percent": 100.0,
+        "wrong_answer_percent": 19.45137157107232
+      },
+      "Ours": {
+        "n": 401,
+        "correct": 317.0,
+        "ex_percent": 79.05236907730674,
+        "coverage_percent": 98.50374064837905,
+        "wrong_answer_percent": 19.45137157107232
+      },
+      "Full-detail(shared-plan)": {
+        "n": 401,
+        "correct": 317.0,
+        "ex_percent": 79.05236907730674,
+        "coverage_percent": 98.50374064837905,
+        "wrong_answer_percent": 19.45137157107232
+      }
+    },
+    "politics": {
+      "Direct": {
+        "n": 390,
+        "correct": 272.0,
+        "ex_percent": 69.74358974358974,
+        "coverage_percent": 98.97435897435898,
+        "wrong_answer_percent": 29.23076923076923
+      },
+      "Direct+feedback": {
+        "n": 390,
+        "correct": 274.0,
+        "ex_percent": 70.25641025641026,
+        "coverage_percent": 100.0,
+        "wrong_answer_percent": 29.743589743589745
+      },
+      "Ours": {
+        "n": 390,
+        "correct": 290.0,
+        "ex_percent": 74.35897435897436,
+        "coverage_percent": 98.71794871794872,
+        "wrong_answer_percent": 24.358974358974358
+      },
+      "Full-detail(shared-plan)": {
+        "n": 390,
+        "correct": 290.0,
+        "ex_percent": 74.35897435897436,
+        "coverage_percent": 98.71794871794872,
+        "wrong_answer_percent": 24.358974358974358
+      }
+    }
+  },
+  "full2348_score_ready": true,
+  "entire_T1_complete": false,
+  "monetary_cost": "unknown; no assumed unit prices",
+  "historical_root_stop": true,
+  "queue_state_directory": "infra_journal_quota_recovery_queue_v5_20261025",
+  "resumed_queue_stopped": false,
+  "resumed_queue_complete": true,
+  "primary_delta_percent_points": 0.8943781942078365,
+  "primary_delta_interval": {
+    "lower_95": -0.01915797245241911,
+    "upper_95": 0.03230070343677971,
+    "replicates": 10000,
+    "seed": 20261024,
+    "unit": "paired within-graph template families; fixed original graph weights"
+  },
+  "micro_ex_percent": {
+    "Direct": 76.91652470187394,
+    "Direct+feedback": 77.0442930153322,
+    "Ours": 77.93867120954003,
+    "Full-detail(shared-plan)": 77.93867120954003
+  },
+  "macro_ex_percent": {
+    "Direct": 76.88781582985021,
+    "Direct+feedback": 76.99818165450176,
+    "Ours": 77.4282903695794,
+    "Full-detail(shared-plan)": 77.4282903695794
+  }
+}

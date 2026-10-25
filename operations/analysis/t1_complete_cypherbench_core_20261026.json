@@ -1,0 +1,179 @@
+{
+  "kind": "COMPLETE_CYPHERBENCH_CORE_NOT_ENTIRE_T1",
+  "time_local": "2026-10-26T01:24:25.117761+08:00",
+  "tasks": 2348,
+  "primary_paths": 4696,
+  "graphs": {
+    "flight_accident": 189,
+    "nba": 270,
+    "fictional_character": 385,
+    "company": 347,
+    "geography": 366,
+    "movie": 401,
+    "politics": 390
+  },
+  "methods": {
+    "Direct": {
+      "n": 2348,
+      "correct": 1806.0,
+      "returned": 2342,
+      "wrong_returned": 536.0,
+      "ex_percent": 76.91652470187394,
+      "coverage_percent": 99.74446337308348,
+      "wrong_answer_percent": 22.82793867120954
+    },
+    "Direct+feedback": {
+      "n": 2348,
+      "correct": 1809.0,
+      "returned": 2347,
+      "wrong_returned": 538.0,
+      "ex_percent": 77.0442930153322,
+      "coverage_percent": 99.95741056218058,
+      "wrong_answer_percent": 22.913117546848383
+    },
+    "Ours": {
+      "n": 2348,
+      "correct": 1830.0,
+      "returned": 2287,
+      "wrong_returned": 457.0,
+      "ex_percent": 77.93867120954003,
+      "coverage_percent": 97.40204429301534,
+      "wrong_answer_percent": 19.463373083475297
+    },
+    "Full-detail(shared-plan)": {
+      "n": 2348,
+      "correct": 1830.0,
+      "returned": 2287,
+      "wrong_returned": 457.0,
+      "ex_percent": 77.93867120954003,
+      "coverage_percent": 97.40204429301534,
+      "wrong_answer_percent": 19.463373083475297
+    }
+  },
+  "macro_ex_percent": {
+    "Direct": 76.88781582985021,
+    "Direct+feedback": 76.99818165450176,
+    "Ours": 77.4282903695794,
+    "Full-detail(shared-plan)": 77.4282903695794
+  },
+  "primary_paired_delta_pp": 0.8943781942078317,
+  "primary_95_interval_pp": [
+    -1.9157972452419112,
+    3.230070343677971
+  ],
+  "bootstrap": {
+    "lower_95": -0.01915797245241911,
+    "upper_95": 0.03230070343677971,
+    "replicates": 10000,
+    "seed": 20261024,
+    "unit": "paired within-graph template families; fixed original graph weights"
+  },
+  "template_families": 488,
+  "descriptive_pairs_ours_vs_direct_feedback": {
+    "both_correct": 1629,
+    "neither_correct": 338,
+    "ours_only": 201,
+    "direct_only": 180
+  },
+  "prefrozen_reference_auxiliary": {
+    "n": 2319,
+    "excluded": 29,
+    "flag_categories": {
+      "ORDER_BY_TIE": 28,
+      "FLOAT_AGGREGATION_LAST_BIT_VARIATION": 1
+    },
+    "methods": {
+      "Direct": {
+        "n": 2319,
+        "correct": 1806.0,
+        "returned": 2313,
+        "wrong_returned": 507.0,
+        "ex_percent": 77.8783958602846,
+        "coverage_percent": 99.74126778783959,
+        "wrong_answer_percent": 21.86287192755498
+      },
+      "Direct+feedback": {
+        "n": 2319,
+        "correct": 1809.0,
+        "returned": 2318,
+        "wrong_returned": 509.0,
+        "ex_percent": 78.00776196636481,
+        "coverage_percent": 99.95687796463993,
+        "wrong_answer_percent": 21.94911599827512
+      },
+      "Ours": {
+        "n": 2319,
+        "correct": 1830.0,
+        "returned": 2258,
+        "wrong_returned": 428.0,
+        "ex_percent": 78.91332470892627,
+        "coverage_percent": 97.3695558430358,
+        "wrong_answer_percent": 18.45623113410953
+      },
+      "Full-detail(shared-plan)": {
+        "n": 2319,
+        "correct": 1830.0,
+        "returned": 2258,
+        "wrong_returned": 428.0,
+        "ex_percent": 78.91332470892627,
+        "coverage_percent": 97.3695558430358,
+        "wrong_answer_percent": 18.45623113410953
+      }
+    },
+    "replaces_full_official_primary": false
+  },
+  "model_costs": {
+    "direct": {
+      "physical_model_attempts": 2355,
+      "known_tokens": {
+        "prompt_tokens": 2742957,
+        "completion_tokens": 1324446,
+        "total_tokens": 4067403
+      },
+      "unknown_usage_attempts": 2
+    },
+    "ours": {
+      "physical_model_attempts": 2401,
+      "known_tokens": {
+        "prompt_tokens": 4422769,
+        "completion_tokens": 2391192,
+        "total_tokens": 6813961
+      },
+      "unknown_usage_attempts": 5
+    }
+  },
+  "summary_route_executions": 0,
+  "executed_plan_control_raw_agreements": 2287,
+  "attempt_ledger": {
+    "cumulative_reserved": 5192,
+    "approved_cap": 12000,
+    "remaining": 6808,
+    "pending": [],
+    "scope_counts": {
+      "historical_pre_freeze": 434,
+      "formal_core": 4756,
+      "post_freeze_connectivity_probe": 2
+    },
+    "formal_physical_attempts": 4756,
+    "feedback_generation_receipts": 54,
+    "extra_physical_retry_attempts": 6,
+    "all_formal_attempts_attributed_once": true,
+    "physical_evidence_seal": "1e024ea67ae278b94db70c8a7ac81ccfbb35c930cfb512a767923913b4357113",
+    "prediction_evidence_seal": "550ad967e09b3e445c33d8509b920103d926cd0de545a2802bfdfd5b062aec35"
+  },
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "source_commit": "c6143670a9949ec3b366ef513291740d1b8c4134",
+  "all_saved_scores_unchanged_during_audit": true,
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "monetary_cost": "unknown",
+  "entire_T1_complete": false,
+  "limits": [
+    "The prespecified interval includes zero; no confirmed EX advantage or equivalence conclusion.",
+    "No observed summary execution; no empirical summary savings evidence.",
+    "Same-plan controls reuse planner/model generations; not independent model baselines.",
+    "Known token totals exclude unknown usage; fees are unknown.",
+    "Control replay order/cache and unknown clocks prevent a full causal latency/cost claim.",
+    "Author baselines, complementary public blocks and independent OSDB tasks remain incomplete."
+  ]
+}
