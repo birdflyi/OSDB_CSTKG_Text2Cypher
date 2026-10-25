@@ -296,3 +296,7 @@ text2cypher-proto/eval/template_first_mvp_repair.json
 # Local confidential auth backup
 data_scripts/etc/authConf_local.py
 
+
+# Local operational approvals; keep original records outside publication Git
+**/*_APPROVAL_*.json
+**/*_approval_*.json
