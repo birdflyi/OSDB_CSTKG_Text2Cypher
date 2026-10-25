@@ -1,0 +1,38 @@
+{
+  "time_local": "2026-10-25T13:21:18.121518+08:00",
+  "formal_run_ready": true,
+  "scope": "Remaining frozen CypherBench core via SAME accepted original local journal runner",
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "original_source_clean": true,
+  "source_hashes_verified": 32,
+  "method_prompt_model_metric_changes": false,
+  "existing_journal_adapter_files_verified": {
+    "journal_public_worker_v2.py": "a7f2d3acc911daac688be9f6773b6406917e5d912eb6c67cb221a0273398fb55",
+    "core_journal_resume_v3.py": "20488d9ab76c44baa485aad8149c8ff25e0494464b2e68e88ae84b5a1a926855",
+    "durable_native_journal_v1.py": "a44b3b00158ff9ceb5a54d04538841c8185d883dc6010b147594723856b1ff56"
+  },
+  "new_transport_variant_used_for_formal": false,
+  "remote_native_ipc_only_verified_fallback": true,
+  "native_actual_conformance_pass": true,
+  "single_model_probe_usable": true,
+  "probe_physical_attempts": 1,
+  "budget": {
+    "reserved": 3267,
+    "cap": 12000,
+    "remaining": 8733,
+    "pending": []
+  },
+  "fresh_remote_gate": {
+    "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+    "worker_and_preflight_absent": true,
+    "runtime_and_preflight_locks_absent": true
+  },
+  "unknown_intents_absent": true,
+  "all_old_failures_retained": true,
+  "exhausted_requests_retried": false,
+  "queue_id": "infra_journal_post_health_queue_v4_20261025",
+  "segment": "journal_post_health_1320",
+  "entire_T1_complete": false,
+  "resume_not_an_automatic_infinite_loop": true,
+  "stop_policy": "Existing same-id3RPC/10s and same-body3model/10s, stop/audit at3 consecutive infrastructure failures"
+}

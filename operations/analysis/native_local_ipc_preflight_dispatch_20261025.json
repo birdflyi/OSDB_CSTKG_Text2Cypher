@@ -1,0 +1,42 @@
+{
+  "kind": "NATIVE_LOCAL_IPC_ACTUAL_PREFLIGHT_DISPATCH",
+  "time_local": "2026-10-25T13:13:32.817600+08:00",
+  "synthetic_checks_pass": true,
+  "synthetic_checks": 10,
+  "saved_geography_contexts_byte_checked": 207,
+  "saved_inputs_unchanged": true,
+  "fresh_remote_gate": {
+    "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+    "owner_pass": true,
+    "worker_absent": true,
+    "lock_absent": true
+  },
+  "launched": {
+    "pid": 294520,
+    "base": "/mnt/data/louzehua/ch7_t1_public_benchmark_20261023/remote_cutover_preflight_v1_20261025"
+  },
+  "actual_result_pending": true,
+  "new_model_calls": 0,
+  "formal_predictions": 0,
+  "budget_reserved": 3266,
+  "budget_pending": [],
+  "budget_unchanged": true,
+  "budget_authority_handover": false,
+  "private_model_configuration_uploaded": false,
+  "SSH_key_uploaded": false,
+  "spec": {
+    "frozen_commit": "c6143670a9949ec3b366ef513291740d1b8c4134",
+    "packet_sha256": "d7fb5643ea33ced2343e726e49700b7c6014c08de952fdbc227aeb917b052adb",
+    "history_sha256": "e30884a58f09de8613d3327a2603fd91b936c7174af2240a82326806e7b687f1",
+    "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+    "source_bundle_sha256": "1494b9aab295b7689ffc9e4e63c83ffe5139e6c3bcf6732e243c5db22a6466e0",
+    "fixture_sha256": "5a08acb97a543f7bfa407fe9e5bcc3423beb4f0c2b626dd690f531a28e0943b6",
+    "history_manifest_sha256": "fe58fdbb385d2b99be299582d7e0a8ad51e163d375396a07aded1167ddc4d30e",
+    "operations_sha256": {
+      "local_native_worker.py": "6fe3de5dfc087ded0039828597b535325445b8c1ede7119fcf02519ce7e0a374",
+      "frozen_path_resolver.py": "642431134cd4bc5e1b02506a060f8fe1dae5fca1eba371af031c2bc2db22f5ff",
+      "portable_attempt_history.py": "6e40a63b4ddfac57da9dc012b44dfe176555363b33ca8f670800946cf7668459",
+      "native_cutover_preflight_job.py": "ffe3023245c84b2440c537ba02c9a458f8fc48ba7d3e8ca6cc66fcdaa36dbf3d"
+    }
+  }
+}

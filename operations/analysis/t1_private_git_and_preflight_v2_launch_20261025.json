@@ -1,0 +1,19 @@
+{
+  "git_installation": {
+    "package": "git",
+    "ubuntu_version": "1:2.43.0-1ubuntu7.4",
+    "package_sha256": "c79b7948ef9860c97ec74293a90178676e63368a0711c95c28a55af4edf1adab",
+    "version": "git version 2.43.0",
+    "private_prefix": "/mnt/data/louzehua/ch7_t1_public_benchmark_20261023/private_git_noble_20261025/extracted",
+    "global_packages_changed": false,
+    "gpu_or_model_services_changed": false
+  },
+  "launched": {
+    "pid": 294937,
+    "base": "/mnt/data/louzehua/ch7_t1_public_benchmark_20261023/remote_cutover_preflight_v2_20261025"
+  },
+  "prior_failed_preflight_preserved": true,
+  "new_model_calls": 0,
+  "formal_predictions": 0,
+  "private_model_configuration_uploaded": false
+}
