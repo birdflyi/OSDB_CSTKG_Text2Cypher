@@ -12,7 +12,7 @@ import re
 import time
 
 
-VERSION = 'typed-services-dev-0.3-native-profile'
+VERSION = 'typed-services-dev-0.4-native-identity'
 
 
 class UnsupportedPlan(ValueError):
@@ -135,6 +135,7 @@ def compile_selection(call, schema, *, backend='neo4j'):
     object_fields(call, ['nodes', 'edges', 'where', 'returns'],
                   ['distinct', 'order_by', 'limit', 'group_by'])
     entities = {row['label']: row for row in schema['entities']}
+    identity_fields = {}
     relations = {(row['label'], row['subj_label'], row['obj_label']): row
                  for row in schema['relations']}
     if not isinstance(call['nodes'], list) or not 1 <= len(call['nodes']) <= 4:
@@ -153,6 +154,12 @@ def compile_selection(call, schema, *, backend='neo4j'):
             variables[variable].update({'eid': 'str', 'name': 'str', 'aliases': 'list[str]',
                                         'description': 'str'})
         types[variable] = 'node'
+        if native and 'identity_property' in entities[row['label']]:
+            primary = entities[row['label']]['identity_property']
+            if primary not in variables[variable] or variables[variable][primary] not in ('str', 'int'):
+                raise UnsupportedPlan('Native primary identity needs a declared string/integer property')
+            identity_fields[variable] = {'field': variable + '.' + primary,
+                                         'type': variables[variable][primary]}
     adjacency = {v: set() for v in node_labels}
     required_adjacency = {v: set() for v in node_labels}
     required_nodes = {next(iter(node_labels))}
@@ -346,7 +353,8 @@ def compile_selection(call, schema, *, backend='neo4j'):
         grouped = [field(value)[0] for value in keys]
         for value in projected.values():
             variable = value.split('.')[0]
-            identity = variable + ('.eid' if types[variable] == 'node' else '.rid')
+            identity = (identity_fields.get(variable, {}).get('field') if native else
+                        variable + ('.eid' if types[variable] == 'node' else '.rid'))
             if value not in keys and identity not in keys:
                 raise UnsupportedPlan('Return property is not determined by declared grouping keys')
         hidden = [expression + ' AS ' + ident('__group_' + str(index))
@@ -372,11 +380,14 @@ def compile_selection(call, schema, *, backend='neo4j'):
             raise UnsupportedPlan('Invalid explicit limit')
         params['requested_limit'] = call['limit']
         matches.append('LIMIT $requested_limit')
-    return {'query': ' '.join(matches), 'parameters': params, 'columns': columns,
+    result = {'query': ' '.join(matches), 'parameters': params, 'columns': columns,
             'contract': {'node_labels': node_labels, 'projected': projected,
                          'nullable_nodes': sorted(nullable_nodes), 'group_by': call.get('group_by'),
                          'aggregates': aggregates, 'explicit_limit': call.get('limit'),
                          'set_rows': call.get('distinct', False)}}
+    if native:
+        result['contract']['identity_fields'] = identity_fields
+    return result
 
 
 def _set_contract(call, compiled, key):
@@ -384,9 +395,13 @@ def _set_contract(call, compiled, key):
     if contract['aggregates'] or contract['explicit_limit'] is not None or call.get('order_by'):
         raise UnsupportedPlan('Set inputs must be unaggregated and untruncated')
     reference = contract['projected'].get(key, '')
-    if not reference.endswith('.eid'):
-        raise UnsupportedPlan('Composition key must be a projected entity eid')
     node = reference.split('.')[0]
+    if 'identity_fields' in contract:
+        identity = contract['identity_fields'].get(node, {})
+        if identity.get('field') != reference:
+            raise UnsupportedPlan('Native composition key must project the declared primary identity')
+    elif not reference.endswith('.eid'):
+        raise UnsupportedPlan('Composition key must be a projected entity eid')
     if node in contract.get('nullable_nodes', []):
         raise UnsupportedPlan('Composition entity key must be bound in the required pattern')
     if any(not field.startswith(node + '.') for field in contract['projected'].values()):
@@ -400,7 +415,8 @@ def _disjoint_equality(left, right, compiled_left, compiled_right, key, schema):
     if label != other_label:
         raise UnsupportedPlan('Mixed entity types require a separate identity contract')
     props = next(row['properties'] for row in schema['entities'] if row['label'] == label)
-    props = {**props, 'eid': 'str', 'name': 'str'}
+    if 'identity_fields' not in compiled_left['contract']:
+        props = {**props, 'eid': 'str', 'name': 'str'}
     for x in left['where']:
         for y in right['where']:
             if (x.get('op') == y.get('op') == 'eq' and 'value' in x and 'value' in y
@@ -513,13 +529,19 @@ def execute_plan(plan, schema, execute, *, strategy='contract', backend='neo4j')
             compose_started = time.monotonic()
             indices = {column: index for index, column in enumerate(compiled[0]['columns'])}
             maps = []
-            for result in records:
+            for input_index, result in enumerate(records):
                 mapping = {}
                 for row in result:
                     if len(row) != len(indices):
                         raise UnsupportedPlan('Malformed executor row')
                     identity = row[indices[key]]
-                    if not isinstance(identity, str):
+                    if backend == 'tugraph-4.5.2':
+                        node = identities[input_index][0]
+                        kind = compiled[input_index]['contract']['identity_fields'][node]['type']
+                        valid_identity = type(identity) is {'str': str, 'int': int}[kind]
+                    else:
+                        valid_identity = isinstance(identity, str)
+                    if not valid_identity:
                         raise UnsupportedPlan('Non-string or missing entity identity')
                     if identity in mapping and mapping[identity] != row:
                         raise UnsupportedPlan('Payload not uniquely determined by entity key')

@@ -1,0 +1,127 @@
+{
+  "kind": "NATIVE_SCHEMA_IDENTITY_AND_SET_DEVELOPMENT_NOT_BENCHMARK_EX",
+  "time_local": "2026-10-26T06:34:48.273047+08:00",
+  "schemas": [
+    {
+      "graph": "Manufacturing_Production_Process",
+      "import_config_sha256": "552b41395f4aaae5c8fac6560fc80fe39ecca8a44d8b24a28f9661e88add3d85",
+      "normalized_schema_sha256": "517b994d0560a43466884c4f448c26d1b279afaa9865d36d840f9a923efb7457",
+      "vertex_labels": 9,
+      "directed_edge_signatures": 8,
+      "primary_kinds": [
+        "str"
+      ],
+      "source_types_preserved": true,
+      "phantom_metadata_added": false
+    },
+    {
+      "graph": "Information_Technology_IT_Asset_Management",
+      "import_config_sha256": "d887380effa5742cd3371ea3766a98092315489d0f8aec4439140ef88fbb86ff",
+      "normalized_schema_sha256": "6e97b3bc713cade21d2aed25daa8a68f7a6e4bb6e70002a8bdd4ce65fa5900ba",
+      "vertex_labels": 7,
+      "directed_edge_signatures": 9,
+      "primary_kinds": [
+        "str"
+      ],
+      "source_types_preserved": true,
+      "phantom_metadata_added": false
+    },
+    {
+      "graph": "Manufacturing_BOM(Bill_Of_Materials)",
+      "import_config_sha256": "6239346a845bed7e03fc8c86f67b1a9b14ef92c152cb10337e34f9ec1baf7cf1",
+      "normalized_schema_sha256": "80dd0227c96377e5030af30418d9d286d5f57a4a0d81be5154da5d33b72e64e2",
+      "vertex_labels": 8,
+      "directed_edge_signatures": 18,
+      "primary_kinds": [
+        "str"
+      ],
+      "source_types_preserved": true,
+      "phantom_metadata_added": false
+    },
+    {
+      "graph": "Knowledge_Graph_Geography",
+      "import_config_sha256": "50d7fd0136473b2d39a9ef12bc30a98d179d6d2f1338a7c07bd2ef0001c0bb0e",
+      "normalized_schema_sha256": "76338b6bbe4f0d928396d53cfa7507883593cf769e0b557f0ad65917f56e1ea5",
+      "vertex_labels": 7,
+      "directed_edge_signatures": 13,
+      "primary_kinds": [
+        "str"
+      ],
+      "source_types_preserved": true,
+      "phantom_metadata_added": false
+    },
+    {
+      "graph": "Financial_Payment",
+      "import_config_sha256": "2e0764cd71b1b8429cd1cbc190982ddad95d727dc77f988b198755304b85c3af",
+      "normalized_schema_sha256": "530bfeb49e3754b2824752881a1b2dc5e52041542cd2e1e14c8a1fd00d437056",
+      "vertex_labels": 8,
+      "directed_edge_signatures": 8,
+      "primary_kinds": [
+        "str"
+      ],
+      "source_types_preserved": true,
+      "phantom_metadata_added": false
+    },
+    {
+      "graph": "Social_Network_Twitter",
+      "import_config_sha256": "16231c757926e9578a7cb0bceea8f2f283020f4b0b63530c0d1c4e5f3935e203",
+      "normalized_schema_sha256": "05d58dfb1e7c01cb9a3ef331c4517e693d7e14ea1163e00ffb9046a0c2b386d3",
+      "vertex_labels": 7,
+      "directed_edge_signatures": 8,
+      "primary_kinds": [
+        "str"
+      ],
+      "source_types_preserved": true,
+      "phantom_metadata_added": false
+    }
+  ],
+  "vertex_labels": 46,
+  "directed_edge_signatures": 64,
+  "source_files_only": "import_config.json; no benchmark question/reference/model configuration read",
+  "native_fixed_plans": 8,
+  "strategies_each": 2,
+  "native_outcomes": 16,
+  "native_expected_matches": 16,
+  "physical_native_queries": 32,
+  "model_calls": 0,
+  "cumulative_model_attempts": 5192,
+  "original_cap": 12000,
+  "remaining_original_CypherBench_scope": 6808,
+  "new_model_budget_approved": false,
+  "new_model_budget_question_pending": true,
+  "string_primary_actual_native_fixture": true,
+  "integer_primary_unit_only": true,
+  "schema_identity_adapter_complete": true,
+  "full_backend_adapted": false,
+  "formal_prediction_admitted": false,
+  "entire_T1_complete": false,
+  "local_checks_passed": 32,
+  "original_frozen_core_files_unchanged": 32,
+  "fixture_spec_sha256": "da46b26a09af4f8b6310120d882dad33224276ed25af64a4779220d214f38e57",
+  "fixture_receipt_sha256": "22b592735ac98cca6f68e0958b8cae6d8ea64cce210697f222921668a6c70ef1",
+  "executed_source_sha256": {
+    "schema_services.py": "516a269919fcea7cbb7bf5cf054b5111bffc672af496d4111c6442a07509b80d",
+    "tugraph_dialect.py": "d0fa07b5a35d81f2485538b411a2e3c412be3209606d1fcaa47f791b0113f6e0",
+    "tugraph_schema.py": "377cff0f7991825fcdc767da56ed386c6e6ed1f39e13ef5f4828b13932570ba6"
+  },
+  "current_source_sha256": {
+    "schema_services.py": "516a269919fcea7cbb7bf5cf054b5111bffc672af496d4111c6442a07509b80d",
+    "tugraph_dialect.py": "d0fa07b5a35d81f2485538b411a2e3c412be3209606d1fcaa47f791b0113f6e0",
+    "tugraph_schema.py": "377cff0f7991825fcdc767da56ed386c6e6ed1f39e13ef5f4828b13932570ba6"
+  },
+  "executed_source_matches_current": true,
+  "remote_closure": {
+    "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+    "main_runtime_lock": false,
+    "relevant_processes": [],
+    "private_port_listeners": [],
+    "read_only": true,
+    "time_local": "2026-10-26T06:34:48.273047+08:00"
+  },
+  "pending": [
+    "OPTIONAL/multi-stage and DATETIME/BOOL literal admission",
+    "equal native Direct/Ours schema/entity/dialect inputs and training-only model development",
+    "REST/Bolt typed-answer/scorer/author-cohort contract and full formal freeze",
+    "explicit new benchmark model budget"
+  ]
+}

@@ -33,9 +33,8 @@ def literal(value):
     raise UnsupportedPlan('Unsupported native literal')
 
 
-def compile_rest_selection(call, schema):
-    compiled = compile_selection(call, schema, backend=PROFILE)
-    query = compiled['query']
+def render_compiler_query(query, parameters):
+    """Internal compiler callback; never an entrypoint for raw model queries."""
     # This renderer only accepts output of the compiler above, which has plain
     # identifiers and no string literals. Literal text is never scanned again.
     if any(mark in query for mark in ('"', "'", '`', '//', '/*', ';')):
@@ -43,12 +42,18 @@ def compile_rest_selection(call, schema):
     seen = set()
     def replace(match):
         key = match.group(1)
-        if key not in compiled['parameters']:
+        if key not in parameters:
             raise UnsupportedPlan('Missing native parameter')
         seen.add(key)
-        return literal(compiled['parameters'][key])
+        return literal(parameters[key])
     script = re.sub(r'\$([A-Za-z_][A-Za-z0-9_]*)', replace, query)
-    if seen != set(compiled['parameters']):
+    if seen != set(parameters):
         raise UnsupportedPlan('Unused native parameter')
+    return script
+
+
+def compile_rest_selection(call, schema):
+    compiled = compile_selection(call, schema, backend=PROFILE)
+    script = render_compiler_query(compiled['query'], compiled['parameters'])
     return {**compiled, 'script': script, 'backend_profile': PROFILE,
             'formal_admission': False}

@@ -1,5 +1,12 @@
 # Native TuGraph compiler profile: development only
 
+Current stage: `typed-services-dev-0.4-native-identity`. Six import-config
+schemas (46 vertex labels, 64 directed signatures) preserve actual declared
+primary properties and types. Eight fixed independent set plans, each run with
+contract and full-detail strategies, gave 16/16 expected final answers from 32
+native queries. String identities are measured on the native engine; integer
+identity rejection/coercion checks are local only. No model predictions.
+
 This branch starts at frozen CypherBench commit c614367. It leaves that run's
 source, predictions, scores and main table unchanged. No Text2GQL model
 prediction is admitted by these changes.
@@ -11,8 +18,8 @@ physical IDs. `tugraph_dialect.compile_rest_selection` only renders selections
 compiled by this module, and never accepts arbitrary raw query text.
 
 The original default is `backend='neo4j'`. Existing callers and query output
-remain on that path unless explicitly changed. The version is now
-`typed-services-dev-0.3-native-profile`; it is not the original frozen version.
+remain on that path unless explicitly changed. This branch is not the original
+frozen version. The first compiler-only stage was v0.3-native-profile.
 
 Independent four-node/four-edge fixtures, with no benchmark tasks or model
 calls, measured 17/18 checks in v1, 17/18 in v2 and 18/18 in v3. Intermediate
@@ -22,13 +29,13 @@ COUNT DISTINCT returned four vertices rather than the three incident vertices;
 physical-ID and declared-primary-key counting returned three. These observations
 are limited to the pinned native engine and fixtures, not universal engine claims.
 
-Not ready: schema/identity adapter, entity-set composition, OPTIONAL/multi-stage
-lowering, DATETIME support, equal Direct inputs, typed REST/Bolt answers,
+Not ready: OPTIONAL/multi-stage lowering, DATETIME/BOOL literal admission,
+equal Direct inputs, typed REST/Bolt answers,
 training-only model development, final metrics and formal freeze. Unsupported
 syntax is explicit, not replaced by an easier question. Do not start a test
 prediction from this profile alone or reuse the CypherBench-only model budget.
 
-Verification: `python -m unittest test_tugraph_dialect test_schema_services`.
-23 checks passed. Full measured evidence is indexed in the stage report, kept
+Verification: `python -m unittest test_tugraph_dialect test_schema_services test_tugraph_schema`.
+32 checks passed. Full measured evidence is indexed in the stage report, kept
 outside publication Git. No credentials, raw author data or runtime packages
 are required by these source files.
