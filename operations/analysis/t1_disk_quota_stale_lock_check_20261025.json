@@ -1,0 +1,25 @@
+{
+  "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+  "known_processes": {
+    "296235": {
+      "exists": false
+    },
+    "296237": {
+      "exists": false
+    },
+    "296255": {
+      "exists": false
+    }
+  },
+  "matching_workers": [],
+  "bolt_17688_listening": false,
+  "lock_sha256": "9916c1d031c1b412c3eecac8d02cb2ad5a48b50fc06cceb5c913d1f849b3717e",
+  "lock_bytes": 69,
+  "storage_probe": {
+    "bytes": 65536,
+    "fsync_and_readback_pass": true,
+    "filename": "storage_health_probe_20261025_1792912202253659291.bin",
+    "own_probe_removed": true
+  },
+  "time_local": "2026-10-25T15:10:04.222103+08:00"
+}

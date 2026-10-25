@@ -1,0 +1,16 @@
+{
+  "time_local": "2026-10-25T15:09:17.794900+08:00",
+  "budget": {
+    "reserved": 3566,
+    "cap": 12000,
+    "remaining": 8434,
+    "pending": []
+  },
+  "open_model_intents": [],
+  "first_missing_shared_qid": "f8f87dac-12e1-415a-b513-aa6735fd2632",
+  "missing_shared_count": 11,
+  "first_missing_shared_question": "What is the minimum vertical depth of lakes situated in the same country as Devistan II?",
+  "completed_terminal_paths": 3092,
+  "new_model_calls": 0,
+  "new_native_queries": 0
+}
