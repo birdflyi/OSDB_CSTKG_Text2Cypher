@@ -1,0 +1,1084 @@
+{
+  "kind": "ACTUAL_NATIVE_FIXTURE_RESULTS_NOT_METHOD_EX",
+  "original_expectations_unchanged": true,
+  "profiles": [
+    {
+      "version": "v1",
+      "phase": "STOPPED",
+      "native_queries": 0,
+      "original_fixed_cases": 8,
+      "original_cases_sha256": "66a367d81ee2a53d73a9349dc8d2d70fe2732986d7d9a3b5bd9b17e676da7e2b",
+      "input_files": {
+        "Person.csv": {
+          "sha256": "bbb7edc48d7049c1202d2172158737540b9bd387933130130745a16d8e2bed14",
+          "bytes": 112
+        },
+        "LINK.csv": {
+          "sha256": "0d98e66f6bc58f6d7eb6ff599424e28980f4caf19c52e112152d0ce3a60afe5f",
+          "bytes": 136
+        },
+        "import_config.json": {
+          "sha256": "c5c5b8a5692ed822c4d53e86f949b0159a7519598d40bae6cfcaf91ea00bd10f",
+          "bytes": 1477
+        }
+      },
+      "server_profile": "package default true",
+      "matched_original_cases": null,
+      "cases": [],
+      "worker_original_sha256": "3bf36427cb8178a64450d6712aad829d24e37127666e1589faa18b407a95ed34",
+      "receipt_sha256": "38d865b41404c4620a0e99f83d35d21a31606a20e2e141ce6bd124ec615454a4",
+      "error_type": "RuntimeError",
+      "error": "Importer failed; inspect retained private log"
+    },
+    {
+      "version": "v2",
+      "phase": "FIXTURE_CHECKS_FINISHED",
+      "native_queries": 8,
+      "original_fixed_cases": 8,
+      "original_cases_sha256": "66a367d81ee2a53d73a9349dc8d2d70fe2732986d7d9a3b5bd9b17e676da7e2b",
+      "input_files": {
+        "Person.csv": {
+          "sha256": "bbb7edc48d7049c1202d2172158737540b9bd387933130130745a16d8e2bed14",
+          "bytes": 112
+        },
+        "LINK.csv": {
+          "sha256": "0d98e66f6bc58f6d7eb6ff599424e28980f4caf19c52e112152d0ce3a60afe5f",
+          "bytes": 136
+        },
+        "import_config.json": {
+          "sha256": "c5c5b8a5692ed822c4d53e86f949b0159a7519598d40bae6cfcaf91ea00bd10f",
+          "bytes": 1477
+        }
+      },
+      "server_profile": "package default true",
+      "matched_original_cases": 3,
+      "cases": [
+        {
+          "id": "same_match_relationship_uniqueness",
+          "query": "MATCH (a:Person)-[r:LINK]->(b:Person)<-[s:LINK]-(a) WHERE a.id='p1' RETURN count(*) AS c",
+          "expected_rows": [
+            [
+              2
+            ]
+          ],
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.0008475780487060547,
+            "header": [
+              {
+                "name": "c",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                2
+              ]
+            ],
+            "size": 1
+          },
+          "response_sha256": "f02112baff05912df43af13ef6960ae1cb4030cc708a8b6b3226daa0a720e484",
+          "matches_expected": true
+        },
+        {
+          "id": "separate_match_relationship_reuse",
+          "query": "MATCH (a:Person)-[r:LINK]->(b:Person) MATCH (a)-[s:LINK]->(b) WHERE a.id='p1' RETURN count(*) AS c",
+          "expected_rows": [
+            [
+              4
+            ]
+          ],
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"[CypherException] CypherException: Function not implemented yet: AddClause at :300\"}",
+          "response_sha256": "29a957f34376e787a010922b2378e0057e4700c019763b8350301b9bc788d2b6",
+          "matches_expected": false
+        },
+        {
+          "id": "null_negation",
+          "query": "MATCH (p:Person) WHERE NOT p.optional_value='present' RETURN p.id AS id ORDER BY id",
+          "expected_rows": [],
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.00040841102600097656,
+            "header": [
+              {
+                "name": "id",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                "p1"
+              ],
+              [
+                "p3"
+              ],
+              [
+                "p4"
+              ]
+            ],
+            "size": 3
+          },
+          "response_sha256": "23f125460d5ea3ce15c6bd2e7aac4550fc2cb5d1bf1f2622d963c7f866e82a94",
+          "matches_expected": false
+        },
+        {
+          "id": "optional_zero_degree",
+          "query": "MATCH (p:Person) OPTIONAL MATCH (p)-[r:LINK]->(:Person) RETURN p.id AS id, count(r) AS c ORDER BY id",
+          "expected_rows": [
+            [
+              "p1",
+              2
+            ],
+            [
+              "p2",
+              1
+            ],
+            [
+              "p3",
+              1
+            ],
+            [
+              "p4",
+              0
+            ]
+          ],
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"[CypherException] CypherException: Function not implemented yet: AddClause at :300\"}",
+          "response_sha256": "29a957f34376e787a010922b2378e0057e4700c019763b8350301b9bc788d2b6",
+          "matches_expected": false
+        },
+        {
+          "id": "entity_grouping",
+          "query": "MATCH (p:Person) OPTIONAL MATCH (p)-[r:LINK]->(:Person) RETURN p.id AS id,p.name AS name,count(r) AS c ORDER BY id",
+          "expected_rows": [
+            [
+              "p1",
+              "Twin",
+              2
+            ],
+            [
+              "p2",
+              "Twin",
+              1
+            ],
+            [
+              "p3",
+              "测试",
+              1
+            ],
+            [
+              "p4",
+              "Empty",
+              0
+            ]
+          ],
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"[CypherException] CypherException: Function not implemented yet: AddClause at :300\"}",
+          "response_sha256": "29a957f34376e787a010922b2378e0057e4700c019763b8350301b9bc788d2b6",
+          "matches_expected": false
+        },
+        {
+          "id": "parallel_edge_bag",
+          "query": "MATCH (p:Person)-[r:LINK]->(:Person) RETURN p.id AS id ORDER BY id",
+          "expected_rows": [
+            [
+              "p1"
+            ],
+            [
+              "p1"
+            ],
+            [
+              "p2"
+            ],
+            [
+              "p3"
+            ]
+          ],
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.00026226043701171875,
+            "header": [
+              {
+                "name": "id",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                "p1"
+              ],
+              [
+                "p1"
+              ],
+              [
+                "p2"
+              ],
+              [
+                "p3"
+              ]
+            ],
+            "size": 4
+          },
+          "response_sha256": "5dcf5a77426e6f292c19ecbcda455b8f8c3ccc14b6ca92f95fc0841f7dc06b01",
+          "matches_expected": true
+        },
+        {
+          "id": "edge_datetime_filter",
+          "query": "MATCH (p:Person)-[r:LINK]->(:Person) WHERE r.occurred>=datetime('2020-01-02T00:00:00') RETURN p.id AS id,r.weight AS weight ORDER BY weight",
+          "expected_rows": [
+            [
+              "p1",
+              3
+            ],
+            [
+              "p2",
+              5
+            ],
+            [
+              "p3",
+              7
+            ]
+          ],
+          "status": "QUERY_ERROR",
+          "http_status": 400,
+          "error": "{\"error_message\":\"failed to parse string 2020-01-02T00:00:00 into DateTime\"}",
+          "response_sha256": "654f9163b44d97aec51ffd59d589a0d0c22246a3928c6b569c19ecfe37aae52d",
+          "matches_expected": false
+        },
+        {
+          "id": "vertex_date_filter",
+          "query": "MATCH (p:Person) WHERE p.birthday>=date('2020-01-02') RETURN p.id AS id ORDER BY id",
+          "expected_rows": [
+            [
+              "p2"
+            ],
+            [
+              "p3"
+            ]
+          ],
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.0003833770751953125,
+            "header": [
+              {
+                "name": "id",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                "p2"
+              ],
+              [
+                "p3"
+              ]
+            ],
+            "size": 2
+          },
+          "response_sha256": "fa8218ee44a8d97c9123f81b243f6e9f0736175e08a349381e1ce385d6820c0e",
+          "matches_expected": true
+        }
+      ],
+      "worker_original_sha256": "5b0987eb24d67d895eb3ca9c471d5fb6cc3a48c4c085ca2de9ff8be941c32154",
+      "receipt_sha256": "5f4e147e6b449462f328cbde09eea041dddc693e1c95af59aef429ec152aa50e",
+      "error_type": null,
+      "error": null
+    },
+    {
+      "version": "v3",
+      "phase": "FIXTURE_CHECKS_FINISHED",
+      "native_queries": 12,
+      "original_fixed_cases": 8,
+      "original_cases_sha256": "66a367d81ee2a53d73a9349dc8d2d70fe2732986d7d9a3b5bd9b17e676da7e2b",
+      "input_files": {
+        "Person.csv": {
+          "sha256": "bbb7edc48d7049c1202d2172158737540b9bd387933130130745a16d8e2bed14",
+          "bytes": 112
+        },
+        "LINK.csv": {
+          "sha256": "0d98e66f6bc58f6d7eb6ff599424e28980f4caf19c52e112152d0ce3a60afe5f",
+          "bytes": 136
+        },
+        "import_config.json": {
+          "sha256": "c5c5b8a5692ed822c4d53e86f949b0159a7519598d40bae6cfcaf91ea00bd10f",
+          "bytes": 1477
+        }
+      },
+      "server_profile": false,
+      "matched_original_cases": 2,
+      "cases": [
+        {
+          "id": "same_match_relationship_uniqueness",
+          "query": "MATCH (a:Person)-[r:LINK]->(b:Person)<-[s:LINK]-(a) WHERE a.id='p1' RETURN count(*) AS c",
+          "expected_rows": [
+            [
+              2
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.0005657672882080078,
+            "header": [
+              {
+                "name": "c",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                2
+              ]
+            ],
+            "size": 1
+          },
+          "response_sha256": "93a0df7055539045b33777bf41cc429c5777cc998e92c67fe32ddcb02e5fc06c",
+          "matches_expected": true
+        },
+        {
+          "id": "separate_match_relationship_reuse",
+          "query": "MATCH (a:Person)-[r:LINK]->(b:Person) MATCH (a)-[s:LINK]->(b) WHERE a.id='p1' RETURN count(*) AS c",
+          "expected_rows": [
+            [
+              4
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"[CypherException] CypherException: Function not implemented yet: AddClause at :300\"}",
+          "response_sha256": "29a957f34376e787a010922b2378e0057e4700c019763b8350301b9bc788d2b6",
+          "matches_expected": false
+        },
+        {
+          "id": "null_negation",
+          "query": "MATCH (p:Person) WHERE NOT p.optional_value='present' RETURN p.id AS id ORDER BY id",
+          "expected_rows": [],
+          "diagnostic_only": false,
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"CypherException: Internal error: _CheckVidFilter at :90\"}",
+          "response_sha256": "34616a1780d9e81db2af4e849a9fd3aa99a485566d85bc64dfaeb73972313753",
+          "matches_expected": false
+        },
+        {
+          "id": "optional_zero_degree",
+          "query": "MATCH (p:Person) OPTIONAL MATCH (p)-[r:LINK]->(:Person) RETURN p.id AS id, count(r) AS c ORDER BY id",
+          "expected_rows": [
+            [
+              "p1",
+              2
+            ],
+            [
+              "p2",
+              1
+            ],
+            [
+              "p3",
+              1
+            ],
+            [
+              "p4",
+              0
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"[CypherException] CypherException: Function not implemented yet: AddClause at :300\"}",
+          "response_sha256": "29a957f34376e787a010922b2378e0057e4700c019763b8350301b9bc788d2b6",
+          "matches_expected": false
+        },
+        {
+          "id": "entity_grouping",
+          "query": "MATCH (p:Person) OPTIONAL MATCH (p)-[r:LINK]->(:Person) RETURN p.id AS id,p.name AS name,count(r) AS c ORDER BY id",
+          "expected_rows": [
+            [
+              "p1",
+              "Twin",
+              2
+            ],
+            [
+              "p2",
+              "Twin",
+              1
+            ],
+            [
+              "p3",
+              "测试",
+              1
+            ],
+            [
+              "p4",
+              "Empty",
+              0
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"[CypherException] CypherException: Function not implemented yet: AddClause at :300\"}",
+          "response_sha256": "29a957f34376e787a010922b2378e0057e4700c019763b8350301b9bc788d2b6",
+          "matches_expected": false
+        },
+        {
+          "id": "parallel_edge_bag",
+          "query": "MATCH (p:Person)-[r:LINK]->(:Person) RETURN p.id AS id ORDER BY id",
+          "expected_rows": [
+            [
+              "p1"
+            ],
+            [
+              "p1"
+            ],
+            [
+              "p2"
+            ],
+            [
+              "p3"
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.0002701282501220703,
+            "header": [
+              {
+                "name": "id",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                "p1"
+              ],
+              [
+                "p1"
+              ],
+              [
+                "p2"
+              ],
+              [
+                "p3"
+              ]
+            ],
+            "size": 4
+          },
+          "response_sha256": "2db866fae7e2e67d244ff9d102aa2000e91b3a872419cb54f3f0177c0182c269",
+          "matches_expected": true
+        },
+        {
+          "id": "edge_datetime_filter",
+          "query": "MATCH (p:Person)-[r:LINK]->(:Person) WHERE r.occurred>=datetime('2020-01-02T00:00:00') RETURN p.id AS id,r.weight AS weight ORDER BY weight",
+          "expected_rows": [
+            [
+              "p1",
+              3
+            ],
+            [
+              "p2",
+              5
+            ],
+            [
+              "p3",
+              7
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"CypherException: Internal error: _CheckPropFilter at :144\"}",
+          "response_sha256": "f8bbcd3eb98b14e97d1359c2b42bf08db8c219a56e7b5314eede6c3d7ce72bf4",
+          "matches_expected": false
+        },
+        {
+          "id": "vertex_date_filter",
+          "query": "MATCH (p:Person) WHERE p.birthday>=date('2020-01-02') RETURN p.id AS id ORDER BY id",
+          "expected_rows": [
+            [
+              "p2"
+            ],
+            [
+              "p3"
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"CypherException: Internal error: _CheckVidFilter at :90\"}",
+          "response_sha256": "34616a1780d9e81db2af4e849a9fd3aa99a485566d85bc64dfaeb73972313753",
+          "matches_expected": false
+        },
+        {
+          "id": "property_null_state",
+          "query": "MATCH (p:Person) RETURN p.id AS id,p.optional_value AS value,p.optional_value IS NULL AS isnull,p.birthday AS birthday,p.birthday IS NULL AS date_isnull ORDER BY id",
+          "expected_rows": null,
+          "diagnostic_only": true,
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.0002739429473876953,
+            "header": [
+              {
+                "name": "id",
+                "type": 0
+              },
+              {
+                "name": "value",
+                "type": 0
+              },
+              {
+                "name": "isnull",
+                "type": 0
+              },
+              {
+                "name": "birthday",
+                "type": 0
+              },
+              {
+                "name": "date_isnull",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                "p1",
+                null,
+                true,
+                "2020-01-01",
+                false
+              ],
+              [
+                "p2",
+                "present",
+                false,
+                "2020-01-02",
+                false
+              ],
+              [
+                "p3",
+                null,
+                true,
+                "2020-01-03",
+                false
+              ],
+              [
+                "p4",
+                null,
+                true,
+                null,
+                true
+              ]
+            ],
+            "size": 4
+          },
+          "response_sha256": "ef8fa3979d4214a83be2edcb6a0dcf77fe8816a6ce8ae8385173ce7f2f87ead3",
+          "matches_expected": null
+        },
+        {
+          "id": "literal_null_logic",
+          "query": "RETURN NULL='present' AS eq,NOT(NULL='present') AS neg",
+          "expected_rows": [
+            [
+              null,
+              null
+            ]
+          ],
+          "diagnostic_only": true,
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"[ParserException] ParserException: error around 'NULL='present''\"}",
+          "response_sha256": "725c6df2bb405615b554986ce75135673acdf5c6ba9a7a72ea081b9d6933a57a",
+          "matches_expected": false
+        },
+        {
+          "id": "datetime_space_constructor",
+          "query": "MATCH (p:Person)-[r:LINK]->(:Person) WHERE r.occurred>=datetime('2020-01-02 00:00:00') RETURN p.id AS id,r.weight AS weight ORDER BY weight",
+          "expected_rows": [
+            [
+              "p1",
+              3
+            ],
+            [
+              "p2",
+              5
+            ],
+            [
+              "p3",
+              7
+            ]
+          ],
+          "diagnostic_only": true,
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"CypherException: Internal error: _CheckPropFilter at :144\"}",
+          "response_sha256": "f8bbcd3eb98b14e97d1359c2b42bf08db8c219a56e7b5314eede6c3d7ce72bf4",
+          "matches_expected": false
+        },
+        {
+          "id": "unicode_roundtrip",
+          "query": "MATCH (p:Person) WHERE p.id='p3' RETURN p.name AS name",
+          "expected_rows": [
+            [
+              "测试"
+            ]
+          ],
+          "diagnostic_only": true,
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.000164031982421875,
+            "header": [
+              {
+                "name": "name",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                "测试"
+              ]
+            ],
+            "size": 1
+          },
+          "response_sha256": "00f2d24f1dfe790784da8e582ba8f8b1238ca239d6a59e3d96f8bb7877fbd9a4",
+          "matches_expected": true
+        }
+      ],
+      "worker_original_sha256": "5808a6afca3ddb342393dfd2a879f091b3820efb14ebeaf1eeecb324e87dd5ad",
+      "receipt_sha256": "5652bd534f6ed1aaab6f1266d89e8c816d64b8d92a783a069f80e7bd997fdb38",
+      "error_type": null,
+      "error": null
+    },
+    {
+      "version": "v4",
+      "phase": "FIXTURE_CHECKS_FINISHED",
+      "native_queries": 12,
+      "original_fixed_cases": 8,
+      "original_cases_sha256": "66a367d81ee2a53d73a9349dc8d2d70fe2732986d7d9a3b5bd9b17e676da7e2b",
+      "input_files": {
+        "Person.csv": {
+          "sha256": "bbb7edc48d7049c1202d2172158737540b9bd387933130130745a16d8e2bed14",
+          "bytes": 112
+        },
+        "LINK.csv": {
+          "sha256": "0d98e66f6bc58f6d7eb6ff599424e28980f4caf19c52e112152d0ce3a60afe5f",
+          "bytes": 136
+        },
+        "import_config.json": {
+          "sha256": "c5c5b8a5692ed822c4d53e86f949b0159a7519598d40bae6cfcaf91ea00bd10f",
+          "bytes": 1477
+        }
+      },
+      "server_profile": true,
+      "matched_original_cases": 3,
+      "cases": [
+        {
+          "id": "same_match_relationship_uniqueness",
+          "query": "MATCH (a:Person)-[r:LINK]->(b:Person)<-[s:LINK]-(a) WHERE a.id='p1' RETURN count(*) AS c",
+          "expected_rows": [
+            [
+              2
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.0008254051208496094,
+            "header": [
+              {
+                "name": "c",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                2
+              ]
+            ],
+            "size": 1
+          },
+          "response_sha256": "2a91f2c326c66daa529b61c3a601dbb26a2e8f18ab926893ad93c9a711a722f1",
+          "matches_expected": true
+        },
+        {
+          "id": "separate_match_relationship_reuse",
+          "query": "MATCH (a:Person)-[r:LINK]->(b:Person) MATCH (a)-[s:LINK]->(b) WHERE a.id='p1' RETURN count(*) AS c",
+          "expected_rows": [
+            [
+              4
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"[CypherException] CypherException: Function not implemented yet: AddClause at :300\"}",
+          "response_sha256": "29a957f34376e787a010922b2378e0057e4700c019763b8350301b9bc788d2b6",
+          "matches_expected": false
+        },
+        {
+          "id": "null_negation",
+          "query": "MATCH (p:Person) WHERE NOT p.optional_value='present' RETURN p.id AS id ORDER BY id",
+          "expected_rows": [],
+          "diagnostic_only": false,
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.0004181861877441406,
+            "header": [
+              {
+                "name": "id",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                "p1"
+              ],
+              [
+                "p3"
+              ],
+              [
+                "p4"
+              ]
+            ],
+            "size": 3
+          },
+          "response_sha256": "50f88a3e2dd01d53fd9f446301ba9f642e19d1be05cce34146cf270555c867a4",
+          "matches_expected": false
+        },
+        {
+          "id": "optional_zero_degree",
+          "query": "MATCH (p:Person) OPTIONAL MATCH (p)-[r:LINK]->(:Person) RETURN p.id AS id, count(r) AS c ORDER BY id",
+          "expected_rows": [
+            [
+              "p1",
+              2
+            ],
+            [
+              "p2",
+              1
+            ],
+            [
+              "p3",
+              1
+            ],
+            [
+              "p4",
+              0
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"[CypherException] CypherException: Function not implemented yet: AddClause at :300\"}",
+          "response_sha256": "29a957f34376e787a010922b2378e0057e4700c019763b8350301b9bc788d2b6",
+          "matches_expected": false
+        },
+        {
+          "id": "entity_grouping",
+          "query": "MATCH (p:Person) OPTIONAL MATCH (p)-[r:LINK]->(:Person) RETURN p.id AS id,p.name AS name,count(r) AS c ORDER BY id",
+          "expected_rows": [
+            [
+              "p1",
+              "Twin",
+              2
+            ],
+            [
+              "p2",
+              "Twin",
+              1
+            ],
+            [
+              "p3",
+              "测试",
+              1
+            ],
+            [
+              "p4",
+              "Empty",
+              0
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"[CypherException] CypherException: Function not implemented yet: AddClause at :300\"}",
+          "response_sha256": "29a957f34376e787a010922b2378e0057e4700c019763b8350301b9bc788d2b6",
+          "matches_expected": false
+        },
+        {
+          "id": "parallel_edge_bag",
+          "query": "MATCH (p:Person)-[r:LINK]->(:Person) RETURN p.id AS id ORDER BY id",
+          "expected_rows": [
+            [
+              "p1"
+            ],
+            [
+              "p1"
+            ],
+            [
+              "p2"
+            ],
+            [
+              "p3"
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.0003235340118408203,
+            "header": [
+              {
+                "name": "id",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                "p1"
+              ],
+              [
+                "p1"
+              ],
+              [
+                "p2"
+              ],
+              [
+                "p3"
+              ]
+            ],
+            "size": 4
+          },
+          "response_sha256": "831c7149a926d0ecda36acd4e0a59b1e24c0f5fdde78f599bacb82b971279b85",
+          "matches_expected": true
+        },
+        {
+          "id": "edge_datetime_filter",
+          "query": "MATCH (p:Person)-[r:LINK]->(:Person) WHERE r.occurred>=datetime('2020-01-02T00:00:00') RETURN p.id AS id,r.weight AS weight ORDER BY weight",
+          "expected_rows": [
+            [
+              "p1",
+              3
+            ],
+            [
+              "p2",
+              5
+            ],
+            [
+              "p3",
+              7
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "QUERY_ERROR",
+          "http_status": 400,
+          "error": "{\"error_message\":\"failed to parse string 2020-01-02T00:00:00 into DateTime\"}",
+          "response_sha256": "654f9163b44d97aec51ffd59d589a0d0c22246a3928c6b569c19ecfe37aae52d",
+          "matches_expected": false
+        },
+        {
+          "id": "vertex_date_filter",
+          "query": "MATCH (p:Person) WHERE p.birthday>=date('2020-01-02') RETURN p.id AS id ORDER BY id",
+          "expected_rows": [
+            [
+              "p2"
+            ],
+            [
+              "p3"
+            ]
+          ],
+          "diagnostic_only": false,
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.0003871917724609375,
+            "header": [
+              {
+                "name": "id",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                "p2"
+              ],
+              [
+                "p3"
+              ]
+            ],
+            "size": 2
+          },
+          "response_sha256": "53249fe7d5010460518626dbe09f03468f2eb92a2571fe5b6748540f2576ed75",
+          "matches_expected": true
+        },
+        {
+          "id": "property_null_state",
+          "query": "MATCH (p:Person) RETURN p.id AS id,p.optional_value AS value,p.optional_value IS NULL AS isnull,p.birthday AS birthday,p.birthday IS NULL AS date_isnull ORDER BY id",
+          "expected_rows": null,
+          "diagnostic_only": true,
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.00045371055603027344,
+            "header": [
+              {
+                "name": "id",
+                "type": 0
+              },
+              {
+                "name": "value",
+                "type": 0
+              },
+              {
+                "name": "isnull",
+                "type": 0
+              },
+              {
+                "name": "birthday",
+                "type": 0
+              },
+              {
+                "name": "date_isnull",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                "p1",
+                null,
+                true,
+                "2020-01-01",
+                false
+              ],
+              [
+                "p2",
+                "present",
+                false,
+                "2020-01-02",
+                false
+              ],
+              [
+                "p3",
+                null,
+                true,
+                "2020-01-03",
+                false
+              ],
+              [
+                "p4",
+                null,
+                true,
+                null,
+                true
+              ]
+            ],
+            "size": 4
+          },
+          "response_sha256": "6f69039c0843d8e664c7f61c1375b6cb43bb66b6fe4601aa29e42391092fb0c0",
+          "matches_expected": null
+        },
+        {
+          "id": "literal_null_logic",
+          "query": "RETURN NULL='present' AS eq,NOT(NULL='present') AS neg",
+          "expected_rows": [
+            [
+              null,
+              null
+            ]
+          ],
+          "diagnostic_only": true,
+          "status": "QUERY_ERROR",
+          "http_status": 500,
+          "error": "{\"error_message\":\"[ParserException] ParserException: error around 'NULL='present''\"}",
+          "response_sha256": "725c6df2bb405615b554986ce75135673acdf5c6ba9a7a72ea081b9d6933a57a",
+          "matches_expected": false
+        },
+        {
+          "id": "datetime_space_constructor",
+          "query": "MATCH (p:Person)-[r:LINK]->(:Person) WHERE r.occurred>=datetime('2020-01-02 00:00:00') RETURN p.id AS id,r.weight AS weight ORDER BY weight",
+          "expected_rows": [
+            [
+              "p1",
+              3
+            ],
+            [
+              "p2",
+              5
+            ],
+            [
+              "p3",
+              7
+            ]
+          ],
+          "diagnostic_only": true,
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.0005056858062744141,
+            "header": [
+              {
+                "name": "id",
+                "type": 0
+              },
+              {
+                "name": "weight",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                "p1",
+                3
+              ],
+              [
+                "p2",
+                5
+              ],
+              [
+                "p3",
+                7
+              ]
+            ],
+            "size": 3
+          },
+          "response_sha256": "5c635ad96396601de74af425e1c3c6069c8c8c7f4dd58b3d4e6455dd69f0ae41",
+          "matches_expected": true
+        },
+        {
+          "id": "unicode_roundtrip",
+          "query": "MATCH (p:Person) WHERE p.id='p3' RETURN p.name AS name",
+          "expected_rows": [
+            [
+              "测试"
+            ]
+          ],
+          "diagnostic_only": true,
+          "status": "EXECUTED",
+          "response": {
+            "elapsed": 0.0002372264862060547,
+            "header": [
+              {
+                "name": "name",
+                "type": 0
+              }
+            ],
+            "result": [
+              [
+                "测试"
+              ]
+            ],
+            "size": 1
+          },
+          "response_sha256": "95a1df21f54434cbe0f0e9ff5f05c4ba6e6463714a4c2034ed0047d48d79203a",
+          "matches_expected": true
+        }
+      ],
+      "worker_original_sha256": "5808a6afca3ddb342393dfd2a879f091b3820efb14ebeaf1eeecb324e87dd5ad",
+      "receipt_sha256": "e3288ca4377b8fe810763d0eaea0efd5ace4fce6c577517e6fee81b010834c7b",
+      "error_type": null,
+      "error": null
+    }
+  ],
+  "new_model_calls": 0,
+  "all_original_checks_passed": false,
+  "additional_cases_are_diagnostics_not_independent_confirmation": true
+}
