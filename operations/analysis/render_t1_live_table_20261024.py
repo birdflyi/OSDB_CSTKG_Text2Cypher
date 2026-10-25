@@ -52,7 +52,7 @@ def render(active_graph,stopped_graph=None):
         '## 其余结果块的准入状态', '',
         '| 结果块 | 数据盘点；不是已接受的正式分母 | 计划／派发／完成状态 | 尚缺的验收 |',
         '|---|---|---|---|',
-        '| MindTheQuery | Automated TEST 8,284；Manual TEST 1,829 | 范围待定／0／0 | 论文轨道、标签筛选、图部署及参考执行；额外预算 |',
+        '| MindTheQuery | Automated TEST 8,284；Manual TEST 1,829 | 范围待定／0／0 | 跨轨道训练重叠、论文轨道、标签、图部署及参考执行；额外预算 |',
         '| Text2GQL Cypher | 当前作者链接包：6 图、3,826 条唯一图-ID记录 | 范围待准入／0／0 | 原生引擎、空值／日期／多重边语义、参考执行、划分；额外预算 |',
         '| ZOGRASCOPE | 固定仓库 IID 768、COMP 1,349、LEN 1,253；并集 2,672 个唯一 ID | 范围待准入／0／0 | 版本分区差异、实体链接、结构族与参考执行；额外预算 |',
         '| 具名方法 | 作者资源与版本尚未全核清 | 适用矩阵待定／0／0 | 权重身份、推理模板／接口、训练暴露与对应输出；所需资源 |',
@@ -63,6 +63,7 @@ def render(active_graph,stopped_graph=None):
         '- [全部物理调用对账：含历史、失败与独立探测，非完整T4](D:/ch7/discussion/T1_ALL_ATTEMPT_RECONCILIATION_20261025.md)',
         '- [冻结清单](D:/ch7/experiments/public_benchmark_v1/core_freeze_v1_20261024/freeze.json)',
         '- [其他候选协议审计](D:/ch7/discussion/T1_OTHER_PUBLIC_CANDIDATES_AUDIT_20261024.md)',
+        '- [MindTheQuery训练来源与标签核验](D:/ch7/discussion/T1_MINDTHEQUERY_SPLIT_CONTRACTS_20261025.md)',
         '- [原讨论表，含有来源的 reported 数值](D:/ch7/discussion/DASFAA_EXPERIMENT_TABLES_FILLED_20261023.md)']
     for graph in scores:
         tag='flight' if graph=='flight_accident' else graph
