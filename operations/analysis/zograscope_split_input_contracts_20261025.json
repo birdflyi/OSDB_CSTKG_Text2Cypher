@@ -1,0 +1,256 @@
+{
+  "kind": "ZOGRASCOPE_PINNED_INPUT_AND_SPLIT_CONTRACT_AUDIT",
+  "time_local": "2026-10-25T09:01:38.100709+08:00",
+  "commit": "b2f91718b1324fdf8c759131d0d7c47c0eb33373",
+  "files": {
+    "standard_train": {
+      "path": "data/zograscope_train_v1.csv",
+      "git_blob": "f126b8ad663ca81c37547650efad99247a4288ce",
+      "sha256": "b889c4b6866d0750b89bde4ef13a20cd920cb7da4ba83262106d43a38c62b77d",
+      "rows": 2905
+    },
+    "standard_test": {
+      "path": "data/zograscope_test_v1.csv",
+      "git_blob": "eb54b36947f3ef92453632e5bc68ceaa459fa19c",
+      "sha256": "61b9a9cedcfd975a9a42cb292d5f1a197fe2292c036426eb6e76238673ede23f",
+      "rows": 2117
+    },
+    "length_train": {
+      "path": "data/zograscope_length_train_v1.csv",
+      "git_blob": "0cabbd6032571870e6224a36019087d1667b4ee7",
+      "sha256": "26e3429fead8a1294722a7a5b880d17f4e222da83335419023d585f1d0cd280b",
+      "rows": 3769
+    },
+    "length_test": {
+      "path": "data/zograscope_length_test_v1.csv",
+      "git_blob": "2213d22be791b0e37fcfe6dfe83d75270a55a530",
+      "sha256": "9a8c26afa59503d18374eb87b16fdd3703dd364ca506977354778a386916245a",
+      "rows": 1253
+    }
+  },
+  "common_corpus_unique_ids": 5022,
+  "same_id_row_conflicts": [],
+  "standard_and_length_corpus_exact_row_identity": true,
+  "id_overlap_matrix": {
+    "standard_train": {
+      "standard_train": 2905,
+      "standard_test": 0,
+      "length_train": 2350,
+      "length_test": 555
+    },
+    "standard_test": {
+      "standard_train": 0,
+      "standard_test": 2117,
+      "length_train": 1419,
+      "length_test": 698
+    },
+    "length_train": {
+      "standard_train": 2350,
+      "standard_test": 1419,
+      "length_train": 3769,
+      "length_test": 0
+    },
+    "length_test": {
+      "standard_train": 555,
+      "standard_test": 698,
+      "length_train": 0,
+      "length_test": 1253
+    }
+  },
+  "panels": {
+    "IID": {
+      "n": 768,
+      "num_nodes": {
+        "3": 225,
+        "5": 33,
+        "2": 384,
+        "4": 126
+      },
+      "type": {
+        "argmax": 30,
+        "max": 56,
+        "entity_set": 256,
+        "count": 263,
+        "attribute_set": 90,
+        "min": 45,
+        "argmin": 28
+      },
+      "raw_nl_empty": 0,
+      "gold_linked_nl_empty": 0,
+      "entities_field_blank": 28,
+      "raw_and_gold_linked_nl_identical": 28
+    },
+    "COMP": {
+      "n": 1349,
+      "num_nodes": {
+        "3": 639,
+        "4": 467,
+        "5": 72,
+        "2": 171
+      },
+      "type": {
+        "attribute_set": 356,
+        "count": 306,
+        "entity_set": 421,
+        "argmax": 105,
+        "argmin": 99,
+        "min": 9,
+        "max": 53
+      },
+      "raw_nl_empty": 0,
+      "gold_linked_nl_empty": 0,
+      "entities_field_blank": 12,
+      "raw_and_gold_linked_nl_identical": 12
+    },
+    "LEN": {
+      "n": 1253,
+      "num_nodes": {
+        "4": 1034,
+        "5": 219
+      },
+      "type": {
+        "attribute_set": 269,
+        "entity_set": 360,
+        "argmax": 108,
+        "max": 117,
+        "argmin": 69,
+        "count": 261,
+        "min": 69
+      },
+      "raw_nl_empty": 0,
+      "gold_linked_nl_empty": 0,
+      "entities_field_blank": 27,
+      "raw_and_gold_linked_nl_identical": 27
+    }
+  },
+  "correct_train_node_counts": {
+    "standard": {
+      "2": 1509,
+      "3": 841,
+      "4": 441,
+      "5": 114
+    },
+    "length": {
+      "2": 2064,
+      "3": 1705
+    }
+  },
+  "exact_text_overlap_with_correct_train": {
+    "IID": {
+      "nl": {
+        "test_rows_with_exact_text_in_correct_train": 0,
+        "unique_exact_test_texts_matching_train": 0,
+        "normalization": "exact UTF-8 text, no paraphrase/equivalence inference"
+      },
+      "nl_gold_linked": {
+        "test_rows_with_exact_text_in_correct_train": 0,
+        "unique_exact_test_texts_matching_train": 0,
+        "normalization": "exact UTF-8 text, no paraphrase/equivalence inference"
+      }
+    },
+    "COMP": {
+      "nl": {
+        "test_rows_with_exact_text_in_correct_train": 0,
+        "unique_exact_test_texts_matching_train": 0,
+        "normalization": "exact UTF-8 text, no paraphrase/equivalence inference"
+      },
+      "nl_gold_linked": {
+        "test_rows_with_exact_text_in_correct_train": 0,
+        "unique_exact_test_texts_matching_train": 0,
+        "normalization": "exact UTF-8 text, no paraphrase/equivalence inference"
+      }
+    },
+    "LEN": {
+      "nl": {
+        "test_rows_with_exact_text_in_correct_train": 0,
+        "unique_exact_test_texts_matching_train": 0,
+        "normalization": "exact UTF-8 text, no paraphrase/equivalence inference"
+      },
+      "nl_gold_linked": {
+        "test_rows_with_exact_text_in_correct_train": 0,
+        "unique_exact_test_texts_matching_train": 0,
+        "normalization": "exact UTF-8 text, no paraphrase/equivalence inference"
+      }
+    }
+  },
+  "metadata_grouping_hypotheses_not_structural_proof": {
+    "IID": {
+      "template_id": {
+        "test_rows_with_key_in_correct_train": 765,
+        "test_unique_keys": 287,
+        "shared_unique_keys": 286
+      },
+      "num_nodes+template_id": {
+        "test_rows_with_key_in_correct_train": 765,
+        "test_unique_keys": 365,
+        "shared_unique_keys": 364
+      },
+      "num_nodes+type+template_id": {
+        "test_rows_with_key_in_correct_train": 765,
+        "test_unique_keys": 377,
+        "shared_unique_keys": 376
+      }
+    },
+    "COMP": {
+      "template_id": {
+        "test_rows_with_key_in_correct_train": 733,
+        "test_unique_keys": 121,
+        "shared_unique_keys": 62
+      },
+      "num_nodes+template_id": {
+        "test_rows_with_key_in_correct_train": 189,
+        "test_unique_keys": 143,
+        "shared_unique_keys": 19
+      },
+      "num_nodes+type+template_id": {
+        "test_rows_with_key_in_correct_train": 45,
+        "test_unique_keys": 153,
+        "shared_unique_keys": 5
+      }
+    },
+    "LEN": {
+      "template_id": {
+        "test_rows_with_key_in_correct_train": 1028,
+        "test_unique_keys": 113,
+        "shared_unique_keys": 88
+      },
+      "num_nodes+template_id": {
+        "test_rows_with_key_in_correct_train": 0,
+        "test_unique_keys": 129,
+        "shared_unique_keys": 0
+      },
+      "num_nodes+type+template_id": {
+        "test_rows_with_key_in_correct_train": 0,
+        "test_unique_keys": 142,
+        "shared_unique_keys": 0
+      }
+    }
+  },
+  "unique_union_test_ids_for_identical_zero_shot_inputs": 2672,
+  "reuse_condition": "Only identical full model/prompt/context/permissions may share zero-shot predictions across panels. Training or ICL changes require separate predictions.",
+  "training_contracts": {
+    "IID_COMP": "standard_train only; standard_test held out",
+    "LEN": "length_train only; length_test held out"
+  },
+  "wrong_checkpoint_warning": "Standard_train contains LEN test IDs; length_train contains standard test IDs. Do not share a supervised checkpoint across these protocols without exposure disclosure.",
+  "entity_linking_tracks": {
+    "author_README_main": "nl_gold_linked for all methods equally",
+    "raw_NL": "nl, separate declared track with a fixed equal linking procedure"
+  },
+  "template_family_status": "No tested metadata composite has been established as the author anonymized structural family. Overlap is not proof of leakage or invalid split; zero overlap is not proof of novelty.",
+  "length_status": "Author length is relative to its own training partition; do not call it unseen graph-domain generalization.",
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "network_requests": 0,
+  "author_code_executed": false,
+  "gold_queries_interpreted_or_executed": false,
+  "CypherBench_frozen_method_modified": false,
+  "prediction_admitted": false,
+  "outstanding": [
+    "Paper/repository count discrepancy IID767/COMP1350 versus pinned768/1349",
+    "Original graph version, native deployment and reference-result certification",
+    "Author structural-family definition/evaluator and stable statistical grouping",
+    "Named baseline checkpoint identity and training exposure",
+    "Frozen method/input/evaluator and additional scoped model budget"
+  ]
+}
