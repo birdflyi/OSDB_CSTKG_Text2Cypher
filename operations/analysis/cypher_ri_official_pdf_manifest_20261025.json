@@ -1,0 +1,32 @@
+{
+  "url": "https://papers.nips.cc/paper_files/paper/2025/file/906727703322b2e33b37c855fc15e8b7-Paper-Conference.pdf",
+  "status": 200,
+  "bytes": 5969516,
+  "sha256": "640aa139632eb300b7bdc27af52713f80c7379e14f5c72f711250970f51f3d1b",
+  "links": [
+    {
+      "page": 16,
+      "url": "https://nips.cc/public/guides/CodeSubmissionPolicy"
+    },
+    {
+      "page": 16,
+      "url": "https://nips.cc/public/guides/CodeSubmissionPolicy"
+    },
+    {
+      "page": 16,
+      "url": "https://nips.cc/public/guides/CodeSubmissionPolicy"
+    },
+    {
+      "page": 16,
+      "url": "https://nips.cc/public/guides/CodeSubmissionPolicy"
+    },
+    {
+      "page": 18,
+      "url": "https://neurips.cc/public/EthicsGuidelines"
+    },
+    {
+      "page": 20,
+      "url": "https://neurips.cc/Conferences/2025/LLM"
+    }
+  ]
+}

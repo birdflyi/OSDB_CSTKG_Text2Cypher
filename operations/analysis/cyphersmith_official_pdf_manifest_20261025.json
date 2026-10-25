@@ -1,0 +1,222 @@
+[
+  {
+    "name": "cyphersmith",
+    "url": "https://aclanthology.org/2026.acl-long.1601.pdf",
+    "time": "2026-10-25T14:12:13.322242+08:00",
+    "status": 200,
+    "content_type": "application/pdf",
+    "bytes": 274476,
+    "sha256": "cea372c5da4fc9bd4eb700f325677b39b14cf4e0ac3b1e935aa51c78a067012f",
+    "pages": 18,
+    "links": [
+      {
+        "page": 4,
+        "url": "https://pypi.org/project/neo4j"
+      },
+      {
+        "page": 5,
+        "url": "neo4j+s://demo.neo4jlabs.com"
+      },
+      {
+        "page": 9,
+        "url": "https://aclanthology.org/D13-1160/"
+      },
+      {
+        "page": 9,
+        "url": "https://aclanthology.org/D13-1160/"
+      },
+      {
+        "page": 9,
+        "url": "https://aclanthology.org/2024.findings-emnlp.195/"
+      },
+      {
+        "page": 9,
+        "url": "https://aclanthology.org/2024.findings-emnlp.195/"
+      },
+      {
+        "page": 10,
+        "url": "https://aclanthology.org/2022.acl-long.422/"
+      },
+      {
+        "page": 10,
+        "url": "https://aclanthology.org/2022.acl-long.422/"
+      },
+      {
+        "page": 10,
+        "url": "https://aclanthology.org/2022.acl-long.422/"
+      },
+      {
+        "page": 10,
+        "url": "https://aclanthology.org/2025.findings-acl.515/"
+      },
+      {
+        "page": 10,
+        "url": "https://aclanthology.org/2025.findings-acl.515/"
+      },
+      {
+        "page": 10,
+        "url": "https://aclanthology.org/2025.findings-acl.515/"
+      },
+      {
+        "page": 10,
+        "url": "https://aclanthology.org/2025.knowledgenlp-1.5/"
+      },
+      {
+        "page": 10,
+        "url": "https://aclanthology.org/2025.knowledgenlp-1.5/"
+      },
+      {
+        "page": 10,
+        "url": "https://aclanthology.org/2025.acl-long.438/"
+      },
+      {
+        "page": 10,
+        "url": "https://aclanthology.org/2025.acl-long.438/"
+      },
+      {
+        "page": 10,
+        "url": "https://aclanthology.org/2024.naacl-long.421/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2024.naacl-long.421/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2024.naacl-long.421/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2023.acl-long.385/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2023.acl-long.385/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2024.acl-long.252/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2024.acl-long.252/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2024.findings-emnlp.938/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2024.findings-emnlp.938/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2022.acl-long.113/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2022.acl-long.113/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/P19-1081/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/P19-1081/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/P19-1081/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2022.emnlp-main.394/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2022.emnlp-main.394/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2022.findings-naacl.115/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2022.findings-naacl.115/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2022.findings-naacl.115/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2025.genaik-1.11/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/2025.genaik-1.11/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/N18-1059/"
+      },
+      {
+        "page": 11,
+        "url": "https://aclanthology.org/N18-1059/"
+      },
+      {
+        "page": 12,
+        "url": "https://aclanthology.org/2020.acl-main.677/"
+      },
+      {
+        "page": 12,
+        "url": "https://aclanthology.org/2020.acl-main.677/"
+      },
+      {
+        "page": 12,
+        "url": "https://aclanthology.org/2020.acl-main.677/"
+      },
+      {
+        "page": 12,
+        "url": "https://aclanthology.org/2023.emnlp-main.353/"
+      },
+      {
+        "page": 12,
+        "url": "https://aclanthology.org/2023.emnlp-main.353/"
+      },
+      {
+        "page": 12,
+        "url": "https://aclanthology.org/2023.emnlp-main.353/"
+      },
+      {
+        "page": 12,
+        "url": "https://doi.org/10.1007/978-981-99-8391-9_10"
+      },
+      {
+        "page": 12,
+        "url": "https://doi.org/10.1007/978-981-99-8391-9_10"
+      },
+      {
+        "page": 12,
+        "url": "https://aclanthology.org/2025.coling-main.46/"
+      },
+      {
+        "page": 12,
+        "url": "https://aclanthology.org/2025.coling-main.46/"
+      },
+      {
+        "page": 12,
+        "url": "https://aclanthology.org/2025.coling-main.46/"
+      }
+    ]
+  },
+  {
+    "name": "cyphersmith_checklist",
+    "url": "https://aclanthology.org/2026.acl-long.1601.checklist.pdf",
+    "time": "2026-10-25T14:12:15.567498+08:00",
+    "status": 404,
+    "content_type": "text/html; charset=utf-8",
+    "bytes": 9183
+  }
+]
