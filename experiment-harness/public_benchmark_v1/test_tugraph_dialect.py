@@ -40,13 +40,14 @@ class NativeCompilerContract(unittest.TestCase):
             with self.subTest(label=label), self.assertRaises(UnsupportedPlan):
                 compile_rest_selection(call, schema)
 
-    def test_unverified_optional_is_explicitly_unsupported(self):
+    def test_optional_uses_explicit_query_part_bindings(self):
         call = selection()
         call['nodes'].append({'id': 'q', 'label': 'Person'})
         call['edges'] = [{'id': 'r', 'label': 'LINK', 'source': 'p', 'target': 'q',
                           'optional': True}]
-        with self.assertRaises(UnsupportedPlan):
-            compile_rest_selection(call, SCHEMA)
+        query = compile_rest_selection(call, SCHEMA)['script']
+        self.assertIn('WITH p OPTIONAL MATCH', query)
+        self.assertNotIn('WITH *', query)
 
     def test_literals_are_not_rescanned_as_parameters(self):
         hostile = 'x" RETURN 1 // $p1 \\ \n 测试'

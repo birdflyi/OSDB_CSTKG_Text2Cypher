@@ -1,0 +1,121 @@
+{
+  "kind": "NATIVE_TEMPORAL_OPTIONAL_DEVELOPMENT_NOT_BENCHMARK_EX",
+  "time_local": "2026-10-26T07:41:32.533523+08:00",
+  "version": "typed-services-dev-0.7-native-optional-projection",
+  "stages": [
+    {
+      "folder": "text2gql_temporal_fixture_v1_20261026",
+      "spec_sha256": "2b5a95cce351fae5c478df2a7cf292c4b8f08d2e996f5814d4a65ef1b0962af8",
+      "receipt_sha256": "b672c965ee6fcf3272e1e82f0fce4f4b7978470d93cc4ecb0cc657c3d1304a86",
+      "queries": 22,
+      "fixed_denominator": 20,
+      "fixed_matches": 20,
+      "diagnostics": 2,
+      "diagnostics_matched": 0,
+      "mismatched_ids": [
+        "optional_pattern_comprehension"
+      ]
+    },
+    {
+      "folder": "text2gql_optional_with_probe_v1_20261026",
+      "spec_sha256": "6f37268167f269d468e2cd3369ba039540e1db974da274d6da46d43c9218c3c8",
+      "receipt_sha256": "27a73e98b0f47552a5a2cada5dd9a7fc8b57d30c1fbed20ad2fa7407b8fe57eb",
+      "queries": 6,
+      "fixed_denominator": 0,
+      "fixed_matches": 0,
+      "diagnostics": 6,
+      "diagnostics_matched": 4,
+      "mismatched_ids": [
+        "with_star_optional_zero",
+        "post_optional_global_null_filter"
+      ]
+    },
+    {
+      "folder": "text2gql_optional_compiler_fixture_v1_20261026",
+      "spec_sha256": "f47f85fd2a3fb7726b79e44c1a3e23a3ed627e3df2ee992aa6ca93bf145345e8",
+      "receipt_sha256": "a80909586a04b4b59cd0b76c8a6cdcb053730d2f4b412554570b66185026f0ae",
+      "queries": 18,
+      "fixed_denominator": 18,
+      "fixed_matches": 12,
+      "diagnostics": 0,
+      "diagnostics_matched": 0,
+      "mismatched_ids": [
+        "global_optional_null_filter",
+        "global_optional_defined_filter",
+        "required_root_filter",
+        "nullable_negation_excludes_unknown",
+        "empty_required_count",
+        "negated_empty_membership"
+      ]
+    },
+    {
+      "folder": "text2gql_optional_filter_probe_v1_20261026",
+      "spec_sha256": "9f6b565a932c2e7d60606735e49f3997f3884a78fdf8f446968ac81e81f8d5ac",
+      "receipt_sha256": "09902b672b6037617da403ad00b5c3579a3d3b9e2c1a142b75961c2637c162a2",
+      "queries": 5,
+      "fixed_denominator": 0,
+      "fixed_matches": 0,
+      "diagnostics": 5,
+      "diagnostics_matched": 5,
+      "mismatched_ids": []
+    },
+    {
+      "folder": "text2gql_optional_compiler_fixture_v2_20261026",
+      "spec_sha256": "175cec967ffa4d9eb66330eb52997fd4ea6f58fffb0457e5426ddb3e65572cda",
+      "receipt_sha256": "5e14633e5e448543960b4e8a8f5ad8ae10cafd9d5213cdd8aa2cfdd25b6acaa2",
+      "queries": 22,
+      "fixed_denominator": 18,
+      "fixed_matches": 18,
+      "diagnostics": 4,
+      "diagnostics_matched": 4,
+      "mismatched_ids": []
+    }
+  ],
+  "native_queries_this_stage": 73,
+  "final_temporal_cases": 20,
+  "final_temporal_matches": 20,
+  "current_temporal_scripts_identical": 20,
+  "final_optional_cases": 18,
+  "final_optional_matches": 18,
+  "optional_cases_unchanged_across_versions": true,
+  "current_identity_offline_replay_outcomes": 16,
+  "identity_raw_query_parameter_equalities": 32,
+  "identity_replay_new_database_queries": 0,
+  "current_local_checks_passed": 44,
+  "local_development_failure_retained": "First 37-check run: 1 Python3.9 one-digit fraction parsing error; canonical right-padding fixed it before native execution.",
+  "source_sha256": {
+    "schema_services.py": "98ac435c8ce509c3810c7be73086072b082718e0fcfff5ff7d9056236dc5bc2b",
+    "tugraph_dialect.py": "d0fa07b5a35d81f2485538b411a2e3c412be3209606d1fcaa47f791b0113f6e0",
+    "tugraph_schema.py": "377cff0f7991825fcdc767da56ed386c6e6ed1f39e13ef5f4828b13932570ba6",
+    "test_tugraph_dialect.py": "f6a514de6ca75528e6cced43341f79b06609aff6f59e0cbebba781448382d087",
+    "test_tugraph_temporal.py": "849dbc48e2fba054158bc5e58e21cbb0ea413bcc32606414cb6cac2c96045e0a",
+    "test_tugraph_optional.py": "47f51f67c0f63bfabe82431d7e1dc18888f22327f38ed8fb554fdefab9e1759b"
+  },
+  "zero_new_model_calls": true,
+  "cumulative_model_attempts": 5192,
+  "cumulative_cap": 12000,
+  "remaining_original_CypherBench_scope": 6808,
+  "new_model_budget_approved": false,
+  "new_model_budget_question_pending": true,
+  "canonical_core_files_unchanged": 32,
+  "temporal_profile": "naive ISO datetime, 0..6 fractional digits; timezone and precision loss rejected",
+  "bool_profile": "actual booleans, equality/membership/null tests; no integer/string coercion",
+  "optional_profile": "one optional edge, explicit WITH query parts, bag-preserving carriers/scalar edge property projections",
+  "raw_return_date_datetime": "REST strings in the independent fixture; not proven author Bolt equivalence",
+  "formal_prediction_admitted": false,
+  "entire_T1_complete": false,
+  "pending": [
+    "common Direct/Ours native schema/identity/entity/dialect/feedback inputs",
+    "typed REST/Bolt representation/author scorer and cohort/fixed reference denominator/statistics/freeze",
+    "explicit model budget then TRAIN/independent development model validation",
+    "remaining necessary named methods/other public candidates/OSDB independent tasks"
+  ],
+  "remote_closure": {
+    "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+    "runtime_lock_present": false,
+    "relevant_processes": [],
+    "private_port_listeners": [],
+    "read_only": true,
+    "time_local": "2026-10-26T07:41:32.532750+08:00"
+  }
+}

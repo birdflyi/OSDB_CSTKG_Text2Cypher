@@ -5,14 +5,14 @@ No query text is accepted from the service planner. Labels/properties/edges
 are checked against the supplied graph schema; literal values are parameters.
 """
 from copy import deepcopy
-from datetime import date
+from datetime import date, datetime
 import json
 import math
 import re
 import time
 
 
-VERSION = 'typed-services-dev-0.4-native-identity'
+VERSION = 'typed-services-dev-0.7-native-optional-projection'
 
 
 class UnsupportedPlan(ValueError):
@@ -65,6 +65,26 @@ def literal_matches(value, kind):
         except ValueError:
             return False
     return False
+
+
+def native_datetime_literal(value):
+    """Naive ISO datetime to the measured native format; retain microseconds.
+
+    No timezone guessing, offset stripping or precision loss. This profile does
+    not admit zoned timestamps or finer-than-microsecond inputs.
+    """
+    if type(value) is not str or not re.fullmatch(
+            r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?', value):
+        raise UnsupportedPlan('Native datetime needs a naive ISO timestamp at microsecond precision')
+    canonical = value.replace('T', ' ')
+    if '.' in canonical:
+        whole, fraction = canonical.split('.')
+        canonical = whole + '.' + fraction.ljust(6, '0')
+    try:
+        parsed = datetime.fromisoformat(canonical)
+    except ValueError as exc:
+        raise UnsupportedPlan('Invalid native datetime literal') from exc
+    return parsed.isoformat(sep=' ', timespec='microseconds' if '.' in value else 'seconds')
 
 
 def _native_patterns(node_labels, edges, identifier):
@@ -198,8 +218,6 @@ def compile_selection(call, schema, *, backend='neo4j'):
         raise UnsupportedPlan('Disconnected Cartesian patterns are not supported')
     if len(optional_edges) > 1:
         raise UnsupportedPlan('v0.2 admits at most one optional edge')
-    if native and optional_edges:
-        raise UnsupportedPlan('Native multi-MATCH/OPTIONAL lowering is not yet verified')
     reached_required = {next(iter(node_labels))}
     while True:
         grown = reached_required | {b for a in reached_required for b in required_adjacency[a]}
@@ -216,14 +234,37 @@ def compile_selection(call, schema, *, backend='neo4j'):
     for row in required_edges:
         matches[0] += f',({row["source"]})-[{row["id"]}:{ident(row["label"])}]->({row["target"]})'
     if native:
-        matches = ['MATCH ' + _native_patterns(node_labels, required_edges, ident)]
+        required_labels = {v: label for v, label in node_labels.items() if v in required_nodes}
+        matches = ['MATCH ' + _native_patterns(required_labels, required_edges, ident)]
     for row in optional_edges:
         if not ({row['source'], row['target']} & required_nodes):
             raise UnsupportedPlan('Optional edge needs an already bound endpoint')
         def endpoint(v):
             return v + (':' + ident(node_labels[v]) if v in nullable_nodes else '')
+        if native:
+            # The pinned engine accepts one MATCH per query part, and cannot
+            # expand WITH *. An explicit projection preserves the bag and all
+            # required bindings before starting the OPTIONAL query part.
+            bound = [v for v in node_labels if v in required_nodes] + [r['id'] for r in required_edges]
+            matches.append('WITH ' + ','.join(bound))
         matches.append(f'OPTIONAL MATCH ({endpoint(row["source"])})-[{row["id"]}:'
                        f'{ident(row["label"])}]->({endpoint(row["target"])})')
+
+    # Native WITH cannot carry a nullable edge object through a subsequent
+    # filter. Project only the edge properties actually needed, as scalars.
+    # WITH is bag-preserving: dropping unused bindings does not deduplicate.
+    references = []
+    if native and optional_edges and isinstance(call['where'], list) and call['where']:
+        references = [p.get(k) for p in call['where'] if isinstance(p, dict)
+                      for k in ('field', 'other_field') if k in p]
+        if isinstance(call['returns'], list):
+            references += [p.get('field') for p in call['returns'] if isinstance(p, dict)]
+        if isinstance(call.get('group_by'), list):
+            references += call['group_by']
+    scalar_fields = sorted({ref for ref in references if isinstance(ref, str) and
+                            ref.count('.') == 1 and types.get(ref.split('.')[0]) == 'edge'})
+    field_aliases = {ref: '__native_property_' + str(index)
+                     for index, ref in enumerate(scalar_fields)}
 
     def field(value, allow_node=False):
         if allow_node and value in node_labels:
@@ -233,7 +274,7 @@ def compile_selection(call, schema, *, backend='neo4j'):
         variable, prop = value.split('.')
         if variable not in variables or prop not in variables[variable]:
             raise UnsupportedPlan('Unknown property')
-        return variable + '.' + ident(prop), variables[variable][prop]
+        return field_aliases.get(value, variable + '.' + ident(prop)), variables[variable][prop]
 
     params, predicates = {}, []
     if not isinstance(call['where'], list) or len(call['where']) > 16:
@@ -245,6 +286,8 @@ def compile_selection(call, schema, *, backend='neo4j'):
             raise UnsupportedPlan('Predicate negate must be boolean')
         expression, kind = field(predicate['field'])
         op = predicate['op']
+        if native and kind == 'bool' and op not in ('eq', 'ne', 'in', 'is_null', 'not_null'):
+            raise UnsupportedPlan('Native boolean predicates admit equality or membership only')
         def emit_predicate(value):
             if not native or op in ('is_null', 'not_null'):
                 predicates.append('NOT (' + value + ')' if predicate.get('negate') else value)
@@ -276,7 +319,16 @@ def compile_selection(call, schema, *, backend='neo4j'):
                 raise UnsupportedPlan('Use explicit null predicates')
             if isinstance(value, list) and any(type(v) not in (str, int, float, bool) for v in value):
                 raise UnsupportedPlan('Nested predicate values unsupported')
-            if op == 'in':
+            if native and kind == 'datetime':
+                if op not in comparisons:
+                    raise UnsupportedPlan('Native datetime predicates require a scalar comparison')
+                value = native_datetime_literal(value)
+                typed = True
+            elif native and kind == 'bool':
+                if op not in ('eq', 'ne', 'in'):
+                    raise UnsupportedPlan('Native boolean predicates admit equality or membership only')
+                typed = (type(value) is list and all(type(v) is bool for v in value)) if op == 'in' else type(value) is bool
+            elif op == 'in':
                 typed = type(value) is list and all(literal_matches(v, kind) for v in value)
             elif op == 'contains' and kind == 'list[str]':
                 typed = type(value) is str
@@ -289,7 +341,8 @@ def compile_selection(call, schema, *, backend='neo4j'):
                     raise UnsupportedPlan('Date predicates require scalar ISO date')
                 date.fromisoformat(value)
             params[parameter] = value
-            right = ('date($' + parameter + ')' if kind == 'date' else '$' + parameter)
+            right = ('date($' + parameter + ')' if kind == 'date' else
+                     'datetime($' + parameter + ')' if native and kind == 'datetime' else '$' + parameter)
         if op in comparisons:
             emit_predicate(expression + comparisons[op] + right)
         elif op == 'in' and isinstance(predicate.get('value'), list):
@@ -307,7 +360,14 @@ def compile_selection(call, schema, *, backend='neo4j'):
         if optional_edges:
             # A bare WHERE after OPTIONAL MATCH would qualify the optional
             # pattern, not filter the full joined relation. Preserve IR meaning.
-            matches.append('WITH *')
+            if native:
+                used = {ref.split('.')[0] for ref in references if isinstance(ref, str)}
+                carriers = [v for v in node_labels if v in used]
+                carriers += [ref.split('.')[0] + '.' + ident(ref.split('.')[1]) + ' AS ' + alias
+                             for ref, alias in field_aliases.items()]
+                matches.append('WITH ' + ','.join(carriers))
+            else:
+                matches.append('WITH *')
         matches.append('WHERE ' + ' AND '.join('(' + item + ')' for item in predicates))
     if not isinstance(call['returns'], list) or not 1 <= len(call['returns']) <= 8:
         raise UnsupportedPlan('One to eight return items required')
@@ -335,7 +395,13 @@ def compile_selection(call, schema, *, backend='neo4j'):
                 # Counting native node objects can incorrectly bypass the
                 # relationship expansion in this engine. Physical IDs preserve
                 # non-null node identity and relationship-bag multiplicity.
-                expression = 'id(' + expression + ')'
+                if expression in nullable_nodes:
+                    identity = identity_fields.get(expression, {}).get('field')
+                    if identity is None:
+                        raise UnsupportedPlan('Nullable native node count needs a declared primary identity')
+                    expression = field(identity)[0]
+                else:
+                    expression = 'id(' + expression + ')'
             expression = aggregate + '(' + ('DISTINCT ' if item.get('distinct') else '') + expression + ')'
             aggregates.append(alias)
         else:

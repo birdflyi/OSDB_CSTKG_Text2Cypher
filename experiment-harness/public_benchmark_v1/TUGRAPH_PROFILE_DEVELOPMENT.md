@@ -1,11 +1,18 @@
 # Native TuGraph compiler profile: development only
 
-Current stage: `typed-services-dev-0.4-native-identity`. Six import-config
+Current stage: `typed-services-dev-0.7-native-optional-projection`. Six import-config
 schemas (46 vertex labels, 64 directed signatures) preserve actual declared
 primary properties and types. Eight fixed independent set plans, each run with
 contract and full-detail strategies, gave 16/16 expected final answers from 32
 native queries. String identities are measured on the native engine; integer
 identity rejection/coercion checks are local only. No model predictions.
+
+Native development added 20/20 fixed BOOL/naive-microsecond-DATETIME checks and
+18/18 fixed OPTIONAL checks. The first OPTIONAL compilation had 12/18; all six
+failed global filters are retained. Explicit WITH query parts and bag-preserving
+node/scalar-property projection corrected them. No WITH * or pattern
+comprehension is used. Nullable node counts use declared primary properties;
+no timezones or finer-than-microsecond values are silently coerced.
 
 This branch starts at frozen CypherBench commit c614367. It leaves that run's
 source, predictions, scores and main table unchanged. No Text2GQL model
@@ -29,13 +36,12 @@ COUNT DISTINCT returned four vertices rather than the three incident vertices;
 physical-ID and declared-primary-key counting returned three. These observations
 are limited to the pinned native engine and fixtures, not universal engine claims.
 
-Not ready: OPTIONAL/multi-stage lowering, DATETIME/BOOL literal admission,
-equal Direct inputs, typed REST/Bolt answers,
+Not ready: equal Direct inputs, typed REST/Bolt answers,
 training-only model development, final metrics and formal freeze. Unsupported
 syntax is explicit, not replaced by an easier question. Do not start a test
 prediction from this profile alone or reuse the CypherBench-only model budget.
 
-Verification: `python -m unittest test_tugraph_dialect test_schema_services test_tugraph_schema`.
-32 checks passed. Full measured evidence is indexed in the stage report, kept
+Verification: `python -m unittest test_tugraph_dialect test_schema_services test_tugraph_schema test_tugraph_temporal test_tugraph_optional`.
+44 checks passed. Full measured evidence is indexed in the stage report, kept
 outside publication Git. No credentials, raw author data or runtime packages
 are required by these source files.
