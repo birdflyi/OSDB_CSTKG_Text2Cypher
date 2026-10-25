@@ -1,0 +1,65 @@
+{
+  "results": [
+    {
+      "enabled": true,
+      "events": [],
+      "provider": "Microsoft-Windows-Kernel-Power",
+      "oldest_record": 80795,
+      "record_count": 51156,
+      "log": "System",
+      "error_ids": [
+        "NoMatchingEventsFound,Microsoft.PowerShell.Commands.GetWinEventCommand"
+      ]
+    },
+    {
+      "enabled": true,
+      "events": [],
+      "provider": "Microsoft-Windows-Power-Troubleshooter",
+      "oldest_record": 80795,
+      "record_count": 51156,
+      "log": "System",
+      "error_ids": [
+        "NoMatchingEventsFound,Microsoft.PowerShell.Commands.GetWinEventCommand"
+      ]
+    },
+    {
+      "enabled": true,
+      "events": [],
+      "provider": null,
+      "oldest_record": 7255,
+      "record_count": 2229,
+      "log": "Microsoft-Windows-NetworkProfile/Operational",
+      "error_ids": [
+        "NoMatchingEventsFound,Microsoft.PowerShell.Commands.GetWinEventCommand"
+      ]
+    },
+    {
+      "enabled": true,
+      "events": [],
+      "provider": null,
+      "oldest_record": 28224,
+      "record_count": 1506,
+      "log": "Microsoft-Windows-WLAN-AutoConfig/Operational",
+      "error_ids": [
+        "NoMatchingEventsFound,Microsoft.PowerShell.Commands.GetWinEventCommand"
+      ]
+    },
+    {
+      "enabled": true,
+      "events": [],
+      "provider": "RasClient",
+      "oldest_record": 31315,
+      "record_count": 40330,
+      "log": "Application",
+      "error_ids": [
+        "NoMatchingEventsFound,Microsoft.PowerShell.Commands.GetWinEventCommand"
+      ]
+    }
+  ],
+  "time_local": "2026-10-25T10:03:45.1350963+08:00",
+  "window_end": "2026-10-25T07:10:00.0000000",
+  "model_calls": 0,
+  "raw_messages_exported": false,
+  "window_start": "2026-10-25T01:30:00.0000000",
+  "network_requests": 0
+}

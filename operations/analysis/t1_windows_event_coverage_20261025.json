@@ -1,0 +1,22 @@
+[
+  {
+    "oldest_time": "2026-08-24T15:22:29.4830235+08:00",
+    "newest_time": "2026-10-25T10:05:11.6532319+08:00",
+    "log": "System"
+  },
+  {
+    "oldest_time": "2026-09-15T09:46:46.2994819+08:00",
+    "newest_time": "2026-10-22T15:14:18.5563524+08:00",
+    "log": "Microsoft-Windows-NetworkProfile/Operational"
+  },
+  {
+    "oldest_time": "2026-09-24T10:00:55.5058682+08:00",
+    "newest_time": "2026-10-24T10:35:59.2895887+08:00",
+    "log": "Microsoft-Windows-WLAN-AutoConfig/Operational"
+  },
+  {
+    "oldest_time": "2026-05-03T02:38:00.6243046+08:00",
+    "newest_time": "2026-10-25T09:50:08.3217635+08:00",
+    "log": "Application"
+  }
+]

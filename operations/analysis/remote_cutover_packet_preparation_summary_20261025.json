@@ -1,0 +1,61 @@
+{
+  "kind": "LOCAL_REMOTE_CUTOVER_PACKET_PREPARATION_ONLY",
+  "time_local": "2026-10-25T10:13:20.470892+08:00",
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "packet_path": "D:\\ch7\\experiments\\public_benchmark_v1\\remote_cutover_preparation_v1_20261025\\packet.zip",
+  "packet_sha256": "d7fb5643ea33ced2343e726e49700b7c6014c08de952fdbc227aeb917b052adb",
+  "packet_bytes": 142488735,
+  "file_counts": {
+    "frozen_code": 32,
+    "frozen_data": 19,
+    "frozen_evidence": 2371,
+    "control": 3,
+    "official_evaluator": 1,
+    "existing_geography_record": 413,
+    "existing_shared_input": 207
+  },
+  "uncompressed_bytes_by_group": {
+    "frozen_code": 216423,
+    "frozen_data": 1830841807,
+    "frozen_evidence": 4764517,
+    "control": 553660,
+    "official_evaluator": 8155,
+    "existing_geography_record": 19446679,
+    "existing_shared_input": 1263946
+  },
+  "source_file_count": 3046,
+  "all_frozen_source_data_evidence_verified": true,
+  "archive_crc_and_each_uncompressed_sha_verified": true,
+  "baseline_budget_reserved": 3266,
+  "cumulative_cap": 12000,
+  "remaining_cap": 8734,
+  "pending": [],
+  "ledger_unchanged": true,
+  "budget_execution_lease_created": false,
+  "existing_terminal_paths_copied": 413,
+  "existing_geography_failures_preserved": true,
+  "remaining_graph_order": [
+    "geography",
+    "movie",
+    "politics"
+  ],
+  "model_config_or_API_key_copied": false,
+  "current_API_key_absence_checked": true,
+  "SSH_private_key_read_or_copied": false,
+  "uploaded": false,
+  "remote_process_started": false,
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "experiment_network_requests": 0,
+  "formal_prediction_admitted": false,
+  "required_before_cutover": [
+    "Exclusive Windows+remote execution lease with stale/unknown owner fail-closed handling",
+    "Cumulative budget authority and immutable remote-attempt mirror/reconciliation, never reset baseline",
+    "Explicit evidence path resolver and offline attempt path resolver; original frozen files unchanged",
+    "Native local IPC transport conformance against saved outputs; original guard/limits/source",
+    "Exact authorized hostname/owner/process/lock and already-deployed graph identity",
+    "Safe private config placement outside this packet; original endpoint/settings verification",
+    "Interrupted-generation/unknown-result no-resend recovery and final record/cost synchronization",
+    "Independent cutover admission before any generation; packet alone authorizes no experiment"
+  ]
+}
