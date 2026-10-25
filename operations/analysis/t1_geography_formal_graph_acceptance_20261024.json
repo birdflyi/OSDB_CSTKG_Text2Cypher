@@ -1,0 +1,72 @@
+{
+  "kind": "COMPLETED_GRAPH_ACCEPTANCE",
+  "timestamp_utc": "2026-10-25T08:54:02.693989+00:00",
+  "graph": "geography",
+  "n": 366,
+  "terminal_primary_paths": 732,
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "score_path": "D:\\ch7\\experiments\\public_benchmark_v1\\core_main_v1_20261024\\geography\\scores\\geography.json",
+  "score_sha256": "48433d29414b7be8914f732afe31ce7d3785d7e09e3440a8855d057c8ea6f6db",
+  "all_frozen_task_arm_ids_present_once": true,
+  "saved_predictions_unchanged_by_scoring": true,
+  "final_status_counts": {
+    "direct:EXECUTED": 365,
+    "ours:EXECUTED": 342,
+    "ours:UNSUPPORTED": 19,
+    "ours:INFRASTRUCTURE_ERROR": 1,
+    "ours:EXECUTION_ERROR": 3,
+    "direct:INFRASTRUCTURE_ERROR": 1,
+    "ours:MODEL_ERROR": 1
+  },
+  "methods": {
+    "Direct": {
+      "n": 366,
+      "correct": 271.0,
+      "returned": 365,
+      "ex_percent": 74.04371584699453
+    },
+    "Direct+feedback": {
+      "n": 366,
+      "correct": 271.0,
+      "returned": 365,
+      "ex_percent": 74.04371584699453
+    },
+    "Ours": {
+      "n": 366,
+      "correct": 271.0,
+      "returned": 342,
+      "ex_percent": 74.04371584699453
+    },
+    "Full-detail(shared-plan)": {
+      "n": 366,
+      "correct": 271.0,
+      "returned": 342
+    }
+  },
+  "descriptive_pairs": {
+    "ours_only": 34,
+    "direct_only": 34,
+    "both_correct": 237,
+    "neither_correct": 61
+  },
+  "fixed_plan_control_status_counts": {
+    "EXECUTED": 342,
+    "UNSUPPORTED": 19,
+    "INFRASTRUCTURE_ERROR": 1,
+    "EXECUTION_ERROR": 3,
+    "MODEL_ERROR": 1
+  },
+  "executed_plan_raw_row_disagreement_qids": [],
+  "physical_model_attempts": 742,
+  "known_token_sums": {
+    "prompt_tokens": 1183599,
+    "completion_tokens": 530826,
+    "total_tokens": 1714425
+  },
+  "attempts_with_unknown_usage": 6,
+  "monetary_cost": "unknown; unit price unavailable",
+  "unknown_original_wrapper_clocks": 2,
+  "full2348_conclusion_ready": false,
+  "entire_T1_complete": false,
+  "interpretation": "One completed graph only. Do not tune the frozen method from these results."
+}
