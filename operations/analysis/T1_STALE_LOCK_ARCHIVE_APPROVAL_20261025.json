@@ -1,0 +1,15 @@
+{
+  "kind": "EXPLICIT_HUMAN_ONE_TIME_STALE_LOCK_ARCHIVE_APPROVAL",
+  "date_local": "2026-10-25",
+  "user_answer": "允许归档该失效锁并继续",
+  "source": "Direct human reply to pending stale-lock archive question in this chat",
+  "authorized_host": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+  "source_path": "/mnt/data/louzehua/ch7_t1_public_benchmark_20261023/.public-runtime.lock",
+  "archive_path": "/mnt/data/louzehua/ch7_t1_public_benchmark_20261023/.public-runtime.lock.archived-geography-20261025-144018",
+  "source_sha256": "9916c1d031c1b412c3eecac8d02cb2ad5a48b50fc06cceb5c913d1f849b3717e",
+  "source_owner_pid": 296237,
+  "source_graph": "geography",
+  "required_before_action": ["host and owner match", "no active runner or worker", "old PIDs absent", "port 17688 idle", "budget pending zero", "frozen source and inputs unchanged", "storage fsync/readback pass", "archive target absent", "exact lock hash and identity match"],
+  "permission_scope": "Archive this exact stale lock without deleting its bytes; then continue unstarted frozen tasks after fresh admission. No authorization for future automatic lock clearing.",
+  "original_predictions_journal_and_failures_preserved": true
+}

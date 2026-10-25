@@ -1,0 +1,17 @@
+{
+  "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+  "old_processes_absent": true,
+  "port_idle": true,
+  "source": "/mnt/data/louzehua/ch7_t1_public_benchmark_20261023/.public-runtime.lock",
+  "archive": "/mnt/data/louzehua/ch7_t1_public_benchmark_20261023/.public-runtime.lock.archived-geography-20261025-144018",
+  "source_sha256": "9916c1d031c1b412c3eecac8d02cb2ad5a48b50fc06cceb5c913d1f849b3717e",
+  "archive_sha256": "9916c1d031c1b412c3eecac8d02cb2ad5a48b50fc06cceb5c913d1f849b3717e",
+  "archive_bytes": 69,
+  "storage_fsync_readback_bytes": 65536,
+  "runtime_lock_absent": true,
+  "archive_was_exclusive": true,
+  "raw_journal_preserved": true,
+  "remote_source_dependencies_unchanged": true,
+  "new_model_calls": 0,
+  "new_database_queries": 0
+}

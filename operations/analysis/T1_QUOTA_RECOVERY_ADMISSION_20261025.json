@@ -1,0 +1,43 @@
+{
+  "time_local": "2026-10-25T16:41:00.107121+08:00",
+  "formal_run_ready": true,
+  "queue_id": "infra_journal_quota_recovery_queue_v5_20261025",
+  "segment": "journal_quota_recovery_20261025",
+  "freeze_sha256": "8b5b17373f54c67ca5caad6c41b9d1da020529fc98772f899500866d57b2aee8",
+  "budget": {
+    "reserved": 3566,
+    "cap": 12000,
+    "remaining": 8434,
+    "pending": []
+  },
+  "human_approval_sha256": "fde2a86e6f4a0dc67d73ec666fc0df402ff13ffb3c976d1f029a0a5d387fda46",
+  "source_hashes_verified": 32,
+  "method_prompt_model_metric_changes": false,
+  "original_journal_files": {
+    "journal_public_worker_v2.py": "a7f2d3acc911daac688be9f6773b6406917e5d912eb6c67cb221a0273398fb55",
+    "core_journal_resume_v3.py": "20488d9ab76c44baa485aad8149c8ff25e0494464b2e68e88ae84b5a1a926855",
+    "durable_native_journal_v1.py": "a44b3b00158ff9ceb5a54d04538841c8185d883dc6010b147594723856b1ff56"
+  },
+  "old_failures_and_quota_stop_preserved": true,
+  "no_exhausted_request_retried": true,
+  "new_model_probes": 0,
+  "remote_gate": {
+    "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+    "old_processes_absent": true,
+    "port_idle": true,
+    "source": "/mnt/data/louzehua/ch7_t1_public_benchmark_20261023/.public-runtime.lock",
+    "archive": "/mnt/data/louzehua/ch7_t1_public_benchmark_20261023/.public-runtime.lock.archived-geography-20261025-144018",
+    "source_sha256": "9916c1d031c1b412c3eecac8d02cb2ad5a48b50fc06cceb5c913d1f849b3717e",
+    "archive_sha256": "9916c1d031c1b412c3eecac8d02cb2ad5a48b50fc06cceb5c913d1f849b3717e",
+    "archive_bytes": 69,
+    "storage_fsync_readback_bytes": 65536,
+    "runtime_lock_absent": true,
+    "archive_was_exclusive": true,
+    "raw_journal_preserved": true,
+    "remote_source_dependencies_unchanged": true,
+    "new_model_calls": 0,
+    "new_database_queries": 0
+  },
+  "entire_T1_complete": false,
+  "stop_policy": "Original bounded 3 attempts and 10-second wait; stop/audit on renewed infrastructure failures."
+}
