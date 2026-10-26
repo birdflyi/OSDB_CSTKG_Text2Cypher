@@ -1,0 +1,358 @@
+{
+  "kind": "OSDB_OBSERVED_PROFILE_REAL_SEMANTIC_PREPARATION_NOT_FORMAL_T1",
+  "versions": [
+    {
+      "kind": "SYNTHETIC_NEO4J_SEMANTIC_ACCEPTANCE_NOT_FORMAL_T1",
+      "module": "observed_neo4j_services_dev",
+      "planned_plan_executions": 28,
+      "dispatched_plan_executions": 15,
+      "accepted_plan_executions": 14,
+      "failed_plan_executions": 1,
+      "undispatched_plan_executions": 13,
+      "accepted": [
+        {
+          "case": "null_negation",
+          "strategy": "contract"
+        },
+        {
+          "case": "null_negation",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "strict_boolean",
+          "strategy": "contract"
+        },
+        {
+          "case": "strict_boolean",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "same_match_physical_uniqueness",
+          "strategy": "contract"
+        },
+        {
+          "case": "same_match_physical_uniqueness",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "optional_zero_and_identity_group",
+          "strategy": "contract"
+        },
+        {
+          "case": "optional_zero_and_identity_group",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "optional_post_join_filter",
+          "strategy": "contract"
+        },
+        {
+          "case": "optional_post_join_filter",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "instant_half_open",
+          "strategy": "contract"
+        },
+        {
+          "case": "instant_half_open",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "nanosecond_boundary",
+          "strategy": "contract"
+        },
+        {
+          "case": "nanosecond_boundary",
+          "strategy": "full_detail"
+        }
+      ],
+      "failure": {
+        "type": "AssertionError",
+        "message": "Semantic mismatch: offset_equivalent_window / contract"
+      },
+      "physical_HTTP_requests": 21,
+      "physical_POST_queries_including_fixture_setup": 19,
+      "model_calls": 0,
+      "budget_before": {
+        "reserved": 6664,
+        "cap": 12000,
+        "remaining": 5336,
+        "pending": []
+      },
+      "budget_after": {
+        "reserved": 6664,
+        "cap": 12000,
+        "remaining": 5336,
+        "pending": []
+      },
+      "canonical32_and_adapter46_unchanged": true,
+      "new_owned_JVM_stopped": true,
+      "formal_admission": false,
+      "entire_T1_complete": false,
+      "protocol_sha256": "dd8a412eb7023f96b9462455fe945170779ae17169adf063f3ab3ee1d82c5fd9",
+      "summary_sha256": "f63855204b5fe5c0adb65d29bf61a3a67419e0f374a4ea4e059eeb5232052fb8",
+      "console_sha256": "4712915693e690b078c20cccfd10986a659382b85ef2cb3293c0d189187a8417"
+    },
+    {
+      "kind": "SYNTHETIC_NEO4J_SEMANTIC_ACCEPTANCE_NOT_FORMAL_T1",
+      "module": "observed_neo4j_services_dev_v2",
+      "planned_plan_executions": 28,
+      "dispatched_plan_executions": 28,
+      "accepted_plan_executions": 28,
+      "failed_plan_executions": 0,
+      "undispatched_plan_executions": 0,
+      "accepted": [
+        {
+          "case": "null_negation",
+          "strategy": "contract"
+        },
+        {
+          "case": "null_negation",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "strict_boolean",
+          "strategy": "contract"
+        },
+        {
+          "case": "strict_boolean",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "same_match_physical_uniqueness",
+          "strategy": "contract"
+        },
+        {
+          "case": "same_match_physical_uniqueness",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "optional_zero_and_identity_group",
+          "strategy": "contract"
+        },
+        {
+          "case": "optional_zero_and_identity_group",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "optional_post_join_filter",
+          "strategy": "contract"
+        },
+        {
+          "case": "optional_post_join_filter",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "instant_half_open",
+          "strategy": "contract"
+        },
+        {
+          "case": "instant_half_open",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "nanosecond_boundary",
+          "strategy": "contract"
+        },
+        {
+          "case": "nanosecond_boundary",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "offset_equivalent_window",
+          "strategy": "contract"
+        },
+        {
+          "case": "offset_equivalent_window",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "instant_equality",
+          "strategy": "contract"
+        },
+        {
+          "case": "instant_equality",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "instant_equivalent_union",
+          "strategy": "contract"
+        },
+        {
+          "case": "instant_equivalent_union",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "real_identity_difference",
+          "strategy": "contract"
+        },
+        {
+          "case": "real_identity_difference",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "integer_key_intersection",
+          "strategy": "contract"
+        },
+        {
+          "case": "integer_key_intersection",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "raw_nanosecond_projection",
+          "strategy": "contract"
+        },
+        {
+          "case": "raw_nanosecond_projection",
+          "strategy": "full_detail"
+        },
+        {
+          "case": "relationship_instant_window",
+          "strategy": "contract"
+        },
+        {
+          "case": "relationship_instant_window",
+          "strategy": "full_detail"
+        }
+      ],
+      "failure": null,
+      "physical_HTTP_requests": 39,
+      "physical_POST_queries_including_fixture_setup": 38,
+      "model_calls": 0,
+      "budget_before": {
+        "reserved": 6664,
+        "cap": 12000,
+        "remaining": 5336,
+        "pending": []
+      },
+      "budget_after": {
+        "reserved": 6664,
+        "cap": 12000,
+        "remaining": 5336,
+        "pending": []
+      },
+      "canonical32_and_adapter46_unchanged": true,
+      "new_owned_JVM_stopped": true,
+      "formal_admission": false,
+      "entire_T1_complete": false,
+      "protocol_sha256": "ad24d51344baa41e334c102e8a849638f0293c43a58e5c96e4a139564265ce97",
+      "summary_sha256": "c21d602bbb3f4de9ae3b01b2b6dd1de7ec03aec9461078008951b970d9da3b3d",
+      "console_sha256": "7c4575423f6bfdbc30b72ef6a95548c8c33044e5cebc9b18fd3ee5537ad3c73f"
+    }
+  ],
+  "base14_fixture_and_expected_rows_unchanged": true,
+  "new_profile_version": "observed-neo4j-profile-dev-2",
+  "unit_tests_passed": 13,
+  "four_graph_schema_compilation": [
+    {
+      "graph": "redis",
+      "entities": 14,
+      "relations": 78,
+      "compiled_checks": 106,
+      "undeclared_properties_rejected": 84,
+      "mock_composition_checks": 1,
+      "mock_composition_result": [
+        [
+          1
+        ]
+      ],
+      "source_schema_sha256": "911c219b83fb87d5bf9536e5a380c88d63f268bd333bbdb57725338b01707793",
+      "profile_sha256": "8af6ec4fd240f2f677bd01c0a03dd076811625a82bfb885b7ec124ceaff05b56",
+      "offline_preparation_seconds": 0.027531399999999984,
+      "database_dispatches": 0,
+      "model_calls": 0
+    },
+    {
+      "graph": "duckdb",
+      "entities": 14,
+      "relations": 84,
+      "compiled_checks": 112,
+      "undeclared_properties_rejected": 84,
+      "mock_composition_checks": 1,
+      "mock_composition_result": [
+        [
+          1
+        ]
+      ],
+      "source_schema_sha256": "f7a999a14ca89c0c39b9e408fa75fa948cee1d555e4156bbb309c0154bcadda4",
+      "profile_sha256": "1a2b8cacf5478ae3d622a66b69af1121f43104ef443850705fbf16a2d845166d",
+      "offline_preparation_seconds": 0.024883799999999984,
+      "database_dispatches": 0,
+      "model_calls": 0
+    },
+    {
+      "graph": "iotdb",
+      "entities": 14,
+      "relations": 66,
+      "compiled_checks": 94,
+      "undeclared_properties_rejected": 84,
+      "mock_composition_checks": 1,
+      "mock_composition_result": [
+        [
+          1
+        ]
+      ],
+      "source_schema_sha256": "f7be06435682e72d609158993611fc2d8e3ca490953846b049d6b00ad88789af",
+      "profile_sha256": "fa982b07b6a45afbb0ef0f27ed23f543259f1141ff53d3806508aa9ee6e0e059",
+      "offline_preparation_seconds": 0.019874000000000003,
+      "database_dispatches": 0,
+      "model_calls": 0
+    },
+    {
+      "graph": "elasticsearch",
+      "entities": 14,
+      "relations": 81,
+      "compiled_checks": 109,
+      "undeclared_properties_rejected": 84,
+      "mock_composition_checks": 1,
+      "mock_composition_result": [
+        [
+          1
+        ]
+      ],
+      "source_schema_sha256": "9f852b9b03ee29b7a444834f436192d3e10e1de79402c60cc6a41ffcda3d333f",
+      "profile_sha256": "13cbea03f5eab09002b9dd8c4f88bb903c88d3fd1dbe223869f49bf3351cafc4",
+      "offline_preparation_seconds": 0.0252347,
+      "database_dispatches": 0,
+      "model_calls": 0
+    }
+  ],
+  "physical_HTTP_requests": 60,
+  "physical_POST_queries": 57,
+  "fixture_setup_POST_queries": 8,
+  "semantic_POST_queries": 49,
+  "readiness_attempts": 3,
+  "unsuccessful_readiness_attempts": 1,
+  "POST_http_or_engine_errors": 0,
+  "all_physical_POST_client_seconds": 25.302000000025146,
+  "same_body_query_retries": 0,
+  "new_model_calls": 0,
+  "budget": {
+    "reserved": 6664,
+    "cap": 12000,
+    "remaining": 5336,
+    "pending": []
+  },
+  "canonical32_and_adapter46_unchanged": true,
+  "new_owned_JVMs_stopped": true,
+  "formal_predictions": 0,
+  "formal_N": null,
+  "formal_admission": false,
+  "entire_T1_complete": false,
+  "primary_documentation": [
+    "https://neo4j.com/docs/cypher-manual/current/values-and-types/ordering-equality-comparison/",
+    "https://neo4j.com/docs/cypher-manual/current/values-and-types/temporal/"
+  ],
+  "remaining": [
+    "Shared prompt/schema/permission integration and entity candidates.",
+    "Fixed exposed TRAIN regression and sufficient independent held-out task scope.",
+    "Feedback/scoring/controls/resource/model/budget freeze and separate OSDB model-call allocation."
+  ],
+  "limits": [
+    "Synthetic developer semantic preparation; not EX, validation accuracy, method speedup or generalization.",
+    "V1 failure retained; V2 corrects absolute-instant lowering, without changing the fixed case expectations.",
+    "The old real OSDB timestamp census contained UTC whole seconds; this synthetic offset failure is not claimed as an observed old OSDB wrong answer.",
+    "No model endpoint probes, retired node/service restart or shared remote graph/model service changes."
+  ]
+}
