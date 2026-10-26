@@ -1,0 +1,143 @@
+{
+  "kind": "TASK_REFERENCE_PROGRAM_COMPOSITION_SCREEN_NOT_METHOD_RESULTS",
+  "time_local": "2026-10-26T10:41:56.555726+08:00",
+  "protocol_sha256": "43ded9b62c6a44f067185c7b403d1eb29493d43c16131b9b21d48f6d8631fab9",
+  "screen_source_sha256": "211e47630f9966f3705e7fe516a95d38624184e136585bc69da108957625c2c1",
+  "old_lexical_profile_sha256": "0482d31dc3bac70cf2f554a9916854e1b39706309b811647dd6a18d2ad11910d",
+  "native_reference_cohort_sha256": "1e74b7f740a6c26dc45135d2b189872a0b8864922cfdcb86d7883161a06ca3ab",
+  "asset_inventory_sha256": "5a4027805eb5f3854ab04e485cdf75a6add126832967c863d09813370b26fcfa",
+  "task_screen_records_sha256": "c78653c284499e1d96c33c7a2496c763e839249f5f38ed679c2954bc7a251448",
+  "full_N": 3826,
+  "graphs": {
+    "Financial_Payment": {
+      "n": 776,
+      "counts": {
+        "recognized_distinct_entity_count": 14,
+        "one_stage_entity_count": 14,
+        "one_stage_entity_count_with_OR": 0,
+        "equality_partition_shape_only": 0,
+        "lexical_OR": 10,
+        "lexical_UNION": 10,
+        "native_reference_executable": 776,
+        "native_reference_unknown": 0
+      },
+      "query_asset_sha256": "1bce7b10e652365245c8743f10cc11871de0625616b468a0243fcf65945cafff",
+      "config_asset_sha256": "2e0764cd71b1b8429cd1cbc190982ddad95d727dc77f988b198755304b85c3af"
+    },
+    "Information_Technology_IT_Asset_Management": {
+      "n": 726,
+      "counts": {
+        "recognized_distinct_entity_count": 7,
+        "one_stage_entity_count": 7,
+        "one_stage_entity_count_with_OR": 0,
+        "equality_partition_shape_only": 0,
+        "lexical_OR": 8,
+        "lexical_UNION": 6,
+        "native_reference_executable": 726,
+        "native_reference_unknown": 0
+      },
+      "query_asset_sha256": "783fe3b655420cdce6fbe002895c8cd926a785661566840792b33305d8ce8ad4",
+      "config_asset_sha256": "d887380effa5742cd3371ea3766a98092315489d0f8aec4439140ef88fbb86ff"
+    },
+    "Knowledge_Graph_Geography": {
+      "n": 642,
+      "counts": {
+        "recognized_distinct_entity_count": 12,
+        "one_stage_entity_count": 12,
+        "one_stage_entity_count_with_OR": 0,
+        "equality_partition_shape_only": 0,
+        "lexical_OR": 14,
+        "lexical_UNION": 4,
+        "native_reference_executable": 631,
+        "native_reference_unknown": 11
+      },
+      "query_asset_sha256": "45cfe68eb6462556273682f625e08b6081315244a2fca6195d588f2f15729cb8",
+      "config_asset_sha256": "50d7fd0136473b2d39a9ef12bc30a98d179d6d2f1338a7c07bd2ef0001c0bb0e"
+    },
+    "Manufacturing_BOM(Bill_Of_Materials)": {
+      "n": 489,
+      "counts": {
+        "recognized_distinct_entity_count": 2,
+        "one_stage_entity_count": 2,
+        "one_stage_entity_count_with_OR": 0,
+        "equality_partition_shape_only": 0,
+        "lexical_OR": 6,
+        "lexical_UNION": 5,
+        "native_reference_executable": 489,
+        "native_reference_unknown": 0
+      },
+      "query_asset_sha256": "e6779eca47ce4836f74021b8160794430ec47dd2f103af3dd96343ff07835d11",
+      "config_asset_sha256": "6239346a845bed7e03fc8c86f67b1a9b14ef92c152cb10337e34f9ec1baf7cf1"
+    },
+    "Manufacturing_Production_Process": {
+      "n": 596,
+      "counts": {
+        "recognized_distinct_entity_count": 15,
+        "one_stage_entity_count": 15,
+        "one_stage_entity_count_with_OR": 0,
+        "equality_partition_shape_only": 0,
+        "lexical_OR": 12,
+        "lexical_UNION": 7,
+        "native_reference_executable": 596,
+        "native_reference_unknown": 0
+      },
+      "query_asset_sha256": "07b53aa6f6fb02030b5d6bd71d38a7946c974e925597899e2d52e7588c580e72",
+      "config_asset_sha256": "552b41395f4aaae5c8fac6560fc80fe39ecca8a44d8b24a28f9661e88add3d85"
+    },
+    "Social_Network_Twitter": {
+      "n": 597,
+      "counts": {
+        "recognized_distinct_entity_count": 12,
+        "one_stage_entity_count": 12,
+        "one_stage_entity_count_with_OR": 0,
+        "equality_partition_shape_only": 0,
+        "lexical_OR": 6,
+        "lexical_UNION": 8,
+        "native_reference_executable": 597,
+        "native_reference_unknown": 0
+      },
+      "query_asset_sha256": "4324f2505480136bc0b3d3338319e5979ee1f20378a175ae645f9286180a927a",
+      "config_asset_sha256": "16231c757926e9578a7cb0bceea8f2f283020f4b0b63530c0d1c4e5f3935e203"
+    }
+  },
+  "recognition_counts": {
+    "OTHER_OR_UNRECOGNIZED_NOT_EXCLUDED": 3764,
+    "EXPLICIT_DISTINCT_BOUND_ENTITY_COUNT_SHAPE": 62
+  },
+  "totals": {
+    "recognized_distinct_entity_count": 62,
+    "one_stage_entity_count": 62,
+    "lexical_OR": 56,
+    "lexical_UNION": 40,
+    "native_reference_executable": 3815,
+    "native_reference_unknown": 11,
+    "one_stage_entity_count_with_OR": 0,
+    "equality_partition_shape_only": 0
+  },
+  "initial_status_join_counter_error_preserved": "reports/text2gql_composition_evidence_20261026/summary_initial_status_join_error.json; original status used EXECUTED while cohort uses EXECUTED_NONEMPTY/EXECUTED_EMPTY; screen labels unchanged",
+  "local_measurement_checks_passed": 9,
+  "unknown_records_retained": true,
+  "test_reference_programs_read_for_characterization": true,
+  "test_NL_read_for_model_input_or_method_development": false,
+  "model_outputs_read": false,
+  "method_runtime_files_unchanged": 46,
+  "original_frozen_source_hashes_unchanged": 32,
+  "native_reference_read": "Cached cohort status/hash only, not new DB/reference execution or result comparison",
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "network_checks": 0,
+  "new_attempt_reservations": 0,
+  "actual_cumulative_model_attempts": 5192,
+  "active_cumulative_cap": 12000,
+  "Text2GQL_conditional_budget_activated": false,
+  "formal_admission": false,
+  "limits": [
+    "Cypher grammar/type correctness",
+    "method support or plan quality",
+    "safe summary applicability",
+    "actual mechanism activation or gain",
+    "task natural-language fidelity",
+    "Retain all other/unrecognized/parser-error records; zero screen hits do not establish semantic absence",
+    "Two-to-eight OR branches of same counted variable/same-property literal equality shape; literal values and exclusivity unverified"
+  ]
+}

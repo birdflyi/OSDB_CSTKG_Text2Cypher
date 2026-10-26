@@ -25,3 +25,8 @@ Text2GQL六图3826位置，提供不同领域的实际主键/有向异质属性�
 本轮不新增人类待答问题。下一步优先做任务特征与互补性审计、评分合同；不在批准条件未满足时发模型探测。原始回复只保存在本地state，不将一次性人类决策JSON推Git。
 
 依据：[质量优先V3](D:/ch7/discussion/DASFAA_QUALITY_FIRST_EXPERIMENT_PLAN_V3_20261024.md)、[主张与实验重构](D:/ch7/discussion/DASFAA_CLAIM_AND_EXPERIMENT_REDESIGN_20261022.md)、[CypherBench完整结果](D:/ch7/discussion/T1_CYPHERBENCH_CORE_COMPLETE_20261026.md)、[原资源核算](D:/ch7/discussion/T1_TEXT2GQL_MODEL_RESOURCE_REQUEST_20261026.md)。这些是针对本论文的研究设计判断，不是DASFAA官方硬性实验清单。
+
+
+## 2026-10-26T10:45:42.976693+08:00 增量证据
+
+全3826条参考程序的保守结构筛查已完成，62条识别为单阶段DISTINCT实体计数形状，其中OR分区计数形状命中0；3764其他/未识别位置全部保留。该结果不是语义机制发生率或方法支持率，不能用零命中证明不存在。当前尚未得到核心机制增量证据，额度仍不触发；独立外部来源若被明确证明是保留主张的必要缺项，也可按原条件触发，不以预期胜负作门槛。详见 [互补性与组合筛查](D:/ch7/discussion/T1_COMPLEMENTARITY_AND_COMPOSITION_SCREEN_20261026.md)。本轮无模型/DB/网络请求。
