@@ -1,0 +1,301 @@
+{
+  "kind": "OSDB_SCOPED_HISTORY_REVIEW_AND_REAL_GRAPH_REFERENCE_ACCEPTANCE",
+  "completed_local": "2026-10-26T18:58:42.269472+08:00",
+  "history": {
+    "kind": "SCOPED_SAME_ASSISTANT_HISTORICAL_CONTRACT_REVIEW_NOT_NOVELTY_CERTIFICATION",
+    "historical_packages": 18,
+    "positions_reviewed": 167,
+    "original_missing_goal_positions_retained": 56,
+    "inspection_text_clusters": 49,
+    "missing_goal_text_clusters": 14,
+    "labeled_goal_text_clusters": 35,
+    "review_note_contracts": 32,
+    "source_manifest_and_specification_files_verified": 36,
+    "ACT03_exact_same_request_contract_found_in_reviewed_scope": false,
+    "ACT03_composition_of_old_attribution_goal": true,
+    "ACT03_can_derive_from_two_keyed_old_query_results": true,
+    "ACT03_new_primitive_capability_or_information_claim": false,
+    "ACT03_confirmation_admitted": 0,
+    "ACT03_pending": [
+      "real graph reference acceptance",
+      "method and task freeze",
+      "same-model budget admission",
+      "claim limited to scoped compositional request; no independent user/new-schema claim"
+    ],
+    "original_goal_nulls_overwritten": 0,
+    "history_outside_registered_packages": "unknown",
+    "same_assistant_not_independent_human": true,
+    "new_model_DB_SSH_HTTP_requests": 0,
+    "reference_diagnostic_worlds": 2,
+    "diagnostic_new_model_predictions": 0,
+    "review_positions_sha256": "cc2827f6846b08a532fcd20387cf2955808b97532e3fb827754baf6c5fe19a4a",
+    "protocol_sha256": "b23dccd3111648faf31b9cc88142436736e584ea3cdbd4bc8880ee0891837a83",
+    "candidate_registry_sha256_unchanged": "26f24882852e446ae0d28957d3f60b0edaf5d2ec68e66d275d0159a83ac183b3",
+    "entire_T1_complete": false
+  },
+  "graph_acceptance": {
+    "kind": "OSDB_MANUAL_REFERENCE_REAL_GRAPH_ACCEPTANCE_NOT_MODEL_TEST",
+    "completed_local": "2026-10-26T18:54:26.120550+08:00",
+    "projects": {
+      "redis": {
+        "accepted_queries": [
+          "identity",
+          "nodes",
+          "edges",
+          "redis_ACT01",
+          "redis_ACT02",
+          "redis_ACT03",
+          "redis_ACT04"
+        ],
+        "task_queries_accepted": 4,
+        "graph_identity_and_node_edge_counts_match": true,
+        "clone_bytes": 228285859,
+        "clone_files": 83,
+        "copy_and_verify_seconds": 0.8129999999655411,
+        "port": 18475
+      },
+      "duckdb": {
+        "accepted_queries": [
+          "identity",
+          "nodes",
+          "edges",
+          "duckdb_ACT01",
+          "duckdb_ACT02",
+          "duckdb_ACT03",
+          "duckdb_ACT04"
+        ],
+        "task_queries_accepted": 4,
+        "graph_identity_and_node_edge_counts_match": true,
+        "clone_bytes": 340530771,
+        "clone_files": 83,
+        "copy_and_verify_seconds": 0.9849999999860302,
+        "port": 18476
+      },
+      "iotdb": {
+        "accepted_queries": [
+          "identity",
+          "nodes",
+          "edges",
+          "iotdb_ACT01",
+          "iotdb_ACT02",
+          "iotdb_ACT03",
+          "iotdb_ACT04"
+        ],
+        "task_queries_accepted": 4,
+        "graph_identity_and_node_edge_counts_match": true,
+        "clone_bytes": 592264020,
+        "clone_files": 84,
+        "copy_and_verify_seconds": 1.3900000000139698,
+        "port": 18477
+      },
+      "elasticsearch": {
+        "accepted_queries": [
+          "identity",
+          "nodes",
+          "edges",
+          "elasticsearch_ACT01",
+          "elasticsearch_ACT02",
+          "elasticsearch_ACT03",
+          "elasticsearch_ACT04"
+        ],
+        "task_queries_accepted": 4,
+        "graph_identity_and_node_edge_counts_match": true,
+        "clone_bytes": 1407740830,
+        "clone_files": 85,
+        "copy_and_verify_seconds": 2.687000000034459,
+        "port": 18478
+      }
+    },
+    "planned_graph_task_queries": 16,
+    "dispatched_graph_task_queries": 16,
+    "accepted_graph_task_queries": 16,
+    "failed_graph_task_queries": 0,
+    "undispatched_graph_task_queries": 0,
+    "graph_identity_validation_queries": 12,
+    "all_HTTP_requests_including_readiness": 32,
+    "same_body_query_retries": 0,
+    "new_model_calls": 0,
+    "budget_before": {
+      "reserved": 5194,
+      "cap": 12000,
+      "remaining": 6806,
+      "pending": []
+    },
+    "budget_after": {
+      "reserved": 5194,
+      "cap": 12000,
+      "remaining": 6806,
+      "pending": []
+    },
+    "canonical32_and_runtime46_unchanged": true,
+    "old_graph_sources_byte_unchanged": true,
+    "new_owned_clones_stopped": true,
+    "original_candidate_registry_unchanged": true,
+    "formal_predictions": 0,
+    "confirmation_admitted": 0,
+    "entire_T1_complete": false
+  },
+  "independent_verification": {
+    "historical_positions": 167,
+    "missing_goal_originals_unchanged": 56,
+    "reference_acceptance_records": 16,
+    "all_columns_integer_counts_and_raw_HTTP_rows_verified": true,
+    "all_requests_match_original_frozen_candidate_queries": true,
+    "graph_validation_POSTs": 12,
+    "task_POSTs": 16,
+    "readiness_GETs": 4,
+    "same_body_retries": 0,
+    "original_store_manifests_equal_files": 335,
+    "original_store_manifest_bytes": 2568821480,
+    "all_new_ports_closed": true,
+    "first_version_http_or_database_requests": 0,
+    "budget": {
+      "reserved": 5194,
+      "cap": 12000,
+      "remaining": 6806,
+      "pending": []
+    },
+    "no_model_predictions": true,
+    "frozen32_runtime46_unchanged": true
+  },
+  "task_reference_acceptance_overlay": [
+    {
+      "task_id": "redis_ACT01",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "ffedaeb8d76c7c03ee13503f38923e734b673e8d8540caebefc2013dfa8ee179",
+      "terminal_sha256": "faf794a137b2696d050038abbb8627fc2ab8bab6e3f8098f571e235f832b4d7f"
+    },
+    {
+      "task_id": "redis_ACT02",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "7cf4ee9cebb54785eda30219b08386fdb62252051c76cd9602ffe35a7d65deb5",
+      "terminal_sha256": "8fd44a63ac561c302403c8e9a2d7f2566a2c67fa97b12168ff6256e98530111c"
+    },
+    {
+      "task_id": "redis_ACT03",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "dccd52a806944f34219b1de6dd3ccc5857d26ecff9ad5d05efac02061187881b",
+      "terminal_sha256": "e5258a919030c9d8a4275e848b3d312c26c08f41ded67ad2a65d011d31de2658"
+    },
+    {
+      "task_id": "redis_ACT04",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "a060f6c1ad6bdd539ddceadb348b86b23ea94c8c4cac9be710c0da2193ad77cc",
+      "terminal_sha256": "2dc1033d9aab3cc424781fe9c91d6720e8fb541ffce7fb0310b326d30f684ab7"
+    },
+    {
+      "task_id": "duckdb_ACT01",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "ffedaeb8d76c7c03ee13503f38923e734b673e8d8540caebefc2013dfa8ee179",
+      "terminal_sha256": "6ee789354296a0b51e6ae2897dfeea6435517e2f1e138dea1e07e3d70231fed1"
+    },
+    {
+      "task_id": "duckdb_ACT02",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "7cf4ee9cebb54785eda30219b08386fdb62252051c76cd9602ffe35a7d65deb5",
+      "terminal_sha256": "22c62716cd41c05353f287b78b74cc9e663db0e361473b8bca514f64346b4031"
+    },
+    {
+      "task_id": "duckdb_ACT03",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "dccd52a806944f34219b1de6dd3ccc5857d26ecff9ad5d05efac02061187881b",
+      "terminal_sha256": "fe0df3b45efb177b9c3dc7f8dde4b7092b207bb29cff107cb86ffcfab51b691d"
+    },
+    {
+      "task_id": "duckdb_ACT04",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "a060f6c1ad6bdd539ddceadb348b86b23ea94c8c4cac9be710c0da2193ad77cc",
+      "terminal_sha256": "821bf24fa9cefa409ad3953d6b3c91ba5b14813c55a4fe39f0c840d962586ef0"
+    },
+    {
+      "task_id": "iotdb_ACT01",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "ffedaeb8d76c7c03ee13503f38923e734b673e8d8540caebefc2013dfa8ee179",
+      "terminal_sha256": "7ba0484e35bb9b3192a017bfce51955ceffec2516e85dff7c3f60f8959bb05fd"
+    },
+    {
+      "task_id": "iotdb_ACT02",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "7cf4ee9cebb54785eda30219b08386fdb62252051c76cd9602ffe35a7d65deb5",
+      "terminal_sha256": "218009fae388e070145b71f2c91f6454fb200f7470bb11ed34ab96ade1188b6e"
+    },
+    {
+      "task_id": "iotdb_ACT03",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "dccd52a806944f34219b1de6dd3ccc5857d26ecff9ad5d05efac02061187881b",
+      "terminal_sha256": "948ba3bc14ad6c8fbc0d3308b189be6e31eee31d7e6bbd1e5a15a344c2d97ba5"
+    },
+    {
+      "task_id": "iotdb_ACT04",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "a060f6c1ad6bdd539ddceadb348b86b23ea94c8c4cac9be710c0da2193ad77cc",
+      "terminal_sha256": "a9656a42b7dacfb39b7cde231b72f3d594b2dfe4197a8525ad8057af45b266d2"
+    },
+    {
+      "task_id": "elasticsearch_ACT01",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "ffedaeb8d76c7c03ee13503f38923e734b673e8d8540caebefc2013dfa8ee179",
+      "terminal_sha256": "e28eb1627314e0a29ded4cf17f984e41b4c6aa8f7198aab749ee8da4dd79d9ce"
+    },
+    {
+      "task_id": "elasticsearch_ACT02",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "7cf4ee9cebb54785eda30219b08386fdb62252051c76cd9602ffe35a7d65deb5",
+      "terminal_sha256": "318c038323181f8c73b572f9c83f6f01c13cecbc38e4f3ffccbff4bcf9955320"
+    },
+    {
+      "task_id": "elasticsearch_ACT03",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "dccd52a806944f34219b1de6dd3ccc5857d26ecff9ad5d05efac02061187881b",
+      "terminal_sha256": "18d9d2cb4675639e3ed1896c54041342dfeee5ec12df5bf013096f8df4d2869f"
+    },
+    {
+      "task_id": "elasticsearch_ACT04",
+      "status": "REFERENCE_GRAPH_MATCHES_CSV_SQLITE_NOT_MODEL_RESULT",
+      "request_sha256": "a060f6c1ad6bdd539ddceadb348b86b23ea94c8c4cac9be710c0da2193ad77cc",
+      "terminal_sha256": "b2d94b8ba335c2a8445a7191187423eafa6d571b801562c45d2fcf85d9de37e0"
+    }
+  ],
+  "candidate_registry_preserved": true,
+  "ACT03_claim_scope": "composition of existing keyed actor attribution over two windows; no exact prior request in registered167, no new primitive or independently sampled demand claim",
+  "formal_N": null,
+  "formal_model_dispatched": 0,
+  "formal_model_completed": 0,
+  "formal_model_failed": 0,
+  "formal_model_undispatched": null,
+  "confirmation_admitted": 0,
+  "entire_T1_complete": false,
+  "new_model_calls": 0,
+  "budget": {
+    "reserved": 5194,
+    "cap": 12000,
+    "remaining": 6806,
+    "pending": []
+  },
+  "T2_to_T5_started": false,
+  "Text2GQL_conditional_budget_triggered": false,
+  "source_code_sha256": {
+    "history_review": "7ece0c21cdea200a11c84b45d3a3b0fd72c08717ad62fa203bf53186dc1c91d2",
+    "graph_acceptance": "2a8cfcbdd1ce565251d167f46e94f3cf2a7bd123df08efadbb312abfff3f3d71"
+  },
+  "earlier_environment_failure_preserved": {
+    "stage": "v1 before copy/boot, default transaction directory assumption",
+    "database_started": 0,
+    "HTTP_requests": 0,
+    "graph_queries": 0,
+    "source_snapshot_sha256": "3ba1539363c43674a262f986980d393d62feb17f417a74025452768c1d627561"
+  },
+  "reference_preparation_cost_evidence": {
+    "offline_preparation_not_formal_T4": true,
+    "graph_POST_client_seconds_known_sum": 12.406000000191852,
+    "graph_POST_timing_known": 28,
+    "readiness_GET_timing_unknown": 4,
+    "clone_bytes": 2568821480,
+    "copy_and_verify_seconds_known_sum": 5.875,
+    "peak_resident_memory": "unknown",
+    "startup_shutdown_total_wall_seconds": "not fully instrumented",
+    "monetary_cost": "unknown",
+    "new_model_attempts": 0,
+    "query_order_cache_conditions": "fixed per-project order, no unbiased speed comparison"
+  }
+}
