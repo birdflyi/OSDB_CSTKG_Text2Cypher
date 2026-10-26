@@ -1,0 +1,840 @@
+{
+  "kind": "PARALLEL_TRAIN_CAPACITY_AND_CHINESE_MONITOR_DELIVERY_NOT_FORMAL_T1",
+  "completed_local": "2026-10-27T00:04:28.868780+08:00",
+  "budget": {
+    "reserved": 6664,
+    "cap": 12000,
+    "remaining": 5336,
+    "pending": []
+  },
+  "new_capacity_physical_attempts": 1469,
+  "capacity_versions": {
+    "direct_v1": {
+      "attempts": 3,
+      "stop_reason": "连续3次基础设施失败，停止批次",
+      "summary_sha256": "f85c7e6270da1026f78f84c02a051652c0cb730cd3b68e2576f70ce14a410f2a",
+      "protocol_sha256": "48f6c6c0f8d48b8c154b6f1647bf74b2de79ef32ca43ea9c52408417557c852a"
+    },
+    "forwarded_v2": {
+      "attempts": 15,
+      "stop_reason": "串行基线未全部完整终结，停止扩并发",
+      "summary_sha256": "70703eb84dd95cc159252855e82c4d3a96e1de347103ff8585b0c8dd51214b4d",
+      "protocol_sha256": "40f1b96bba7cfab1124ef0439d79d88923e85cb0ffdb69b1d39f6b058657ff64"
+    },
+    "forwarded_v3": {
+      "attempts": 98,
+      "stop_reason": "用户停止标记",
+      "summary_sha256": "09ef464491ce1f9acb07159d3f8c55a2c37b639aea424f60934ce6e2cea4645e",
+      "protocol_sha256": "b6982ef802b984930c6ebf715d3ce611b94d0e830081551a5c3d70da5be4c08f"
+    },
+    "forwarded_v4": {
+      "attempts": 555,
+      "stop_reason": "调度器无在途且10秒无新派发，停止并保留诊断",
+      "summary_sha256": "810e4b0ff8472660f623a9bfe355f5609507f0672fa7f76d396cead46ab5550e",
+      "protocol_sha256": "5e7f862336d88c3c4c2520102769e83e9166d924e5213b36ed9597beafd756df"
+    },
+    "forwarded_v5": {
+      "attempts": 499,
+      "stop_reason": null,
+      "summary_sha256": "ab8e1c3adcdfad7784142ae0da56a85415430f0fc758acdac44f9493dbbe1816",
+      "protocol_sha256": "0f28df9a90a10c6d1206ba1e301fb18f2cc1a5d29bfec6dd4fad0b820c347839"
+    },
+    "forwarded_v6": {
+      "attempts": 299,
+      "stop_reason": "连续3次基础设施失败，停止批次",
+      "summary_sha256": "430950a88301a64b9aa11ef91153e5a99f378482511df8efceae49d9a4617e58",
+      "protocol_sha256": "5be708358df480b83b4687b2eff47ee6fc2de0ff37d5516a4bc4e650b6fdf000"
+    }
+  },
+  "new_attempt_cost_fields": {
+    "attempts": 1469,
+    "usage_object_present": 1440,
+    "usage_object_unknown": 29,
+    "all_three_standard_fields_known": 1440,
+    "http_status": {
+      "None": 29,
+      "200": 1440
+    },
+    "transport_error_classes": {
+      "TimeoutError": 3,
+      "ConnectionResetError": 26
+    },
+    "tokens": {
+      "prompt_tokens": {
+        "known_attempts": 1440,
+        "unknown_attempts": 29,
+        "invalid_attempts": 0,
+        "known_sum": 2196411
+      },
+      "completion_tokens": {
+        "known_attempts": 1440,
+        "unknown_attempts": 29,
+        "invalid_attempts": 0,
+        "known_sum": 2004502
+      },
+      "total_tokens": {
+        "known_attempts": 1440,
+        "unknown_attempts": 29,
+        "invalid_attempts": 0,
+        "known_sum": 4200913
+      },
+      "completion_tokens_details.reasoning_tokens": {
+        "known_attempts": 1440,
+        "unknown_attempts": 29,
+        "invalid_attempts": 0,
+        "known_sum": 1843529
+      },
+      "prompt_tokens_details.cached_tokens": {
+        "known_attempts": 0,
+        "unknown_attempts": 1469,
+        "invalid_attempts": 0,
+        "known_sum": 0
+      },
+      "prompt_cache_hit_tokens": {
+        "known_attempts": 0,
+        "unknown_attempts": 1469,
+        "invalid_attempts": 0,
+        "known_sum": 0
+      },
+      "prompt_cache_miss_tokens": {
+        "known_attempts": 0,
+        "unknown_attempts": 1469,
+        "invalid_attempts": 0,
+        "known_sum": 0
+      },
+      "cache_read_input_tokens": {
+        "known_attempts": 0,
+        "unknown_attempts": 1469,
+        "invalid_attempts": 0,
+        "known_sum": 0
+      }
+    },
+    "clock_fields": {
+      "seconds": {
+        "known_attempts": 1469,
+        "unknown_attempts": 0,
+        "known_seconds_sum": 42124.7500302284
+      },
+      "elapsed_seconds": {
+        "known_attempts": 0,
+        "unknown_attempts": 1469,
+        "known_seconds_sum": 0.0
+      },
+      "retry_wait_seconds": {
+        "known_attempts": 1469,
+        "unknown_attempts": 0,
+        "known_seconds_sum": 0.0
+      }
+    }
+  },
+  "new_cost_by_version": {
+    "direct_v1": {
+      "attempts": 3,
+      "usage_object_present": 0,
+      "usage_object_unknown": 3,
+      "all_three_standard_fields_known": 0,
+      "http_status": {
+        "None": 3
+      },
+      "transport_error_classes": {
+        "TimeoutError": 3
+      },
+      "tokens": {
+        "prompt_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 3,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "completion_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 3,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "total_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 3,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "completion_tokens_details.reasoning_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 3,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_tokens_details.cached_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 3,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_hit_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 3,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_miss_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 3,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "cache_read_input_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 3,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        }
+      },
+      "clock_fields": {
+        "seconds": {
+          "known_attempts": 3,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 30.029870773665607
+        },
+        "elapsed_seconds": {
+          "known_attempts": 0,
+          "unknown_attempts": 3,
+          "known_seconds_sum": 0.0
+        },
+        "retry_wait_seconds": {
+          "known_attempts": 3,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 0.0
+        }
+      }
+    },
+    "forwarded_v2": {
+      "attempts": 15,
+      "usage_object_present": 15,
+      "usage_object_unknown": 0,
+      "all_three_standard_fields_known": 15,
+      "http_status": {
+        "200": 15
+      },
+      "transport_error_classes": {},
+      "tokens": {
+        "prompt_tokens": {
+          "known_attempts": 15,
+          "unknown_attempts": 0,
+          "invalid_attempts": 0,
+          "known_sum": 22463
+        },
+        "completion_tokens": {
+          "known_attempts": 15,
+          "unknown_attempts": 0,
+          "invalid_attempts": 0,
+          "known_sum": 14551
+        },
+        "total_tokens": {
+          "known_attempts": 15,
+          "unknown_attempts": 0,
+          "invalid_attempts": 0,
+          "known_sum": 37014
+        },
+        "completion_tokens_details.reasoning_tokens": {
+          "known_attempts": 15,
+          "unknown_attempts": 0,
+          "invalid_attempts": 0,
+          "known_sum": 12978
+        },
+        "prompt_tokens_details.cached_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 15,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_hit_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 15,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_miss_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 15,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "cache_read_input_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 15,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        }
+      },
+      "clock_fields": {
+        "seconds": {
+          "known_attempts": 15,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 242.68801008583978
+        },
+        "elapsed_seconds": {
+          "known_attempts": 0,
+          "unknown_attempts": 15,
+          "known_seconds_sum": 0.0
+        },
+        "retry_wait_seconds": {
+          "known_attempts": 15,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 0.0
+        }
+      }
+    },
+    "forwarded_v3": {
+      "attempts": 98,
+      "usage_object_present": 98,
+      "usage_object_unknown": 0,
+      "all_three_standard_fields_known": 98,
+      "http_status": {
+        "200": 98
+      },
+      "transport_error_classes": {},
+      "tokens": {
+        "prompt_tokens": {
+          "known_attempts": 98,
+          "unknown_attempts": 0,
+          "invalid_attempts": 0,
+          "known_sum": 148854
+        },
+        "completion_tokens": {
+          "known_attempts": 98,
+          "unknown_attempts": 0,
+          "invalid_attempts": 0,
+          "known_sum": 142225
+        },
+        "total_tokens": {
+          "known_attempts": 98,
+          "unknown_attempts": 0,
+          "invalid_attempts": 0,
+          "known_sum": 291079
+        },
+        "completion_tokens_details.reasoning_tokens": {
+          "known_attempts": 98,
+          "unknown_attempts": 0,
+          "invalid_attempts": 0,
+          "known_sum": 131467
+        },
+        "prompt_tokens_details.cached_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 98,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_hit_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 98,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_miss_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 98,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "cache_read_input_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 98,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        }
+      },
+      "clock_fields": {
+        "seconds": {
+          "known_attempts": 98,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 2524.7759855445474
+        },
+        "elapsed_seconds": {
+          "known_attempts": 0,
+          "unknown_attempts": 98,
+          "known_seconds_sum": 0.0
+        },
+        "retry_wait_seconds": {
+          "known_attempts": 98,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 0.0
+        }
+      }
+    },
+    "forwarded_v4": {
+      "attempts": 555,
+      "usage_object_present": 555,
+      "usage_object_unknown": 0,
+      "all_three_standard_fields_known": 555,
+      "http_status": {
+        "200": 555
+      },
+      "transport_error_classes": {},
+      "tokens": {
+        "prompt_tokens": {
+          "known_attempts": 555,
+          "unknown_attempts": 0,
+          "invalid_attempts": 0,
+          "known_sum": 846544
+        },
+        "completion_tokens": {
+          "known_attempts": 555,
+          "unknown_attempts": 0,
+          "invalid_attempts": 0,
+          "known_sum": 756519
+        },
+        "total_tokens": {
+          "known_attempts": 555,
+          "unknown_attempts": 0,
+          "invalid_attempts": 0,
+          "known_sum": 1603063
+        },
+        "completion_tokens_details.reasoning_tokens": {
+          "known_attempts": 555,
+          "unknown_attempts": 0,
+          "invalid_attempts": 0,
+          "known_sum": 695100
+        },
+        "prompt_tokens_details.cached_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 555,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_hit_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 555,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_miss_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 555,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "cache_read_input_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 555,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        }
+      },
+      "clock_fields": {
+        "seconds": {
+          "known_attempts": 555,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 14859.987493312452
+        },
+        "elapsed_seconds": {
+          "known_attempts": 0,
+          "unknown_attempts": 555,
+          "known_seconds_sum": 0.0
+        },
+        "retry_wait_seconds": {
+          "known_attempts": 555,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 0.0
+        }
+      }
+    },
+    "forwarded_v5": {
+      "attempts": 499,
+      "usage_object_present": 495,
+      "usage_object_unknown": 4,
+      "all_three_standard_fields_known": 495,
+      "http_status": {
+        "200": 495,
+        "None": 4
+      },
+      "transport_error_classes": {
+        "ConnectionResetError": 4
+      },
+      "tokens": {
+        "prompt_tokens": {
+          "known_attempts": 495,
+          "unknown_attempts": 4,
+          "invalid_attempts": 0,
+          "known_sum": 755414
+        },
+        "completion_tokens": {
+          "known_attempts": 495,
+          "unknown_attempts": 4,
+          "invalid_attempts": 0,
+          "known_sum": 702949
+        },
+        "total_tokens": {
+          "known_attempts": 495,
+          "unknown_attempts": 4,
+          "invalid_attempts": 0,
+          "known_sum": 1458363
+        },
+        "completion_tokens_details.reasoning_tokens": {
+          "known_attempts": 495,
+          "unknown_attempts": 4,
+          "invalid_attempts": 0,
+          "known_sum": 646975
+        },
+        "prompt_tokens_details.cached_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 499,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_hit_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 499,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_miss_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 499,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "cache_read_input_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 499,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        }
+      },
+      "clock_fields": {
+        "seconds": {
+          "known_attempts": 499,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 15693.6430260716
+        },
+        "elapsed_seconds": {
+          "known_attempts": 0,
+          "unknown_attempts": 499,
+          "known_seconds_sum": 0.0
+        },
+        "retry_wait_seconds": {
+          "known_attempts": 499,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 0.0
+        }
+      }
+    },
+    "forwarded_v6": {
+      "attempts": 299,
+      "usage_object_present": 277,
+      "usage_object_unknown": 22,
+      "all_three_standard_fields_known": 277,
+      "http_status": {
+        "200": 277,
+        "None": 22
+      },
+      "transport_error_classes": {
+        "ConnectionResetError": 22
+      },
+      "tokens": {
+        "prompt_tokens": {
+          "known_attempts": 277,
+          "unknown_attempts": 22,
+          "invalid_attempts": 0,
+          "known_sum": 423136
+        },
+        "completion_tokens": {
+          "known_attempts": 277,
+          "unknown_attempts": 22,
+          "invalid_attempts": 0,
+          "known_sum": 388258
+        },
+        "total_tokens": {
+          "known_attempts": 277,
+          "unknown_attempts": 22,
+          "invalid_attempts": 0,
+          "known_sum": 811394
+        },
+        "completion_tokens_details.reasoning_tokens": {
+          "known_attempts": 277,
+          "unknown_attempts": 22,
+          "invalid_attempts": 0,
+          "known_sum": 357009
+        },
+        "prompt_tokens_details.cached_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 299,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_hit_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 299,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_miss_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 299,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "cache_read_input_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 299,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        }
+      },
+      "clock_fields": {
+        "seconds": {
+          "known_attempts": 299,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 8773.625644440297
+        },
+        "elapsed_seconds": {
+          "known_attempts": 0,
+          "unknown_attempts": 299,
+          "known_seconds_sum": 0.0
+        },
+        "retry_wait_seconds": {
+          "known_attempts": 299,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 0.0
+        }
+      }
+    }
+  },
+  "known_global_standard_token_subtotal": {
+    "prompt_tokens": 10534859,
+    "completion_tokens": 6003922,
+    "total_tokens": 16538781
+  },
+  "global_unknown_usage": 130,
+  "recommended_concurrency": 32,
+  "capacity_stages": [
+    {
+      "name": "c16",
+      "concurrency": 16,
+      "actual_peak_requests": 16,
+      "planned": 96,
+      "dispatched": 96,
+      "completed": 96,
+      "complete_responses": 94,
+      "failed_or_truncated": 2,
+      "undispatched": 0,
+      "wall_seconds": 248.1216268450953,
+      "terminal_cases_per_minute": 23.214421383735417,
+      "complete_cases_per_minute": 22.730787604907594,
+      "observed_output_tokens_per_second": 570.965948439655,
+      "known_output_tokens": 141669,
+      "unknown_usage": 0,
+      "latency": {
+        "n": 96,
+        "mean": 26.19005074771121,
+        "p50": 13.817294251406565,
+        "p90": 62.15781733836047,
+        "p99": 136.193945843284
+      },
+      "stage_time_limit_hit": true,
+      "model_name_echo_only": true,
+      "plateau": false,
+      "stop_reason": null,
+      "output_pacing": "Adaptive expected-output pacing at target; delayed usage cannot enforce instant backend QoS.",
+      "steady_sample_sufficient": true,
+      "steady_window_seconds": 103.21503758430481,
+      "steady_window_completions": 63,
+      "steady_trim_each_end": 16,
+      "steady_complete_cases_per_minute": 36.62257059115578,
+      "steady_terminal_cases_per_minute": 36.62257059115578,
+      "steady_known_output_tokens_per_second": 777.7548880358787,
+      "HTTP200_responses": 96,
+      "source_result_sha256": "27363ab769d9262ca8d2b9c583f6ace0d5bce2b0ff90007792b08971b8a236e1",
+      "retained_from_prior_version": true
+    },
+    {
+      "name": "c32",
+      "concurrency": 32,
+      "actual_peak_requests": 32,
+      "planned": 192,
+      "dispatched": 192,
+      "completed": 192,
+      "complete_responses": 190,
+      "failed_or_truncated": 2,
+      "undispatched": 0,
+      "wall_seconds": 308.79671362414956,
+      "terminal_cases_per_minute": 37.30609650859663,
+      "complete_cases_per_minute": 36.91749133663208,
+      "observed_output_tokens_per_second": 835.2193809741044,
+      "known_output_tokens": 257913,
+      "unknown_usage": 0,
+      "latency": {
+        "n": 192,
+        "mean": 25.22017157547816,
+        "p50": 15.628093346953392,
+        "p90": 54.33305856795053,
+        "p99": 129.28905643768613
+      },
+      "stage_time_limit_hit": true,
+      "model_name_echo_only": true,
+      "plateau": false,
+      "stop_reason": null,
+      "output_pacing": "Adaptive expected-output pacing at target; delayed usage cannot enforce instant backend QoS.",
+      "steady_sample_sufficient": true,
+      "steady_window_seconds": 174.62482142448425,
+      "steady_window_completions": 127,
+      "steady_trim_each_end": 32,
+      "steady_complete_cases_per_minute": 43.636408259951956,
+      "steady_terminal_cases_per_minute": 43.636408259951956,
+      "steady_known_output_tokens_per_second": 961.2035598993355,
+      "HTTP200_responses": 192,
+      "gain_over_previous": 0.19151680386111392,
+      "source_result_sha256": "aafb725532d2f18960a5d7dd2c9c1d9e7933c26b42128ab76d8a00d261664d75",
+      "retained_from_prior_version": true
+    },
+    {
+      "name": "c64",
+      "concurrency": 64,
+      "actual_peak_requests": 64,
+      "planned": 384,
+      "dispatched": 363,
+      "completed": 363,
+      "complete_responses": 357,
+      "failed_or_truncated": 6,
+      "undispatched": 21,
+      "wall_seconds": 366.5564883602783,
+      "terminal_cases_per_minute": 59.41785425059244,
+      "complete_cases_per_minute": 58.43574095719421,
+      "observed_output_tokens_per_second": 1360.2432799114276,
+      "known_output_tokens": 498606,
+      "unknown_usage": 0,
+      "latency": {
+        "n": 363,
+        "mean": 27.597009781875055,
+        "p50": 16.987106611952186,
+        "p90": 62.69343795962632,
+        "p99": 143.7213317525014
+      },
+      "stage_time_limit_hit": false,
+      "model_name_echo_only": true,
+      "plateau": false,
+      "stop_reason": "调度器无在途且10秒无新派发，停止并保留诊断",
+      "output_pacing": "Adaptive expected-output pacing at target; delayed usage cannot enforce instant backend QoS.",
+      "steady_sample_sufficient": true,
+      "steady_window_seconds": 182.28933000564575,
+      "steady_window_completions": 234,
+      "steady_trim_each_end": 64,
+      "steady_complete_cases_per_minute": 76.36212168627137,
+      "steady_terminal_cases_per_minute": 77.02041583873923,
+      "steady_known_output_tokens_per_second": 1692.6443253175803,
+      "HTTP200_responses": 363,
+      "gain_over_previous": 0.7499634990892223,
+      "source_result_sha256": "c5f72e8f43051dce00ecbbbe1360bd49f4e5009e01a00cb1e892611eb476e948",
+      "retained_from_prior_version": true
+    },
+    {
+      "name": "c128",
+      "concurrency": 128,
+      "actual_peak_requests": 128,
+      "planned": 512,
+      "dispatched": 299,
+      "completed": 299,
+      "complete_responses": 276,
+      "failed_or_truncated": 23,
+      "undispatched": 213,
+      "wall_seconds": 227.3867982402444,
+      "terminal_cases_per_minute": 78.89640092933443,
+      "complete_cases_per_minute": 72.82744701169332,
+      "observed_output_tokens_per_second": 1707.4781957648568,
+      "known_output_tokens": 388258,
+      "unknown_usage": 22,
+      "latency": {
+        "n": 299,
+        "mean": 29.343229580067884,
+        "p50": 17.46209197677672,
+        "p90": 66.0597729393281,
+        "p99": 143.5484374351333
+      },
+      "stage_time_limit_hit": false,
+      "model_name_echo_only": true,
+      "plateau": false,
+      "stop_reason": "连续3次基础设施失败，停止批次",
+      "output_pacing": "Adaptive expected-output pacing at target; delayed usage cannot enforce instant backend QoS.",
+      "steady_sample_sufficient": false,
+      "HTTP200_responses": 277
+    }
+  ],
+  "provisional_operational_cap": 64,
+  "provisional_cap_reason": "64 had363 HTTP200 and a sufficient steady window. Its archived fatal flag came from the client idle-guard after the dispatch deadline, not an endpoint failure. Original automatic recommendation32 and all raw flags remain unchanged;64 is an audited conservative cap, not a certified saturation point.",
+  "ssh_gateway_connect_errors": {
+    "forwarded_v5": 4,
+    "forwarded_v6": 22
+  },
+  "first128_confirmation_required": {
+    "name": "c128",
+    "concurrency": 128,
+    "actual_peak_requests": 128,
+    "planned": 768,
+    "dispatched": 499,
+    "completed": 499,
+    "complete_responses": 490,
+    "failed_or_truncated": 9,
+    "undispatched": 269,
+    "wall_seconds": 376.30570503370836,
+    "terminal_cases_per_minute": 79.56297127442717,
+    "complete_cases_per_minute": 78.12796778450763,
+    "observed_output_tokens_per_second": 1868.0264226582265,
+    "known_output_tokens": 702949,
+    "unknown_usage": 4,
+    "latency": {
+      "n": 499,
+      "mean": 31.450186424993188,
+      "p50": 19.54435741296038,
+      "p90": 70.72494716420769,
+      "p99": 144.03293322723357
+    },
+    "stage_time_limit_hit": true,
+    "model_name_echo_only": true,
+    "plateau": false,
+    "stop_reason": null,
+    "output_pacing": "Adaptive expected-output pacing at target; delayed usage cannot enforce instant backend QoS.",
+    "steady_sample_sufficient": false,
+    "HTTP200_responses": 495
+  },
+  "old5195_physical_evidence_unchanged": true,
+  "old4696_formal_records_unchanged": true,
+  "canonical32_and_adapter46_unchanged": true,
+  "new_manifest_seal": "ab9ba988744296065620c49267a9524b385d72c0ffb881a4ca73181c3cb0edc4",
+  "retained_stages_charged_once": true,
+  "monetary_cost": null,
+  "new_formal_predictions": 0,
+  "entire_T1_complete": false,
+  "complete_T4": false,
+  "limits": [
+    "TRAIN-only fixed pack; response completeness is not EX or accuracy.",
+    "3500output pacing is based on a user resource estimate, not server telemetry or guaranteed instant QoS.",
+    "Remote worker uses SSH reverse forwarding through a local reachable model gateway and local budget authority.",
+    "Version1 request-write stage was not instrumented; do not assert its POSTs reached the model.",
+    "All version1/2/3/4 failures and control corrections retained; no old batch overwritten.",
+    "Version5 completed499 of768 planned128-cap trials, below the prespecified512-sample steady window threshold. Version6 is a separate512-trial bounded confirmation, not replacement or retry.",
+    "Version6 stopped on consecutive infrastructure failures; no further model probes or automatic restart. SSH logs show gateway connection failures, not proof that model GPU throughput is saturated.",
+    "Central-window throughput is supplemented by complete finite-batch counts/times/errors and literal usage."
+  ],
+  "monitor_cpu_30frames": {
+    "pipeline": {
+      "view": "pipeline",
+      "frames": 30,
+      "cpu_seconds": 0.26882626,
+      "mean_frame_seconds": 0.011026217912634214,
+      "max_frame_seconds": 0.033497550059109926
+    },
+    "job": {
+      "view": "job",
+      "frames": 30,
+      "cpu_seconds": 0.082379269,
+      "mean_frame_seconds": 0.002746066295852264,
+      "max_frame_seconds": 0.009476817212998867
+    }
+  },
+  "capacity_acceptance": {
+    "cap64": "provisional_conservative_only",
+    "cap128": "blocked_by_gateway_connection_failures",
+    "saturation_sweet_spot_established": false,
+    "new_model_requests_after_stop": 0,
+    "final_local_tests_passed": 16
+  }
+}
