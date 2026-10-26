@@ -1,5 +1,12 @@
 # Native TuGraph compiler profile: development only
 
+Common-input preparation now has six graph-derived candidate catalogs covering
+21,315 actual vertices, and identical Direct/Ours user-message bytes. Native
+result validation accepted the shapes of 3,815 cached successful reference
+responses and rejected 11 known gold errors as successes. These are offline
+protocol checks, not new database/model runs or semantic answer validation.
+The strict type-sensitive comparator is diagnostic only, not the author's EA.
+
 Current stage: `typed-services-dev-0.7-native-optional-projection`. Six import-config
 schemas (46 vertex labels, 64 directed signatures) preserve actual declared
 primary properties and types. Eight fixed independent set plans, each run with
@@ -41,7 +48,7 @@ training-only model development, final metrics and formal freeze. Unsupported
 syntax is explicit, not replaced by an easier question. Do not start a test
 prediction from this profile alone or reuse the CypherBench-only model budget.
 
-Verification: `python -m unittest test_tugraph_dialect test_schema_services test_tugraph_schema test_tugraph_temporal test_tugraph_optional`.
-44 checks passed. Full measured evidence is indexed in the stage report, kept
+Verification: `python -m unittest test_tugraph_dialect test_schema_services test_tugraph_schema test_tugraph_temporal test_tugraph_optional test_tugraph_common_input test_tugraph_results`.
+59 checks passed. Full measured evidence is indexed in the stage report, kept
 outside publication Git. No credentials, raw author data or runtime packages
 are required by these source files.

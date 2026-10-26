@@ -1,0 +1,410 @@
+{
+  "kind": "COMMON_INPUT_AND_NATIVE_REPRESENTATION_PREPARATION_NOT_FORMAL_EA",
+  "time_local": "2026-10-26T08:48:49.895210+08:00",
+  "graphs": [
+    {
+      "graph": "Manufacturing_Production_Process",
+      "catalog_entities": 1030,
+      "expected_entities": 1030,
+      "vertex_csv_files": [
+        {
+          "name": "WorkOrder.csv",
+          "sha256": "4618e20ddec77d856472d81fb5afb918c1d74d60ceb13c226ff6e3f794d542f0"
+        },
+        {
+          "name": "ManufacturingOperation.csv",
+          "sha256": "a30d0d8b369951e04b4854ff2663c5cc3cc5f65d1e5fd4aa5262e759199471d4"
+        },
+        {
+          "name": "EquipmentResource.csv",
+          "sha256": "a6f09fd3fc0d26f81ab59de1088b97559c9ee688bd9410e84ed562cd047c90b0"
+        },
+        {
+          "name": "MaterialBatch.csv",
+          "sha256": "70011d60e331841c4ebe17b16c6b9a09d33fd02e1caaca58276b7976a46ca82d"
+        },
+        {
+          "name": "QualityCheckpoint.csv",
+          "sha256": "515e72a38c2630f28f478cf898865bf489ade7b26a06070cf2af443cdf357591"
+        },
+        {
+          "name": "ProductionStation.csv",
+          "sha256": "4e5163d8c2abce2e3ce409127a34e97073a2612b7a665e4d48fa2d868062a141"
+        },
+        {
+          "name": "Product.csv",
+          "sha256": "9f5aa34a50bf343adca1ed9eac68460ba8b5a65e1b729eb8a810d3dd5852888f"
+        },
+        {
+          "name": "BillOfMaterials.csv",
+          "sha256": "b3e43ae8faf6a70a390e3691fd087ae8076a59c4c3ef540e0370ed9b9bb9da0d"
+        },
+        {
+          "name": "Personnel.csv",
+          "sha256": "70f77be9b79eec824bcd1e092e3a870c129d96c5467119c41394334edd2beb7f"
+        }
+      ],
+      "catalog_sha256": "d7219d0323668771a92e7d6476a17f3e693d49071cc0a6df06b53a467d92db70",
+      "shared_probe_sha256": "cd6881e0c414d7e42373072c92fc4a1476006ecef092cb0aca886211d633c6e4",
+      "common_user_content_sha256": "02bfddfc95fe9aaf0cb21e7a70eb3e32a7ef1fdff7290857e748445f45e500f8",
+      "Direct_Ours_identical_user_bytes": true,
+      "offline_preparation_wall_seconds": 0.03100000007543713,
+      "catalog_index_construction_seconds": 0.0,
+      "constructed_probe_lookup_seconds": 0.01600000006146729,
+      "probe_is_constructed_not_TEST_question": true,
+      "new_model_calls": 0
+    },
+    {
+      "graph": "Information_Technology_IT_Asset_Management",
+      "catalog_entities": 815,
+      "expected_entities": 815,
+      "vertex_csv_files": [
+        {
+          "name": "ASSET.csv",
+          "sha256": "1172830c3e37331384f4adbd478550120daf0921805d6b66579671a9c22f815b"
+        },
+        {
+          "name": "VENDOR.csv",
+          "sha256": "39269672fb1fc612fbcd058a589c3a277cc9b83ebbe6e96aac3de9e8b8a6bc69"
+        },
+        {
+          "name": "LOCATION.csv",
+          "sha256": "5da4a7eb124dfeacec80e0ea8182d055be2760605223b29e65b4cf62be742308"
+        },
+        {
+          "name": "EMPLOYEE.csv",
+          "sha256": "014abe20e9d1f4a4d9bc14f4c16abba07e843cd66258f9868ecdeeb8e6e823bb"
+        },
+        {
+          "name": "CONTRACT.csv",
+          "sha256": "9c6f95c551f2a00bd600339d80bca418e2ae8a685ae50bd3f56be718da7761ad"
+        },
+        {
+          "name": "SOFTWARE_LICENSE.csv",
+          "sha256": "298df07351d39f3e600e279fb303c3b3f8cc844189956e5d81ad1ce2c76c5f25"
+        },
+        {
+          "name": "COST_CENTER.csv",
+          "sha256": "a832b59a5507620e99b8f4358a077b82031563121dfda30d8a09d6e95b97ada8"
+        }
+      ],
+      "catalog_sha256": "cbdaa534f3dff5409cea08c0339326c65fd2eadb6b255a3287d9676ff35dce32",
+      "shared_probe_sha256": "d3c9d6c18c60b4eab5a3e3ef7a861422e8d46efc9e04ae0a52520590444dae05",
+      "common_user_content_sha256": "24a66920209ebc4fc5c0ecb7f94134ebee6597277bb79b2013ce53a40ba99b01",
+      "Direct_Ours_identical_user_bytes": true,
+      "offline_preparation_wall_seconds": 0.015999999945051968,
+      "catalog_index_construction_seconds": 0.0,
+      "constructed_probe_lookup_seconds": 0.0,
+      "probe_is_constructed_not_TEST_question": true,
+      "new_model_calls": 0
+    },
+    {
+      "graph": "Manufacturing_BOM(Bill_Of_Materials)",
+      "catalog_entities": 1500,
+      "expected_entities": 1500,
+      "vertex_csv_files": [
+        {
+          "name": "Product.csv",
+          "sha256": "28522409e1dff4f090edc9ed5181c4e3c3898f1133862e491af8dbfb2e1614ed"
+        },
+        {
+          "name": "Material.csv",
+          "sha256": "b662568598769505ace3d4a58a87b3423108e3154959ebb431bede6dcd75652a"
+        },
+        {
+          "name": "Assembly.csv",
+          "sha256": "fc4f2b6f427e47d6b5e13365eeccb406085fee5263844b4e5cd3f66ffa1ac284"
+        },
+        {
+          "name": "WorkCenter.csv",
+          "sha256": "bfed5becfedf681ff3c16509fe1310243d120a80f0e37ba1bf93559582f22595"
+        },
+        {
+          "name": "EngineeringChange.csv",
+          "sha256": "6f5a48018955548add561127c5a897813a112e955a6f321af8358a995f2c0798"
+        },
+        {
+          "name": "Supplier.csv",
+          "sha256": "76a25c80ff7118e46dc7e4fceee8cc5535287c8620e2607ffef8bbb8a87e3246"
+        },
+        {
+          "name": "BomVersion.csv",
+          "sha256": "ca259c38816e5f6a2d82e9726d8536cc01a772057435ac93f352d868ddf77334"
+        },
+        {
+          "name": "ManufacturingOrder.csv",
+          "sha256": "c4dcc64583dcf52d9841c7be2e54e46c7f4b370fb64aa40ff91ae7824d28232c"
+        }
+      ],
+      "catalog_sha256": "8d1b0e89b1cfd26199775667e92e4f85dcbc4df3b5822c433af8ed283f2f6f9c",
+      "shared_probe_sha256": "bb67b90bfba6123a8f4c66d06db35319f7a52a507ad829b00ef9d9065f27145c",
+      "common_user_content_sha256": "3c329b3ffdbd9369eb29b749ca0caea2e9c171a51daabe5d8ed388711cb3cc06",
+      "Direct_Ours_identical_user_bytes": true,
+      "offline_preparation_wall_seconds": 0.062000000034458935,
+      "catalog_index_construction_seconds": 0.015999999945051968,
+      "constructed_probe_lookup_seconds": 0.015000000013969839,
+      "probe_is_constructed_not_TEST_question": true,
+      "new_model_calls": 0
+    },
+    {
+      "graph": "Knowledge_Graph_Geography",
+      "catalog_entities": 1100,
+      "expected_entities": 1100,
+      "vertex_csv_files": [
+        {
+          "name": "Location.csv",
+          "sha256": "ee5009d1033fb166ce5bf87d3ad7ba69ac411d070b7962e3f7a20e14df2858f6"
+        },
+        {
+          "name": "AdministrativeArea.csv",
+          "sha256": "59542636bb3d3b15c91b7bc72e674b2e059c7923d6cdc67d8d9866934b5e1ac2"
+        },
+        {
+          "name": "PointOfInterest.csv",
+          "sha256": "c2ca471ea602a1709994240661ed1fd5a2c8906d6da8e24ec3312d712d1f30e4"
+        },
+        {
+          "name": "GeographicZone.csv",
+          "sha256": "ed6d2232438a33ff508aa48e085872becda6533cd6b649b7db00f99bf0517d7d"
+        },
+        {
+          "name": "DemographicRegion.csv",
+          "sha256": "58f6e3e95b951bccff9ee6feb28987b0f96bd805822acbb23955222f1cf659a4"
+        },
+        {
+          "name": "InfrastructureNetwork.csv",
+          "sha256": "0a3f4918c93a3f56c2ac8434b4e00ff7e86db0450f4cae6f36b17089991de1f6"
+        },
+        {
+          "name": "CoordinateSystem.csv",
+          "sha256": "1ec489af1aebd1657069790523850d12af0aed03e408fbe6b50a78b4844da874"
+        }
+      ],
+      "catalog_sha256": "fd0d34ec7c40d798969da876d43a3dd3f0951c94a0bf767f62318be0207e898a",
+      "shared_probe_sha256": "26065692b4251c0da998aaf7abb9c2464ea4eac230f695aa13a7daac9eda828c",
+      "common_user_content_sha256": "280632dbe0f60e19b349747ade13767a02e4a22368613714900bf28a8968b437",
+      "Direct_Ours_identical_user_bytes": true,
+      "offline_preparation_wall_seconds": 0.030999999959021807,
+      "catalog_index_construction_seconds": 0.0,
+      "constructed_probe_lookup_seconds": 0.0,
+      "probe_is_constructed_not_TEST_question": true,
+      "new_model_calls": 0
+    },
+    {
+      "graph": "Financial_Payment",
+      "catalog_entities": 8420,
+      "expected_entities": 8420,
+      "vertex_csv_files": [
+        {
+          "name": "PaymentTransaction.csv",
+          "sha256": "e82a5f189b84b4b950cd4fa1c398c357eb3c974926a55a1eeabbd0b5ac29bf19"
+        },
+        {
+          "name": "Account.csv",
+          "sha256": "b3be37c94027b88721cb5e2e64995ec10d2de0e9f9d26c746d9ac5b623917aca"
+        },
+        {
+          "name": "Customer.csv",
+          "sha256": "fb751aeab459469ebed826aaea66661ef92558f76477e351d4e73eecdbec8bab"
+        },
+        {
+          "name": "PaymentMethod.csv",
+          "sha256": "637726ebdb9aefb9b65ba9ef2f0be56f42e86e6576e892a8f5cf0ed005eec33e"
+        },
+        {
+          "name": "Merchant.csv",
+          "sha256": "dc2cd3bef61738eaf67c55ae984e49ccf03f074d90ef8cea647940dd0a8581dc"
+        },
+        {
+          "name": "ComplianceRule.csv",
+          "sha256": "179b8bc1f3f41c357f8ae01a73b54584cdd8e0f22097432a86a3bbeb427169f5"
+        },
+        {
+          "name": "AuditLog.csv",
+          "sha256": "87cc8faab6106ddc668a3048c4806f5d22fbe907f65ae61f8594908f0f1ca6ae"
+        },
+        {
+          "name": "RiskAssessment.csv",
+          "sha256": "8df4b0a70142bc4d629213c6d55bef9ca07a1d368c9587f2cd59891132dce6d3"
+        }
+      ],
+      "catalog_sha256": "8db6a304694a87108d9e8e9ac6a9667914487b8af0f2629f49c1ab1ef9e21049",
+      "shared_probe_sha256": "9ff4b8f1602606dec1d877b3ad3c4712eba5b96e4ec5fd02643ca208b8a51b66",
+      "common_user_content_sha256": "4595d82f73daca287cd2934e718d5264181abcafe2b9b76fe32a6854dfa144d5",
+      "Direct_Ours_identical_user_bytes": true,
+      "offline_preparation_wall_seconds": 0.125,
+      "catalog_index_construction_seconds": 0.0470000000204891,
+      "constructed_probe_lookup_seconds": 0.030999999959021807,
+      "probe_is_constructed_not_TEST_question": true,
+      "new_model_calls": 0
+    },
+    {
+      "graph": "Social_Network_Twitter",
+      "catalog_entities": 8450,
+      "expected_entities": 8450,
+      "vertex_csv_files": [
+        {
+          "name": "USER.csv",
+          "sha256": "cb5073b3d369402d5b721fda69432073177738397b370df92eba696d2bb16cd2"
+        },
+        {
+          "name": "TWEET.csv",
+          "sha256": "e06c584f083bcd477fe15722bc4052443f77cb0fb0012b31507eaf00abbd40ee"
+        },
+        {
+          "name": "HASHTAG.csv",
+          "sha256": "4c38ea8b07037a7bb76be653fa13cf11d215dfe762a55247b17860d41c78907b"
+        },
+        {
+          "name": "TREND.csv",
+          "sha256": "465a964e11d81d7a0adeb308d468abce370af999a39a47667a788e4f39bcc635"
+        },
+        {
+          "name": "LIST.csv",
+          "sha256": "6af545a8c9f8e21b46b29033df767cdc9bfd6bb5831e237077b1ccd287096483"
+        },
+        {
+          "name": "MEDIA_ATTACHMENT.csv",
+          "sha256": "21e1a71c13e3222935b7044ebbad6f3d622d0ea181756a3d873436a26f29e3db"
+        },
+        {
+          "name": "LOCATION.csv",
+          "sha256": "7d0a3fd42231c3c070b7ec9c9696cc76405decde4003103150f16e41ff85ee8a"
+        }
+      ],
+      "catalog_sha256": "60bbadaea35085156da2a6ff2d3f28e385976e046ea8fe9a9b6b9c3a826f1ac3",
+      "shared_probe_sha256": "6ad289b015c50ca41eb924568a5fdfa9ead561723f93fecf590217a9acf51b61",
+      "common_user_content_sha256": "b347330dd202304d4e4c43cbc9907b43ad879166cef36f4bf84bce993f482c75",
+      "Direct_Ours_identical_user_bytes": true,
+      "offline_preparation_wall_seconds": 0.20400000002700835,
+      "catalog_index_construction_seconds": 0.0470000000204891,
+      "constructed_probe_lookup_seconds": 0.0940000000409782,
+      "probe_is_constructed_not_TEST_question": true,
+      "new_model_calls": 0
+    }
+  ],
+  "entity_catalog_total": 21315,
+  "candidate_limit": 12,
+  "reference_shape_audit": [
+    {
+      "graph": "Manufacturing_Production_Process",
+      "existing_success_responses_parsed": 596,
+      "legitimate_empty": 0,
+      "existing_gold_errors_rejected_as_success": 0,
+      "column_count_distribution": {
+        "2": 258,
+        "3": 106,
+        "1": 216,
+        "4": 16
+      },
+      "new_database_queries": 0
+    },
+    {
+      "graph": "Information_Technology_IT_Asset_Management",
+      "existing_success_responses_parsed": 726,
+      "legitimate_empty": 0,
+      "existing_gold_errors_rejected_as_success": 0,
+      "column_count_distribution": {
+        "2": 318,
+        "1": 192,
+        "3": 188,
+        "4": 25,
+        "5": 2,
+        "6": 1
+      },
+      "new_database_queries": 0
+    },
+    {
+      "graph": "Manufacturing_BOM(Bill_Of_Materials)",
+      "existing_success_responses_parsed": 489,
+      "legitimate_empty": 0,
+      "existing_gold_errors_rejected_as_success": 0,
+      "column_count_distribution": {
+        "2": 226,
+        "1": 119,
+        "3": 124,
+        "4": 20
+      },
+      "new_database_queries": 0
+    },
+    {
+      "graph": "Knowledge_Graph_Geography",
+      "existing_success_responses_parsed": 631,
+      "legitimate_empty": 1,
+      "existing_gold_errors_rejected_as_success": 11,
+      "column_count_distribution": {
+        "1": 257,
+        "2": 317,
+        "4": 4,
+        "3": 53
+      },
+      "new_database_queries": 0
+    },
+    {
+      "graph": "Financial_Payment",
+      "existing_success_responses_parsed": 776,
+      "legitimate_empty": 0,
+      "existing_gold_errors_rejected_as_success": 0,
+      "column_count_distribution": {
+        "2": 337,
+        "3": 274,
+        "1": 95,
+        "5": 8,
+        "4": 62
+      },
+      "new_database_queries": 0
+    },
+    {
+      "graph": "Social_Network_Twitter",
+      "existing_success_responses_parsed": 597,
+      "legitimate_empty": 0,
+      "existing_gold_errors_rejected_as_success": 0,
+      "column_count_distribution": {
+        "2": 320,
+        "3": 89,
+        "1": 185,
+        "4": 3
+      },
+      "new_database_queries": 0
+    }
+  ],
+  "existing_success_responses_parsed": 3815,
+  "existing_gold_errors_not_accepted_as_success": 11,
+  "legitimate_empty_responses": 1,
+  "TEST_question_JSON_read_by_input_branch": false,
+  "cached_TEST_reference_responses_read_only_by_representation_branch": true,
+  "reference_to_model_input_flow": false,
+  "source_sha256": {
+    "tugraph_common_input.py": "dfe1d37abac7977812539a7f0eca718065bf35f3efebb5b30c30a5f3dd4482a1",
+    "tugraph_results.py": "2dedcd4aebc68764e003847e4c932a8e6d276c5b7422727208a2df1fa93d4740",
+    "test_tugraph_common_input.py": "6c6d5fe579d06cd376a8a8bbf6888fdd058414db1eee15fdaa9b5f59a5538695",
+    "test_tugraph_results.py": "e0dcd82ffb81a1e6f51eb1849471788e6e5805a0e00459343c7f483c5b8221a4"
+  },
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "cumulative_model_attempts": 5192,
+  "cumulative_cap": 12000,
+  "remaining_original_CypherBench_scope": 6808,
+  "new_budget_approved": false,
+  "new_budget_question_pending": true,
+  "original_core_source_hashes_unchanged": 32,
+  "local_new_component_checks_passed": 15,
+  "strict_comparator_role": "type/multiset/order sensitivity only; not author EA or chosen primary metric",
+  "author_Bolt_equivalence_established": false,
+  "formal_metric_frozen": false,
+  "formal_prediction_admitted": false,
+  "entire_T1_complete": false,
+  "remote_readonly": {
+    "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+    "main_lock": false,
+    "native_processes": [],
+    "read_only": true,
+    "time_local": "2026-10-26T08:48:49.895210+08:00"
+  },
+  "pending": [
+    "bounded native execution wrapper and feedback/coverage/cost integration",
+    "native author-driver/REST-Bolt representation and exact evaluation/cohort/order/statistics protocol",
+    "new model budget approval then TRAIN-only/independent development model validation",
+    "new source/task/method/model/metric/budget formal freeze before prediction"
+  ]
+}
