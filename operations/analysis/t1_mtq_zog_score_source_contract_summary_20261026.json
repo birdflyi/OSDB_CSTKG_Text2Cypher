@@ -1,0 +1,113 @@
+{
+  "kind": "MTQ_PAPER_DOMAIN_CANDIDATE_AND_CANDIDATE_SCORE_SOURCE_AUDIT",
+  "time_local": "2026-10-26T13:43:51.808257+08:00",
+  "MTQ_commit": "ec4054a1b7df7e6310efa95c56bb6e7cebc4d161",
+  "ZOGRASCOPE_commit": "b2f91718b1324fdf8c759131d0d7c47c0eb33373",
+  "original_files_planned": 15,
+  "original_files_verified": 15,
+  "author_python_files_planned": 9,
+  "author_python_files_verified_and_ast_parsed": 9,
+  "original_graphs": {
+    "bloom50": {
+      "original_positions": 1547,
+      "released_train_positions": 1081,
+      "released_test_positions": 466,
+      "full_question_query_multiset_identity": true,
+      "full_json_row_multiset_identity": true,
+      "exact_pair_unique": 1547,
+      "pair_duplicate_excess": 0
+    },
+    "healthcare": {
+      "original_positions": 2566,
+      "released_train_positions": 1794,
+      "released_test_positions": 772,
+      "full_question_query_multiset_identity": true,
+      "full_json_row_multiset_identity": true,
+      "exact_pair_unique": 2566,
+      "pair_duplicate_excess": 0
+    },
+    "wwc": {
+      "original_positions": 2946,
+      "released_train_positions": 2059,
+      "released_test_positions": 887,
+      "full_question_query_multiset_identity": true,
+      "full_json_row_multiset_identity": true,
+      "exact_pair_unique": 2945,
+      "pair_duplicate_excess": 1
+    }
+  },
+  "paper_domain_candidate_positions": 7059,
+  "candidate_positions_from_current_released_TRAIN": 4934,
+  "candidate_positions_from_current_released_TEST": 2125,
+  "paper_18470_2000_training_validation_ID_assignment_established": false,
+  "paper_7059_exact_experimental_ID_manifest_established": false,
+  "manual_test_positions_retained": 1829,
+  "manual_logical_labels": {
+    "1": 1316,
+    "0": 85,
+    "": 428
+  },
+  "paper_annotation_semantics": "logical=semantic correctness; result=nonempty output, with0 covering empty OR error; neither is a new-model EX score.",
+  "manual_only_missing_result_labels": 859,
+  "manual_positive_with_result0_not_assumed_empty": 206,
+  "ZOGRASCOPE_pinned_tree_complete": true,
+  "ZOGRASCOPE_pinned_python_file_count": 0,
+  "papers": [
+    {
+      "url": "https://aclanthology.org/2025.emnlp-industry.133.pdf",
+      "file": "mindthequery_paper.pdf",
+      "sha256": "b2712ca67854957a29567d7a66e66fac58e062d80d60bc78b0065a3fb1a14ec4",
+      "bytes": 1052169
+    },
+    {
+      "url": "https://aclanthology.org/2025.findings-acl.524.pdf",
+      "file": "spot_paper.pdf",
+      "sha256": "b6ccc6c1335342d99d1ba7dedd732ad0ff0ac967c41f1fd6eee3d21c9b910565",
+      "bytes": 2180591
+    }
+  ],
+  "author_linked_source_repositories": [
+    {
+      "path": "README.md",
+      "bytes": 6084,
+      "git_blob": "b1eb55a6ac221cf89704a0b6eaf00ba93f339ca2",
+      "sha256": "0d62ad26b38f0b33c33a40b9e9e238b233383ed8029eaf28d329c0c5106cad61",
+      "repository": "interact-erc/SPOT",
+      "commit": "29123dc1ad26b6d13c0b7d5aee91b4bcb64968b7"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3386,
+      "git_blob": "7a1abc7f6f36b387fa0dbc90d2529a65545df676",
+      "sha256": "75ef8358265e0ca8dce9dddfc9ff6b9af1d421c843d3f27bca9ad8cb5c3adaf5",
+      "repository": "interact-erc/Text-To-Cypher-knowledge-graph-data-generation",
+      "commit": "013eab46e71aa1b5cfbd3ed91a44c030b17931ea"
+    }
+  ],
+  "frozen_source_hashes_unchanged": 32,
+  "method_runtime_hashes_unchanged": 46,
+  "actual_attempts": 5192,
+  "active_cap": 12000,
+  "remaining_original_CB_scope": 6808,
+  "pending": [],
+  "formal_N": null,
+  "formal_dispatched": 0,
+  "formal_completed": 0,
+  "formal_failed": 0,
+  "formal_undispatched": null,
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "new_private_endpoint_probes": 0,
+  "author_code_executed": false,
+  "prediction_admitted": false,
+  "T1_complete": false,
+  "Text2GQL_conditional_budget_activated": false,
+  "protocol_sha256": "b0d6cfd95b050ba4e3c7f5ca8cf36f15c021b47d6ea94a22923d799ac2eaa2a7",
+  "position_registry_sha256": "8307855a07a125739755e18e96d82acfdc5ed0eecca808c6ceb52c6f00745a9a",
+  "limits": [
+    "Counts and content alignment establish a release-corpus candidate, not proof of paper run IDs or correct reference answers.",
+    "Do not use current released training files as ICL/training for the candidate domain holdout.",
+    "Do not execute data generators, train models, or reinterpret source validation flags as prediction correctness.",
+    "Final answer order/multiplicity/types/null/failure comparator and graph identity still require explicit acceptance."
+  ]
+}
