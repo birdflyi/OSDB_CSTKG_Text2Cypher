@@ -1,0 +1,226 @@
+{
+  "kind": "OSDB_DEVELOPER_RESPONSE_BOUNDARY_AND_EQUAL_INPUTS_NOT_MODEL_RESULTS",
+  "synthetic_replay": {
+    "planned_scenarios": 15,
+    "dispatched_scenarios": 15,
+    "accepted_scenarios": 15,
+    "failed_scenarios": 0,
+    "undispatched_scenarios": 0,
+    "baseline_probes": {
+      "old_catalog": {
+        "allowed": true,
+        "rows": 3,
+        "query_type_r": true
+      },
+      "old_syntax_error": "CypherSyntaxError",
+      "old_syntax_failed_latch": true,
+      "old_repair_blocked": "AdmissionError"
+    }
+  },
+  "scenario_outcomes": {
+    "direct_catalog_repair": {
+      "final_status": "EXECUTED",
+      "prewritten_records_consumed": 2,
+      "numeric_developer_EX": true,
+      "accepted_behavior": true
+    },
+    "direct_complete_empty": {
+      "final_status": "EXECUTED",
+      "prewritten_records_consumed": 1,
+      "numeric_developer_EX": true,
+      "accepted_behavior": true
+    },
+    "direct_correct": {
+      "final_status": "EXECUTED",
+      "prewritten_records_consumed": 1,
+      "numeric_developer_EX": true,
+      "accepted_behavior": true
+    },
+    "direct_insufficient": {
+      "final_status": "INSUFFICIENT_EVIDENCE",
+      "prewritten_records_consumed": 1,
+      "numeric_developer_EX": null,
+      "accepted_behavior": true
+    },
+    "direct_output_cap": {
+      "final_status": "TRUNCATED_RESULT",
+      "prewritten_records_consumed": 1,
+      "numeric_developer_EX": false,
+      "accepted_behavior": true
+    },
+    "direct_parser_repair": {
+      "final_status": "EXECUTED",
+      "prewritten_records_consumed": 2,
+      "numeric_developer_EX": true,
+      "accepted_behavior": true
+    },
+    "direct_syntax_repair_same_snapshot": {
+      "final_status": "EXECUTED",
+      "prewritten_records_consumed": 2,
+      "numeric_developer_EX": true,
+      "accepted_behavior": true
+    },
+    "direct_valid_wrong_no_repair": {
+      "final_status": "EXECUTED",
+      "prewritten_records_consumed": 1,
+      "numeric_developer_EX": false,
+      "accepted_behavior": true
+    },
+    "ours_correct": {
+      "final_status": "EXECUTED",
+      "prewritten_records_consumed": 1,
+      "numeric_developer_EX": true,
+      "accepted_behavior": true
+    },
+    "ours_insufficient": {
+      "final_status": "INSUFFICIENT_EVIDENCE",
+      "prewritten_records_consumed": 1,
+      "numeric_developer_EX": null,
+      "accepted_behavior": true
+    },
+    "ours_output_cap": {
+      "final_status": "TRUNCATED_RESULT",
+      "prewritten_records_consumed": 1,
+      "numeric_developer_EX": false,
+      "accepted_behavior": true
+    },
+    "ours_parser_repair": {
+      "final_status": "EXECUTED",
+      "prewritten_records_consumed": 2,
+      "numeric_developer_EX": true,
+      "accepted_behavior": true
+    },
+    "ours_plan_repair": {
+      "final_status": "EXECUTED",
+      "prewritten_records_consumed": 2,
+      "numeric_developer_EX": true,
+      "accepted_behavior": true
+    },
+    "ours_valid_wrong_no_repair": {
+      "final_status": "EXECUTED",
+      "prewritten_records_consumed": 1,
+      "numeric_developer_EX": false,
+      "accepted_behavior": true
+    },
+    "shared_plan_full_detail": {
+      "final_status": "EXECUTED",
+      "prewritten_records_consumed": 1,
+      "numeric_developer_EX": true,
+      "accepted_behavior": true
+    }
+  },
+  "old_catalog_rows_read": 3,
+  "new_catalog_operators_rejected": [
+    "ProduceResults@neo4j",
+    "ShowIndexes@neo4j"
+  ],
+  "catalog_answer_query_dispatched_new": false,
+  "one_model_repair_maximum": true,
+  "numeric_reference_never_in_feedback": true,
+  "HTTP_readiness": 2,
+  "HTTP_fixture_POST": 4,
+  "HTTP_POST_errors": 0,
+  "HTTP_POST_client_seconds": 8.467324600000005,
+  "Bolt_Cypher_statements": 39,
+  "Bolt_statement_errors_retained": 2,
+  "Bolt_client_seconds": 3.5540167000000125,
+  "automatic_statement_retry": 0,
+  "input_preparation": {
+    "kind": "EXPOSED_OSDB_RESPONSE_INPUT_PREPARATION_NOT_FORMAL",
+    "version": "osdb-equal-answer-decline-envelope-dev-3",
+    "planned": 24,
+    "prepared": 24,
+    "failed": 0,
+    "unprepared": 0,
+    "model_dispatched": 0,
+    "model_completed": 0,
+    "same_user_bytes_all_positions": true,
+    "same_outer_status_contract": true,
+    "candidate_suggestions_per_arm": 0,
+    "common_input_character_range": [
+      55886,
+      70778
+    ],
+    "common_input_utf8_byte_range": [
+      55886,
+      70778
+    ],
+    "system_characters": {
+      "direct": 689,
+      "ours": 1815
+    },
+    "model_calls": 0,
+    "graph_queries": 0,
+    "network_requests": 0,
+    "budget_before": {
+      "reserved": 6664,
+      "cap": 12000,
+      "remaining": 5336,
+      "pending": []
+    },
+    "budget_after": {
+      "reserved": 6664,
+      "cap": 12000,
+      "remaining": 5336,
+      "pending": []
+    },
+    "previous_v2_inputs_and_registry_unchanged": true,
+    "canonical32_and_adapter46_unchanged": true,
+    "formal_N": null,
+    "formal_admission": false,
+    "entire_T1_complete": false,
+    "manifest_sha256": "bc4c433a2d8acebb51b21c249a9f4d40a1f9c6c7e993fb6db3a7dfc53e2d0348"
+  },
+  "live_executed_source_hashes": {
+    "accept_osdb_response_boundary_20261027.py": "2202d44c8d6c7a0889b7995d1be048fe259889a5581c6f68fe353d28d2435765",
+    "osdb_common_input_v3.py": "4ab5a9723c79d4247931fcc075ac05a665486f4c421a492b32f6fe0779b9379a",
+    "osdb_response_boundary_dev.py": "4bf090a29e897a7d202c62775095d4b33d44996b42afdc128db92ab552ab9b59",
+    "osdb_model_read_executor_dev_v2.py": "741d8f0072ca7a3b564c2ada687ebf3408e5bdc5beeb8970794b972c0ebb9ee4",
+    "osdb_shared_read_executor_dev.py": "0e1383404e59cb2908360197246b79911d7e347ea72d1ed4a8f414eaf8d42acf",
+    "observed_neo4j_services_dev_v2.py": "28cce60ea6737539cd3316818d365bc84e85611162e906fb691939a027a265c7",
+    "observed_profile_semantic_cases.py": "a932c641e83ff33943c17376201c0a0a80e0f5643dba0e76d48c440ffaf02a45"
+  },
+  "current_source_hashes": {
+    "accept_osdb_response_boundary_20261027.py": "2202d44c8d6c7a0889b7995d1be048fe259889a5581c6f68fe353d28d2435765",
+    "osdb_common_input_v3.py": "4ab5a9723c79d4247931fcc075ac05a665486f4c421a492b32f6fe0779b9379a",
+    "osdb_response_boundary_dev.py": "e562995ab62264a3cf414651eb3026a677ccf6f07c691c51641a378bcea64593",
+    "osdb_model_read_executor_dev_v2.py": "741d8f0072ca7a3b564c2ada687ebf3408e5bdc5beeb8970794b972c0ebb9ee4",
+    "osdb_shared_read_executor_dev.py": "0e1383404e59cb2908360197246b79911d7e347ea72d1ed4a8f414eaf8d42acf",
+    "observed_neo4j_services_dev_v2.py": "28cce60ea6737539cd3316818d365bc84e85611162e906fb691939a027a265c7",
+    "observed_profile_semantic_cases.py": "a932c641e83ff33943c17376201c0a0a80e0f5643dba0e76d48c440ffaf02a45"
+  },
+  "post_live_change": {
+    "module": "osdb_response_boundary_dev.py",
+    "current_version": "osdb-response-boundary-offline-dev-1.1",
+    "change": "Reject finite-JSON numeric spellings overflowing Python float, e.g. 1e999, at parse time.",
+    "unit_checks_passed": 13,
+    "additional_real_DB_runs": 0,
+    "original_live_source_and_result_preserved": true
+  },
+  "new_model_calls": 0,
+  "training": 0,
+  "budget": {
+    "reserved": 6664,
+    "cap": 12000,
+    "remaining": 5336,
+    "pending": []
+  },
+  "canonical32_and_adapter46_unchanged": true,
+  "new_owned_tiny_JVM_stopped": true,
+  "real_four_graph_rescans": 0,
+  "formal_N": null,
+  "formal_model_dispatched": 0,
+  "formal_model_completed": 0,
+  "formal_model_failed": 0,
+  "formal_model_undispatched": null,
+  "formal_admission": false,
+  "entire_T1_complete": false,
+  "limits": [
+    "All reply records are prewritten: these are operational behavior checks, not model inference or quality.",
+    "The 24 original positions remain exposed developer materials; no independent test scope accepted.",
+    "Both methods share user bytes and outer statuses, but native Cypher and finite plan system prompts differ.",
+    "Exact typed row bags are a numeric developer contract, not final normalization for arbitrary graph values.",
+    "Client read policy assumes exclusive immutable snapshots, not Community RBAC/network isolation.",
+    "Live caller/ledger integration, independent tasks, entity policy, final freeze, route repair and separate OSDB budget remain gates."
+  ]
+}
