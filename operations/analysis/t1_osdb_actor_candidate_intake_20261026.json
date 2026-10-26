@@ -1,0 +1,299 @@
+{
+  "kind": "OSDB_SOURCE_CANDIDATE_INTAKE_NOT_CONFIRMATION_OR_MODEL_RESULT",
+  "completed_local": "2026-10-26T17:49:32.671046+08:00",
+  "candidate_goals_registered": 6,
+  "project_bindings": 24,
+  "dispositions_goals": {
+    "DEVELOPMENT_OLD_GOAL_PROJECTION": 1,
+    "DEVELOPMENT_OLD_GOAL_FILTER": 1,
+    "CANDIDATE_PENDING_SEMANTIC_AND_GRAPH_ACCEPTANCE": 1,
+    "DEVELOPMENT_SCOPED_HISTORY_PROXY": 1,
+    "DEVELOPMENT_OLD_BOUNDARY_INSUFFICIENT_HISTORY": 1,
+    "DEVELOPMENT_ATTRIBUTION_BOUNDARY_PENDING_EVIDENCE": 1
+  },
+  "numeric_reference_bindings": 16,
+  "insufficient_evidence_candidate_bindings": 8,
+  "possible_temporal_goal_bindings_pending_review": 4,
+  "confirmation_admitted": 0,
+  "formal_N": null,
+  "model_planned": null,
+  "model_dispatched": 0,
+  "model_completed": 0,
+  "model_failed": 0,
+  "model_undispatched": null,
+  "CSV_SQLite_agreements": 16,
+  "real_graph_reference_queries_executed": 0,
+  "source_pages_captured": {
+    "contributors": {
+      "url": "https://www.chaoss.community/kb/metric-contributors/",
+      "final_url": "https://www.chaoss.community/kb/metric-contributors/",
+      "retrieved_local": "2026-10-26T17:49:09.844838+08:00",
+      "http_status": 200,
+      "bytes": 156639,
+      "sha256": "0acf7666882ac33b1622d32505271c04670be5712084af9bbc9930e89281d704",
+      "heading_inventory": [
+        "Contributors",
+        "Overview",
+        "Want to Know More?",
+        "Data Collection Strategies",
+        "Filters",
+        "Visualizations",
+        "References",
+        "Contributors",
+        "Additional Information"
+      ],
+      "locator": "Question, Overview and Data Collection/Filters",
+      "exact_url_previously_registered": false,
+      "absence_of_exact_url_does_not_prove_no_prior_exposure": true
+    },
+    "inactive-contributors": {
+      "url": "https://www.chaoss.community/kb/metric-inactive-contributors/",
+      "final_url": "https://www.chaoss.community/kb/metric-inactive-contributors/",
+      "retrieved_local": "2026-10-26T17:49:10.147437+08:00",
+      "http_status": 200,
+      "bytes": 131285,
+      "sha256": "307042de8c96d7b3b389658e2e907ba45556315b61fa91e48f3398e01837347c",
+      "heading_inventory": [
+        "Inactive Contributors",
+        "Overview",
+        "Want to Know More?",
+        "Data Collection Strategies",
+        "Filters",
+        "Contributors",
+        "Additional Information"
+      ],
+      "locator": "Question, Overview and Data Collection/Filters",
+      "exact_url_previously_registered": false,
+      "absence_of_exact_url_does_not_prove_no_prior_exposure": true
+    },
+    "new-contributors": {
+      "url": "https://www.chaoss.community/kb/metric-new-contributors/",
+      "final_url": "https://www.chaoss.community/kb/metric-new-contributors/",
+      "retrieved_local": "2026-10-26T17:49:10.473515+08:00",
+      "http_status": 200,
+      "bytes": 136871,
+      "sha256": "f1ec04ab77105ce6303fa28e0ab706bfd9c5ac524a9374cd8704af9135e8f7ee",
+      "heading_inventory": [
+        "New Contributors",
+        "Overview",
+        "Want to Know More?",
+        "Data Collection Strategies",
+        "Filters",
+        "Visualizations",
+        "References",
+        "Contributors",
+        "Additional Information"
+      ],
+      "locator": "Question, Overview and Data Collection/Filters",
+      "exact_url_previously_registered": false,
+      "absence_of_exact_url_does_not_prove_no_prior_exposure": true
+    },
+    "organizational-diversity": {
+      "url": "https://www.chaoss.community/kb/metric-organizational-diversity/",
+      "final_url": "https://www.chaoss.community/kb/metric-organizational-diversity/",
+      "retrieved_local": "2026-10-26T17:49:10.811868+08:00",
+      "http_status": 200,
+      "bytes": 149611,
+      "sha256": "2a684627d35d2094b494b458a2d0e4e03ced2ebcfc460416dbf94c534268baca",
+      "heading_inventory": [
+        "Organizational Diversity",
+        "Overview",
+        "Want to Know More?",
+        "Data Collection Strategies",
+        "Filters",
+        "Visualizations",
+        "References",
+        "Contributors",
+        "Additional Information"
+      ],
+      "locator": "Question, Overview and Data Collection/Filters",
+      "exact_url_previously_registered": false,
+      "absence_of_exact_url_does_not_prove_no_prior_exposure": true
+    }
+  },
+  "projects": {
+    "redis": {
+      "csv_sha256": {
+        "nodes.csv": "283e6e74fc9c31db09c0fa55bf5b38d3f871f7cc46b7879fe5e257df3e4aa1da",
+        "edges.csv": "7964e5633375a76d8fc8d6e845db68cf442f6a7966b84882d1aca53c0069b262"
+      },
+      "import_receipt_sha256": "ac3ab39326dea0c413b555ede8d88a550c2055419d7026bca27b27d590d9e6e9",
+      "nodes": 25747,
+      "edges": 56836,
+      "opening_event_rows": 1078,
+      "actor_projection_property_names": {
+        "raw_entity_id": 7184,
+        "raw_entity_type": 7184,
+        "declared_label": 7184,
+        "projection_mode": 7184,
+        "projection_version": 7184,
+        "type_mapping_status": 7184,
+        "query_eligible": 7184,
+        "identity_status": 7184,
+        "identity_validation": 7184,
+        "entity_id": 7184,
+        "url_raw": 4,
+        "url_host": 4
+      },
+      "reference_counts": {
+        "union_openers": 52,
+        "both_opening_domains": 3,
+        "observed_opening_gap": 272,
+        "first_observed_opening": 35
+      },
+      "all_four_Python_SQLite_agree": true,
+      "diagnostics": {
+        "outside_reference_history_rows": 396
+      },
+      "offline_reference_wall_seconds": 1.5
+    },
+    "duckdb": {
+      "csv_sha256": {
+        "nodes.csv": "dd20114217334c157f251631d8f7340b443c94806d57f9a4cfd9490a50753518",
+        "edges.csv": "d71c29c7dd8ecbd28a1bec93d16b53ed60bf28fd5db76e01c81dfd7d7d07c845"
+      },
+      "import_receipt_sha256": "564a0ece210076e0161fc5c9b4019673236b39bd7b6851496b914f99dc7647c4",
+      "nodes": 35270,
+      "edges": 84925,
+      "opening_event_rows": 3039,
+      "actor_projection_property_names": {
+        "raw_entity_id": 6924,
+        "raw_entity_type": 6924,
+        "declared_label": 6924,
+        "projection_mode": 6924,
+        "projection_version": 6924,
+        "type_mapping_status": 6924,
+        "query_eligible": 6924,
+        "identity_status": 6924,
+        "identity_validation": 6924,
+        "entity_id": 6924,
+        "url_raw": 2,
+        "url_host": 2
+      },
+      "reference_counts": {
+        "union_openers": 99,
+        "both_opening_domains": 12,
+        "observed_opening_gap": 386,
+        "first_observed_opening": 60
+      },
+      "all_four_Python_SQLite_agree": true,
+      "diagnostics": {
+        "outside_reference_history_rows": 1173
+      },
+      "offline_reference_wall_seconds": 2.3119999999180436
+    },
+    "iotdb": {
+      "csv_sha256": {
+        "nodes.csv": "8d76396bc77a34dc7aa6ea94337cdd675aa2ec484ba7cc79cd1a5073ee7aeee3",
+        "edges.csv": "7fa83e8f08d207dde1374717803512da13a0a76f0a1eac3577ba5af64ac94244"
+      },
+      "import_receipt_sha256": "34d717f6b48e331d67bb1d1c15b35d3de1b25a349821d10dbd9f7dadc27c8e1e",
+      "nodes": 29425,
+      "edges": 140313,
+      "opening_event_rows": 2874,
+      "actor_projection_property_names": {
+        "raw_entity_id": 1560,
+        "raw_entity_type": 1560,
+        "declared_label": 1560,
+        "projection_mode": 1560,
+        "projection_version": 1560,
+        "type_mapping_status": 1560,
+        "query_eligible": 1560,
+        "identity_status": 1560,
+        "identity_validation": 1560,
+        "entity_id": 1560,
+        "url_raw": 1,
+        "url_host": 1
+      },
+      "reference_counts": {
+        "union_openers": 43,
+        "both_opening_domains": 1,
+        "observed_opening_gap": 97,
+        "first_observed_opening": 10
+      },
+      "all_four_Python_SQLite_agree": true,
+      "diagnostics": {
+        "outside_reference_history_rows": 1007
+      },
+      "offline_reference_wall_seconds": 3.7820000000065193
+    },
+    "elasticsearch": {
+      "csv_sha256": {
+        "nodes.csv": "3a867bb67842275935497bb3f1d6e9c36b7a98d33864a9bc56c3c7b47871c467",
+        "edges.csv": "524364bda48a9216f7aeacf80367e2d51acf0628df44f2633e704caa6d838842"
+      },
+      "import_receipt_sha256": "b4e47d49a6703132c4825587bbd62bcf62300b0c254acbf12bf05077e165d8d6",
+      "nodes": 130413,
+      "edges": 352591,
+      "opening_event_rows": 10008,
+      "actor_projection_property_names": {
+        "raw_entity_id": 7509,
+        "raw_entity_type": 7509,
+        "declared_label": 7509,
+        "projection_mode": 7509,
+        "projection_version": 7509,
+        "type_mapping_status": 7509,
+        "query_eligible": 7509,
+        "identity_status": 7509,
+        "identity_validation": 7509,
+        "entity_id": 7509,
+        "url_raw": 9,
+        "url_host": 9
+      },
+      "reference_counts": {
+        "union_openers": 148,
+        "both_opening_domains": 37,
+        "observed_opening_gap": 353,
+        "first_observed_opening": 57
+      },
+      "all_four_Python_SQLite_agree": true,
+      "diagnostics": {
+        "outside_reference_history_rows": 5136
+      },
+      "offline_reference_wall_seconds": 9.577999999979511
+    }
+  },
+  "unit_semantics_checks": 8,
+  "budget_before": {
+    "reserved": 5194,
+    "cap": 12000,
+    "remaining": 6806,
+    "pending": []
+  },
+  "budget_after": {
+    "reserved": 5194,
+    "cap": 12000,
+    "remaining": 6806,
+    "pending": []
+  },
+  "frozen_canonical_files_unchanged": 32,
+  "runtime_files_unchanged": 46,
+  "new_model_DB_SSH_retired_service_requests": 0,
+  "new_public_source_HTTP_requests": 4,
+  "entire_T1_complete": false,
+  "T2_to_T5_started": false,
+  "conditional_Text2GQL_budget_triggered": false,
+  "public_code_sha256": {
+    "build_osdb_actor_intake_20261026.py": "52cd50eaa6fb024a0a835dc422b58299c4a9418430a1752929c3d357c048901a",
+    "osdb_actor_reference.py": "4cab1f8596211138b93d99ed9f903d888f35edac6db5e5f95602b77231ba478a",
+    "test_osdb_actor_reference.py": "9289b5b5d4d33c431f9c44a7281094d221fa8dd0e860bbed0f67759dbaff25aa"
+  },
+  "protocol_sha256": "017f68e8a0f8855937d20cd8755d83adb6283faf6b6b34fd958564d5705f3ab4",
+  "private_registry_sha256": "26f24882852e446ae0d28957d3f60b0edaf5d2ec68e66d275d0159a83ac183b3",
+  "needed_next": [
+    "Historical semantic overlap review including56unknown-goal positions",
+    "Authorized graph-host execution of the manual references",
+    "Develop-only generic adaptation, then freeze and separate confirmation provenance",
+    "Same-model inference/resource/feedback budget and prespecified score admission"
+  ],
+  "not_claimed": [
+    "24independent tasks",
+    "Real user question sample",
+    "Unseen projects",
+    "Exact CHAOSS metrics",
+    "Model accuracy",
+    "Certified abstention gold",
+    "Ours benefit",
+    "Complete T1"
+  ]
+}
