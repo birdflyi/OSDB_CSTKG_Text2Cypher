@@ -1,0 +1,400 @@
+{
+  "kind": "OSDB_SHARED_ACCESS_AND_COMMON_INPUT_DEVELOPMENT_EVIDENCE_NOT_FORMAL_T1",
+  "attempts": [
+    {
+      "version": 1,
+      "summary": {
+        "kind": "SYNTHETIC_SHARED_ACCESS_DEVELOPMENT_NOT_FORMAL",
+        "checks_passed": 4,
+        "checks": [
+          {
+            "name": "dirty_labels_direct_blocked",
+            "passed": true
+          },
+          {
+            "name": "dirty_labels_ours_blocked",
+            "passed": true
+          },
+          {
+            "name": "dirty_property_direct_blocked",
+            "passed": true
+          },
+          {
+            "name": "dirty_property_ours_blocked",
+            "passed": true
+          }
+        ],
+        "planned_compiler_strategy_checks": 26,
+        "completed_compiler_strategy_checks": 0,
+        "planned_native_checks": 5,
+        "completed_native_checks": 0,
+        "expected_dirty_admission_rejections": 2,
+        "completed_expected_dirty_admission_rejections": 2,
+        "readiness_HTTP": 1,
+        "trusted_setup_and_integrity_POST": 5,
+        "Bolt_Cypher_statements_including_admission_explain_reads": 6,
+        "Bolt_expected_admission_errors": 2,
+        "Bolt_total_client_seconds": 1.6524102000000127,
+        "no_automatic_statement_retry": true,
+        "physical_statement_not_network_packet_count": true,
+        "failure": {
+          "type": "KeyError",
+          "message": "'complete'"
+        },
+        "budget_before": {
+          "reserved": 6664,
+          "cap": 12000,
+          "remaining": 5336,
+          "pending": []
+        },
+        "budget_after": {
+          "reserved": 6664,
+          "cap": 12000,
+          "remaining": 5336,
+          "pending": []
+        },
+        "model_calls": 0,
+        "training": 0,
+        "new_owned_JVM_stopped": true,
+        "canonical32_and_adapter46_unchanged": true,
+        "real_four_graphs_admitted": 0,
+        "formal_admission": false,
+        "entire_T1_complete": false
+      },
+      "protocol_sha256": "cb3de42cf8c6bf39fd28d8e3c0871d2ed06b7fff6a80760f4c792b6f61732f53",
+      "retained_source_hashes": {
+        "accept_osdb_shared_access_20261027.py": "ab705916afc2b40d259f1b8ae8dd7926d22e64449e7aaf149bea69239a1b6a53",
+        "observed_neo4j_services_dev_v2.py": "28cce60ea6737539cd3316818d365bc84e85611162e906fb691939a027a265c7",
+        "osdb_shared_read_executor_dev.py": "0e1383404e59cb2908360197246b79911d7e347ea72d1ed4a8f414eaf8d42acf",
+        "osdb_common_input.py": "40ce25001e2ce4ea05c94c38799085829601600c01add2260c3c40b22aaecd78",
+        "osdb_common_input_v2.py": "c741723429867f46b78d1f9567e433ad56dec091e17cc308b4633848a6b3e3cb",
+        "observed_profile_semantic_cases.py": "a932c641e83ff33943c17376201c0a0a80e0f5643dba0e76d48c440ffaf02a45",
+        "test_osdb_shared_access_dev.py": "285bd24a8eb065df47e725691b8b3c657614a7a3373a5fb1256bfa37b0e52aea",
+        "requirements_osdb_access_dev.txt": "977118ef4b30b79dd7445b357886e94578117f085a62bf86efbd02ee8a244424"
+      },
+      "compiler_strategy_counts": {
+        "planned": 26,
+        "dispatched": 1,
+        "accepted": 0,
+        "harness_failures": 1,
+        "undispatched": 25
+      },
+      "first_v1_physical_read_completed_before_harness_KeyError": true
+    },
+    {
+      "version": 2,
+      "summary": {
+        "kind": "SYNTHETIC_SHARED_ACCESS_DEVELOPMENT_NOT_FORMAL",
+        "checks_passed": 39,
+        "checks": [
+          {
+            "name": "dirty_labels_direct_blocked",
+            "passed": true
+          },
+          {
+            "name": "dirty_labels_ours_blocked",
+            "passed": true
+          },
+          {
+            "name": "dirty_property_direct_blocked",
+            "passed": true
+          },
+          {
+            "name": "dirty_property_ours_blocked",
+            "passed": true
+          },
+          {
+            "name": "null_negation_contract",
+            "passed": true
+          },
+          {
+            "name": "null_negation_full_detail",
+            "passed": true
+          },
+          {
+            "name": "strict_boolean_contract",
+            "passed": true
+          },
+          {
+            "name": "strict_boolean_full_detail",
+            "passed": true
+          },
+          {
+            "name": "same_match_physical_uniqueness_contract",
+            "passed": true
+          },
+          {
+            "name": "same_match_physical_uniqueness_full_detail",
+            "passed": true
+          },
+          {
+            "name": "optional_zero_and_identity_group_contract",
+            "passed": true
+          },
+          {
+            "name": "optional_zero_and_identity_group_full_detail",
+            "passed": true
+          },
+          {
+            "name": "optional_post_join_filter_contract",
+            "passed": true
+          },
+          {
+            "name": "optional_post_join_filter_full_detail",
+            "passed": true
+          },
+          {
+            "name": "instant_half_open_contract",
+            "passed": true
+          },
+          {
+            "name": "instant_half_open_full_detail",
+            "passed": true
+          },
+          {
+            "name": "nanosecond_boundary_contract",
+            "passed": true
+          },
+          {
+            "name": "nanosecond_boundary_full_detail",
+            "passed": true
+          },
+          {
+            "name": "offset_equivalent_window_contract",
+            "passed": true
+          },
+          {
+            "name": "offset_equivalent_window_full_detail",
+            "passed": true
+          },
+          {
+            "name": "instant_equality_contract",
+            "passed": true
+          },
+          {
+            "name": "instant_equality_full_detail",
+            "passed": true
+          },
+          {
+            "name": "instant_equivalent_union_contract",
+            "passed": true
+          },
+          {
+            "name": "instant_equivalent_union_full_detail",
+            "passed": true
+          },
+          {
+            "name": "real_identity_difference_contract",
+            "passed": true
+          },
+          {
+            "name": "real_identity_difference_full_detail",
+            "passed": true
+          },
+          {
+            "name": "raw_nanosecond_projection_contract",
+            "passed": true
+          },
+          {
+            "name": "raw_nanosecond_projection_full_detail",
+            "passed": true
+          },
+          {
+            "name": "relationship_instant_window_contract",
+            "passed": true
+          },
+          {
+            "name": "relationship_instant_window_full_detail",
+            "passed": true
+          },
+          {
+            "name": "native_null",
+            "passed": true
+          },
+          {
+            "name": "native_union",
+            "passed": true
+          },
+          {
+            "name": "native_read_subquery",
+            "passed": true
+          },
+          {
+            "name": "physical_labels",
+            "passed": true
+          },
+          {
+            "name": "native_property_map",
+            "passed": true
+          },
+          {
+            "name": "preflight_guard_0",
+            "passed": true
+          },
+          {
+            "name": "preflight_guard_1",
+            "passed": true
+          },
+          {
+            "name": "preflight_guard_2",
+            "passed": true
+          },
+          {
+            "name": "incomplete_output_no_limit_rewrite",
+            "passed": true
+          }
+        ],
+        "planned_compiler_strategy_checks": 26,
+        "completed_compiler_strategy_checks": 26,
+        "planned_native_checks": 5,
+        "completed_native_checks": 5,
+        "expected_dirty_admission_rejections": 2,
+        "completed_expected_dirty_admission_rejections": 2,
+        "readiness_HTTP": 1,
+        "trusted_setup_and_integrity_POST": 6,
+        "Bolt_Cypher_statements_including_admission_explain_reads": 78,
+        "Bolt_expected_admission_errors": 2,
+        "Bolt_total_client_seconds": 7.58415099999997,
+        "no_automatic_statement_retry": true,
+        "physical_statement_not_network_packet_count": true,
+        "failure": null,
+        "budget_before": {
+          "reserved": 6664,
+          "cap": 12000,
+          "remaining": 5336,
+          "pending": []
+        },
+        "budget_after": {
+          "reserved": 6664,
+          "cap": 12000,
+          "remaining": 5336,
+          "pending": []
+        },
+        "model_calls": 0,
+        "training": 0,
+        "new_owned_JVM_stopped": true,
+        "canonical32_and_adapter46_unchanged": true,
+        "real_four_graphs_admitted": 0,
+        "formal_admission": false,
+        "entire_T1_complete": false
+      },
+      "protocol_sha256": "f136dae366d975e141c5b984901740ffc81eafb30f0fb108d8e10cc2c948c038",
+      "retained_source_hashes": {
+        "accept_osdb_shared_access_v2_20261027.py": "47c9112ca315c7f59f70f3398ce71bca650dbdf471d9f9f5019defbd78d27806",
+        "observed_neo4j_services_dev_v2.py": "28cce60ea6737539cd3316818d365bc84e85611162e906fb691939a027a265c7",
+        "osdb_shared_read_executor_dev.py": "0e1383404e59cb2908360197246b79911d7e347ea72d1ed4a8f414eaf8d42acf",
+        "osdb_common_input.py": "40ce25001e2ce4ea05c94c38799085829601600c01add2260c3c40b22aaecd78",
+        "osdb_common_input_v2.py": "c741723429867f46b78d1f9567e433ad56dec091e17cc308b4633848a6b3e3cb",
+        "observed_profile_semantic_cases.py": "a932c641e83ff33943c17376201c0a0a80e0f5643dba0e76d48c440ffaf02a45",
+        "test_osdb_shared_access_dev.py": "7e2bf1292e309425a3a26d9f00e58308e6187e109883d1c137b8b6355da02ff6",
+        "requirements_osdb_access_dev.txt": "977118ef4b30b79dd7445b357886e94578117f085a62bf86efbd02ee8a244424"
+      },
+      "compiler_strategy_counts": {
+        "planned": 26,
+        "dispatched": 26,
+        "accepted": 26,
+        "harness_failures": 0,
+        "undispatched": 0
+      },
+      "first_v1_physical_read_completed_before_harness_KeyError": false
+    }
+  ],
+  "common_input": {
+    "kind": "EXPOSED_OSDB_SHARED_INPUT_PREPARATION_NOT_FORMAL",
+    "version": "osdb-semantic-only-common-input-dev-2",
+    "planned": 24,
+    "prepared": 24,
+    "failed": 0,
+    "unprepared": 0,
+    "actual_model_dispatched": 0,
+    "same_user_bytes_all_positions": true,
+    "candidate_suggestions_per_arm": 0,
+    "profiles": {
+      "redis": {
+        "entities": 14,
+        "relationship_signatures": 78
+      },
+      "duckdb": {
+        "entities": 14,
+        "relationship_signatures": 84
+      },
+      "iotdb": {
+        "entities": 14,
+        "relationship_signatures": 66
+      },
+      "elasticsearch": {
+        "entities": 14,
+        "relationship_signatures": 81
+      }
+    },
+    "common_input_character_range": [
+      55312,
+      70204
+    ],
+    "common_input_utf8_byte_range": [
+      55312,
+      70204
+    ],
+    "system_characters": {
+      "direct": 338,
+      "ours": 1475
+    },
+    "model_calls": 0,
+    "graph_queries": 0,
+    "network_requests": 0,
+    "budget_before": {
+      "reserved": 6664,
+      "cap": 12000,
+      "remaining": 5336,
+      "pending": []
+    },
+    "budget_after": {
+      "reserved": 6664,
+      "cap": 12000,
+      "remaining": 5336,
+      "pending": []
+    },
+    "old_common_inputs_and_source_schemas_unchanged": true,
+    "canonical32_and_adapter46_unchanged": true,
+    "real_four_graphs_admitted": 0,
+    "formal_N": null,
+    "formal_admission": false,
+    "entire_T1_complete": false,
+    "manifest_sha256": "46b03c1d67c3a672d84c4387799348b93d3496e90a2d96ac27777326a0674d18"
+  },
+  "local_behavioral_tests_passed": 13,
+  "total_HTTP_readiness_requests": 2,
+  "total_HTTP_setup_and_integrity_queries": 11,
+  "total_Bolt_Cypher_statements": 84,
+  "total_Bolt_expected_dirty_admission_errors": 4,
+  "total_HTTP_POST_client_seconds": 15.994537999999984,
+  "total_Bolt_client_seconds_including_expected_rejections": 9.236561199999983,
+  "same_body_statement_retries": 0,
+  "new_model_calls": 0,
+  "budget": {
+    "reserved": 6664,
+    "cap": 12000,
+    "remaining": 5336,
+    "pending": []
+  },
+  "formal_N": null,
+  "formal_predictions": 0,
+  "real_four_graphs_admitted": 0,
+  "formal_admission": false,
+  "entire_T1_complete": false,
+  "remaining": [
+    "New owned semantic-only materialization and full fingerprint/reference acceptance for four real graphs.",
+    "Entity suggestions/retrieval decision; these 24 exposed positions currently give both arms empty candidates.",
+    "Fixed exposed TRAIN model regression, sufficient independent goals and held-out task scope.",
+    "Final value normalization/scoring/feedback/resource/model freeze and separate OSDB budget.",
+    "Concrete inference-route repair evidence before restarting any stopped model batch."
+  ],
+  "limits": [
+    "Client policy over exclusively owned immutable snapshot, not Community RBAC/network security.",
+    "Physical fingerprints are verified only on the tiny fixture; no real-graph access admission implied.",
+    "Shared user bytes do not mean identical system output-format prompts; both sizes disclosed.",
+    "Native Direct retains UNION and read subqueries; compiled strategies share a plan.",
+    "Synthetic developer checks are not independent EX, model coverage or a speedup benchmark.",
+    "Driver auto-commit statement counts exclude network handshake/packet counts; time is local client wall time."
+  ]
+}
