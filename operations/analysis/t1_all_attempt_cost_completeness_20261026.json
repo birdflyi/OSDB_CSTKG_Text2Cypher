@@ -1,0 +1,289 @@
+{
+  "kind": "ALL_ATTEMPT_COST_COMPLETENESS_EXTENSION_NOT_FULL_T4",
+  "time_local": "2026-10-26T15:44:39.894398+08:00",
+  "actual_cumulative_attempts": 5194,
+  "approved_cap": 12000,
+  "remaining_original_CB_scope": 6806,
+  "pending": [],
+  "scope_counts": {
+    "historical_pre_freeze": 434,
+    "formal_core": 4756,
+    "post_freeze_connectivity_probe": 2,
+    "user_authorized_retired_service_probe": 2
+  },
+  "usage_objects_known": 5093,
+  "usage_objects_unknown": 101,
+  "all_three_standard_fields_known": 5093,
+  "tokens": {
+    "prompt_tokens": {
+      "known_attempts": 5093,
+      "unknown_attempts": 101,
+      "invalid_attempts": 0,
+      "known_sum": 8338399
+    },
+    "completion_tokens": {
+      "known_attempts": 5093,
+      "unknown_attempts": 101,
+      "invalid_attempts": 0,
+      "known_sum": 3999139
+    },
+    "total_tokens": {
+      "known_attempts": 5093,
+      "unknown_attempts": 101,
+      "invalid_attempts": 0,
+      "known_sum": 12337538
+    },
+    "completion_tokens_details.reasoning_tokens": {
+      "known_attempts": 5093,
+      "unknown_attempts": 101,
+      "invalid_attempts": 0,
+      "known_sum": 3480420
+    },
+    "prompt_tokens_details.cached_tokens": {
+      "known_attempts": 0,
+      "unknown_attempts": 5194,
+      "invalid_attempts": 0,
+      "known_sum": 0
+    },
+    "prompt_cache_hit_tokens": {
+      "known_attempts": 0,
+      "unknown_attempts": 5194,
+      "invalid_attempts": 0,
+      "known_sum": 0
+    },
+    "prompt_cache_miss_tokens": {
+      "known_attempts": 0,
+      "unknown_attempts": 5194,
+      "invalid_attempts": 0,
+      "known_sum": 0
+    },
+    "cache_read_input_tokens": {
+      "known_attempts": 0,
+      "unknown_attempts": 5194,
+      "invalid_attempts": 0,
+      "known_sum": 0
+    }
+  },
+  "http_status_counts": {
+    "200": 5093,
+    "None": 26,
+    "500": 73,
+    "401": 2
+  },
+  "formal_physical_attempts": 4756,
+  "formal_primary_paths": 4696,
+  "formal_logical_receipts": 4750,
+  "formal_feedback_receipts": 54,
+  "formal_extra_physical_retries": 6,
+  "formal_by_arm": {
+    "direct": {
+      "attempts": 2355,
+      "usage_object_present": 2353,
+      "usage_object_unknown": 2,
+      "all_three_standard_fields_known": 2353,
+      "http_status": {
+        "200": 2353,
+        "None": 2
+      },
+      "transport_error_classes": {
+        "timeout": 2
+      },
+      "tokens": {
+        "prompt_tokens": {
+          "known_attempts": 2353,
+          "unknown_attempts": 2,
+          "invalid_attempts": 0,
+          "known_sum": 2742957
+        },
+        "completion_tokens": {
+          "known_attempts": 2353,
+          "unknown_attempts": 2,
+          "invalid_attempts": 0,
+          "known_sum": 1324446
+        },
+        "total_tokens": {
+          "known_attempts": 2353,
+          "unknown_attempts": 2,
+          "invalid_attempts": 0,
+          "known_sum": 4067403
+        },
+        "completion_tokens_details.reasoning_tokens": {
+          "known_attempts": 2353,
+          "unknown_attempts": 2,
+          "invalid_attempts": 0,
+          "known_sum": 1180866
+        },
+        "prompt_tokens_details.cached_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 2355,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_hit_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 2355,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_miss_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 2355,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "cache_read_input_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 2355,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        }
+      },
+      "clock_fields": {
+        "seconds": {
+          "known_attempts": 2355,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 16276.381000002963
+        },
+        "elapsed_seconds": {
+          "known_attempts": 0,
+          "unknown_attempts": 2355,
+          "known_seconds_sum": 0.0
+        },
+        "retry_wait_seconds": {
+          "known_attempts": 2355,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 20.030999999959022
+        }
+      }
+    },
+    "ours": {
+      "attempts": 2401,
+      "usage_object_present": 2396,
+      "usage_object_unknown": 5,
+      "all_three_standard_fields_known": 2396,
+      "http_status": {
+        "200": 2396,
+        "None": 5
+      },
+      "transport_error_classes": {
+        "timeout": 5
+      },
+      "tokens": {
+        "prompt_tokens": {
+          "known_attempts": 2396,
+          "unknown_attempts": 5,
+          "invalid_attempts": 0,
+          "known_sum": 4422769
+        },
+        "completion_tokens": {
+          "known_attempts": 2396,
+          "unknown_attempts": 5,
+          "invalid_attempts": 0,
+          "known_sum": 2391192
+        },
+        "total_tokens": {
+          "known_attempts": 2396,
+          "unknown_attempts": 5,
+          "invalid_attempts": 0,
+          "known_sum": 6813961
+        },
+        "completion_tokens_details.reasoning_tokens": {
+          "known_attempts": 2396,
+          "unknown_attempts": 5,
+          "invalid_attempts": 0,
+          "known_sum": 2048638
+        },
+        "prompt_tokens_details.cached_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 2401,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_hit_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 2401,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "prompt_cache_miss_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 2401,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        },
+        "cache_read_input_tokens": {
+          "known_attempts": 0,
+          "unknown_attempts": 2401,
+          "invalid_attempts": 0,
+          "known_sum": 0
+        }
+      },
+      "clock_fields": {
+        "seconds": {
+          "known_attempts": 2401,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 29547.82400000037
+        },
+        "elapsed_seconds": {
+          "known_attempts": 0,
+          "unknown_attempts": 2401,
+          "known_seconds_sum": 0.0
+        },
+        "retry_wait_seconds": {
+          "known_attempts": 2401,
+          "unknown_attempts": 0,
+          "known_seconds_sum": 40.03200000000652
+        }
+      }
+    }
+  },
+  "logical_receipts_by_arm": {
+    "direct:initial": 2348,
+    "ours:initial": 2348,
+    "ours:feedback": 49,
+    "direct:feedback": 5
+  },
+  "old5192_physical_evidence_exactly_unchanged": true,
+  "old4696_prediction_records_exactly_unchanged": true,
+  "old_formal_freeze_retry_and_feedback_checks_reused_by_exact_evidence_identity": true,
+  "all4756_formal_attempts_attributed_once_again": true,
+  "all_raw_hashes_verified_again_at_end": true,
+  "new_probe_attempts": 2,
+  "new_probe_http_statuses": [
+    401,
+    401
+  ],
+  "new_probe_responses_model_successes": 0,
+  "new_probe_usage_unknown": 2,
+  "new_probe_remote_HTTP_seconds_sum": 0.034,
+  "new_probe_E2E_or_SSH_clock_known": false,
+  "money_cost": null,
+  "unknown_usage_not_filled_zero": true,
+  "optional_reasoning_cache_tokens_not_added_to_total": true,
+  "formal_vs_mixed_history_kept_separate": true,
+  "development_unit_checks_passed": 6,
+  "canonical_frozen_files_unchanged": 32,
+  "method_runtime_files_unchanged": 46,
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "network_requests": 0,
+  "formal_metric_or_method_changed": false,
+  "entire_T1_complete": false,
+  "complete_T4": false,
+  "baseline_summary_sha256": "740c51e918972acf6ef7dc211a10c76603772962c47562d7c36fda7c76a09c4c",
+  "baseline_manifest_sha256": "3c365cb9b66acb84022a1cb477cf3a320f602f5fc370b79f8cbef779db99e45c",
+  "protocol_sha256": "ef184ec5bea8f582df7ce4ff9541f70bf6525c7db5c402263b5b4c924353f1c7",
+  "all_physical_evidence_seal": "9ddb7fb37b36ea9eeada8f56cbafeaad72ebe6142b3bba89163921dc4db281e8",
+  "source_sha256": {
+    "reconcile_t1_cost_evidence_20261026.py": "d8b427be211d8ecb054d684ab469175a090096ee14c1da023d0d311c0b0dca74",
+    "test_t1_cost_evidence.py": "8532a68106806d4c9abf62e3cbb4b84d9384ac5f454a9be2699b96758121d92c"
+  },
+  "limits": [
+    "Hash-identical prior formal evidence reuses prior conformance checks, not a new model replication.",
+    "History mixes developer models; never attribute the global total to a formal arm.",
+    "Unknown usage and prices remain unknown; optional token details can overlap standard counts.",
+    "Remote HTTP elapsed, model-client seconds and retry waits are different clock boundaries.",
+    "No complete DB/candidate/compile/transport/outage/scale end-to-end T4 is established.",
+    "Retired10.244.171.88 service not contacted; no new node/SSH/model/DB operation."
+  ]
+}
