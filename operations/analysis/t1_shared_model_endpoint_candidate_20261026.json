@@ -1,0 +1,66 @@
+{
+  "kind": "SHARED_INFERENCE_RESOURCE_CANDIDATE_PREPARATION",
+  "time_local": "2026-10-26T10:21:07.116245+08:00",
+  "endpoint": "http://10.244.171.88:8888/v1/chat/completions",
+  "advertised_model_name": "deepseek-v4.1-flash-n24-112",
+  "weights_identity_verified": false,
+  "model_generation_calls": 0,
+  "real_budget_reservations_added": 0,
+  "cumulative_attempts": 5192,
+  "active_budget_cap": 12000,
+  "text2gql_conditional_budget_activated": false,
+  "user_maximum_concurrent_requests": 5,
+  "currently_implemented_transport_parallelism": 1,
+  "global_parallel_dispatch_admitted": false,
+  "sampling": {
+    "temperature": 0.2,
+    "top_p": 0.72,
+    "chat_template_kwargs": {
+      "thinking": true,
+      "reasoning_effort": 50
+    }
+  },
+  "old_sampling": {
+    "model": "deepseek-v4.1-flash-n24-131",
+    "temperature": 0.2,
+    "top_p": 0.95,
+    "reasoning_effort": "high"
+  },
+  "endpoint_metadata_check": {
+    "model_generation_requests": 0,
+    "authentication_sent": false,
+    "retries": 0,
+    "error_type": "timeout",
+    "wall_seconds": 3.015,
+    "recorded_local": "2026-10-26T10:21:07.116245+08:00",
+    "tcp_attempted": true,
+    "tcp_reachable": false,
+    "models_get_attempted": false,
+    "old_ssh_attempts": 0,
+    "new_remote_instance_inspected": false,
+    "credential_placeholder_not_sent": true,
+    "interpretation": "Local TCP timeout, not evidence service absent from all networks"
+  },
+  "new_private_config_has_usable_credential": false,
+  "old_credentials_reused": false,
+  "original_freeze_files_unchanged": 32,
+  "local_checks_passed": 86,
+  "network_calls_in_unit_tests": false,
+  "initial_local_test_issue": "New builder initially reordered legacy JSON keys. Exact-wire compatibility check failed; corrected field insertion order before any real request. Final original bytes unchanged.",
+  "not_admitted_reasons": [
+    "private network route and authorization unresolved",
+    "native graph CPU host unavailable after old instance shutdown",
+    "new model/sampling profile identity and training-only validation not yet established",
+    "Text2GQL conditional impact/budget gate not activated",
+    "formal protocol/freeze gates incomplete"
+  ],
+  "old_frozen_results_modified": false,
+  "old_ssh_retried": false,
+  "scheduler_changed": false,
+  "source_sha256": {
+    "model_transport.py": "b7a1e57c660024bee543583341804ee2ab5dc5d5d70b3f2292133a9f29d4cae7",
+    "model_request_profile.py": "83c926580d7f97d239cea2161ad5bb1fe4e860c4cdbceb4ddc7afded155f14a5",
+    "test_model_request_profile.py": "9813863b6bcc480c487e4f06002cd3381831eaa263c0a614d8c90908d1a3378b"
+  },
+  "final_validation": "86 checks passed; after adding non-secret generation policy fields, affected10 checks rerun passed."
+}

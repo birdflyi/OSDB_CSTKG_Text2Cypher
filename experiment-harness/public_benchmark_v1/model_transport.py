@@ -5,11 +5,13 @@ There is no model SDK, environment proxy, hidden retry or correctness-aware retr
 """
 import http.client
 import json
+from copy import deepcopy
 from pathlib import Path
 import time
 from urllib.parse import urlsplit
 
 from attempt_budget import BudgetBlocked
+from model_request_profile import build_model_payload
 
 
 class BatchStopped(RuntimeError):
@@ -51,7 +53,7 @@ def http_send(config, wire):
 class ModelTransport:
     def __init__(self, config, budget, directory, *, max_physical_calls=12,
                  send=http_send, sleep=time.sleep):
-        self.config = dict(config)
+        self.config = deepcopy(config)
         self.budget, self.directory = budget, Path(directory)
         self.max_physical_calls = max_physical_calls
         if type(max_physical_calls) is not int or max_physical_calls < 1:
@@ -68,6 +70,8 @@ class ModelTransport:
         if (url.scheme not in ('http', 'https') or not url.hostname or url.username or url.password
             or not isinstance(config.get('api_key'), str) or not config['api_key']):
             raise ValueError('Invalid private model configuration')
+        generation_profile = build_model_payload(self.config, [], max_tokens=self.max_tokens)
+        generation_profile.pop('messages')
         if self.directory.exists():
             raise BatchStopped('Existing batch must be audited, never implicitly restarted')
         self.directory.mkdir(parents=True)
@@ -76,6 +80,8 @@ class ModelTransport:
             'consecutive_infrastructure_failure_stop': 3, 'retry_wait_seconds': 10,
             'environment_proxy': False, 'encoding': 'utf-8', 'timeout_seconds': [10, self.read_timeout],
             'max_completion_tokens': self.max_tokens,
+            'wire_generation_profile': generation_profile,
+            'transport_parallelism': 1,
             'model': config['model'], 'no_automatic_batch_restart': True})
 
     def stop(self, reason):
@@ -89,9 +95,7 @@ class ModelTransport:
     def complete(self, messages, *, purpose):
         if self.stopped or self.failures >= 3:
             raise self.stop('Batch already stopped; do not restart automatically')
-        payload = {'model': self.config['model'], 'messages': messages,
-                   'temperature': self.config['temperature'], 'top_p': self.config['top_p'],
-                   'reasoning_effort': self.config['reasoning_effort'], 'max_tokens': self.max_tokens}
+        payload = build_model_payload(self.config, messages, max_tokens=self.max_tokens)
         wire = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
         attempts = []
         for retry in range(3):
