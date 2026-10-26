@@ -1,0 +1,171 @@
+{
+  "kind": "OSDB_COMMON_INPUT_AND_ACTUAL_COMPILER_DEVELOPMENT_ADMISSION_AUDIT",
+  "completed_local": "2026-10-26T21:16:56.471954+08:00",
+  "version": "osdb-observed-common-input-dev-1",
+  "projects": {
+    "redis": {
+      "nodes": 25747,
+      "edges": 56836,
+      "entity_labels": 14,
+      "relation_signatures": 78,
+      "property_kinds": {
+        "str": 1816,
+        "bool": 92,
+        "int": 78
+      },
+      "source_event_time_observations": {
+        "canonical_UTC": 56836
+      },
+      "schema_sha256": "911c219b83fb87d5bf9536e5a380c88d63f268bd333bbdb57725338b01707793",
+      "source_hashes": {
+        "nodes.csv": "283e6e74fc9c31db09c0fa55bf5b38d3f871f7cc46b7879fe5e257df3e4aa1da",
+        "edges.csv": "7964e5633375a76d8fc8d6e845db68cf442f6a7966b84882d1aca53c0069b262"
+      },
+      "offline_scan_and_checks_seconds": 2.625
+    },
+    "duckdb": {
+      "nodes": 35270,
+      "edges": 84925,
+      "entity_labels": 14,
+      "relation_signatures": 84,
+      "property_kinds": {
+        "str": 1950,
+        "bool": 98,
+        "int": 84
+      },
+      "source_event_time_observations": {
+        "canonical_UTC": 84925
+      },
+      "schema_sha256": "f7a999a14ca89c0c39b9e408fa75fa948cee1d555e4156bbb309c0154bcadda4",
+      "source_hashes": {
+        "nodes.csv": "dd20114217334c157f251631d8f7340b443c94806d57f9a4cfd9490a50753518",
+        "edges.csv": "d71c29c7dd8ecbd28a1bec93d16b53ed60bf28fd5db76e01c81dfd7d7d07c845"
+      },
+      "offline_scan_and_checks_seconds": 3.875
+    },
+    "iotdb": {
+      "nodes": 29425,
+      "edges": 140313,
+      "entity_labels": 14,
+      "relation_signatures": 66,
+      "property_kinds": {
+        "str": 1514,
+        "bool": 80,
+        "int": 66
+      },
+      "source_event_time_observations": {
+        "canonical_UTC": 140313
+      },
+      "schema_sha256": "f7be06435682e72d609158993611fc2d8e3ca490953846b049d6b00ad88789af",
+      "source_hashes": {
+        "nodes.csv": "8d76396bc77a34dc7aa6ea94337cdd675aa2ec484ba7cc79cd1a5073ee7aeee3",
+        "edges.csv": "7fa83e8f08d207dde1374717803512da13a0a76f0a1eac3577ba5af64ac94244"
+      },
+      "offline_scan_and_checks_seconds": 6.531
+    },
+    "elasticsearch": {
+      "nodes": 130413,
+      "edges": 352591,
+      "entity_labels": 14,
+      "relation_signatures": 81,
+      "property_kinds": {
+        "str": 1894,
+        "bool": 95,
+        "int": 81
+      },
+      "source_event_time_observations": {
+        "canonical_UTC": 352591
+      },
+      "schema_sha256": "9f852b9b03ee29b7a444834f436192d3e10e1de79402c60cc6a41ffcda3d333f",
+      "source_hashes": {
+        "nodes.csv": "3a867bb67842275935497bb3f1d6e9c36b7a98d33864a9bc56c3c7b47871c467",
+        "edges.csv": "524364bda48a9216f7aeacf80367e2d51acf0628df44f2633e704caa6d838842"
+      },
+      "offline_scan_and_checks_seconds": 16.281
+    }
+  },
+  "semantic_schemas_planned": 4,
+  "semantic_schemas_completed": 4,
+  "developer_common_inputs_planned": 24,
+  "developer_common_inputs_prepared": 24,
+  "common_user_bytes_equal_both_arms": true,
+  "input_candidates_each_arm": 0,
+  "actual_compiler_diagnostic_projects": 4,
+  "diagnostic_executor_dispatches": 0,
+  "unit_checks_passed": 6,
+  "formal_N": null,
+  "formal_model_dispatched": 0,
+  "formal_model_completed": 0,
+  "formal_model_failed": 0,
+  "formal_model_undispatched": null,
+  "model_requests": 0,
+  "graph_requests": 0,
+  "network_requests": 0,
+  "budget": {
+    "reserved": 5195,
+    "cap": 12000,
+    "remaining": 6805,
+    "pending": []
+  },
+  "frozen32_unchanged": true,
+  "runtime46_unchanged": true,
+  "formal_admission": false,
+  "entire_T1_complete": false,
+  "blocking": [
+    "Actual-property identity and zoned string-time compiler profile not implemented/accepted.",
+    "Polymorphic label/storage-view access policy and full runtime enforcement not accepted.",
+    "Sufficient independent task scope, development method, feedback/scoring/controls freeze and separate OSDB budget missing."
+  ],
+  "not_claimed": [
+    "Current task EX or complete compiler coverage",
+    "Live database full schema introspection",
+    "Independent confirmation tasks",
+    "A four-leaf construction is a general impossibility proof",
+    "Fewer tokens, cheaper execution, or completed T4"
+  ],
+  "local_evidence": "D:\\ch7\\reports\\osdb_common_input_dev_v1_20261026",
+  "input_manifest_sha256": "d74425edab9d3c7b552bca87aefc8f5b90fb5956d1600fbf0556207338ebad1a",
+  "independent_verification": {
+    "common_input_records": 24,
+    "manifest_payload_schema_hashes_agree": true,
+    "executed_sources_match_protocol": true,
+    "source_csv_hashes_unchanged": true,
+    "timestamps_at_actual_fixed_bounds": {
+      "redis": {
+        "records": 56836,
+        "fractional_digits": {
+          "0": 56836
+        },
+        "lexical_vs_instant_mismatches_at_fixed_candidate_bounds": {}
+      },
+      "duckdb": {
+        "records": 84925,
+        "fractional_digits": {
+          "0": 84925
+        },
+        "lexical_vs_instant_mismatches_at_fixed_candidate_bounds": {}
+      },
+      "iotdb": {
+        "records": 140313,
+        "fractional_digits": {
+          "0": 140313
+        },
+        "lexical_vs_instant_mismatches_at_fixed_candidate_bounds": {}
+      },
+      "elasticsearch": {
+        "records": 352591,
+        "fractional_digits": {
+          "0": 352591
+        },
+        "lexical_vs_instant_mismatches_at_fixed_candidate_bounds": {}
+      }
+    },
+    "interpretation": "Synthetic UTC fractional ordering counterexample is not an observed task failure. Zero mismatches here certify only these stored strings against these three fixed bounds, not general timestamp literals, future inputs, aggregation or actual method predictions."
+  },
+  "input_utf8_byte_range": [
+    49376,
+    62918
+  ],
+  "storage_metadata_access_policy": "UNRESOLVED_NOT_ENFORCED_BY_PURE_INPUT_BUILDER",
+  "primary_report": "D:/ch7/discussion/T1_OSDB_COMMON_INPUT_AND_COMPILER_GATE_DEV_20261026.md"
+}
