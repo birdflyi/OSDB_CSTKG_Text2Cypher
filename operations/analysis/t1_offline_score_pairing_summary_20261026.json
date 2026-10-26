@@ -1,0 +1,79 @@
+{
+  "kind": "SCORE_PAIRING_DEVELOPMENT_NOT_MODEL_OR_BENCHMARK_EX",
+  "time_local": "2026-10-26T14:55:49.046345+08:00",
+  "cached_reference_positions": 3826,
+  "reference_shape_known": 3815,
+  "unknown_reference_positions_retained": 11,
+  "graphs": [
+    {
+      "graph": "Manufacturing_Production_Process",
+      "known": 596
+    },
+    {
+      "graph": "Information_Technology_IT_Asset_Management",
+      "known": 726
+    },
+    {
+      "graph": "Manufacturing_BOM(Bill_Of_Materials)",
+      "known": 489
+    },
+    {
+      "graph": "Knowledge_Graph_Geography",
+      "known": 631,
+      "unknown": 11
+    },
+    {
+      "graph": "Financial_Payment",
+      "known": 776
+    },
+    {
+      "graph": "Social_Network_Twitter",
+      "known": 597
+    }
+  ],
+  "reference_clone_matches": 3815,
+  "reference_clone_is_model_result": false,
+  "independent_synthetic_unit_checks_passed": 17,
+  "full_cache_scenarios_planned": 11,
+  "full_cache_scenarios_passed": 11,
+  "ID_version_or_context_failures_reject_whole_batch": true,
+  "missing_positions_preserve_denominator": true,
+  "known_reference_missing_or_scoring_error_withholds_fraction": true,
+  "unknown_reference_never_assigned_score": true,
+  "failure_refusal_or_truncation_not_correct": true,
+  "all_cached_source_hashes_unchanged": true,
+  "canonical_frozen_code_unchanged": 32,
+  "method_runtime_files_unchanged": 46,
+  "cumulative_model_attempts": 5193,
+  "cap": 12000,
+  "remaining_original_CB_scope": 6807,
+  "pending": [],
+  "this_offline_audit_new_model_calls": 0,
+  "this_offline_audit_new_database_queries": 0,
+  "this_offline_audit_network_requests": 0,
+  "source_sha256": {
+    "audit_offline_score_pairing_20261026.py": "445d95a3c2a0cab62301912fc631122d14a66eeca30baca0292e587d7b952792",
+    "offline_score_pairing.py": "418dfcf1d2814398d64ff7790ab208401d539e4e079ba8d180394904b516e98d",
+    "test_offline_score_pairing.py": "f33ad1f010ee0e2dc3faa80a26ff7d8035872947ff34d2c1101c2309015fdada"
+  },
+  "protocol_sha256": "c3b10c4006484bbef0733bdf21d56f2ab98f0c2c0821433f088e0f7ebe5bfbb7",
+  "registry_sha256": "9174f054dbbbc6b0ed3db7651f18406d313c25380260cd85d270251205a01690",
+  "formal_metric_frozen": false,
+  "author_EA_adopted": false,
+  "REST_Bolt_equivalence_established": false,
+  "model_input_or_method_changed": false,
+  "formal_prediction_N": null,
+  "formal_predictions_dispatched": 0,
+  "formal_predictions_completed": 0,
+  "formal_predictions_failed": 0,
+  "formal_predictions_undispatched": null,
+  "entire_T1_complete": false,
+  "limitations": [
+    "Self-cloning is an identity/shape sanity check, not 3815 successful model predictions.",
+    "No real predicted wrong-answer rate, method EX or effect measured.",
+    "No new source-query correctness or REST/Bolt equivalence established.",
+    "Formal NL/schema/input/permissions manifest and author scoring/order protocol still pending.",
+    "Model attempt5193 belongs to the separately authorized endpoint probe, not this audit.",
+    "Text2GQL conditional model budget remains unactivated."
+  ]
+}
