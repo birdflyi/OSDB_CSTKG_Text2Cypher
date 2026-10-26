@@ -229,3 +229,25 @@ full dataset. Current approval raises the cumulative attempt cap to 12,000,
 retaining all 364 historical reservations. Legacy background queues must not
 be restarted by this preparation package. A completed CypherBench column alone
 is not automatically completion of the entire multi-benchmark main table.
+
+
+## Native execution development update (2026-10-26)
+
+`tugraph_execution.py` journals EXPLAIN and query requests separately, verifies
+read-only native plans, retains partial/unknown responses, rejects content
+changes and pending-request replay, and bridges the finite compiler without
+a Direct fallback. Completed cached responses add zero physical requests.
+Feedback is non-gold and never based on valid-answer correctness; its durable
+model dispatch/budget controller is still an admission gate. This module is
+development only, not a formal model runner or scorer.
+
+76 local checks and independent native fixtures passed; the retained initial
+parser-prefix classification failure is described in the stage report. All
+35 native development requests, including EXPLAIN, failures and repeated
+version checks, are recorded. They are not benchmark EX or independent tasks.
+The original seven-graph CypherBench core is complete; the entire T1 is not.
+Actual cumulative model attempts remain 5192/12000. Text2GQL +20000 has a
+human conditional decision; material complementary evidence impact must be
+established before activating it. Current impact gate is deferred; do not
+reuse CypherBench's remaining scope or repeat the answered budget question.
+See operations/analysis/T1_TEXT2GQL_BUDGET_IMPACT_GATE_20261026.md.

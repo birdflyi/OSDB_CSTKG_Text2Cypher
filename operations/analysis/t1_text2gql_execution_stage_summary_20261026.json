@@ -1,0 +1,112 @@
+{
+  "kind": "NATIVE_EXECUTION_JOURNAL_DEVELOPMENT_NOT_BENCHMARK_EX",
+  "time_local": "2026-10-26T09:42:22.133190+08:00",
+  "version": "native-execution-dev-2",
+  "formal_prediction_admitted": false,
+  "new_model_calls": 0,
+  "new_benchmark_queries": 0,
+  "new_native_development_requests": 35,
+  "jobs": [
+    {
+      "name": "text2gql_explain_capability_20261026",
+      "phase": "FIXTURE_CHECKS_FINISHED",
+      "native_requests": 3,
+      "checks_recorded": 3,
+      "matched_expected": null,
+      "receipt_sha256": "a98c7644481fb859288b7d1083fe274f30a95e4b11b2b08ff517c38e9a6ce721",
+      "physical_receipts_verified": 0,
+      "children_closed": {
+        "54778": true
+      },
+      "request_response_bytes": 0,
+      "physical_wall_seconds": 0
+    },
+    {
+      "name": "text2gql_execution_integration_20261026",
+      "phase": "STOPPED",
+      "native_requests": 7,
+      "checks_recorded": 5,
+      "matched_expected": null,
+      "receipt_sha256": "b60c1ae8703c48adbb128b250716df119e9b1f54091fe2762145578d15eb03d1",
+      "physical_receipts_verified": 7,
+      "children_closed": {
+        "55476": true
+      },
+      "request_response_bytes": 1024,
+      "physical_wall_seconds": 0.05119473114609718
+    },
+    {
+      "name": "text2gql_execution_integration_v2_20261026",
+      "phase": "FIXTURE_CHECKS_FINISHED",
+      "native_requests": 15,
+      "checks_recorded": 8,
+      "matched_expected": 8,
+      "receipt_sha256": "f078fb2de16b05fe66f682993d567b45361b2f291c0d28d81db8bfe5b99fda61",
+      "physical_receipts_verified": 15,
+      "children_closed": {
+        "55594": true
+      },
+      "request_response_bytes": 2506,
+      "physical_wall_seconds": 0.12377674877643585
+    },
+    {
+      "name": "text2gql_execution_plan_bridge_20261026",
+      "phase": "FIXTURE_CHECKS_FINISHED",
+      "native_requests": 10,
+      "checks_recorded": 3,
+      "matched_expected": 3,
+      "receipt_sha256": "36969c63ba205f12fc1957b8d97b07f50b6f8edac10e7697a1b1b46b44c59e06",
+      "physical_receipts_verified": 10,
+      "children_closed": {
+        "55926": true
+      },
+      "request_response_bytes": 1827,
+      "physical_wall_seconds": 0.2138512097299099
+    }
+  ],
+  "reference_or_TEST_material_used": false,
+  "model_config_read": false,
+  "new_model_health_probes": 0,
+  "monetary_cost": null,
+  "remote_closure": {
+    "hostname": "interactive-xuyl0q80gc01-6d6f5ddb9b-xtpfj",
+    "main_lock": false,
+    "native_processes": [],
+    "ports_listening": {
+      "18880": false,
+      "18881": false,
+      "18882": false,
+      "18883": false
+    },
+    "children_absent": {
+      "54778": true,
+      "55476": true,
+      "55594": true,
+      "55926": true
+    }
+  },
+  "budget": {
+    "physical_attempts": 5192,
+    "approved_cap": 12000,
+    "remaining": 6808,
+    "scope": "CypherBench only",
+    "Text2GQL_expansion_active": false,
+    "latest_decision": "Human conditional on demonstrated large claim impact; deferred impact gate, not unconditional approval"
+  },
+  "canonical_frozen_source_hashes_unchanged": 32,
+  "canonical_head": "c6143670a9949ec3b366ef513291740d1b8c4134",
+  "recovery_head": "377774ac42e4bdefd88688aae8eb5ae0beb99254",
+  "local_checks_passed": 76,
+  "local_check_output": "............................................................................\n----------------------------------------------------------------------\nRan 76 tests in 0.914s\n\nOK",
+  "final_execution_source_sha256": {
+    "tugraph_execution.py": "e5e14e8c41c32e933f612cac16de586e7b41fb5a0229bdbbbc0065773290fe57",
+    "test_tugraph_execution.py": "e7022cb77e5a331a52e10180c9f54f8690f82f73c25f9b6d36c48cb735df04da"
+  },
+  "remaining_gates": [
+    "whole-path SQL limits and batch infrastructure stop controller",
+    "durable model/one-feedback attempt ledger integration and budget scope gate",
+    "author EA/REST-Bolt/cohort/order/paired-statistics freeze",
+    "demonstrate complementary evidence impact before activating conditional model budget",
+    "TRAIN-only model validation then formal source/input/model/metric/resource freeze"
+  ]
+}
