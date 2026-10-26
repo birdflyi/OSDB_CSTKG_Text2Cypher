@@ -1,0 +1,98 @@
+{
+  "kind": "OSDB_OBSERVED_PROFILE_DEVELOPMENT_NOT_FORMAL_T1",
+  "version": "observed-neo4j-profile-dev-1",
+  "graphs": [
+    {
+      "graph": "redis",
+      "entities": 14,
+      "relations": 78,
+      "compiled_checks": 106,
+      "undeclared_properties_rejected": 84,
+      "mock_composition_checks": 1,
+      "mock_composition_result": [
+        [
+          1
+        ]
+      ],
+      "source_schema_sha256": "911c219b83fb87d5bf9536e5a380c88d63f268bd333bbdb57725338b01707793",
+      "profile_sha256": "8af6ec4fd240f2f677bd01c0a03dd076811625a82bfb885b7ec124ceaff05b56",
+      "offline_preparation_seconds": 0.026124199999999986,
+      "database_dispatches": 0,
+      "model_calls": 0
+    },
+    {
+      "graph": "duckdb",
+      "entities": 14,
+      "relations": 84,
+      "compiled_checks": 112,
+      "undeclared_properties_rejected": 84,
+      "mock_composition_checks": 1,
+      "mock_composition_result": [
+        [
+          1
+        ]
+      ],
+      "source_schema_sha256": "f7a999a14ca89c0c39b9e408fa75fa948cee1d555e4156bbb309c0154bcadda4",
+      "profile_sha256": "1a2b8cacf5478ae3d622a66b69af1121f43104ef443850705fbf16a2d845166d",
+      "offline_preparation_seconds": 0.024587799999999993,
+      "database_dispatches": 0,
+      "model_calls": 0
+    },
+    {
+      "graph": "iotdb",
+      "entities": 14,
+      "relations": 66,
+      "compiled_checks": 94,
+      "undeclared_properties_rejected": 84,
+      "mock_composition_checks": 1,
+      "mock_composition_result": [
+        [
+          1
+        ]
+      ],
+      "source_schema_sha256": "f7be06435682e72d609158993611fc2d8e3ca490953846b049d6b00ad88789af",
+      "profile_sha256": "fa982b07b6a45afbb0ef0f27ed23f543259f1141ff53d3806508aa9ee6e0e059",
+      "offline_preparation_seconds": 0.018187099999999984,
+      "database_dispatches": 0,
+      "model_calls": 0
+    },
+    {
+      "graph": "elasticsearch",
+      "entities": 14,
+      "relations": 81,
+      "compiled_checks": 109,
+      "undeclared_properties_rejected": 84,
+      "mock_composition_checks": 1,
+      "mock_composition_result": [
+        [
+          1
+        ]
+      ],
+      "source_schema_sha256": "9f852b9b03ee29b7a444834f436192d3e10e1de79402c60cc6a41ffcda3d333f",
+      "profile_sha256": "13cbea03f5eab09002b9dd8c4f88bb903c88d3fd1dbe223869f49bf3351cafc4",
+      "offline_preparation_seconds": 0.02253329999999998,
+      "database_dispatches": 0,
+      "model_calls": 0
+    }
+  ],
+  "planned_graphs": 4,
+  "completed_graphs": 4,
+  "local_unit_tests_passed": 11,
+  "canonical32_and_adapter46_unchanged": true,
+  "common24_inputs_unchanged": true,
+  "source_schemas_unchanged": true,
+  "model_calls": 0,
+  "database_dispatches": 0,
+  "formal_model_predictions": 0,
+  "formal_admission": false,
+  "formal_N": null,
+  "entire_T1_complete": false,
+  "cost_currency": null,
+  "limits": [
+    "Offline compile/type/shape checks and mocked composition, not database semantic execution.",
+    "Runtime Direct/Ours common access enforcement and prompts not integrated or frozen.",
+    "Two-call bound, single entity-type set contract and all task positions remain; no query-specific tools.",
+    "Independent live Neo4j small-graph regression, fixed exposed development run and sufficient isolated task scope still required.",
+    "OSDB model budget remains separate; CypherBench remaining allowance not used."
+  ]
+}
