@@ -1,0 +1,65 @@
+{
+  "kind": "TEXT2GQL_ORDER_REVIEW_QUEUE_NOT_ADJUDICATED",
+  "positions_planned": 3826,
+  "positions_completed": 3826,
+  "lexical_failed": 0,
+  "undispatched": 0,
+  "depth_sensitive_fabricated_checks": 5,
+  "counts": {
+    "FINAL_RETURN_ORDER_CANDIDATE": 642,
+    "NO_ORDER_TOKEN_NOT_UNORDERED_CERTIFICATE": 3162,
+    "NONFINAL_OR_NESTED_ORDER_REQUIRES_REVIEW": 22
+  },
+  "by_graph": {
+    "Financial_Payment": {
+      "FINAL_RETURN_ORDER_CANDIDATE": 164,
+      "NO_ORDER_TOKEN_NOT_UNORDERED_CERTIFICATE": 607,
+      "NONFINAL_OR_NESTED_ORDER_REQUIRES_REVIEW": 5
+    },
+    "Information_Technology_IT_Asset_Management": {
+      "FINAL_RETURN_ORDER_CANDIDATE": 139,
+      "NO_ORDER_TOKEN_NOT_UNORDERED_CERTIFICATE": 582,
+      "NONFINAL_OR_NESTED_ORDER_REQUIRES_REVIEW": 5
+    },
+    "Knowledge_Graph_Geography": {
+      "NO_ORDER_TOKEN_NOT_UNORDERED_CERTIFICATE": 599,
+      "FINAL_RETURN_ORDER_CANDIDATE": 41,
+      "NONFINAL_OR_NESTED_ORDER_REQUIRES_REVIEW": 2
+    },
+    "Manufacturing_BOM(Bill_Of_Materials)": {
+      "FINAL_RETURN_ORDER_CANDIDATE": 98,
+      "NO_ORDER_TOKEN_NOT_UNORDERED_CERTIFICATE": 384,
+      "NONFINAL_OR_NESTED_ORDER_REQUIRES_REVIEW": 7
+    },
+    "Manufacturing_Production_Process": {
+      "NO_ORDER_TOKEN_NOT_UNORDERED_CERTIFICATE": 515,
+      "FINAL_RETURN_ORDER_CANDIDATE": 81
+    },
+    "Social_Network_Twitter": {
+      "NO_ORDER_TOKEN_NOT_UNORDERED_CERTIFICATE": 475,
+      "FINAL_RETURN_ORDER_CANDIDATE": 119,
+      "NONFINAL_OR_NESTED_ORDER_REQUIRES_REVIEW": 3
+    }
+  },
+  "raw_order_trigger_count": 664,
+  "lexical_order_token_count": 664,
+  "raw_trigger_without_order_token": 0,
+  "order_token_without_raw_trigger": 0,
+  "limit_skip_positions": 1117,
+  "gold_known": 3815,
+  "gold_unknown": 11,
+  "order_adjudicated": 0,
+  "formal_scoring_frozen": false,
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "new_network_calls": 0,
+  "input_files_unchanged": 9,
+  "review_queue_sha256": "d544393a678e67ea3c80fcda56f7e9520fb5f2a0c82c10c066577658bb80737d",
+  "protocol_sha256": "bae40fba4b35be2452fa1a951a02acdfad8231dbad0e08cc9ae51f5a405f4c57",
+  "limits": [
+    "Lexical order absence does not certify unordered NL semantics.",
+    "Final ORDER BY candidate does not resolve ties, LIMIT memberships, hidden sort keys or nested list semantics.",
+    "No per-method predicted query is used to select an ordering rule or denominator.",
+    "No claimed difference in actual benchmark EX, all original task and reference bytes preserved."
+  ]
+}
