@@ -1,0 +1,57 @@
+{
+  "kind": "TEXT2GQL_SCORE_CONTRACT_DEVELOPMENT_ACCEPTED_NOT_FORMAL",
+  "planned_checks": 19,
+  "passed_checks": 19,
+  "failed_checks": 0,
+  "undispatched_checks": 0,
+  "checks": [
+    "complete_numeric_answer",
+    "primary_set_and_strict_bag_both_preserved",
+    "primary_bool_int_vs_type_diagnostic",
+    "primary_9dp_vs_exact_float_diagnostic",
+    "duplicate_aliases_do_not_collapse_columns",
+    "complete_empty_valid_and_null_row_distinct",
+    "terminal_failures_are_not_empty_success",
+    "unknown_gold_retains_complete_answer_coverage",
+    "known_gold_temporarily_missing_not_dropped",
+    "nonterminal_not_completed_failure",
+    "malformed_row_width_not_scored",
+    "unverified_execution_completeness_rejected",
+    "ordering_fixed_externally_or_left_unadjudicated",
+    "missing_foreign_duplicate_IDs_rejected_before_comparison",
+    "constructor_seals_metadata_against_caller_mutation",
+    "all3826_coverage_includes_unknown11_and_keeps_concern13",
+    "unknown_request_keeps_fixed_denominator_and_blocks_final_point",
+    "known_reference_loss_keeps_denominator_and_blocks_point",
+    "standalone_summary_rejects_partial_or_duplicate_population"
+  ],
+  "synthetic_ID_inventory": 3826,
+  "synthetic_known_reference_slots": 3815,
+  "synthetic_unknown_reference_slots": 11,
+  "reference_concern_metadata_slots_retained": 13,
+  "actual_gold_or_model_answer_rows_read": 0,
+  "author_source_sha256": "f88f10991941002a9a2fd9f3b8bdb49a2751705331fe717ee9fe5f5e9d59ced8",
+  "author_methods_executed": [
+    {
+      "method": "compare_results",
+      "line": 212,
+      "end_line": 229
+    }
+  ],
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "new_network_calls": 0,
+  "canonical_frozen_files_unchanged": 32,
+  "adapter_frozen_files_unchanged": 46,
+  "input_files_unchanged": 7,
+  "wall_seconds": 0.27624709999999997,
+  "formal_metric_frozen": false,
+  "formal_prediction_admitted": false,
+  "conditional_budget_activated": false,
+  "remaining": [
+    "Task ordering/ties/column contract adjudication and raw-reference identity wiring before formal use.",
+    "Independent task/source and statistical grouping; exact paper subset/REST-Bolt claims remain unestablished.",
+    "End-to-end native model/feedback/cost entry, separately admitted development scope and whole formal freeze."
+  ],
+  "T1_complete": false
+}
