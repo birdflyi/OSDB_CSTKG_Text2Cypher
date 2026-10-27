@@ -1,0 +1,86 @@
+{
+  "kind": "FABRICATED_NATIVE_REPLY_BRIDGE_CHECKS_NOT_MODEL_OR_DB_EX",
+  "planned": 16,
+  "completed": 16,
+  "passed": 16,
+  "failed": 0,
+  "undispatched": 0,
+  "checks": [
+    {
+      "name": "Direct_raw_native_query_not_finite_IR_or_JSON_envelope",
+      "passed": true
+    },
+    {
+      "name": "one_operational_feedback_retains_initial_and_actual_final",
+      "passed": true
+    },
+    {
+      "name": "valid_empty_answer_cannot_trigger_gold_feedback",
+      "passed": true
+    },
+    {
+      "name": "valid_arbitrary_answer_cannot_trigger_gold_feedback",
+      "passed": true
+    },
+    {
+      "name": "Ours_uses_unchanged_native_finite_compiler_and_journal",
+      "passed": true
+    },
+    {
+      "name": "finite_decline_is_not_correct_and_max_one_repair",
+      "passed": true
+    },
+    {
+      "name": "duplicate_JSON_keys_rejected_without_DB",
+      "passed": true
+    },
+    {
+      "name": "Direct_code_fence_not_silently_extracted",
+      "passed": true
+    },
+    {
+      "name": "length_is_not_empty_or_infrastructure_failure",
+      "passed": true
+    },
+    {
+      "name": "missing_model_terminal_stays_nonterminal_UNKNOWN",
+      "passed": true
+    },
+    {
+      "name": "HTTP_failure_has_no_semantic_feedback",
+      "passed": true
+    },
+    {
+      "name": "model_refusal_not_a_correct_answer",
+      "passed": true
+    },
+    {
+      "name": "unknown_DB_execution_stays_unknown_and_is_not_retried",
+      "passed": true
+    },
+    {
+      "name": "DB_byte_cap_not_empty_success_or_retry",
+      "passed": true
+    },
+    {
+      "name": "malformed_DB_success_not_valid_answer",
+      "passed": true
+    },
+    {
+      "name": "journal_conflict_propagates_for_owner_audit_not_zero_cost_failure",
+      "passed": true
+    }
+  ],
+  "source_sha256": {
+    "accept_text2gql_response_boundary_20261027.py": "0ceb8530fe567c9cbca4a09ef1f22079b85c1655989b323199567bc746b34b17",
+    "text2gql_response_boundary_dev_20261027.py": "0b4f941cc2ee0d4bf21d646d0b6ddcb4dec2ea657a00e32bc3fc32ca0b14428a"
+  },
+  "new_model_calls": 0,
+  "new_live_database_requests": 0,
+  "new_network_calls": 0,
+  "real_task_or_reference_values_read": 0,
+  "formal_admission": false,
+  "budget_activated": false,
+  "acceptance_version": 2,
+  "v1_review_issue_preserved": true
+}
