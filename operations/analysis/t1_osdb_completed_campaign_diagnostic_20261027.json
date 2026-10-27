@@ -1,0 +1,55 @@
+{
+  "kind": "POST_DEVELOPMENT_DIAGNOSTIC_NO_NEW_SCORE",
+  "original_initial_messages_matched": 48,
+  "paired_common_inputs_identical": 24,
+  "actual_feedback_messages_matched": 16,
+  "all_sampling_matched": 64,
+  "raw_HTTP200_bodies_match_recorded_terminals": 63,
+  "scoped_attempts": 64,
+  "old_paths": 47,
+  "static_counts": {
+    "direct": {
+      "DIRECT_NATIVE_QUERY": 21,
+      "DECLINED_NOT_NUMERIC_CORRECT": 5,
+      "TRANSPORT_FAILURE_NO_GENERATED_ANSWER": 1,
+      "STRICT_PROTOCOL_REJECTED": 1
+    },
+    "ours": {
+      "STRICT_PROTOCOL_REJECTED": 20,
+      "PLAN_STATICALLY_REJECTED": 4,
+      "MODEL_TRUNCATED_NO_DECODING": 7,
+      "DECLINED_NOT_NUMERIC_CORRECT": 4,
+      "COMPILER_REACHED_DB_BOUNDARY_NOT_EXECUTED": 1
+    }
+  },
+  "direct_query_trace_counts": {
+    "direct_with_actual_read": 20,
+    "direct_without_read_terminal": 1
+  },
+  "feedback_withheld_due_to_stops": {
+    "direct": 1,
+    "ours": 5
+  },
+  "source_sha256": "f893e8d988fd91be6eb929b8b69139d1ef421f122b4eff989f4fe1f610ad004d",
+  "compiled_queries_executed": 0,
+  "model_requests": 0,
+  "database_requests": 0,
+  "network_requests": 0,
+  "score_changes": 0,
+  "JSON_repairs": 0,
+  "reference_rows_used_by_dry_compiler": false,
+  "remaining_limits": [
+    "Static output diagnosis is not a new model result or complete causal attribution.",
+    "CSV prefixes prove witnesses only, not global absence or query counterfactual.",
+    "Valid native Cypher can be semantically wrong; no gold-driven feedback or retries.",
+    "Compiler accepts only stated IR; no new algorithmic increment established."
+  ],
+  "T1_complete": false,
+  "raw_evidence_file_count": 111,
+  "local_summary_sha256": "2fbb3297fd6dc1f6169eb8f644997d893bac18be7d41aaba25948819aa7594a8",
+  "ours_strict_rejection_prefix_counts": {
+    "PROSE_OR_OTHER": 13,
+    "JSON_OBJECT": 6,
+    "MARKDOWN_FENCE": 1
+  }
+}
