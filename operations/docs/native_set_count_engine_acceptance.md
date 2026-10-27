@@ -1,0 +1,11 @@
+# Native set-count control: real engine acceptance
+
+`analysis/accept_osdb_native_set_count_control_v2_20261027.py` executes one finite acceptance on a new, loopback-only Neo4j 5.15 fixture. It is not a model benchmark or a performance comparison. Run evidence is preserved outside Git under `D:/ch7/reports/osdb_native_set_count_engine_v2_20261027`.
+
+The fixed 12 families cover empty operands, disjoint/overlapping/identical sets, duplicate physical edges, NULL negation, equivalent timestamp spellings, nanosecond half-open bounds, a certifiable scalar partition, and integer identity. Each has union, intersection and left difference. Independent explicit membership sets determine the expected counts before database startup. The 36 plans each run through contract, full detail and native composition, rotating strategy order. All 108 checks passed. Only one constructed contract plan chose certified disjoint counts; this is not a workload trigger-rate estimate.
+
+The declared generic fixture schema is used directly. The first harness failed before database startup because the OSDB public prompt profile intentionally requires string identity while this fixture also includes integer identity. Its source and preflight failure are retained in the v1 evidence folder. The v2 change corrects fixture wiring; it does not widen OSDB model input or change compiler behavior or expected answers.
+
+The actual shared model-read boundary certified read-only EXPLAIN and ordinary data plans. Evidence includes all 362 Bolt statements (including two admission scans), four trusted fixture setup POSTs, two bounded readiness GETs, complete answers, physical statement counts and client cost spans. No model, training or statement retry occurred. The owned JVM was stopped and both ports closed; frozen 32 sources and original adapter 46 sources remained unchanged. The ledger stayed at 6666 / 12096.
+
+The native control is accepted only for its declared identity-only two-set count scope on this synthetic fixture. This does not accept the entire IR, full four-graph runtime, model/developer campaign, independent tasks, performance claims or formal T1 admission. Method final costs and control replay costs must remain separate when integrated. Direct retains the same native database capabilities.
