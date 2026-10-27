@@ -1,0 +1,237 @@
+{
+  "kind": "EXPOSED_DEVELOPMENT_CROSS_VERSION_DELIVERY_NOT_FORMAL",
+  "formal_N": null,
+  "T1_complete": false,
+  "planned_paths": 48,
+  "terminated_paths": 48,
+  "undispatched_paths": 0,
+  "by_graph": {
+    "redis": {
+      "direct": {
+        "numeric_correct": 0,
+        "numeric_N": 4,
+        "status_counts": {
+          "EXECUTED": 5,
+          "INSUFFICIENT_EVIDENCE": 1
+        }
+      },
+      "ours": {
+        "numeric_correct": 0,
+        "numeric_N": 4,
+        "status_counts": {
+          "MODEL_PROTOCOL_ERROR": 2,
+          "MODEL_TRUNCATED": 3,
+          "INSUFFICIENT_EVIDENCE": 1
+        }
+      }
+    },
+    "duckdb": {
+      "direct": {
+        "numeric_correct": 0,
+        "numeric_N": 4,
+        "status_counts": {
+          "EXECUTION_ERROR": 1,
+          "EXECUTED": 3,
+          "INFRASTRUCTURE_ERROR": 1,
+          "INSUFFICIENT_EVIDENCE": 1
+        }
+      },
+      "ours": {
+        "numeric_correct": 0,
+        "numeric_N": 4,
+        "status_counts": {
+          "MODEL_PROTOCOL_ERROR": 5,
+          "MODEL_TRUNCATED": 1
+        }
+      }
+    },
+    "iotdb": {
+      "direct": {
+        "numeric_correct": 1,
+        "numeric_N": 4,
+        "status_counts": {
+          "EXECUTED": 4,
+          "INSUFFICIENT_EVIDENCE": 2
+        }
+      },
+      "ours": {
+        "numeric_correct": 0,
+        "numeric_N": 4,
+        "status_counts": {
+          "MODEL_PROTOCOL_ERROR": 2,
+          "EXECUTED": 1,
+          "MODEL_TRUNCATED": 2,
+          "INSUFFICIENT_EVIDENCE": 1
+        }
+      }
+    },
+    "elasticsearch": {
+      "direct": {
+        "numeric_correct": 1,
+        "numeric_N": 4,
+        "status_counts": {
+          "EXECUTED": 5,
+          "INSUFFICIENT_EVIDENCE": 1
+        }
+      },
+      "ours": {
+        "numeric_correct": 0,
+        "numeric_N": 4,
+        "status_counts": {
+          "MODEL_PROTOCOL_ERROR": 3,
+          "MODEL_TRUNCATED": 1,
+          "INSUFFICIENT_EVIDENCE": 2
+        }
+      }
+    }
+  },
+  "physical_reserved_attempts": 64,
+  "initial_attempts": 48,
+  "feedback_attempts": 16,
+  "HTTP_status_counts": {
+    "200": 63,
+    "None": 1
+  },
+  "attempt_classifications": {
+    "MODEL_COMPLETED": 56,
+    "MODEL_TRUNCATED": 7,
+    "INFRASTRUCTURE_ERROR": 1
+  },
+  "attempt_metrics": {
+    "provider_wall_seconds": {
+      "known_n": 63,
+      "unknown_n": 1,
+      "sum_known": 2419.6069999986794,
+      "mean": 38.406460317439354,
+      "p50": 33.312999999849126,
+      "p90": 79.5717999999877
+    },
+    "prompt_tokens": {
+      "known_n": 63,
+      "unknown_n": 1,
+      "sum_known": 1037263,
+      "mean": 16464.492063492064,
+      "p50": 17060.0,
+      "p90": 17825.4
+    },
+    "completion_tokens": {
+      "known_n": 63,
+      "unknown_n": 1,
+      "sum_known": 194668,
+      "mean": 3089.968253968254,
+      "p50": 2508.0,
+      "p90": 7958.800000000005
+    },
+    "total_tokens": {
+      "known_n": 63,
+      "unknown_n": 1,
+      "sum_known": 1231931,
+      "mean": 19554.460317460318,
+      "p50": 19290.0,
+      "p90": 23978.000000000004
+    },
+    "reasoning_tokens": {
+      "known_n": 63,
+      "unknown_n": 1,
+      "sum_known": 176675,
+      "mean": 2804.3650793650795,
+      "p50": 2175.0,
+      "p90": 7919.400000000006
+    },
+    "cached_tokens": {
+      "known_n": 0,
+      "unknown_n": 64,
+      "sum_known": null,
+      "mean": null,
+      "p50": null,
+      "p90": null
+    },
+    "input_characters": {
+      "known_n": 64,
+      "unknown_n": 0,
+      "sum_known": 4284296,
+      "mean": 66942.125,
+      "p50": 69361.5,
+      "p90": 72405.7
+    },
+    "output_characters": {
+      "known_n": 63,
+      "unknown_n": 1,
+      "sum_known": 57367,
+      "mean": 910.5873015873016,
+      "p50": 756.0,
+      "p90": 1939.4000000000003
+    }
+  },
+  "paired_numeric_counts": {
+    "both_failed_or_wrong": 14,
+    "direct_only": 2
+  },
+  "resource_notes": [
+    "64 global cap; actual12 paths per graph",
+    "graph admission separate from method cost",
+    "One audited SSH failure retains reservation and unknown usage; no resend",
+    "3 v1 length/null labels corrected only in analysis sidecar; raw results immutable",
+    "feedback withheld by bounded stops preserved; not a complete uninterrupted feedback study"
+  ],
+  "confidence_interval_reason": "Exposed correlated developer positions, no independent confirmation claim; report paired counts only",
+  "by_arm": {
+    "direct": {
+      "planned_paths": 24,
+      "terminated_paths": 24,
+      "complete_answers": 17,
+      "numeric_N": 16,
+      "numeric_final_correct": 2,
+      "numeric_first_correct": 1,
+      "boundary_N": 8,
+      "boundary_status_counts": {
+        "EXECUTED": 2,
+        "INSUFFICIENT_EVIDENCE": 5,
+        "INFRASTRUCTURE_ERROR": 1
+      },
+      "status_counts": {
+        "EXECUTED": 17,
+        "INSUFFICIENT_EVIDENCE": 5,
+        "EXECUTION_ERROR": 1,
+        "INFRASTRUCTURE_ERROR": 1
+      },
+      "method_wall_seconds": {
+        "known_n": 23,
+        "unknown_n": 1,
+        "sum_known": 940.9849999996368,
+        "mean": 40.91239130433203,
+        "p50": 36.687999999849126,
+        "p90": 54.61200000010431
+      }
+    },
+    "ours": {
+      "planned_paths": 24,
+      "terminated_paths": 24,
+      "complete_answers": 1,
+      "numeric_N": 16,
+      "numeric_final_correct": 0,
+      "numeric_first_correct": 0,
+      "boundary_N": 8,
+      "boundary_status_counts": {
+        "MODEL_TRUNCATED": 1,
+        "INSUFFICIENT_EVIDENCE": 4,
+        "MODEL_PROTOCOL_ERROR": 3
+      },
+      "status_counts": {
+        "MODEL_PROTOCOL_ERROR": 12,
+        "MODEL_TRUNCATED": 7,
+        "INSUFFICIENT_EVIDENCE": 4,
+        "EXECUTED": 1
+      },
+      "method_wall_seconds": {
+        "known_n": 24,
+        "unknown_n": 0,
+        "sum_known": 1527.330999999307,
+        "mean": 63.63879166663779,
+        "p50": 67.63299999991432,
+        "p90": 98.59490000009536
+      }
+    }
+  },
+  "local_delivery_summary_sha256": "422a019e8d05249d0458f567ae60731b71bb0fbd1e09d98dcb0638a7ea7f08c7"
+}
