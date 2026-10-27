@@ -6,6 +6,7 @@ import http.client
 import json
 from pathlib import Path
 import socket
+import select
 import threading
 import time
 from urllib.parse import urlsplit
@@ -180,9 +181,17 @@ class HTTPTransport:
     network mutation. Every physical POST is controlled by the scheduler ledger.
     """
 
-    def __init__(self, key_dir: Path, *, connect_timeout=10, max_response_bytes=4 * 1024**2):
+    def __init__(
+        self,
+        key_dir: Path,
+        *,
+        connect_timeout=10,
+        max_response_bytes=4 * 1024**2,
+        max_idle_seconds=2,
+    ):
         self.key_dir = Path(key_dir).resolve()
         self.connect_timeout, self.max_response_bytes = connect_timeout, max_response_bytes
+        self.max_idle_seconds = max_idle_seconds
         self.idle = defaultdict(list)
         self.limits = None
         self.lock = threading.Lock()
@@ -211,7 +220,7 @@ class HTTPTransport:
             for identity, connections in list(self.idle.items()):
                 limit = self.limits.get(identity, 0)
                 while len(connections) > limit:
-                    connections.pop().close()
+                    connections.pop()[0].close()
                 if not connections:
                     del self.idle[identity]
 
@@ -227,10 +236,22 @@ class HTTPTransport:
     def prepare(self, endpoint) -> PreparedHTTP:
         # Key/file validation and TCP connect happen BEFORE a budget charge/write.
         key = self.load_key(endpoint.key_ref)
+        connection = None
         with self.lock:
-            connection = (
-                self.idle[endpoint.identity].pop() if self.idle[endpoint.identity] else None
-            )
+            while self.idle[endpoint.identity]:
+                candidate, returned_at = self.idle[endpoint.identity].pop()
+                try:
+                    healthy = (
+                        candidate.sock is not None
+                        and time.monotonic() - returned_at < self.max_idle_seconds
+                        and not select.select([candidate.sock], [], [], 0)[0]
+                    )
+                except (OSError, ValueError):
+                    healthy = False
+                if healthy:
+                    connection = candidate
+                    break
+                candidate.close()
         started = time.monotonic()
         if connection is None:
             url = urlsplit(endpoint.url)
@@ -249,13 +270,13 @@ class HTTPTransport:
         with self.lock:
             limit = endpoint.cap if self.limits is None else self.limits.get(endpoint.identity, 0)
             if reusable and len(self.idle[endpoint.identity]) < limit:
-                self.idle[endpoint.identity].append(connection)
+                self.idle[endpoint.identity].append((connection, time.monotonic()))
             else:
                 connection.close()
 
     def close(self):
         with self.lock:
             for connections in self.idle.values():
-                for connection in connections:
+                for connection, _ in connections:
                     connection.close()
             self.idle.clear()

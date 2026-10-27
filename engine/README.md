@@ -103,6 +103,8 @@ D:\ProgramData\Anaconda3\python.exe -m engine.cli resume-plan `
 
 全流水线共享一个额度池、账本和keep-alive连接池；切图、切方法不主动销毁模型连接。数据库生命周期按七图顺序，每图一个自有worker，每个查询一个session，DB并发独立限制4。当前图内滚动派发；图切换和末尾排空仍有自然空档，不承诺始终占满128。
 
+空闲连接在领取时检查本地socket可读/EOF状态，空闲超过2秒则退役并新建；这些检查不发送HTTP探活、不扣模型额度。初版跨图复用曾造成263条RemoteDisconnected未知，原记录和成本保留。显式恢复清单绑定旧账本及请求/终结SHA；已计费回复直接复用，未知也仅复用未知状态，绝不替换发送。反馈字节若与旧记录不同则停止审计。
+
 当前生产配置：百灵128，DeepSeek108/105各16，全局128。DeepSeek通过显式chat_template_kwargs传thinking=true和effort50，两者top_p统一.95；这不证明与百灵high的能力等价。端点热增删或降容不会改变任务绑定的model。
 
 块中断或存在未派发路径时停止，不缩分母。已有完成回执的块仅在显式`--resume`且计划不变时复用；有started而无completed的块必须先审计并另立恢复版本。

@@ -90,10 +90,52 @@ def test_hot_removal_closes_idle_and_late_returned_connections(tmp_path):
     endpoint = Endpoint("a", "http://127.0.0.1/a", "m", "key", 2)
     transport = HTTPTransport(tmp_path)
     one, two, active = Connection(), Connection(), Connection()
-    transport.idle[endpoint.identity] = [one, two]
+    import time
+
+    transport.idle[endpoint.identity] = [(one, time.monotonic()), (two, time.monotonic())]
     transport.configure([replace(endpoint, cap=1)])
     assert len(transport.idle[endpoint.identity]) == 1 and two.closed
     transport.configure([])
     assert one.closed
     transport.release(endpoint, active, True)
     assert active.closed
+
+
+def test_server_closed_idle_connection_is_retired_before_any_post(tmp_path):
+    import time
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+        timeout = 0.05
+        clients = []
+
+        def do_POST(self):
+            self.rfile.read(int(self.headers["Content-Length"]))
+            Handler.clients.append(self.client_address)
+            body = b'{"model":"m","choices":[{"finish_reason":"stop","message":{"content":"ok"}}]}'
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    (tmp_path / "test.txt").write_text("synthetic-key", encoding="utf-8")
+    endpoint = Endpoint("a", "http://127.0.0.1:%d/test" % server.server_port, "m", "test", 2)
+    transport = HTTPTransport(tmp_path)
+    try:
+        for n in range(2):
+            prepared = transport.prepare(endpoint)
+            assert prepared.send(b'{"model":"m"}', 2)["status"] == "ok"
+            prepared.close()
+            if n == 0:
+                time.sleep(0.12)
+        assert len(Handler.clients) == 2 and Handler.clients[0] != Handler.clients[1]
+        assert transport.started == 2
+    finally:
+        transport.close()
+        server.shutdown()
+        server.server_close()

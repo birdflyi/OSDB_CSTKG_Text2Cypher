@@ -155,6 +155,13 @@ def finalize_pipeline(root: Path, stages, settings):
                 )
             )
     result = dict(
+        primary_comparison_clean=not settings.get("inherited_unknown_attempts", 0),
+        inherited_unknown_attempts=settings.get("inherited_unknown_attempts", 0),
+        primary_claim_blocker=(
+            "Transport unknowns remain; no method-superiority claim"
+            if settings.get("inherited_unknown_attempts", 0)
+            else None
+        ),
         table=table,
         primary_contrasts=intervals,
         other_T1_cells_complete=False,
@@ -172,5 +179,7 @@ def finalize_pipeline(root: Path, stages, settings):
         for r in table
     )
     lines += ["", "不同model不合并。共享计划控制不是独立模型方法。其他必要T1单元格仍未完成。"]
+    if settings.get("inherited_unknown_attempts", 0):
+        lines.append("基础设施未知已影响Direct；本次对照不能支撑方法优势，须另行核验恢复证据。")
     write_new(root / "main_table_results.md", "\n".join(lines).encode("utf-8"))
     return result

@@ -36,6 +36,7 @@ CORE_FILES = (
     "adapters/cypherbench_runtime.py",
     "results.py",
     "monitor.py",
+    "recovery.py",
 )
 
 
@@ -209,6 +210,7 @@ async def execute_campaign(
             hostname=platform.node(),
         ),
         counts=dict(
+            reused_model_attempts=sum(e.get("reused", False) for e in scheduler.events),
             planned=len(items),
             dispatched=run_budget["reserved"],
             terminal=run_budget["terminal"],

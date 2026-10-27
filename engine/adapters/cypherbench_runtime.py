@@ -66,6 +66,7 @@ async def run_graphs(
     transport_factory=HTTPTransport,
     client_factory=JsonRpcClient,
     shared_transport=None,
+    saved_replies=None,
 ):
     """One method/benchmark block; lifecycle-serial graphs, rolling model requests.
 
@@ -136,6 +137,7 @@ async def run_graphs(
                 ),
                 close_transport=shared_transport is None,
             )
+            scheduler.saved_replies = saved_replies or {}
             summary = await execute_campaign(
                 scheduler,
                 selected,

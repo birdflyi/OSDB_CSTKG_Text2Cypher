@@ -183,6 +183,11 @@ async def live_pipeline(config_path: Path, *, resume=False):
         ledger_dir, Path(config["approval_path"]), snapshot, config["budget_scope"]
     ) as ledger:
         transport = HTTPTransport(Path(config["key_dir"]))
+        saved = {}
+        if config.get("recovery"):
+            from .recovery import saved_replies
+
+            saved = saved_replies(config["recovery"]["path"], config["recovery"]["sha256"], ledger)
 
         def make_spec(stage):
             values = {
@@ -211,6 +216,7 @@ async def live_pipeline(config_path: Path, *, resume=False):
                     pool,
                     ledger,
                     shared_transport=transport,
+                    saved_replies=saved,
                 )
             spec = make_spec(stage)
             scheduler = Scheduler(

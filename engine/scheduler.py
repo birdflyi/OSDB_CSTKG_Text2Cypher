@@ -64,6 +64,7 @@ class Scheduler:
         self.draining = asyncio.Event()
         self.stop_reason = None
         self.events, self.paths = [], []
+        self.saved_replies = {}
 
     async def drain(self, reason="operator_drain"):
         self.stop_reason = self.stop_reason or reason
@@ -158,6 +159,18 @@ class Scheduler:
                 prepared.close()
 
     async def generate(self, item: Item):
+        saved = self.saved_replies.get(item.key)
+        if saved is not None:
+            if digest(item.wire) != saved["wire_sha256"]:
+                raise ValueError("Saved response belongs to different request bytes; never resend")
+            value = dict(
+                saved["response"],
+                reused=True,
+                source_terminal=saved["source_terminal"],
+                source_terminal_sha256=saved["source_terminal_sha256"],
+            )
+            self.events.append(value)
+            return value
         loop = asyncio.get_running_loop()
         for attempt in range(1, self.spec.retry.max_attempts + 1):
             if self.draining.is_set():
