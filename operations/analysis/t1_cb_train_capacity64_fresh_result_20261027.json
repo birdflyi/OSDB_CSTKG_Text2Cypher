@@ -1,0 +1,62 @@
+{
+  "HTTP_counts": {
+    "200": 64
+  },
+  "complete_responses": 62,
+  "dispatched": 64,
+  "money": null,
+  "not_accuracy_or_saturation_proof": true,
+  "old_results_unchanged": true,
+  "peak_client_transports": 64,
+  "planned": 64,
+  "statistics": {
+    "latency": {
+      "mean": 25.161058843135834,
+      "n": 64,
+      "p50": 18.07046926021576,
+      "p90": 42.53717203140259,
+      "p99": 100.509496884346
+    },
+    "tokens": {
+      "completion_tokens": {
+        "mean": 1422.15625,
+        "n": 64,
+        "p50": 806.0,
+        "p90": 2795.7000000000003,
+        "p99": 8192.0
+      },
+      "prompt_tokens": {
+        "mean": 1535.6875,
+        "n": 64,
+        "p50": 1536.5,
+        "p90": 1883.7,
+        "p99": 1897.0
+      },
+      "reasoning_tokens": {
+        "mean": 1313.34375,
+        "n": 64,
+        "p50": 703.0,
+        "p90": 2643.2000000000003,
+        "p99": 8192.0
+      }
+    }
+  },
+  "steady_state_sample_sufficient": false,
+  "stop_reason": null,
+  "terminal": 64,
+  "unknown": 0,
+  "wall_seconds": 134.17795848846436,
+  "kind": "HUMAN_NEW_64_TRAIN_CAPACITY_ACCEPTANCE_NOT_FORMAL",
+  "budget_after": {
+    "reserved": 6794,
+    "cap": 12096,
+    "remaining": 5302,
+    "pending": []
+  },
+  "CB_remaining": 5270,
+  "OSDB_remaining": 32,
+  "source_commit": "c4392f0",
+  "unique_exposed_TRAIN_tasks": 12,
+  "base_method_inputs": 24,
+  "single_wave_not_saturation_proof": true
+}
