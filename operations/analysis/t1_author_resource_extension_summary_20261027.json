@@ -1,0 +1,43 @@
+{
+  "kind": "AUTHOR_RESOURCE_EXTENSION_AND_NAME_COLLISION_NOT_REPRODUCTION",
+  "planned_source_GETs": 3,
+  "dispatched_source_GETs": 3,
+  "captured_sources": 3,
+  "failed_sources": 0,
+  "undispatched": 0,
+  "new_checkpoint_identity_certifications": 0,
+  "new_inference_controllers_obtained": 0,
+  "smith_same_name_PyPI_package_is_not_certified_author_code": true,
+  "smith_package_declared_author": "Aswin K V",
+  "RI_old_cached_candidate_not_newly_authenticated": {
+    "model_id": "Anonymous234/Cypher-RI",
+    "revision": "34ca521350312184fd9f8833c4dd519163aff5a0",
+    "author_provenance_confirmed": false,
+    "new_weights_downloaded": 0
+  },
+  "coauthor_pages_captured": 2,
+  "new_model_calls": 0,
+  "new_DB_calls": 0,
+  "package_installs": 0,
+  "author_code_executed": false,
+  "author_contacted": false,
+  "new_named_method_formal_N": null,
+  "model_dispatched": 0,
+  "model_completed": 0,
+  "model_failed": 0,
+  "model_undispatched": null,
+  "remaining": [
+    "RI author-associated exact checkpoint plus schema-selection/continuation controller.",
+    "Smith final parser/checkpoint, training data version and2488-versus2348 task mapping.",
+    "CYQUARK target-graph/seed checkpoint or outputs, exact generation/training/inference contract."
+  ],
+  "no_global_resource_absence_claim": true,
+  "T1_complete": false,
+  "artifacts_sha256": {
+    "coauthor_paper_links.json": "1d28e1371cd18280ba3dd137a940d96cef158e7171b8032a2a65a1ce223ce1a0",
+    "identity_findings.json": "a12def596ef06bfb604002a1587578e5555fd3f2825d6c1a2b5d49d990f4c100",
+    "protocol.json": "6d18358a88ebb403e77bbec4b1c41817271b74eff6f2120dc77fb37b066d0c22",
+    "receipts.json": "5564c3f374942473c4e8ed51b7b719de0ea636c1166bf13f9ad5f19e5fbb5bca",
+    "smith_pypi_0_2_0.json": "4097680ed3f656b2e8e6ca1128decd2f5cb36cfabe8a5c66bec22fa0c0d462e6"
+  }
+}
