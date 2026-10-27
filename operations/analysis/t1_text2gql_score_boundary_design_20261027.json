@@ -1,0 +1,183 @@
+{
+  "kind": "TEXT2GQL_SCORE_BOUNDARY_DESIGN_NOT_FORMAL_FREEZE",
+  "driver_commit": "ab296fab179e806cd3ad2e659e9f5dc61bd1af3e",
+  "new_checks_planned": 16,
+  "new_checks_completed": 16,
+  "new_checks_passed": 16,
+  "new_checks_failed": 0,
+  "new_checks_undispatched": 0,
+  "witnesses": [
+    {
+      "case": "column_alias_only",
+      "oop": true,
+      "standalone": true,
+      "expected": [
+        true,
+        true
+      ]
+    },
+    {
+      "case": "column_position_reversed",
+      "oop": false,
+      "standalone": false,
+      "expected": [
+        false,
+        false
+      ]
+    },
+    {
+      "case": "nested_list_order",
+      "oop": false,
+      "standalone": false,
+      "expected": [
+        false,
+        false
+      ]
+    },
+    {
+      "case": "nested_map_key_order",
+      "oop": true,
+      "standalone": true,
+      "expected": [
+        true,
+        true
+      ]
+    },
+    {
+      "case": "null_cell_vs_absent_row",
+      "oop": false,
+      "standalone": false,
+      "expected": [
+        false,
+        false
+      ]
+    },
+    {
+      "case": "null_cell_vs_empty_string",
+      "oop": false,
+      "standalone": false,
+      "expected": [
+        false,
+        false
+      ]
+    },
+    {
+      "case": "decimal_float_representation",
+      "oop": true,
+      "standalone": false,
+      "expected": [
+        true,
+        false
+      ]
+    },
+    {
+      "case": "binary_hex_representation",
+      "oop": true,
+      "standalone": false,
+      "expected": [
+        true,
+        false
+      ]
+    },
+    {
+      "case": "datetime_string_representation",
+      "oop": false,
+      "standalone": true,
+      "expected": [
+        false,
+        true
+      ]
+    },
+    {
+      "case": "IR_final_rows_without_synthetic_order_query",
+      "oop": true,
+      "standalone": true,
+      "expected": [
+        true,
+        true
+      ]
+    },
+    {
+      "case": "complete_empty_is_valid",
+      "common_boundary": true,
+      "expected": true
+    },
+    {
+      "case": "error_not_empty",
+      "common_boundary": false,
+      "expected": false
+    },
+    {
+      "case": "truncated_empty_not_valid",
+      "common_boundary": false,
+      "expected": false
+    },
+    {
+      "case": "unknown_gold_not_wrong_or_correct",
+      "common_boundary": null,
+      "expected": null
+    },
+    {
+      "case": "two_errors_not_equal",
+      "common_boundary": null,
+      "expected": null
+    },
+    {
+      "case": "same_ID_universe_required",
+      "permutation_accepted": true,
+      "missing_duplicate_foreign_rejected": 3
+    }
+  ],
+  "author_methods": {
+    "oop": [
+      {
+        "method": "_normalize",
+        "line": 17,
+        "end_line": 30
+      },
+      {
+        "method": "_compare_results",
+        "line": 32,
+        "end_line": 43
+      }
+    ],
+    "standalone": [
+      {
+        "method": "compare_results",
+        "line": 212,
+        "end_line": 229
+      }
+    ]
+  },
+  "source_sha256": {
+    "D:\\ch7\\reports\\text2gql_driver_contract_20261026\\upstream\\impl\\evaluation\\metrics.py": "e7d388caec60deff459fa887919c657270f10585a241efc9a70cd3ae6b4436c8",
+    "D:\\ch7\\reports\\text2gql_driver_contract_20261026\\upstream\\contrib\\standalone_text2graph_scripts\\reference\\ea_cypher.py": "f88f10991941002a9a2fd9f3b8bdb49a2751705331fe717ee9fe5f5e9d59ced8",
+    "D:\\ch7\\reports\\text2gql_driver_contract_20261026\\source_receipts.json": "9c6f72b350f840c12863a0fcab57a3914ea022b76f5d3c1ab2f672447efd12fb"
+  },
+  "proposed_primary": "EA_REFERENCE_ROW_SET_9DP_COMMON_FINAL_ANSWER",
+  "mandatory_auxiliary": [
+    "type_sensitive_multiset_final_answer",
+    "gold_fixed_order_where_adjudicated",
+    "coverage_failure_unknown_reference_all3826"
+  ],
+  "OOP_predicted_query_order_heuristic_common_primary": false,
+  "execution_mode": "AST methods only; fake rows; author full pipeline never imported",
+  "snapshot_positions": 3826,
+  "preaudited_gold_executable": 3815,
+  "preaudited_unknown_gold": 11,
+  "paper2783_ID_mapping_established": false,
+  "author_Bolt_REST_equivalence_established": false,
+  "formal_scoring_frozen": false,
+  "formal_prediction_admitted": false,
+  "conditional_20000_activated": false,
+  "new_model_calls": 0,
+  "new_database_queries": 0,
+  "new_network_calls": 0,
+  "limits": [
+    "Proposed primary preserves author standalone set behavior, including loss of row multiplicity and bool/int equality; auxiliary diagnostics are required.",
+    "Column order must come from raw header/declared output contract; never dictionary-key sorting.",
+    "Decimal/binary/datetime are fabricated boundary witnesses, not measured REST/Bolt dataset differences.",
+    "No manufactured single predicted Cypher for a multi-call IR/composed final answer.",
+    "No full author reproduction, paper score comparability, new model EX or method advantage established."
+  ]
+}
