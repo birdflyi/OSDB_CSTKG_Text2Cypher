@@ -65,6 +65,10 @@ class Scheduler:
         self.stop_reason = None
         self.events, self.paths = [], []
         self.saved_replies = {}
+        from .retries import RecoveryGate
+
+        self.recovery_gate = RecoveryGate(spec.retry.recovery_cap, spec.retry.recovery_min_cap)
+        self.retry_sleep = asyncio.sleep
 
     async def drain(self, reason="operator_drain"):
         self.stop_reason = self.stop_reason or reason
@@ -158,93 +162,123 @@ class Scheduler:
             if prepared is not None:
                 prepared.close()
 
-    async def generate(self, item: Item):
-        saved = self.saved_replies.get(item.key)
-        if saved is not None:
-            if digest(item.wire) != saved["wire_sha256"]:
-                raise ValueError("Saved response belongs to different request bytes; never resend")
+    def _retryable(self, value):
+        policy = self.spec.retry
+        status = value["status"]
+        if status == "unknown":
+            return bool(
+                policy.retry_unknown
+                and value.get("charged") is True
+                and not value.get("protocol_error")
+                and (value.get("transport_error") or (value.get("http_status") or 0) >= 500)
+            )
+        return status in ("infra", "throttled") and not (
+            policy.before_write_only and value.get("write_started")
+        )
+
+    async def _generate_once(self, item, attempt):
+        loop = asyncio.get_running_loop()
+        waiting = time.monotonic()
+        try:
+            permit = await self.pool.acquire(item.model, self.spec.admission_timeout_seconds)
+        except AdmissionTimeout:
             value = dict(
-                saved["response"],
-                reused=True,
-                source_terminal=saved["source_terminal"],
-                source_terminal_sha256=saved["source_terminal_sha256"],
+                status="admission_timeout",
+                charged=False,
+                undispatched_reason="stop" if self.draining.is_set() else "admission",
+                logical_key=item.key,
+                admission_wait_seconds=time.monotonic() - waiting,
             )
             self.events.append(value)
             return value
-        loop = asyncio.get_running_loop()
-        for attempt in range(1, self.spec.retry.max_attempts + 1):
+        admission_wait = time.monotonic() - waiting
+        try:
+            async with permit:
+                work = loop.run_in_executor(
+                    self.http_workers, self._physical, item, permit.endpoint, attempt
+                )
+                try:
+                    value = await asyncio.shield(work)
+                except asyncio.CancelledError:
+                    # Python cannot cancel a running HTTP thread. Keep its
+                    # permit until it terminates; stop admitting other work.
+                    await self.drain("controller_cancelled_drain")
+                    value = await work
+                await self.pool.record(
+                    permit,
+                    (
+                        "model_mismatch"
+                        if value.get("protocol_error") == "model_mismatch"
+                        else value["status"]
+                    ),
+                    retry_after=value.get("retry_after_seconds", 0),
+                )
+        except BaseException as exc:
+            # The worker may already have sent bytes. Drain instead of blindly retrying.
+            await self.drain("controller_or_persistence_error")
+            value = dict(
+                status="unknown",
+                logical_key=item.key,
+                error=type(exc).__name__,
+                charged=None,
+                generation_outcome_unknown=True,
+            )
+        value["admission_wait_seconds"] = admission_wait
+        self.events.append(value)
+        # fsync is blocking IO. Keep it off the admission/event loop.
+        await loop.run_in_executor(
+            self.http_workers,
+            lambda: self.journal.append(
+                "attempt_terminal",
+                logical_key=item.key,
+                request_id=value.get("request_id"),
+                status=value["status"],
+                budget_slot=value.get("budget_slot"),
+                endpoint=value.get("endpoint"),
+            ),
+        )
+        return value
+
+    async def generate(self, item: Item):
+        saved = self.saved_replies.get(item.key)
+        previous, count = None, 0
+        if saved is not None:
+            if digest(item.wire) != saved["wire_sha256"]:
+                raise ValueError("Saved response belongs to different request bytes; never resend")
+            history = saved.get("history", [saved])
+            for entry in history:
+                previous = dict(
+                    entry["response"],
+                    reused=True,
+                    source_terminal=entry["source_terminal"],
+                    source_terminal_sha256=entry["source_terminal_sha256"],
+                )
+                self.events.append(previous)
+            count = len(history)
+            if not self._retryable(previous) or count >= self.spec.retry.max_attempts:
+                return previous
+        for attempt in range(count + 1, self.spec.retry.max_attempts + 1):
             if self.draining.is_set():
-                return dict(status="admission_timeout", charged=False, undispatched_reason="stop")
-            waiting = time.monotonic()
-            try:
-                permit = await self.pool.acquire(item.model, self.spec.admission_timeout_seconds)
-            except AdmissionTimeout:
-                value = dict(
+                return dict(
                     status="admission_timeout",
                     charged=False,
-                    undispatched_reason="stop" if self.draining.is_set() else "admission",
-                    logical_key=item.key,
-                    admission_wait_seconds=time.monotonic() - waiting,
+                    undispatched_reason="stop",
                 )
-                self.events.append(value)
+            if previous is not None:
+                # Includes elapsed time since sealed attempts in prior campaigns.
+                remaining = max(
+                    self.spec.retry.wait_seconds, previous.get("retry_after_seconds", 0)
+                ) - (time.time() - previous.get("ended_epoch", time.time()))
+                if remaining > 0:
+                    await self.retry_sleep(remaining)
+                async with self.recovery_gate.slot():
+                    value = await self._generate_once(item, attempt)
+                    await self.recovery_gate.record(value["status"])
+            else:
+                value = await self._generate_once(item, attempt)
+            if not self._retryable(value) or attempt == self.spec.retry.max_attempts:
                 return value
-            admission_wait = time.monotonic() - waiting
-            try:
-                async with permit:
-                    work = loop.run_in_executor(
-                        self.http_workers, self._physical, item, permit.endpoint, attempt
-                    )
-                    try:
-                        value = await asyncio.shield(work)
-                    except asyncio.CancelledError:
-                        # Python cannot cancel a running HTTP thread. Keep its
-                        # permit until it terminates; stop admitting other work.
-                        await self.drain("controller_cancelled_drain")
-                        value = await work
-                    await self.pool.record(
-                        permit,
-                        (
-                            "model_mismatch"
-                            if value.get("protocol_error") == "model_mismatch"
-                            else value["status"]
-                        ),
-                        retry_after=value.get("retry_after_seconds", 0),
-                    )
-            except BaseException as exc:
-                # The worker may already have sent bytes. Drain instead of blindly retrying.
-                await self.drain("controller_or_persistence_error")
-                value = dict(
-                    status="unknown",
-                    logical_key=item.key,
-                    error=type(exc).__name__,
-                    charged=None,
-                    generation_outcome_unknown=True,
-                )
-            value["admission_wait_seconds"] = admission_wait
-            self.events.append(value)
-            # fsync is blocking IO. Keep it off the admission/event loop.
-            await loop.run_in_executor(
-                self.http_workers,
-                lambda: self.journal.append(
-                    "attempt_terminal",
-                    logical_key=item.key,
-                    request_id=value.get("request_id"),
-                    status=value["status"],
-                    budget_slot=value.get("budget_slot"),
-                    endpoint=value.get("endpoint"),
-                ),
-            )
-            retryable = value["status"] in ("infra", "throttled")
-            if self.spec.retry.before_write_only and value.get("write_started"):
-                retryable = False
-            if value["status"] == "unknown":
-                # Explicit operator audit is required for every ambiguous outcome.
-                retryable = False
-            if not retryable or attempt == self.spec.retry.max_attempts:
-                return value
-            await asyncio.sleep(
-                max(self.spec.retry.wait_seconds, value.get("retry_after_seconds", 0))
-            )
+            previous = value
 
     async def _execute(self, item, reply, execute):
         async with self.db_gate:

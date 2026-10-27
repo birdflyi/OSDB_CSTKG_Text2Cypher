@@ -132,7 +132,7 @@ class JsonRpcClient:
         if self.process.stdin and not self.process.stdin.closed:
             self.process.stdin.close()
         try:
-            self.process.wait(timeout=30)
+            self.process.wait(timeout=60)
         except subprocess.TimeoutExpired:
             # Only our explicitly launched channel process is terminated.
             self.process.terminate()

@@ -119,6 +119,22 @@ async def run_stages(root: Path, stages: list, run_block, *, resume=False):
         return result
     except BaseException as exc:
         journal.append("pipeline_error", error_type=type(exc).__name__)
+        progress = (
+            json.loads((root / "progress.json").read_text(encoding="utf-8"))
+            if (root / "progress.json").exists()
+            else {}
+        )
+        write_status(
+            root / "progress.json",
+            dict(
+                progress,
+                phase="失败",
+                error_type=type(exc).__name__,
+                stopped_epoch=time.time(),
+                updated_epoch=time.time(),
+                pid=os.getpid(),
+            ),
+        )
         raise
     finally:
         if (root / ".pipeline.lock").read_bytes() == owner:
@@ -183,6 +199,10 @@ async def live_pipeline(config_path: Path, *, resume=False):
         ledger_dir, Path(config["approval_path"]), snapshot, config["budget_scope"]
     ) as ledger:
         transport = HTTPTransport(Path(config["key_dir"]))
+        from .retries import RecoveryGate
+
+        retry_policy = RetryPolicy(**config.get("retry", {}))
+        recovery_gate = RecoveryGate(retry_policy.recovery_cap, retry_policy.recovery_min_cap)
         saved = {}
         if config.get("recovery"):
             from .recovery import saved_replies
@@ -217,6 +237,7 @@ async def live_pipeline(config_path: Path, *, resume=False):
                     ledger,
                     shared_transport=transport,
                     saved_replies=saved,
+                    recovery_gate=recovery_gate,
                 )
             spec = make_spec(stage)
             scheduler = Scheduler(

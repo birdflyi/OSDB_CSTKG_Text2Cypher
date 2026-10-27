@@ -26,7 +26,11 @@ class ReadHandler:
 
     def __init__(self, driver, resolver, read_query, normalize, query_class):
         self.driver, self.resolver = driver, resolver
-        self.read_query, self.normalize, self.query_class = read_query, normalize, query_class
+        self.read_query, self.normalize, self.query_class = (
+            read_query,
+            normalize,
+            query_class,
+        )
 
     def __call__(self, request):
         started = time.monotonic()
@@ -91,6 +95,15 @@ def load_helpers(harness: Path, expected: dict):
     return guard.read_query, candidates.EntityCandidates, normalization.normalize
 
 
+def check_bolt_available(port=17688):
+    # A stopped server can leave TIME_WAIT sockets. These do not represent a
+    # listening database; match the server's reuse policy without reusing a live
+    # listener. SO_REUSEPORT is deliberately not enabled.
+    with socket.socket() as check:
+        check.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        check.bind(("127.0.0.1", port))
+
+
 class OwnedRuntime:
     def __init__(self, settings: dict):
         from neo4j import GraphDatabase, Query
@@ -127,14 +140,15 @@ class OwnedRuntime:
         credentials = json.loads((self.folder / "db_connection.json").read_text())
         if credentials["uri"] != "bolt://127.0.0.1:17688":
             raise ValueError("Unexpected database URI")
-        with socket.socket() as check:
-            check.bind(("127.0.0.1", 17688))
+        check_bolt_available()
         # Share the old ownership lock, so old/new workers cannot open this DB together.
         self.lock_path = self.root / ".public-runtime.lock"
         write_new(self.lock_path, self.lock_bytes)
         try:
             environment = dict(
-                os.environ, JAVA_HOME=runtime["java_home"], NEO4J_CONF=str(self.folder / "conf")
+                os.environ,
+                JAVA_HOME=runtime["java_home"],
+                NEO4J_CONF=str(self.folder / "conf"),
             )
             log_path = self.folder / ("engine_worker_" + str(time.time_ns()) + ".log")
             with log_path.open("x") as log:
@@ -202,6 +216,17 @@ class OwnedRuntime:
             except subprocess.TimeoutExpired:
                 os.killpg(self.process.pid, signal.SIGKILL)
                 self.process.wait(timeout=10)
+        # The launcher can exit before Java finishes releasing Bolt. Do not
+        # release ownership and start the next graph during that shutdown gap.
+        deadline = time.monotonic() + 10
+        while True:
+            try:
+                check_bolt_available()
+                break
+            except OSError:
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("Owned database has not released Bolt; lock retained")
+                time.sleep(0.2)
         if self.lock_path.exists():
             if self.lock_path.read_bytes() != self.lock_bytes:
                 raise RuntimeError("Foreign runtime lock retained")

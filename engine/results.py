@@ -108,6 +108,34 @@ def paired_intervals(indices, groups, *, replicates=10000, seed=20261024):
     return results
 
 
+def recovery_audit(root: Path, stages, inherited_unknown):
+    physical = {}
+    for stage in stages:
+        if stage.get("blocked_reason"):
+            continue
+        for path in (root / "runs" / stage["name"]).glob("*/model_events.json"):
+            for event in json.loads(path.read_text(encoding="utf-8")):
+                if event.get("charged") is True:
+                    physical[event["request_id"]] = event
+    latest = {}
+    unknown_keys = set()
+    for event in sorted(physical.values(), key=lambda e: e["budget_slot"]):
+        latest[event["logical_key"]] = event
+        if event["status"] == "unknown":
+            unknown_keys.add(event["logical_key"])
+    unresolved = sum(e["status"] in ("unknown", "infra", "throttled") for e in latest.values())
+    unknown_attempts = sum(e["status"] == "unknown" for e in physical.values())
+    return dict(
+        unique_physical_attempts=len(physical),
+        unknown_physical_attempts=unknown_attempts,
+        unresolved_transport_paths=unresolved,
+        recovered_unknown_paths=sum(
+            latest[k]["status"] in ("ok", "length", "empty", "refused") for k in unknown_keys
+        ),
+        inherited_history_accounted=unknown_attempts >= inherited_unknown,
+    )
+
+
 def finalize_pipeline(root: Path, stages, settings):
     groups_path = Path(settings["groups_path"])
     if digest(groups_path.read_bytes()) != settings["groups_sha256"]:
@@ -137,7 +165,10 @@ def finalize_pipeline(root: Path, stages, settings):
             / sum(r["graph"] == g for r in groups)
             for g in {r["graph"] for r in groups}
         }
-        for label in ["Fixed-plan full detail", "Simple correct (same fixed-plan result)"]:
+        for label in [
+            "Fixed-plan full detail",
+            "Simple correct (same fixed-plan result)",
+        ]:
             table.append(
                 dict(
                     model=model,
@@ -154,13 +185,14 @@ def finalize_pipeline(root: Path, stages, settings):
                     no_plan_retained_in_denominator=len(groups) - len(measured),
                 )
             )
+    audit = recovery_audit(root, stages, settings.get("inherited_unknown_attempts", 0))
+    clean = not audit["unresolved_transport_paths"] and audit["inherited_history_accounted"]
     result = dict(
-        primary_comparison_clean=not settings.get("inherited_unknown_attempts", 0),
+        primary_comparison_clean=clean,
+        transport_recovery=audit,
         inherited_unknown_attempts=settings.get("inherited_unknown_attempts", 0),
         primary_claim_blocker=(
-            "Transport unknowns remain; no method-superiority claim"
-            if settings.get("inherited_unknown_attempts", 0)
-            else None
+            "Transport unknowns remain; no method-superiority claim" if not clean else None
         ),
         table=table,
         primary_contrasts=intervals,
@@ -178,8 +210,12 @@ def finalize_pipeline(root: Path, stages, settings):
         "| {model} | {method} | {N} | {EX:.4f} | {EX_macro:.4f} | {returned_answer} |".format(**r)
         for r in table
     )
-    lines += ["", "不同model不合并。共享计划控制不是独立模型方法。其他必要T1单元格仍未完成。"]
-    if settings.get("inherited_unknown_attempts", 0):
-        lines.append("基础设施未知已影响Direct；本次对照不能支撑方法优势，须另行核验恢复证据。")
+    lines += [
+        "",
+        "不同model不合并。共享计划控制不是独立模型方法。其他必要T1单元格仍未完成。",
+    ]
+    if not clean:
+        lines.append("仍有未恢复或未核清的传输结果；本次对照不能支撑方法优势。")
+    lines.append("原失败与重试全部计费并保留。恢复运行单列版本，不替换旧结果。")
     write_new(root / "main_table_results.md", "\n".join(lines).encode("utf-8"))
     return result

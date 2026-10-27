@@ -44,3 +44,18 @@ def test_missing_or_duplicate_position_never_shrinks_denominator():
         summarize(scores[:-1], groups)
     with pytest.raises(ValueError):
         summarize(scores + [scores[-1]], groups)
+
+
+def test_recovery_audit_deduplicates_charged_history_and_retains_unknown_cost(tmp_path):
+    from engine.results import recovery_audit
+    from engine.config import canonical
+
+    folder = tmp_path / "runs" / "direct" / "g"
+    folder.mkdir(parents=True)
+    old = dict(request_id="old", logical_key="k", budget_slot=1, charged=True, status="unknown")
+    new = dict(request_id="new", logical_key="k", budget_slot=2, charged=True, status="ok")
+    (folder / "model_events.json").write_bytes(canonical([old, old, new]))
+    value = recovery_audit(tmp_path, [dict(name="direct")], 1)
+    assert value["unique_physical_attempts"] == 2 and value["unknown_physical_attempts"] == 1
+    assert value["unresolved_transport_paths"] == 0 and value["recovered_unknown_paths"] == 1
+    assert value["inherited_history_accounted"]

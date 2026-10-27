@@ -23,7 +23,10 @@ def score_paths(paths, references, scoring, compare):
     scores = []
     for path in paths:
         reference = references[path["task_id"]]
-        for label, outcome in [("initial", path["views"][0]["outcome"]), ("final", path["final"])]:
+        for label, outcome in [
+            ("initial", path["views"][0]["outcome"]),
+            ("final", path["final"]),
+        ]:
             status = outcome.get("legacy_status", outcome["status"])
             if status not in (
                 "EXECUTED",
@@ -67,6 +70,7 @@ async def run_graphs(
     client_factory=JsonRpcClient,
     shared_transport=None,
     saved_replies=None,
+    recovery_gate=None,
 ):
     """One method/benchmark block; lifecycle-serial graphs, rolling model requests.
 
@@ -102,7 +106,9 @@ async def run_graphs(
         client = await asyncio.get_running_loop().run_in_executor(
             None,
             lambda: client_factory(
-                worker["command"], expected_ready=worker["expected_ready"], stderr=stderr
+                worker["command"],
+                expected_ready=worker["expected_ready"],
+                stderr=stderr,
             ),
         )
         from dataclasses import replace
@@ -138,6 +144,8 @@ async def run_graphs(
                 close_transport=shared_transport is None,
             )
             scheduler.saved_replies = saved_replies or {}
+            if recovery_gate is not None:
+                scheduler.recovery_gate = recovery_gate
             summary = await execute_campaign(
                 scheduler,
                 selected,

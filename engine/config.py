@@ -9,7 +9,11 @@ from urllib.parse import urlsplit
 
 def canonical(value: object) -> bytes:
     return json.dumps(
-        value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
     ).encode("utf-8")
 
 
@@ -36,7 +40,10 @@ class Sampling:
 
     def body(self, messages: list) -> dict:
         body = dict(
-            model=self.model, messages=messages, temperature=self.temperature, top_p=self.top_p
+            model=self.model,
+            messages=messages,
+            temperature=self.temperature,
+            top_p=self.top_p,
         )
         if self.reasoning_format == "chat_template":
             body["chat_template_kwargs"] = dict(
@@ -94,10 +101,17 @@ class RetryPolicy:
     max_attempts: int = 1
     wait_seconds: float = 10
     before_write_only: bool = True
+    retry_unknown: bool = False
+    recovery_cap: int = 16
+    recovery_min_cap: int = 4
 
     def __post_init__(self):
         if not 1 <= self.max_attempts <= 3 or self.wait_seconds < 10:
             raise ValueError("At most3 attempts; retry interval at least10 seconds")
+        if not 1 <= self.recovery_min_cap <= self.recovery_cap:
+            raise ValueError("Invalid recovery concurrency bounds")
+        if self.retry_unknown and self.before_write_only:
+            raise ValueError("Unknown-outcome retry requires explicit after-write authorization")
 
 
 @dataclass(frozen=True)

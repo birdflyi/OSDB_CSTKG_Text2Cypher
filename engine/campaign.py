@@ -37,6 +37,7 @@ CORE_FILES = (
     "results.py",
     "monitor.py",
     "recovery.py",
+    "retries.py",
 )
 
 
@@ -133,7 +134,9 @@ async def execute_campaign(
         observers.append(
             asyncio.create_task(
                 scheduler.pool.watch(
-                    registry_path, stop, on_reload=getattr(scheduler.transport, "configure", None)
+                    registry_path,
+                    stop,
+                    on_reload=getattr(scheduler.transport, "configure", None),
                 )
             )
         )
@@ -142,7 +145,15 @@ async def execute_campaign(
     async def sample():
         while not stop.is_set():
             network = getattr(scheduler.transport, "snapshot", lambda: {})()
-            samples.append(dict(t=time.time(), **scheduler.pool.snapshot(), **network))
+            samples.append(
+                dict(
+                    t=time.time(),
+                    retry_cap=scheduler.recovery_gate.cap,
+                    retry_inflight=scheduler.recovery_gate.active,
+                    **scheduler.pool.snapshot(),
+                    **network,
+                )
+            )
             if len(samples) % 10 == 1:
                 await asyncio.get_running_loop().run_in_executor(
                     None,
@@ -179,7 +190,12 @@ async def execute_campaign(
     write_new(spec.run_dir / "capacity_timeseries.json", canonical(samples))
     statuses = Counter(e["status"] for e in scheduler.events)
     charged = [e for e in scheduler.events if e.get("charged") is True]
-    token_names = ("prompt_tokens", "completion_tokens", "reasoning_tokens", "cached_tokens")
+    token_names = (
+        "prompt_tokens",
+        "completion_tokens",
+        "reasoning_tokens",
+        "cached_tokens",
+    )
 
     def usage(event, key):
         value = event.get("usage") or {}
@@ -259,6 +275,11 @@ async def execute_campaign(
         stop_reason=scheduler.stop_reason,
         endpoint_capacity=scheduler.pool.snapshot(),
         registry_issues=scheduler.pool.issues,
+        recovery_admission=dict(
+            cap=scheduler.recovery_gate.cap,
+            minimum=scheduler.recovery_gate.minimum,
+            reductions=scheduler.recovery_gate.changes,
+        ),
         monetary_cost=None,
         server_decode_TPS=None,
         server_GPU_load=None,
