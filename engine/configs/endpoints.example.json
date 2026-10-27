@@ -1,0 +1,14 @@
+{
+  "reload_seconds": 10,
+  "endpoints": [
+    {
+      "name": "ling-primary",
+      "url": "http://117.50.195.92:8080/gpt-oss-120b/litellm/v1/chat/completions",
+      "model": "ling-3.0-flash-n72-75",
+      "key_ref": "louzehua",
+      "cap": 128,
+      "enabled": false,
+      "wire_params": ["model", "messages", "temperature", "top_p", "reasoning_effort", "max_tokens"]
+    }
+  ]
+}
