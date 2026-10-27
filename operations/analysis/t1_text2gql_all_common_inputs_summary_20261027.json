@@ -1,0 +1,149 @@
+{
+  "kind": "TEXT2GQL_COMMON_INPUTS_PREPARED_AND_READ_BACK_NOT_MODEL_RESULTS",
+  "preparation": {
+    "kind": "TEXT2GQL_ALL_COMMON_INPUT_PREPARATION_NOT_PREDICTIONS",
+    "planned_positions": 3826,
+    "prepared_positions": 3826,
+    "planned_method_paths": 7652,
+    "prepared_method_paths": 7652,
+    "failed_positions": 0,
+    "undispatched_preparation_positions": 0,
+    "identical_common_input_pairs": 3826,
+    "candidate_limit": 12,
+    "candidate_count_distribution": {
+      "12": 3056,
+      "1": 161,
+      "3": 46,
+      "0": 349,
+      "2": 70,
+      "11": 23,
+      "10": 19,
+      "5": 17,
+      "6": 6,
+      "9": 24,
+      "4": 23,
+      "7": 18,
+      "8": 14
+    },
+    "graph_entity_catalog_total": 21315,
+    "message_characters": {
+      "direct": {
+        "n": 3826,
+        "mean": 10958.265028750653,
+        "p50": 10813.0,
+        "p90": 15457.5,
+        "min": 8078,
+        "max": 16022
+      },
+      "ours": {
+        "n": 3826,
+        "mean": 12621.265028750653,
+        "p50": 12476.0,
+        "p90": 17120.5,
+        "min": 9741,
+        "max": 17685
+      }
+    },
+    "model_tokens_unknown": true,
+    "graphs": [
+      {
+        "graph": "Manufacturing_Production_Process",
+        "positions": 596,
+        "graph_catalog_entities": 1030,
+        "candidate_lookup_seconds": 6.432707700000003,
+        "serialization_write_seconds": 0.8013093000000078,
+        "offline_wall_seconds": 7.2888345999999995
+      },
+      {
+        "graph": "Information_Technology_IT_Asset_Management",
+        "positions": 726,
+        "graph_catalog_entities": 815,
+        "candidate_lookup_seconds": 23.114147800000055,
+        "serialization_write_seconds": 2.3896214000000127,
+        "offline_wall_seconds": 25.695734899999998
+      },
+      {
+        "graph": "Manufacturing_BOM(Bill_Of_Materials)",
+        "positions": 489,
+        "graph_catalog_entities": 1500,
+        "candidate_lookup_seconds": 30.173309100000054,
+        "serialization_write_seconds": 2.6232546000001165,
+        "offline_wall_seconds": 32.9728376
+      },
+      {
+        "graph": "Knowledge_Graph_Geography",
+        "positions": 642,
+        "graph_catalog_entities": 1100,
+        "candidate_lookup_seconds": 29.889821900000143,
+        "serialization_write_seconds": 2.3883154999999903,
+        "offline_wall_seconds": 32.45687910000001
+      },
+      {
+        "graph": "Financial_Payment",
+        "positions": 776,
+        "graph_catalog_entities": 8420,
+        "candidate_lookup_seconds": 209.65483880000045,
+        "serialization_write_seconds": 2.7947717000011494,
+        "offline_wall_seconds": 212.9104113
+      },
+      {
+        "graph": "Social_Network_Twitter",
+        "positions": 597,
+        "graph_catalog_entities": 8450,
+        "candidate_lookup_seconds": 240.22919539999987,
+        "serialization_write_seconds": 1.7677140000003533,
+        "offline_wall_seconds": 242.3861784
+      }
+    ],
+    "input_sources_unchanged": 21,
+    "runtime_files_unchanged": 3,
+    "model_dispatched": 0,
+    "model_completed": 0,
+    "model_failed": 0,
+    "model_undispatched_paths": 7652,
+    "new_model_calls": 0,
+    "new_database_calls": 0,
+    "new_network_calls": 0,
+    "reference_values_to_model": false,
+    "protocol_sha256": "01af5491fd454dcc3b8602cedefb6eb5ee6c20103896fd9b2eed8634e43aeee6",
+    "artifact_seal_sha256": "61a6b9ebfcff9a62a649c3e8d75c90701ee701429a7753a83a632c7394750f64",
+    "formal_method_model_resource_freeze": false,
+    "formal_prediction_admitted": false,
+    "conditional_budget_activated": false,
+    "offline_wall_seconds": 554.6376233999999,
+    "T1_complete": false
+  },
+  "verification": {
+    "kind": "ALL_SERIALIZED_COMMON_INPUTS_READ_BACK_ACCEPTED_NOT_MODEL_RESULTS",
+    "planned_records": 7652,
+    "verified_records": 7652,
+    "failed_records": 0,
+    "unverified_records": 0,
+    "identical_input_pairs": 3826,
+    "arm_counts": {
+      "direct": 3826,
+      "ours": 3826
+    },
+    "serialized_input_files": 12,
+    "serialized_input_bytes": 100459540,
+    "source_files_unchanged": 21,
+    "canonical_frozen_unchanged": 32,
+    "adapter_frozen_unchanged": 46,
+    "manifest_sha256": "378e7bb4d61c6202bbb4225674cca8f9f20a63511490645f82ce5a441e2f1c94",
+    "artifact_seal_sha256": "61a6b9ebfcff9a62a649c3e8d75c90701ee701429a7753a83a632c7394750f64",
+    "verifier_sha256": "679862dba3457faeb50db1b53fef48532fcec1e42b30fc8f92cf78cc0707dd90",
+    "verification_seconds": 17.968736,
+    "public_payload_fields_only": true,
+    "actual_reference_or_model_answers_read": 0,
+    "new_model_calls": 0,
+    "new_database_queries": 0,
+    "new_network_calls": 0,
+    "model_dispatched": 0,
+    "model_completed": 0,
+    "model_failed": 0,
+    "model_undispatched_paths": 7652,
+    "formal_prediction_admitted": false,
+    "conditional_budget_activated": false,
+    "T1_complete": false
+  }
+}
