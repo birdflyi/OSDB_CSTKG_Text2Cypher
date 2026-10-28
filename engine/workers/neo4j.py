@@ -106,6 +106,24 @@ def check_bolt_available(port=17688):
 
 class OwnedRuntime:
     def __init__(self, settings: dict):
+        startup_started = time.monotonic()
+
+        def milestone(phase):
+            print(
+                json.dumps(
+                    dict(
+                        kind="worker_startup",
+                        graph=settings["graph"],
+                        phase=phase,
+                        elapsed_seconds=time.monotonic() - startup_started,
+                        epoch=time.time(),
+                    )
+                ),
+                file=sys.stderr,
+                flush=True,
+            )
+
+        milestone("identity_and_source_verification")
         from neo4j import GraphDatabase, Query
 
         self.process = self.driver = None
@@ -134,8 +152,10 @@ class OwnedRuntime:
             Path(settings["harness"]), settings["helper_sha256"]
         )
         index_start = time.monotonic()
+        milestone("candidate_index")
         resolver = candidates(json.loads(source.read_text())["entities"])
         index_seconds = time.monotonic() - index_start
+        milestone("candidate_index_complete")
         runtime = json.loads((self.root / "runtime_receipt.json").read_text())
         credentials = json.loads((self.folder / "db_connection.json").read_text())
         if credentials["uri"] != "bolt://127.0.0.1:17688":
@@ -160,6 +180,7 @@ class OwnedRuntime:
                     start_new_session=True,
                 )
             deadline = time.monotonic() + 90
+            milestone("database_connectivity")
             while time.monotonic() < deadline:
                 if self.process.poll() is not None:
                     raise RuntimeError("Owned database process exited")
@@ -179,6 +200,7 @@ class OwnedRuntime:
                     time.sleep(1)
             if self.driver is None:
                 raise RuntimeError("Owned DB startup deadline exceeded")
+            milestone("graph_counts")
             with self.driver.session() as session:
                 counts = [
                     session.run("MATCH (n) RETURN count(n) AS n").single()["n"],
@@ -186,6 +208,7 @@ class OwnedRuntime:
                 ]
             if counts != [validation["nodes"], validation["edges"]]:
                 raise ValueError("Graph identity/counts differ")
+            milestone("graph_counts_complete")
             self.handler = ReadHandler(self.driver, resolver, guard, normalize, Query)
             self.ready = dict(
                 kind="READY",

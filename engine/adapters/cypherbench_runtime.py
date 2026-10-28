@@ -259,6 +259,7 @@ async def run_graphs(
                 worker["command"],
                 expected_ready=worker["expected_ready"],
                 stderr=stderr,
+                ready_timeout=settings.get("worker_startup_timeout_seconds", 600),
             ),
         )
         from dataclasses import replace

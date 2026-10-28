@@ -46,6 +46,7 @@ def test_next_32_requests_start_while_previous_db_is_waiting(tmp_path, monkeypat
 
     class Client:
         def __init__(self, command, **kwargs):
+            assert kwargs["ready_timeout"] == 600
             self.ready_value = {"fixture": True}
 
         def request(self, value, timeout):
