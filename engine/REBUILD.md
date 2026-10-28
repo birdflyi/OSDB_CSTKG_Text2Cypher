@@ -119,3 +119,8 @@
 MTQ10个dump加StarWars CSV已离线装载为11图；ZOG pole43/pole50已装载，pole35/pole40旧格式失败保留。14归档info通过、12装载成功；另1CSV导入成功（260节点611关系）。13份store metadata可读，pole43仍为4.3格式，不能冒称5.x执行就绪。没有启动DB或执行基准查询，模型/训练0。StarWars首版CLI参数错误与成功v2均保留。
 
 静态审计发现MTQ Manual/Automated测试1241相同(图,问题,参考)记录；Automated训练测试26相同(图,问题)，其中2也同参考。MTQ/ZOG Pole5图dump相同。保留全部题，不自动改分母，跨轨/跨基准结论须披露重叠。45格准备合同与作者部分训练配方已归档；作者权重和协议仍缺，生成库不等于训练好的模型。证据目录D:/ch7/reports/t1_preparation_20261029/，详见T1_PREPARATION_STATUS_20261029.md。下一步只补图/schema与评分/方法资源合同，不重复已完成装载，不启动实验。
+
+
+### 准备第三批：schema与依赖环境
+
+MTQ10113记录全部绑定作者schema（Manual bloom显式映射bloom50）；与ZOG共12图/schema映射。StarWars原匿名:ID不保存schema声明的id属性，v3只派生id:ID表头，保留原档/旧store，离线导入260节点611关系3502属性；无任务查询。15个本地依赖模块归档，4纯组件在禁网络的本地及Linux环境导入成功。43个LinuxCP312wheel（71067402字节）全hash锁；自有venv_preparation_v3离线安装、pip check与源码编译通过。新准备环境不等于作者训练环境，Windows图工厂仍未成为Linuxengine适配器。证据preparation_v3_delivery.json及T1_PREPARATION_STATUS_20261029.md；模型/训练/基准查询0。继续剩余原生适配/参考身份与方法材料准备，不能因依赖安装成功便标全流水线或作者模型就绪。
