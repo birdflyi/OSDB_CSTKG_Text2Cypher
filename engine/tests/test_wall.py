@@ -189,3 +189,30 @@ def test_render_shows_model_capacity_and_draining_endpoint(tmp_path):
     assert "模型容量" in text
     assert "32 / 16" in text
     assert "排空中 3" in text
+
+
+def test_endpoint_change_lines_reach_the_dashboard(tmp_path):
+    plan, root = fixture(tmp_path)
+    progress = root / "runs/direct/_generation/progress.json"
+    value = json.loads(progress.read_text(encoding="utf-8"))
+    value["models"] = [dict(model="m", cap=24, capacity=24, inflight=1,
+                            waiting=0, endpoints=1, enabled=1, unavailable=False)]
+    value["recent_transitions"] = [
+        dict(kind="endpoint_added", endpoint="deepseek-105", cap=16, t=100),
+        dict(kind="endpoint_cap_changed", endpoint="e", previous_cap=32, cap=24, t=101),
+    ]
+    progress.write_bytes(canonical(value))
+
+    snapshot = SnapshotReader().snapshot(plan, root, now=101)
+    labels = [row.get("label") for row in snapshot["recent_events"]]
+    assert "端点 + deepseek-105 上限 16" in labels
+
+    selected = Selection()
+    selected.choose(snapshot)
+    stream = io.StringIO()
+    Console(file=stream, width=160, height=80, color_system=None).print(
+        render(snapshot, selected, 80, now=101)
+    )
+    text = stream.getvalue()
+    assert "端点 + deepseek-105 上限 16" in text
+    assert "32 → 24" in text

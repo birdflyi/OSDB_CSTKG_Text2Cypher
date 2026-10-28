@@ -22,6 +22,18 @@ def estimate_remaining(completions, remaining, now):
     return remaining * (recent[-1] - recent[0]) / (len(recent) - 1)
 
 
+def pool_label(row):
+    """One short line for an endpoint add/remove/cap change."""
+    kind, name = row.get("kind"), row.get("endpoint") or "--"
+    if kind == "endpoint_added":
+        return f"端点 + {name} 上限 {row.get('cap')}"
+    if kind == "endpoint_removed":
+        return f"端点 - {name} 上限 {row.get('cap')}"
+    if kind == "endpoint_cap_changed":
+        return f"{name} 上限 {row.get('previous_cap')} → {row.get('cap')}"
+    return None
+
+
 class SnapshotReader:
     """Cache unchanged files so refreshes do not reload immutable result bodies."""
 
@@ -247,7 +259,17 @@ class SnapshotReader:
         registry_rows = {e["name"]: e for e in registry.get("endpoints", [])}
         endpoints = []
         events = sorted(
-            (e for c in cells if c.get("role") != "共享首轮结果" for e in c.get("events", [])),
+            [
+                e
+                for c in cells
+                if c.get("role") != "共享首轮结果"
+                for e in c.get("events", [])
+            ]
+            + [
+                dict(t=row["t"], kind=row["kind"], cell="", label=pool_label(row))
+                for row in latest.get("recent_transitions", [])
+                if row.get("t") and pool_label(row)
+            ],
             key=lambda e: e.get("t", 0),
         )
         # Declared endpoints first, then anything the pool still drains.

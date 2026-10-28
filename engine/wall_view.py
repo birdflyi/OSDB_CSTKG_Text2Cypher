@@ -225,7 +225,11 @@ def render(value, selection, height=50, now=None):
     }
     events = []
     for event in value.get("recent_events", [])[-2:]:
-        label = event.get("stage") or event_names.get(event["kind"], "阶段记录")
+        label = (
+            event.get("label")
+            or event.get("stage")
+            or event_names.get(event["kind"], "阶段记录")
+        )
         events.append(
             time.strftime("%H:%M:%S", time.localtime(event["t"]))
             + " "

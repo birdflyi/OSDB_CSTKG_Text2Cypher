@@ -116,3 +116,21 @@ def test_snapshot_reports_models_and_endpoint_state():
         assert {row["state"] for row in snapshot["endpoints"]} == {"active", "disabled"}
 
     run(scenario)
+
+
+def test_endpoint_changes_are_recorded_as_transitions():
+    async def scenario():
+        pool = DynamicPool(8)
+        await pool.update([endpoint("a", 2)], per_model_cap={"m": 2})
+        await pool.update([endpoint("a", 3)])
+        await pool.update([])
+        kinds = [row["kind"] for row in pool.transitions]
+        assert "endpoint_added" in kinds
+        assert "endpoint_cap_changed" in kinds
+        assert "endpoint_removed" in kinds
+        changed = next(
+            row for row in pool.transitions if row["kind"] == "endpoint_cap_changed"
+        )
+        assert (changed["previous_cap"], changed["cap"]) == (2, 3)
+
+    run(scenario)

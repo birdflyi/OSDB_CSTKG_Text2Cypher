@@ -148,13 +148,30 @@ class DynamicPool:
             if per_model_cap is not None:
                 self.per_model_cap = dict(per_model_cap)
             identities = {e.identity for e in endpoints}
+            previous = {key: state.spec for key, state in self.states.items()}
             for key, state in self.states.items():
                 state.removed = key not in identities
+            for key, old in previous.items():
+                if key not in identities:
+                    self.transitions.append(
+                        dict(kind="endpoint_removed", endpoint=old.name, cap=old.cap,
+                             t=time.time())
+                    )
             for endpoint in endpoints:
                 state = self.states.get(endpoint.identity)
                 if state is None:
                     self.states[endpoint.identity] = EndpointState(endpoint)
+                    self.transitions.append(
+                        dict(kind="endpoint_added", endpoint=endpoint.name,
+                             cap=endpoint.cap, t=time.time())
+                    )
                 else:
+                    old = previous.get(endpoint.identity)
+                    if old is not None and old.cap != endpoint.cap:
+                        self.transitions.append(
+                            dict(kind="endpoint_cap_changed", endpoint=endpoint.name,
+                                 cap=endpoint.cap, previous_cap=old.cap, t=time.time())
+                        )
                     state.spec, state.removed = endpoint, False
             # Keep removed generations until their in-flight permits drain.
             self.states = {
