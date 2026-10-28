@@ -15,7 +15,74 @@ from .scheduler import Scheduler
 from .transport import HTTPTransport
 
 
-async def run_stages(root: Path, stages: list, run_block, *, resume=False):
+def prepare_pipeline(config_path: Path, output: Path):
+    """Materialize the whole input inventory offline, without opening a ledger.
+
+    This is a preparation receipt, not execution admission. Existing successful
+    attempts are selected from the complete ledger only at execution time.
+    """
+    from .campaign import code_manifest
+    from .cli import load_items
+    from .dispatch import write_queue
+
+    config_path, output = Path(config_path), Path(output)
+    config = json.loads(config_path.read_text(encoding="utf-8-sig"))
+    admission = json.loads(Path(config["admission_path"]).read_text(encoding="utf-8-sig"))
+    items, stages = [], []
+    for stage in config["stages"]:
+        if stage.get("blocked_reason"):
+            stages.append(dict(name=stage["name"], state="blocked", reason=stage["blocked_reason"]))
+            continue
+        manifest = Path(stage["manifest_path"])
+        if digest(manifest.read_bytes()) != admission["manifests"][stage["name"]]:
+            raise ValueError("Changed prepared stage manifest")
+        selected = load_items(manifest, admission["models"])
+        if any(i.method != stage["method"] or i.benchmark != stage["benchmark"] for i in selected):
+            raise ValueError("Prepared method/benchmark identity differs")
+        items.extend(selected)
+        stages.append(
+            dict(
+                name=stage["name"],
+                state="prepared",
+                initial_requests=len(selected),
+                manifest=str(manifest),
+                manifest_sha256=digest(manifest.read_bytes()),
+            )
+        )
+    if len({i.key for i in items}) != len(items):
+        raise ValueError("Duplicate prepared logical identities")
+    output.mkdir(parents=True, exist_ok=False)
+    queue = write_queue(output / "requests.jsonl", items)
+    plan = dict(
+        admitted_for_execution=False,
+        no_model_or_DB_calls=True,
+        config_sha256=digest(config_path.read_bytes()),
+        code_files=code_manifest(),
+        stages=stages,
+        queue=queue,
+        reuse_completed_before_dispatch=True,
+        policy={
+            k: config.get(k)
+            for k in (
+                "global_cap",
+                "batch_size",
+                "batch_interval_seconds",
+                "prefetch_initial",
+                "queue_wait_until_available",
+                "continue_on_path_failures",
+                "retry",
+                "quarantine_seconds",
+                "consecutive_failures",
+            )
+        },
+    )
+    write_new(output / "prepared_plan.json", canonical(plan))
+    return plan
+
+
+async def run_stages(
+    root: Path, stages: list, run_block, *, resume=False, continue_on_path_failures=False
+):
     """Serial blocks, concurrent work inside each block; no timer-driven dispatch.
 
     Only a completed receipt can be reused. An interrupted block is never blindly
@@ -32,7 +99,9 @@ async def run_stages(root: Path, stages: list, run_block, *, resume=False):
     owner = canonical(dict(pid=os.getpid(), started_epoch=time.time()))
     write_new(root / ".pipeline.lock", owner)
     journal = Journal(root / "pipeline.jsonl")
+    issues = Journal(root / "issues.jsonl")
     receipts = []
+    incomplete = []
     try:
         sealed = canonical(stages)
         if (root / "plan.json").exists():
@@ -58,6 +127,7 @@ async def run_stages(root: Path, stages: list, run_block, *, resume=False):
             if stage.get("blocked_reason"):
                 row = dict(stage=name, status="blocked", reason=stage["blocked_reason"])
                 journal.append("block_blocked", **row)
+                issues.append("prerequisite_missing", **row)
                 receipts.append(row)
                 continue
             write_new(
@@ -88,6 +158,29 @@ async def run_stages(root: Path, stages: list, run_block, *, resume=False):
                     reason=result.get("stop_reason"),
                     pending=result.get("budget", {}).get("pending"),
                 )
+                issues.append(
+                    "block_incomplete",
+                    stage=name,
+                    stop_reason=result.get("stop_reason"),
+                    undispatched=result.get("undispatched_by_reason", {}),
+                    pending=result.get("budget", {}).get("pending"),
+                )
+                if (
+                    continue_on_path_failures
+                    and not result.get("stop_reason")
+                    and not result.get("budget", {}).get("pending")
+                ):
+                    incomplete.append(name)
+                    row = dict(
+                        stage=name,
+                        status="incomplete",
+                        stage_sha256=digest(canonical(stage)),
+                        ended_epoch=time.time(),
+                        result=result,
+                    )
+                    write_new(receipt.with_name("incomplete.json"), canonical(row))
+                    receipts.append(row)
+                    continue
                 break
             row = dict(
                 stage=name,
@@ -105,6 +198,7 @@ async def run_stages(root: Path, stages: list, run_block, *, resume=False):
             blocked=sum(r["status"] == "blocked" for r in receipts),
             planned=len(stages),
             dispatched_blocks=len([r for r in receipts if r["status"] == "completed"]),
+            incomplete=incomplete,
         )
         progress = {k: v for k, v in result.items() if k != "blocks"}
         write_status(
@@ -119,6 +213,14 @@ async def run_stages(root: Path, stages: list, run_block, *, resume=False):
         return result
     except BaseException as exc:
         journal.append("pipeline_error", error_type=type(exc).__name__)
+        import traceback
+
+        issues.append(
+            "pipeline_error",
+            error_type=type(exc).__name__,
+            traceback=traceback.format_exc(),
+            automatic_resend=False,
+        )
         progress = (
             json.loads((root / "progress.json").read_text(encoding="utf-8"))
             if (root / "progress.json").exists()
@@ -188,11 +290,15 @@ async def live_pipeline(config_path: Path, *, resume=False):
                 raise ValueError("Missing endpoint or unsupported frozen wire parameter")
         sealed[stage["name"]] = items
     root = Path(config["run_dir"])
+    if root.exists() and not resume:
+        raise ValueError("Existing pipeline requires explicit resume verification")
     ledger_dir, legacy_dir = Path(config["ledger_dir"]), Path(config["legacy_ledger"])
     validate_paths(root, ledger_dir, legacy_dir, [Path(p) for p in config["protected_roots"]])
     snapshot = scan_legacy(legacy_dir, config.get("path_rewrites", []))
     pool = DynamicPool(
-        config["global_cap"], consecutive_failures=config.get("consecutive_failures", 3)
+        config["global_cap"],
+        consecutive_failures=config.get("consecutive_failures", 3),
+        quarantine_seconds=config.get("quarantine_seconds", 60),
     )
     await pool.update(endpoints)
     with Ledger(
@@ -203,6 +309,9 @@ async def live_pipeline(config_path: Path, *, resume=False):
 
         retry_policy = RetryPolicy(**config.get("retry", {}))
         recovery_gate = RecoveryGate(retry_policy.recovery_cap, retry_policy.recovery_min_cap)
+        from .dispatch import BatchPacer, write_queue
+
+        pacer = BatchPacer(config.get("batch_size", 8), config.get("batch_interval_seconds", 0))
         saved = {}
         if config.get("recovery"):
             from .recovery import saved_replies
@@ -238,6 +347,7 @@ async def live_pipeline(config_path: Path, *, resume=False):
                     shared_transport=transport,
                     saved_replies=saved,
                     recovery_gate=recovery_gate,
+                    pacer=pacer,
                 )
             spec = make_spec(stage)
             scheduler = Scheduler(
@@ -248,6 +358,10 @@ async def live_pipeline(config_path: Path, *, resume=False):
                 transport,
                 close_transport=False,
             )
+            scheduler.saved_replies = saved
+            scheduler.recovery_gate = recovery_gate
+            scheduler.pacer = pacer
+            scheduler.extra_drain_paths = [root / "DRAIN"]
             return await execute_campaign(
                 scheduler,
                 sealed[stage["name"]],
@@ -261,7 +375,18 @@ async def live_pipeline(config_path: Path, *, resume=False):
             )
 
         try:
-            result = await run_stages(root, config["stages"], block, resume=resume)
+            # Full prepared input inventory exists before opening the first DB.
+            root.mkdir(parents=True, exist_ok=True)
+            queue_path = root / "prepared_queue.jsonl"
+            if not queue_path.exists():
+                write_queue(queue_path, [i for rows in sealed.values() for i in rows], saved)
+            result = await run_stages(
+                root,
+                config["stages"],
+                block,
+                resume=True,
+                continue_on_path_failures=config.get("continue_on_path_failures", False),
+            )
         finally:
             transport.close()
         runnable = sum(not s.get("blocked_reason") for s in config["stages"])

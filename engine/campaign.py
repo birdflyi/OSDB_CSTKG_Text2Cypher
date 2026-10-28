@@ -11,7 +11,7 @@ import statistics
 import time
 
 from .config import canonical, digest
-from .journal import write_new, write_status
+from .journal import Journal, write_new, write_status
 
 
 CORE_FILES = (
@@ -38,6 +38,8 @@ CORE_FILES = (
     "monitor.py",
     "recovery.py",
     "retries.py",
+    "dispatch.py",
+    "launch.py",
 )
 
 
@@ -86,7 +88,8 @@ def distribution(values) -> dict:
 
 async def watch_drain(scheduler, stop: asyncio.Event, interval=0.2):
     while not stop.is_set():
-        if (scheduler.spec.run_dir / "DRAIN").exists():
+        paths = [scheduler.spec.run_dir / "DRAIN", *getattr(scheduler, "extra_drain_paths", ())]
+        if any(path.exists() for path in paths):
             await scheduler.drain()
             return
         try:
@@ -110,6 +113,9 @@ async def execute_campaign(
         raise ValueError("Existing campaign requires verify; no implicit resume")
     spec.run_dir.mkdir(parents=True)
     items = list(items)
+    from .dispatch import write_queue
+
+    queue = write_queue(spec.run_dir / "queue.jsonl", items, scheduler.saved_replies)
     write_new(
         spec.run_dir / "run_meta.json",
         canonical(
@@ -123,6 +129,7 @@ async def execute_campaign(
                 source_sha256=code_manifest(),
                 simulated=simulated,
                 metadata=metadata or {},
+                queue=queue,
             )
         ),
     )
@@ -141,6 +148,22 @@ async def execute_campaign(
             )
         )
     samples = []
+    capacity_journal = Journal(spec.run_dir / "capacity_samples.jsonl")
+
+    def publish_sample(value):
+        fields = {k: v for k, v in value.items() if k != "t"}
+        capacity_journal.append("capacity", sampled_epoch=value["t"], **fields)
+        write_status(
+            spec.run_dir / "progress.json",
+            dict(
+                pid=os.getpid(),
+                updated_epoch=time.time(),
+                phase="运行中",
+                completed=len(scheduler.paths),
+                planned=len(items),
+                **value,
+            ),
+        )
 
     async def sample():
         while not stop.is_set():
@@ -150,6 +173,7 @@ async def execute_campaign(
                     t=time.time(),
                     retry_cap=scheduler.recovery_gate.cap,
                     retry_inflight=scheduler.recovery_gate.active,
+                    dispatch=scheduler.pacer.snapshot(),
                     **scheduler.pool.snapshot(),
                     **network,
                 )
@@ -157,17 +181,8 @@ async def execute_campaign(
             if len(samples) % 10 == 1:
                 await asyncio.get_running_loop().run_in_executor(
                     None,
-                    lambda: write_status(
-                        spec.run_dir / "progress.json",
-                        dict(
-                            pid=os.getpid(),
-                            updated_epoch=time.time(),
-                            phase="运行中",
-                            completed=len(scheduler.paths),
-                            planned=len(items),
-                            **samples[-1],
-                        ),
-                    ),
+                    publish_sample,
+                    samples[-1],
                 )
             try:
                 await asyncio.wait_for(stop.wait(), 0.1)

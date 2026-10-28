@@ -71,6 +71,7 @@ async def run_graphs(
     shared_transport=None,
     saved_replies=None,
     recovery_gate=None,
+    pacer=None,
 ):
     """One method/benchmark block; lifecycle-serial graphs, rolling model requests.
 
@@ -88,8 +89,49 @@ async def run_graphs(
     directory = specs.run_dir
     directory.mkdir(parents=True, exist_ok=False)
     scores, summaries = [], []
+    undispatched = Counter()
+    drain_paths = [Path(config.get("run_dir", directory.parent)) / "DRAIN", directory / "DRAIN"]
     if any(i.graph not in GRAPHS for i in items):
         raise ValueError("Formal CypherBench requires the seven declared test graphs")
+    if config.get("prefetch_initial", False):
+        # Generation does not need a running graph. Persist all initial replies
+        # first, across the fixed graph inventory, before serial DB validation.
+        # This prevents cached DB replay from leaving the model idle for hours.
+        from dataclasses import replace
+        from ..recovery import checkpoint_replies
+
+        pre_spec = replace(specs, name=specs.name + "-prepared", run_dir=directory / "_generation")
+        pre_scheduler = Scheduler(
+            pre_spec,
+            pool,
+            ledger,
+            Journal(pre_spec.run_dir / "journal.jsonl"),
+            (
+                shared_transport
+                if shared_transport is not None
+                else transport_factory(Path(config["key_dir"]))
+            ),
+            close_transport=shared_transport is None,
+        )
+        pre_scheduler.saved_replies = saved_replies or {}
+        pre_scheduler.extra_drain_paths = drain_paths
+        if recovery_gate is not None:
+            pre_scheduler.recovery_gate = recovery_gate
+        if pacer is not None:
+            pre_scheduler.pacer = pacer
+        pre_summary = await execute_campaign(
+            pre_scheduler,
+            items,
+            registry_path=Path(config["registry_path"]),
+            metadata=dict(
+                purpose="frozen_initial_generation_no_DB_no_gold", method=stage["method"]
+            ),
+        )
+        if pre_summary["stop_reason"] or pre_summary["budget"]["pending"]:
+            return dict(
+                stop_reason=pre_summary["stop_reason"] or "pending", budget=ledger.summary()
+            )
+        saved_replies = checkpoint_replies(directory / "generation_history.json", ledger)
     for graph in GRAPHS:
         selected = [i for i in items if i.graph == graph]
         if not selected:
@@ -144,8 +186,11 @@ async def run_graphs(
                 close_transport=shared_transport is None,
             )
             scheduler.saved_replies = saved_replies or {}
+            scheduler.extra_drain_paths = drain_paths
             if recovery_gate is not None:
                 scheduler.recovery_gate = recovery_gate
+            if pacer is not None:
+                scheduler.pacer = pacer
             summary = await execute_campaign(
                 scheduler,
                 selected,
@@ -160,10 +205,15 @@ async def run_graphs(
                 ),
             )
             summaries.append(summary)
-            if (
+            undispatched.update(summary["undispatched_by_reason"])
+            hard_stop = (
                 summary["stop_reason"]
                 or summary["budget"]["pending"]
-                or summary["undispatched_by_reason"]
+                or summary["undispatched_by_reason"].get("budget")
+            )
+            if hard_stop or (
+                summary["undispatched_by_reason"]
+                and not config.get("continue_on_path_failures", False)
             ):
                 return dict(
                     stop_reason=summary["stop_reason"]
@@ -261,5 +311,6 @@ async def run_graphs(
         graphs=summaries,
         scored_views=len(scores),
         denominators_by_model=dict(Counter(i.model for i in items)),
+        undispatched_by_reason=dict(undispatched),
         result_kind="new_model_rerun_not_replacement_of_historical_results",
     )

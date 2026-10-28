@@ -7,11 +7,13 @@ import json
 from pathlib import Path
 import time
 
-from .config import CampaignSpec, digest
+from .config import CampaignSpec, canonical, digest
 from .ids import component, logical_key, request_id
 from .ledger import BudgetError
 from .pool import AdmissionTimeout, DynamicPool
 from .transport import local_resource_error
+from .dispatch import BatchPacer, write_queue
+from .journal import write_new
 
 
 @dataclass(frozen=True)
@@ -69,6 +71,7 @@ class Scheduler:
 
         self.recovery_gate = RecoveryGate(spec.retry.recovery_cap, spec.retry.recovery_min_cap)
         self.retry_sleep = asyncio.sleep
+        self.pacer = BatchPacer(spec.batch_size, spec.batch_interval_seconds)
 
     async def drain(self, reason="operator_drain"):
         self.stop_reason = self.stop_reason or reason
@@ -132,6 +135,13 @@ class Scheduler:
             self.ledger.claim(rid)
             reserve_seconds = time.monotonic() - reserve_started
             if prepared is not None:
+                self.journal.append(
+                    "send_started",
+                    request_id=rid,
+                    logical_key=item.key,
+                    attempt_no=attempt_no,
+                    endpoint=endpoint.name,
+                )
                 value = prepared.send(item.wire, item.read_timeout_seconds)
             value.update(
                 request_id=rid,
@@ -182,9 +192,23 @@ class Scheduler:
     async def _generate_once(self, item, attempt):
         loop = asyncio.get_running_loop()
         waiting = time.monotonic()
-        try:
-            permit = await self.pool.acquire(item.model, self.spec.admission_timeout_seconds)
-        except AdmissionTimeout:
+        permit = None
+        while True:
+            try:
+                permit = await self.pool.acquire(item.model, self.spec.admission_timeout_seconds)
+                break
+            except AdmissionTimeout:
+                if self.spec.queue_wait_until_available and not self.draining.is_set():
+                    # Queue time is not a failed model attempt. Keep the real
+                    # item queued through temporary capacity/route gaps.
+                    self.journal.append(
+                        "queue_deferred",
+                        logical_key=item.key,
+                        reason="capacity_wait_elapsed_no_request_sent",
+                    )
+                    continue
+                break
+        if permit is None:
             value = dict(
                 status="admission_timeout",
                 charged=False,
@@ -197,6 +221,13 @@ class Scheduler:
         admission_wait = time.monotonic() - waiting
         try:
             async with permit:
+                if not await self.pacer.wait(self.draining):
+                    return dict(
+                        status="admission_timeout",
+                        charged=False,
+                        logical_key=item.key,
+                        undispatched_reason="stop",
+                    )
                 work = loop.run_in_executor(
                     self.http_workers, self._physical, item, permit.endpoint, attempt
                 )
@@ -228,6 +259,9 @@ class Scheduler:
             )
         value["admission_wait_seconds"] = admission_wait
         self.events.append(value)
+        self.pacer.record(value["status"])
+        if value.get("undispatched_reason") == "budget":
+            await self.drain("budget")
         # fsync is blocking IO. Keep it off the admission/event loop.
         await loop.run_in_executor(
             self.http_workers,
@@ -273,6 +307,12 @@ class Scheduler:
                     self.spec.retry.wait_seconds, previous.get("retry_after_seconds", 0)
                 ) - (time.time() - previous.get("ended_epoch", time.time()))
                 if remaining > 0:
+                    self.journal.append(
+                        "retry_scheduled",
+                        logical_key=item.key,
+                        attempt_no=attempt,
+                        not_before_epoch=time.time() + remaining,
+                    )
                     await self.retry_sleep(remaining)
                 async with self.recovery_gate.slot():
                     value = await self._generate_once(item, attempt)
@@ -330,6 +370,15 @@ class Scheduler:
                         or repaired.model != item.model
                     ):
                         raise ValueError("Only one same-path operational feedback is allowed")
+                    await asyncio.get_running_loop().run_in_executor(
+                        None,
+                        write_queue,
+                        self.spec.run_dir
+                        / "feedback_queue"
+                        / (digest(repaired.key.encode())[:32] + ".jsonl"),
+                        [repaired],
+                        self.saved_replies,
+                    )
                     reply = await self.generate(repaired)
                     history.append(reply)
                     final = (
@@ -349,6 +398,12 @@ class Scheduler:
             final=final,
             model_attempts=history,
             views=views,
+        )
+        await asyncio.get_running_loop().run_in_executor(
+            None,
+            write_new,
+            self.spec.run_dir / "finals" / (digest(item.key.encode())[:32] + ".json"),
+            canonical(value),
         )
         self.paths.append(value)
         return value

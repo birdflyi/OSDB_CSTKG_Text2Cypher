@@ -182,6 +182,14 @@ class DynamicPool:
                     enabled=s.spec.enabled,
                     removed=s.removed,
                     inflight=s.inflight,
+                    consecutive_failures=s.failures,
+                    quarantined=s.quarantined_until > self.clock(),
+                    quarantine_seconds_remaining=(
+                        None
+                        if s.quarantined_until == float("inf")
+                        else max(0, s.quarantined_until - self.clock())
+                    ),
+                    cooldown_seconds_remaining=max(0, s.cooldown_until - self.clock()),
                 )
                 for s in self.states.values()
             ],

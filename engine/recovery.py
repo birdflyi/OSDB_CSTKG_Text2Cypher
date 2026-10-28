@@ -6,6 +6,28 @@ from pathlib import Path
 from .config import digest
 
 
+def checkpoint_replies(path, ledger):
+    """Seal the complete charged scope after a drained generation phase."""
+    from .config import canonical
+    from .journal import write_new
+
+    entries = []
+    for row in ledger.records.values():
+        if row["scope"] != ledger.scope:
+            continue
+        terminal = Path(row["request_path"]).with_name("terminal.json")
+        # A missing terminal is an unresolved attempt, never a free retry.
+        entries.append(
+            dict(
+                request_id=row["request_id"],
+                request_sha256=row["request_sha256"],
+                terminal_sha256=digest(terminal.read_bytes()),
+            )
+        )
+    write_new(path, canonical(entries))
+    return saved_replies(path, digest(path.read_bytes()), ledger)
+
+
 def saved_replies(manifest_path, expected_sha256, ledger):
     """Explicit versioned recovery: reuse charged responses, including unknowns.
 

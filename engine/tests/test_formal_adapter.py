@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from engine.adapters.cypherbench_runtime import score_paths
 import asyncio
 import json
+import pytest
 from pathlib import Path
 from engine.adapters.cypherbench import GRAPHS
 from engine.config import CampaignSpec, Endpoint, canonical, digest
@@ -50,14 +51,20 @@ def test_final_answer_scoring_keeps_models_initial_feedback_and_failure_denomina
     assert calls[-1]["status"] == "INFRASTRUCTURE_ERROR" and calls[-1]["predicted_rows"] is None
 
 
-def test_seven_graph_lifecycle_execution_controls_and_scoring_are_connected(tmp_path, monkeypatch):
+@pytest.mark.parametrize("prefetch", [False, True])
+def test_seven_graph_lifecycle_execution_controls_and_scoring_are_connected(
+    tmp_path, monkeypatch, prefetch
+):
     from engine.adapters import cypherbench_runtime as runtime
 
     clients = []
+    transport = FakeTransport(0)
 
     class Client:
         def __init__(self, *args, expected_ready, **kwargs):
             assert not any(not c.closed for c in clients)
+            if prefetch:
+                assert transport.calls == len(GRAPHS)
             self.closed = False
             self.ready_value = expected_ready
             self.calls = []
@@ -124,16 +131,38 @@ def test_seven_graph_lifecycle_execution_controls_and_scoring_are_connected(tmp_
             "synthetic",
             global_cap=4,
         )
-        result = await runtime.run_graphs(
-            dict(adapter=settings, method="ours"),
-            items,
-            dict(key_dir="unused", registry_path=str(tmp_path / "no-registry")),
-            lambda _: spec,
-            pool,
-            MemoryLedger(),
-            transport_factory=lambda _: FakeTransport(0),
-            client_factory=Client,
+        from engine.ledger import Ledger, LegacySnapshot
+
+        spec.approval_path.write_bytes(
+            canonical(
+                dict(
+                    approved=True,
+                    active=True,
+                    simulated=True,
+                    cumulative_cap=7,
+                    scope_caps={"synthetic": 7},
+                    ledger_dir=str(spec.ledger_dir),
+                )
+            )
         )
+        with Ledger(
+            spec.ledger_dir, spec.approval_path, LegacySnapshot(0, {}, (), {}, ""), "synthetic"
+        ) as ledger:
+            result = await runtime.run_graphs(
+                dict(adapter=settings, method="ours"),
+                items,
+                dict(
+                    key_dir="unused",
+                    registry_path=str(tmp_path / "no-registry"),
+                    prefetch_initial=prefetch,
+                ),
+                lambda _: spec,
+                pool,
+                ledger,
+                transport_factory=lambda _: FakeTransport(0),
+                client_factory=Client,
+                shared_transport=transport,
+            )
         assert result["scored_views"] == 14 and all(c.closed and len(c.calls) == 2 for c in clients)
         assert len(json.loads((tmp_path / "run/scores.json").read_text(encoding="utf-8"))) == 14
         assert all((tmp_path / "run" / g / "shared_control_scores.json").exists() for g in GRAPHS)

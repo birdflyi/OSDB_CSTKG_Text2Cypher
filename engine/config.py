@@ -130,6 +130,9 @@ class CampaignSpec:
     retry: RetryPolicy = field(default_factory=RetryPolicy)
     compare_with_legacy: bool = False
     models: tuple = ()
+    batch_size: int = 8
+    batch_interval_seconds: float = 0
+    queue_wait_until_available: bool = False
 
     def __post_init__(self):
         if (
@@ -139,6 +142,11 @@ class CampaignSpec:
             or self.global_cap < 1
             or self.db_cap < 1
             or self.admission_timeout_seconds <= 0
+            or type(self.batch_size) is not int
+            or self.batch_size < 2
+            or self.batch_interval_seconds < 0
+            or self.quarantine_seconds < 0
+            or self.consecutive_failures < 1
         ):
             raise ValueError("Incomplete campaign or invalid concurrency limits")
 

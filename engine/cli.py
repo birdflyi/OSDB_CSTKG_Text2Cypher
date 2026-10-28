@@ -220,6 +220,12 @@ def main():
     p = sub.add_parser("pipeline")
     p.add_argument("config", type=Path)
     p.add_argument("--resume", action="store_true")
+    p = sub.add_parser("prepare-pipeline")
+    p.add_argument("config", type=Path)
+    p.add_argument("--output", type=Path, required=True)
+    p = sub.add_parser("launch-pipeline")
+    p.add_argument("config", type=Path)
+    p.add_argument("--logs", type=Path, required=True)
     p = sub.add_parser("monitor")
     p.add_argument("run_dir", type=Path)
     p = sub.add_parser("drain")
@@ -244,6 +250,14 @@ def main():
         from .pipeline import live_pipeline
 
         result = asyncio.run(live_pipeline(args.config, resume=args.resume))
+    elif args.command == "prepare-pipeline":
+        from .pipeline import prepare_pipeline
+
+        result = prepare_pipeline(args.config, args.output)
+    elif args.command == "launch-pipeline":
+        from .launch import launch_pipeline
+
+        result = launch_pipeline(args.config, args.logs)
     elif args.command == "monitor":
         from .monitor import watch
 
