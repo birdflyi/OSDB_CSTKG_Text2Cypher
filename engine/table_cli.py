@@ -50,10 +50,18 @@ def _shape(cell, stage, *, run_dir, stage_name, phase):
     terminal = len(list(root.rglob("terminal.json"))) if root.exists() else 0
     completed = min(terminal, planned)
     clean = bool(planned) and completed == planned
-    splits = {
-        name: dict(planned=number, terminal=(number if completed == planned else 0), scored=None)
-        for name, number in counts.items()
-    }
+    scored = {}
+    for path in (root.rglob("scores.json") if root.exists() else []):
+        try:
+            scored[path.parent.name] = len(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            continue
+    splits = {}
+    for name, number in counts.items():
+        row = dict(planned=number, terminal=(number if completed == planned else 0))
+        if name in scored:
+            row["scored"] = scored[name]
+        splits[name] = row
     return dict(
         stage=phase,
         complete=clean and phase == "full",

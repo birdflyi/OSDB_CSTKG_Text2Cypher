@@ -9,91 +9,114 @@ from pathlib import Path
 from .config import digest
 from .journal import write_status
 
-STATUSES = {"measured", "reported", "empty", "blocked", "partial"}
+STATUS_MEASURED = "measured"
+STATUS_PARTIAL = "partial"
+STATUS_EMPTY = "empty"
+STATUS_BLOCKED = "blocked"
+STATUS_REPORTED = "reported"
+STATUSES = {STATUS_MEASURED, STATUS_PARTIAL, STATUS_EMPTY, STATUS_BLOCKED, STATUS_REPORTED}
+METHOD_KINDS = ("model", "replay", "author")
 
 
 def validate(value):
+    _validate_version(value)
+    _validate_methods(value["methods"])
+    _validate_benchmarks(value["benchmarks"])
+    _validate_cells(value)
+    return value
+
+
+def _validate_version(value):
     if value.get("version") != 1:
         raise ValueError("Table version must be 1")
-    methods, benchmarks = value["methods"], value["benchmarks"]
-    for label, rows in (("method", methods), ("benchmark", benchmarks)):
-        ids = [r["id"] for r in rows]
-        if len(ids) != len(set(ids)) or not all(isinstance(x, str) and x for x in ids):
-            raise ValueError("Duplicate or empty " + label + " ID")
-    method_ids = {m["id"] for m in methods}
-    benchmark_ids = {b["id"] for b in benchmarks}
+
+
+def _validate_methods(methods):
+    ids = [row["id"] for row in methods]
+    if len(ids) != len(set(ids)) or not all(isinstance(name, str) and name for name in ids):
+        raise ValueError("Duplicate or empty method ID")
+    known = set(ids)
     for method in methods:
-        if method["kind"] not in ("model", "replay", "author"):
+        if method["kind"] not in METHOD_KINDS:
             raise ValueError("Unknown method kind")
-        if method.get("shared_with") and method["shared_with"] not in method_ids:
+        if method.get("shared_with") and method["shared_with"] not in known:
             raise ValueError("Unknown shared source method")
+
+
+def _validate_benchmarks(benchmarks):
+    ids = [row["id"] for row in benchmarks]
+    if len(ids) != len(set(ids)) or not all(isinstance(name, str) and name for name in ids):
+        raise ValueError("Duplicate or empty benchmark ID")
     for benchmark in benchmarks:
         names = benchmark["splits"]
         if (
             not names
-            or not all(isinstance(n, str) and n for n in names)
+            or not all(isinstance(name, str) and name for name in names)
             or len(names) != len(set(names))
         ):
             raise ValueError("Benchmark split names must be nonempty and unique")
         population = benchmark.get("population")
         if population is not None and (
             set(population) != set(names)
-            or any(type(n) is not int or n <= 0 for n in population.values())
+            or any(type(number) is not int or number <= 0 for number in population.values())
         ):
-            raise ValueError(
-                "Benchmark population needs a positive integer for each split"
-            )
+            raise ValueError("Benchmark population needs a positive integer for each split")
+
+
+def _validate_cells(value):
+    methods = {row["id"] for row in value["methods"]}
+    benchmarks = {row["id"]: row for row in value["benchmarks"]}
     seen = set()
     for cell in value["cells"]:
         key = cell["method"], cell["benchmark"]
-        if key in seen or key[0] not in method_ids or key[1] not in benchmark_ids:
+        if key in seen or key[0] not in methods or key[1] not in benchmarks:
             raise ValueError("Duplicate cell or unknown method/benchmark: " + str(key))
         seen.add(key)
-        status = cell["status"]
-        if status not in STATUSES:
-            raise ValueError("Unknown cell status: " + str(status))
-        if status == "reported":
-            number = cell.get("value")
-            if (
-                not cell.get("source")
-                or type(number) not in (int, float)
-                or not math.isfinite(number)
-            ):
-                raise ValueError("Reported result needs source and finite value")
-        if status == "blocked" and not cell.get("unblock", {}).get("missing"):
-            raise ValueError("Blocked cell needs unblock.missing")
-        if status == "measured":
-            result = cell.get("result", {})
-            score = result.get("score")
-            benchmark = next(b for b in benchmarks if b["id"] == cell["benchmark"])
-            population = benchmark.get("population")
-            if (
-                not cell.get("splits")
-                or not result.get("evidence")
-                or result.get("stage") != "full"
-                or result.get("complete") is not True
-                or result.get("full_population") is not True
-                or not population
-                or cell["splits"] != population
-                or result.get("model") != value.get("track", {}).get("model")
-                or type(score) not in (int, float)
-                or not math.isfinite(score)
-                or not result.get("model")
-            ):
-                raise ValueError(
-                    "Measured needs complete full-population results and evidence"
-                )
-            for name, n in population.items():
-                row = result.get("splits", {}).get(name, {})
-                if row.get("terminal") != n or row.get("scored") != n:
-                    raise ValueError(
-                        "Measured split denominator is not closed: " + name
-                    )
-        if cell.get("splits"):
-            benchmark = next(b for b in benchmarks if b["id"] == cell["benchmark"])
-            if set(cell["splits"]) - set(benchmark["splits"]):
-                raise ValueError("Cell references an unknown split")
-    return value
+        _validate_cell_status(cell, value, benchmarks[key[1]])
+
+
+def _validate_cell_status(cell, value, benchmark):
+    status = cell["status"]
+    if status not in STATUSES:
+        raise ValueError("Unknown cell status: " + str(status))
+    if status == STATUS_REPORTED:
+        _validate_reported(cell)
+    if status == STATUS_BLOCKED and not cell.get("unblock", {}).get("missing"):
+        raise ValueError("Blocked cell needs unblock.missing")
+    if status == STATUS_MEASURED:
+        _validate_measured(cell, value, benchmark)
+    if cell.get("splits") and set(cell["splits"]) - set(benchmark["splits"]):
+        raise ValueError("Cell references an unknown split")
+
+
+def _validate_reported(cell):
+    number = cell.get("value")
+    if not cell.get("source") or type(number) not in (int, float) or not math.isfinite(number):
+        raise ValueError("Reported result needs source and finite value")
+
+
+def _validate_measured(cell, value, benchmark):
+    result = cell.get("result", {})
+    population = benchmark.get("population")
+    score = result.get("score")
+    if (
+        not cell.get("splits")
+        or not result.get("evidence")
+        or result.get("stage") != "full"
+        or result.get("complete") is not True
+        or result.get("full_population") is not True
+        or not population
+        or cell["splits"] != population
+        or result.get("model") != value.get("track", {}).get("model")
+        or type(score) not in (int, float)
+        or not math.isfinite(score)
+        or not result.get("model")
+    ):
+        raise ValueError("Measured needs complete full-population results and evidence")
+    for name, number in population.items():
+        row = result.get("splits", {}).get(name, {})
+        if row.get("terminal") != number or row.get("scored") != number:
+            raise ValueError("Measured split denominator is not closed: " + name)
 
 
 def load(path):
