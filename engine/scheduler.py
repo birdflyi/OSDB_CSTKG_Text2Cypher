@@ -294,6 +294,13 @@ class Scheduler:
                 status=value["status"],
                 budget_slot=value.get("budget_slot"),
                 endpoint=value.get("endpoint"),
+                task_id=item.task_id,
+                model=item.model,
+                graph=item.graph,
+                phase=item.phase,
+                attempt_no=value.get("attempt_no"),
+                elapsed_seconds=value.get("seconds"),
+                usage=value.get("usage"),
             ),
         )
         return value
@@ -356,7 +363,9 @@ class Scheduler:
             previous = value
 
     async def _execute(self, item, reply, execute):
+        await self._stage(item, "等待数据库")
         async with self.db_gate:
+            await self._stage(item, "数据库处理中")
             started = time.monotonic()
             try:
                 result = await asyncio.get_running_loop().run_in_executor(
@@ -368,6 +377,20 @@ class Scheduler:
                 await self._case_issue(item, "database", exc)
                 return dict(status="case_error", error=type(exc).__name__, complete=False)
             return dict(result, db_client_wall_seconds=time.monotonic() - started)
+
+    async def _stage(self, item, stage):
+        """Small status events only; never include prompts or response bodies."""
+        await asyncio.get_running_loop().run_in_executor(
+            None,
+            lambda: self.journal.append(
+                "case_stage",
+                logical_key=item.key,
+                task_id=item.task_id,
+                graph=item.graph,
+                phase=item.phase,
+                stage=stage,
+            ),
+        )
 
     async def _path(self, item, execute, feedback):
         reply = await self.generate(item)

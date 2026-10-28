@@ -16,6 +16,25 @@ from .scheduler import Scheduler
 from .transport import HTTPTransport
 
 
+async def watch_endpoint_usage(root, pool, transport, stop):
+    """Derived telemetry spans DB startup gaps; its failure never controls dispatch."""
+    while not stop.is_set():
+        try:
+            value = dict(
+                pid=os.getpid(),
+                updated_epoch=time.time(),
+                **pool.snapshot(),
+                **getattr(transport, "snapshot", lambda: {})(),
+            )
+            await asyncio.to_thread(write_status, root / "endpoint_progress.json", value)
+        except PersistenceError:
+            return  # The wall will mark the missing heartbeat stale.
+        try:
+            await asyncio.wait_for(stop.wait(), 1)
+        except asyncio.TimeoutError:
+            pass
+
+
 def prepare_pipeline(config_path: Path, output: Path):
     """Materialize the whole input inventory offline, without opening a ledger.
 
@@ -475,9 +494,14 @@ async def live_pipeline(config_path: Path, *, resume=False):
                 ),
             )
 
+        endpoint_stop = asyncio.Event()
+        endpoint_observer = None
         try:
             # Full prepared input inventory exists before opening the first DB.
             root.mkdir(parents=True, exist_ok=True)
+            endpoint_observer = asyncio.create_task(
+                watch_endpoint_usage(root, pool, transport, endpoint_stop)
+            )
             queue_path = root / "prepared_queue.jsonl"
             if not queue_path.exists():
                 write_queue(queue_path, [i for rows in sealed.values() for i in rows], saved)
@@ -517,6 +541,9 @@ async def live_pipeline(config_path: Path, *, resume=False):
             else:
                 result = await consume_blocks(block)
         finally:
+            endpoint_stop.set()
+            if endpoint_observer is not None:
+                await endpoint_observer
             consumer_workers.shutdown(wait=True)
             transport.close()
         runnable = sum(not s.get("blocked_reason") for s in config["stages"])

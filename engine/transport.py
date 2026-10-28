@@ -122,7 +122,7 @@ class PreparedHTTP:
         timer = threading.Timer(read_timeout, abort)
         timer.daemon = True
         timer.start()
-        self.owner.enter_request()
+        self.owner.enter_request(self.endpoint.name)
         try:
             endpoint = urlsplit(self.endpoint.url)
             connection.sock.settimeout(read_timeout)
@@ -175,7 +175,7 @@ class PreparedHTTP:
             with guard:
                 active = False
             timer.cancel()
-            self.owner.leave_request()
+            self.owner.leave_request(self.endpoint.name)
         value.update(
             write_started=write_started,
             request_write_completed=written,
@@ -211,21 +211,27 @@ class HTTPTransport:
         self.limits = None
         self.lock = threading.Lock()
         self.active = self.peak = self.started = 0
+        self.endpoint_active = defaultdict(int)
 
-    def enter_request(self):
+    def enter_request(self, endpoint="unknown"):
         with self.lock:
             self.active += 1
             self.started += 1
             self.peak = max(self.peak, self.active)
+            self.endpoint_active[endpoint] += 1
 
-    def leave_request(self):
+    def leave_request(self, endpoint="unknown"):
         with self.lock:
             self.active -= 1
+            self.endpoint_active[endpoint] -= 1
 
     def snapshot(self):
         with self.lock:
             return dict(
-                network_inflight=self.active, network_peak=self.peak, network_started=self.started
+                network_inflight=self.active,
+                network_peak=self.peak,
+                network_started=self.started,
+                network_by_endpoint=dict(self.endpoint_active),
             )
 
     def configure(self, endpoints):

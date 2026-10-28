@@ -45,6 +45,8 @@ CORE_FILES = (
     "mirror.py",
     "ahead.py",
     "performance.py",
+    "wall_data.py",
+    "wall_view.py",
 )
 
 

@@ -13,7 +13,7 @@ import shlex
 import subprocess
 import time
 
-from .matrix_wall import snapshot
+from .wall_data import SnapshotReader
 
 
 def publish(plan, run, ssh_command, remote_path, interval=5):
@@ -23,8 +23,9 @@ def publish(plan, run, ssh_command, remote_path, interval=5):
         "t=p.with_suffix('.incoming'); t.write_bytes(sys.stdin.buffer.read()); t.replace(p)"
     )
     command = list(ssh_command) + ["python3 -c " + shlex.quote(code)]
+    reader = SnapshotReader()
     while True:
-        value = snapshot(plan, run)
+        value = reader.snapshot(plan, run)
         value["published_epoch"] = time.time()
         try:
             result = subprocess.run(
