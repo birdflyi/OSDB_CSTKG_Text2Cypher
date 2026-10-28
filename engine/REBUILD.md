@@ -128,3 +128,7 @@ MTQ10113记录全部绑定作者schema（Manual bloom显式映射bloom50）；�
 ### 准备第四批：原生回复消费接口
 
 新增operations/analysis/text2gql_receipt_consumer_dev_20261029.py与合成验收脚本，显式绑定已审计Scheduler receipt摘要/身份及原生答案journal；拒答、未派发、基础设施失败、未知和实际最终答案分开，反馈只生成未发送诊断，来源计费不重记。11模块固定包同步自有Linux，15项新合成检查本地/Linux均通过；未注册完整生产adapter，无模型/DB/训练。11项Text2GQL未知参考均为Geography归档STRING/INT64查询错误，保留3826位置，不自动修复/删题。真实账本当前18005/21992，工程378/384；原五处外部未提交修改未暂存或改写。详见T1_TEXT2GQL_NATIVE_CONSUMER_PREPARATION_V4_20261029.md和preparation_v4_delivery.json；下一步仍准备完整适配器、控制与其他基准评分，不能自动开跑。
+
+### 准备第五批：MTQ/ZOG输入与评估隔离
+
+新增property_graph_input_contract_dev_20261029.py和13项合成验收：公共对象只含graph/question/schema，MTQ10113、ZOG两输入轨道各3370全部保留，评估/分类/参考与公共加载分开。最终包在本地/Linux均加载16853条公共记录，13检查均通过，19文件摘要核验；无模型/DB/训练/新adapter注册。CB的Neo4j .eid等约定不能直接移植到MTQ/ZOG，静态缺口已记录，下一步准备原生身份和类型化答案合同，不能用补假属性或省略方法替代。见T1_MTQ_ZOG_PUBLIC_PACKAGES_V5_20261029.md与preparation_v5_delivery.json；旧五处外部未提交修改保留。
