@@ -37,6 +37,15 @@ class Item:
         )
 
 
+def sent_wire(wire: bytes, served_model: str) -> bytes:
+    """Point the request at the chosen endpoint without touching other fields."""
+    body = json.loads(wire)
+    if body.get("model") == served_model:
+        return wire
+    body["model"] = served_model
+    return json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode()
+
+
 class Scheduler:
     """Async admission + bounded blocking HTTP + separately bounded DB execution.
 
@@ -87,7 +96,8 @@ class Scheduler:
         started = time.time()
         prepared, value = None, None
         try:
-            if not set(json.loads(item.wire)) <= set(endpoint.wire_params):
+            wire = sent_wire(item.wire, endpoint.model)
+            if not set(json.loads(wire)) <= set(endpoint.wire_params):
                 return dict(
                     status="not_dispatched",
                     charged=False,
@@ -135,7 +145,7 @@ class Scheduler:
                 rid,
                 item.key,
                 attempt_no,
-                item.wire,
+                wire,
                 folder / "request.json",
                 self.spec.run_dir,
                 self.journal,

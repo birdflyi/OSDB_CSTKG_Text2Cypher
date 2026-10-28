@@ -1,6 +1,5 @@
-"""Behaviour of the table-driven runner: merge, write-back, skip, handoff."""
+"""Behaviour of the table runner: one cell, one signed config, honest counts."""
 
-import asyncio
 import json
 from pathlib import Path
 
@@ -21,7 +20,7 @@ def _manifest(path, graph="nba", count=7, method="direct"):
     return path
 
 
-def _cell_package(root, method, graph="nba", count=7):
+def _package(root, method, graph="nba", count=7):
     root.mkdir(parents=True, exist_ok=True)
     manifest = _manifest(root / ("%s-manifest.json" % method), graph, count, method)
     admission = root / ("%s-admission.json" % method)
@@ -40,14 +39,14 @@ def _cell_package(root, method, graph="nba", count=7):
     )
     path = root / ("%s-config.json" % method)
     path.write_text(json.dumps(config), encoding="utf-8")
-    return path, run_dir, manifest
+    return path, run_dir
 
 
-def _table(root, methods=("direct", "ours"), status="empty"):
-    packages = {method: _cell_package(root, method) for method in methods}
+def _table(root, methods=("direct",), status="empty"):
+    packages = {method: _package(root, method) for method in methods}
     cells = []
     for order, method in enumerate(methods, 1):
-        path, _, _ = packages[method]
+        path, _ = packages[method]
         cells.append(dict(
             method=method, benchmark="b", status=status, order=order,
             execution=dict(config=str(path), config_sha256=digest(path.read_bytes()),
@@ -65,60 +64,58 @@ def _table(root, methods=("direct", "ours"), status="empty"):
     return path, packages
 
 
-def _fake_runner(terminals=7):
+def _runner(graph="nba", qids=7, duplicate=False, ex=1.0):
+    """Writes both views for every task; duplicates one qid to mimic a retry."""
+
     async def runner(config_path, *, resume=False):
         config = json.loads(Path(config_path).read_text(encoding="utf-8-sig"))
-        for stage in config["stages"]:
-            block = Path(config["run_dir"]) / "runs" / stage["name"]
-            for index in range(terminals):
-                attempt = block / "attempts" / str(index)
-                attempt.mkdir(parents=True, exist_ok=True)
-                (attempt / "terminal.json").write_text(
-                    json.dumps(dict(http_status=200)), encoding="utf-8")
-        return dict(completed=len(config["stages"]), planned=len(config["stages"]),
-                    incomplete=[])
+        block = Path(config["run_dir"]) / graph
+        block.mkdir(parents=True, exist_ok=True)
+        rows = []
+        for index in range(qids):
+            qid = "q%d" % index
+            rows.append(dict(graph=graph, method="direct", model="m", qid=qid,
+                             score=dict(ex=ex, status="EXECUTED"), view="initial"))
+            rows.append(dict(graph=graph, method="direct", model="m", qid=qid,
+                             score=dict(ex=ex, status="EXECUTED"), view="final"))
+        if duplicate:
+            rows.append(dict(graph=graph, method="direct", model="m", qid="q0",
+                             score=dict(ex=0.0, status="FAILED"), view="initial"))
+        (block / "scores.json").write_text(json.dumps(rows), encoding="utf-8")
+        return dict(completed=1, planned=1, incomplete=[])
+
     return runner
 
 
-def test_merge_puts_every_cell_stage_in_one_config(tmp_path):
-    _, packages = _table(tmp_path)
-    loaded = table.load(tmp_path / "table.json")
-    targets = table.empty_cells(loaded)
-    config_path, run_dir = table_cli._merge(targets, "tag")
-
-    config = json.loads(Path(config_path).read_text(encoding="utf-8-sig"))
-    admission = json.loads(
-        Path(config["admission_path"]).read_text(encoding="utf-8-sig"))
-
-    assert [s["name"] for s in config["stages"]] == ["stage-direct", "stage-ours"]
-    assert set(admission["manifests"]) == {"stage-direct", "stage-ours"}
-    assert admission["plan_sha256"] == digest(canonical(config))
-    assert Path(config["run_dir"]) == run_dir
-
-
-def test_run_writes_partial_and_closed_denominator(tmp_path):
+def test_completed_counts_distinct_tasks_and_scores_initial_view(tmp_path):
     path, _ = _table(tmp_path)
-    result = table_cli.run(path, pipeline=_fake_runner(7))
+    result = table_cli.run(path, pipeline=_runner(duplicate=True, ex=1.0))
 
-    assert result["ran"][0]["status"] == "partial"
+    assert result["ran"][0]["completed"] == 7
     cell = table.load(path)["cells"][0]
     assert cell["status"] == "partial"
     assert cell["splits"] == {"nba": 7}
-    assert cell["result"]["completed"] == 7
+    assert cell["result"]["model"] == "m"
 
 
 def test_run_skips_finished_cells_without_calling_pipeline(tmp_path):
-    path, _ = _table(tmp_path, methods=("direct",), status="partial")
+    path, _ = _table(tmp_path, status="partial")
 
     async def forbidden(config_path, *, resume=False):
         raise AssertionError("pipeline must not run for a finished cell")
 
-    assert table_cli.run(path, pipeline=forbidden)["reason"] == "no empty cell matched"
+    assert table_cli.run(path, pipeline=forbidden)["reason"] == "no runnable cell matched"
+
+
+def test_resume_picks_partial_cells(tmp_path):
+    path, _ = _table(tmp_path, status="partial")
+    result = table_cli.run(path, resume=True, pipeline=_runner())
+    assert result["ran"][0]["cell"] == "direct@b"
 
 
 def test_run_rejects_changed_execution_config(tmp_path):
-    path, packages = _table(tmp_path, methods=("direct",))
-    config_path, _, _ = packages["direct"]
+    path, packages = _table(tmp_path)
+    config_path, _ = packages["direct"]
     config_path.write_text(config_path.read_text(encoding="utf-8") + " ", encoding="utf-8")
 
     async def forbidden(config_path, *, resume=False):
@@ -128,15 +125,14 @@ def test_run_rejects_changed_execution_config(tmp_path):
         table_cli.run(path, pipeline=forbidden)
 
 
-def test_handoff_reports_serial_order_and_positive_gap(tmp_path):
-    first = tmp_path / "runs" / "stage-direct" / "_generation"
-    second = tmp_path / "runs" / "stage-ours" / "_generation"
-    for folder, start in ((first, 10.0), (second, 20.0)):
-        folder.mkdir(parents=True)
-        rows = [dict(started_epoch=start, ended_epoch=start + 2.0)]
-        (folder / "model_events.json").write_text(json.dumps(rows), encoding="utf-8")
+def test_two_cells_run_one_after_another_with_their_own_configs(tmp_path):
+    path, packages = _table(tmp_path, methods=("direct", "ours"))
+    seen = []
 
-    result = table_cli._handoff(tmp_path, [dict(name="stage-direct"), dict(name="stage-ours")])
+    async def runner(config_path, *, resume=False):
+        seen.append(Path(config_path).name)
+        return await _runner()(config_path, resume=resume)
 
-    assert result["cells"][1]["first"] > result["cells"][0]["last_end"]
-    assert result["gaps_seconds"] == [8.0]
+    table_cli.run(path, pipeline=runner)
+    assert seen == ["direct-config.json", "ours-config.json"]
+    assert all(cell["status"] == "partial" for cell in table.load(path)["cells"])

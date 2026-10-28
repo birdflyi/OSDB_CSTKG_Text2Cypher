@@ -77,6 +77,11 @@ class Permit:
             self.pool.model_inflight[self.model] = max(
                 0, self.pool.model_inflight.get(self.model, 0) - 1
             )
+            if self.state.removed and self.state.inflight == 0:
+                for key, state in list(self.pool.states.items()):
+                    if state is self.state:
+                        del self.pool.states[key]
+                        break
             self.pool.condition.notify_all()
 
     async def __aenter__(self):
@@ -184,7 +189,7 @@ class DynamicPool:
         endpoints = sum(
             self.capacity(state)
             for state in self.states.values()
-            if state.spec.model == model
+            if (state.spec.model == model or model in state.spec.serves)
             and not state.removed
             and state.spec.enabled
         )
@@ -196,7 +201,7 @@ class DynamicPool:
         return [
             s
             for s in self.states.values()
-            if s.spec.model == model
+            if (s.spec.model == model or model in s.spec.serves)
             and s.spec.enabled
             and not s.removed
             and self.capacity(s) > s.inflight
@@ -219,7 +224,8 @@ class DynamicPool:
                     matching = [
                         s
                         for s in self.states.values()
-                        if s.spec.model == model and s.spec.enabled and not s.removed
+                        if (s.spec.model == model or model in s.spec.serves)
+                        and s.spec.enabled and not s.removed
                     ]
                     if matching and all(
                         s.quarantine_reason == "auth_error"

@@ -120,6 +120,32 @@ def audit_new(directory: Path) -> dict:
     )
 
 
+def _owner_alive(path: Path) -> bool:
+    """A lock from another host is respected; a lock from a dead local pid is not."""
+    try:
+        value = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if value.get("hostname") != socket.gethostname():
+        return True
+    pid = value.get("pid")
+    if type(pid) is not int or pid <= 0:
+        return False
+    if os.name == "nt":
+        import ctypes
+
+        handle = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
+        if not handle:
+            return False
+        ctypes.windll.kernel32.CloseHandle(handle)
+        return True
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
 class Ledger:
     """Single-owner append-only slots, indexed once; O(1) reservation thereafter.
 
@@ -162,7 +188,13 @@ class Ledger:
             raise BudgetError("Invalid scope cap")
         self.approval_sha256 = digest(raw)
         self.directory.mkdir(parents=True, exist_ok=True)
-        write_new(self.owner_path, self.owner)
+        try:
+            write_new(self.owner_path, self.owner)
+        except FileExistsError:
+            if _owner_alive(self.owner_path):
+                raise BudgetError("Ledger held by a live writer")
+            self.owner_path.unlink()
+            write_new(self.owner_path, self.owner)
         try:
             audit = audit_new(self.directory)
             if audit["unknown"] or audit["orphan_slot"] or audit["missing_dispatch_intent"]:

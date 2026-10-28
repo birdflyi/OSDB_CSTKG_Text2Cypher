@@ -143,6 +143,7 @@ class Endpoint:
         "reasoning_effort",
         "max_tokens",
     )
+    serves: tuple = ()
 
     def __post_init__(self):
         url = urlsplit(self.url)
@@ -161,6 +162,8 @@ class Endpoint:
             or url.query
         ):
             raise ValueError("Invalid endpoint; URL credentials/query are forbidden")
+        if not all(isinstance(name, str) and name for name in self.serves):
+            raise ValueError("serves must list non-empty model names")
         if Path(self.key_ref).name != self.key_ref or not self.key_ref:
             raise ValueError("key_ref must be a plain local key name")
 
