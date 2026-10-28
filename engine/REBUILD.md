@@ -144,3 +144,7 @@ MTQ10113记录全部绑定作者schema（Manual bloom显式映射bloom50）；�
 ### 准备第八批：原生选择编译
 
 新增neo4j_native_selection_dev_20261029.py与28项离线验收，本地/Linux通过；MTQ标签属性与ZOG全局属性词表分别解析，12份schema机械编译检查不当EX或真实DB验收。原生实体投影/分组、NULL/OPTIONAL、参数类型与显式排序限制，不注入eid/rid，不改旧CB。OSM端点专有标签属性缺口、两套pole签名18/17差异保留。集合组合/实际执行/图与日志/作者评分仍缺，模型DB训练0；见T1_NATIVE_SELECTION_PREPARATION_V8_20261029.md。
+
+### 准备第九批：原生集合、共享控制和保存
+
+新增neo4j_native_plan_dev_20261029.py：同事务实体集合组合、受限计数证书、共享计划控制、方法最终答案先保存、文件独占/fsync/摘要记录；simple_correct与full_detail等价明确标注。编译器参数前缀API升v2，旧v8包和原CB冻结保留。26组合检查+29编译回归本地/Linux通过，39事件示例为人工传输响应，不当DB验收/EX/性能。实际图、原调用成本、参考隔离/主评分/全量adapter与任意崩溃恢复仍未完成；模型DB训练0，见T1_NATIVE_PLAN_AND_CONTROLS_V9_20261029.md。

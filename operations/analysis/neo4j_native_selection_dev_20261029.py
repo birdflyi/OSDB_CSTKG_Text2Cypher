@@ -11,7 +11,7 @@ import math
 import re
 
 
-PROFILE = 'native-neo4j-selection-preparation-v1'
+PROFILE = 'native-neo4j-selection-preparation-v2'
 TYPES = {'STRING', 'INTEGER', 'FLOAT', 'BOOLEAN', 'LIST', 'DATE', 'TIME',
          'LOCAL_TIME', 'DATE_TIME', 'LOCAL_DATE_TIME', 'DURATION', 'POINT'}
 CONSTRUCTORS = {'DATE':'date', 'TIME':'time', 'LOCAL_TIME':'localtime',
@@ -137,10 +137,11 @@ class NativeSchema:
 
 
 class _Compiler:
-    def __init__(self, schema):
+    def __init__(self, schema, parameter_prefix):
         if not isinstance(schema, NativeSchema):
             raise UnsupportedSelection('Explicit prepared native schema required')
         self.schema, self.bindings, self.parameters = schema, {}, {}
+        self.parameter_prefix = parameter_prefix
 
     def field(self, reference, *, entity=False):
         if type(reference) is not str:
@@ -215,6 +216,7 @@ class _Compiler:
         return clauses
 
     def literal(self, value, kind, parameter):
+        parameter = self.parameter_prefix+parameter
         matches = {'STRING':type(value) is str, 'INTEGER':type(value) is int and number(value),
                    'FLOAT':number(value),
                    'BOOLEAN':type(value) is bool,
@@ -279,7 +281,7 @@ class _Compiler:
                 value = predicate['value']
                 if not primitive(value):
                     raise UnsupportedSelection('Untyped author LIST membership needs a finite primitive')
-                key = 'p'+str(index); self.parameters[key] = value; right = '$'+key
+                key = self.parameter_prefix+'p'+str(index); self.parameters[key] = value; right = '$'+key
             else:
                 right = self.literal(predicate['value'], kind, 'p'+str(index))
             if op in COMPARISONS: expression = left+COMPARISONS[op]+right
@@ -342,19 +344,22 @@ class _Compiler:
         if 'limit' in call:
             if type(call['limit']) is not int or not 1 <= call['limit'] <= 10000:
                 raise UnsupportedSelection('Explicit limit must be within the bounded IR contract')
-            self.parameters['requested_limit'] = call['limit']; clauses.append('LIMIT $requested_limit')
+            key = self.parameter_prefix+'requested_limit'
+            self.parameters[key] = call['limit']; clauses.append('LIMIT $'+key)
         return columns, projected, aggregates
 
 
-def compile_selection(call, schema):
+def compile_selection(call, schema, *, parameter_prefix=''):
     """Lower the bounded selection IR; actual Neo4j acceptance is still pending.
 
     Bare entity fields (e.g. field='n') project native values, including for
     explicit entity grouping. Properties remain variable.property. No .eid
     alias substitution, gold input, automatic LIMIT or extra DB probe is used.
     """
+    if type(parameter_prefix) is not str or (parameter_prefix and not re.fullmatch('[A-Za-z][A-Za-z0-9_]{0,15}',parameter_prefix)):
+        raise UnsupportedSelection('Compiler parameter prefix must be empty or a bounded identifier')
     fields(call, ['nodes','edges','where','returns'], ['distinct','group_by','order_by','limit'])
-    compiler = _Compiler(schema)
+    compiler = _Compiler(schema,parameter_prefix)
     clauses = compiler.pattern(call)
     predicates = call['where']
     if type(predicates) is not list or len(predicates) > 16:
@@ -367,6 +372,7 @@ def compile_selection(call, schema):
                 contract=dict(bindings=deepcopy(compiler.bindings), projected=projected, aggregates=aggregates,
                     group_by=deepcopy(call.get('group_by')), explicit_limit=call.get('limit'),
                     distinct=call.get('distinct',False), property_scope=schema.property_scope,
+                    parameter_prefix=parameter_prefix,
                     endpoint_only_labels_without_property_declarations=sorted(schema.endpoint_only_nodes),
                     entity_identity='native_object_in_one_explicit_transaction',
                     actual_schema_storage_types_verified=False, formal_admission=False))

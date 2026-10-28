@@ -65,6 +65,18 @@ class SelectionChecks(unittest.TestCase):
         self.assertEqual(result['parameters']['p0'],literal)
         self.assertNotIn('DELETE',result['query'])
 
+    def test_parameter_prefix_covers_literals_membership_and_limit_without_text_rewrite(self):
+        value=call();value['where']=[dict(field='n.display',op='eq',value='$p0'),
+            dict(field='n.tags',op='contains',value=1),dict(field='n.age',op='in',value=[2,3])]
+        value['limit']=5
+        schema=NativeSchema(AUTHOR,format='MTQ')
+        result=compile_selection(value,schema,parameter_prefix='left_')
+        self.assertEqual(result['parameters'],{'left_p0':'$p0','left_p1':1,'left_p2_0':2,
+                                             'left_p2_1':3,'left_requested_limit':5})
+        self.assertIn('LIMIT $left_requested_limit',result['query'])
+        self.assertEqual(read_query(result['query']),result['query'])
+        with self.assertRaises(UnsupportedSelection):compile_selection(value,schema,parameter_prefix='x;RETURN ')
+
     def test_quoted_author_identifiers_are_not_query_fragments(self):
         schema = {'node_props':{'A`Label':[{'property':'odd.key`','datatype':'STRING'}]},
                   'rel_props':{},'relationships':[]}
