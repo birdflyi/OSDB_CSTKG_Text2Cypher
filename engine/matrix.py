@@ -1,4 +1,4 @@
-"""Table 1 inventory and orchestration, reusing the budgeted pipeline engine.
+﻿"""Table 1 inventory and orchestration, reusing the budgeted pipeline engine.
 
 Each ready cell points to its own frozen pipeline configuration. Missing adapters
 and resources are explicit receipts, never successful smoke tests. This module
@@ -81,94 +81,17 @@ def audit_matrix(plan_path, output):
     return result
 
 
-async def run_matrix(plan_path, output, *, resume=False, run_pipeline=None):
-    """Run serial cells; concurrency and all billing remain in live_pipeline.
-
-    Non-ready cells are logged then skipped. A normal failed cell does not stop
-    the next cell. Unknown charged requests, disk failure and integrity failure
-    retain the engine's explicit stop rather than risk duplicate paid requests.
-    """
-    plan = load_plan(plan_path)
-    if plan.get("dispatch_pipeline"):
-        entry = plan["dispatch_pipeline"]
-        config_path = Path(entry["path"])
-        if digest(config_path.read_bytes()) != entry["sha256"]:
-            raise ValueError("Changed shared dispatch pipeline")
-        config = json.loads(config_path.read_text(encoding="utf-8-sig"))
-        if (
-            not config.get("overlap_initial_generation")
-            or Path(config["run_dir"]).resolve() != Path(output).resolve()
-        ):
-            raise ValueError(
-                "Shared dispatch requires an overlapping pipeline with the same output"
-            )
-        ready = {
-            c["name"]: (c["method"], c["benchmark"])
-            for c in plan["cells"]
-            if not c.get("shared_with") and not inspect_cell(c)["reasons"]
-        }
-        admitted = {
-            s["name"]: (s["method"], s["benchmark"])
-            for s in config["stages"]
-            if not s.get("blocked_reason")
-        }
-        if ready != admitted:
-            raise ValueError("Shared pipeline cells differ from the admitted matrix")
-        return await (run_pipeline or live_pipeline)(config_path, resume=resume)
-    stages = []
-    for cell in plan["cells"]:
-        row = inspect_cell(cell)
-        stages.append(
-            dict(cell, blocked_reason="; ".join(row["reasons"])) if row["reasons"] else cell
-        )
-
-    async def run_cell(cell):
-        if cell.get("shared_with"):
-            source = Path(output) / "blocks" / cell["shared_with"] / "completed.json"
-            if not source.is_file():
-                return dict(case_failures=1, reason="Shared source cell did not complete")
-            return dict(
-                case_failures=0,
-                shared_with=cell["shared_with"],
-                additional_model_calls=0,
-                smoke_passed=json.loads(source.read_text(encoding="utf-8"))["result"].get(
-                    "smoke_passed", False
-                ),
-            )
-        # Recheck the sealed file immediately before execution, not only at audit.
-        row = inspect_cell(cell)
-        if row["reasons"]:
-            return dict(case_failures=1, reasons=row["reasons"])
-        result = await (run_pipeline or live_pipeline)(Path(cell["pipeline_config"]))
-        clean = (
-            result.get("planned", 0) > 0
-            and result.get("completed") == result["planned"]
-            and not result.get("blocked")
-            and not result.get("incomplete")
-        )
-        return dict(
-            case_failures=0 if clean else 1,
-            mode=plan["mode"],
-            smoke_passed=clean if plan["mode"] == "smoke" else None,
-            pipeline_result=result,
-        )
-
-    return await run_stages(Path(output), stages, run_cell, resume=resume)
-
-
 def main():
     import argparse
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("audit", "run", "watch"))
+    parser.add_argument("command", choices=("audit", "watch"))
     parser.add_argument("plan", type=Path)
     parser.add_argument("output", type=Path)
-    parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--resume", action="store_true", help="accepted for compatibility")
     args = parser.parse_args()
     if args.command == "audit":
         result = audit_matrix(args.plan, args.output)
-    elif args.command == "run":
-        result = asyncio.run(run_matrix(args.plan, args.output, resume=args.resume))
     else:
         from .matrix_wall import watch
 
@@ -179,3 +102,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
