@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 from copy import deepcopy
 import json
 
@@ -162,27 +162,31 @@ def test_new_adapter_uses_only_registration_without_pipeline_edits(monkeypatch):
         get("missing")
 
 
-def test_next_cell_can_start_before_the_previous_slow_reply_finishes(tmp_path):
+def test_next_cell_starts_only_after_previous_cell_replies_land(tmp_path):
+    """Cells are serial: one table's answers must be complete before the next.
+
+    Overlapping two cells would interleave their questions while only one
+    answer stream is collected back into a table.
+    """
+
     async def scenario():
         pool = DynamicPool(2)
         await pool.update([Endpoint("e", "http://localhost/unused", "m", "test", 2)])
-        b_started = asyncio.Event()
         order = []
 
         async def dispatch(stage):
             async with await pool.acquire("m", 1):
                 order.append(stage["name"] + "-sent")
-                if stage["name"] == "A":
-                    await b_started.wait()
-                else:
-                    b_started.set()
+                await asyncio.sleep(0)
                 order.append(stage["name"] + "-saved")
             return dict(path="fixture", sha256="fixture")
 
         queue = AheadQueue([dict(name="A"), dict(name="B")], tmp_path, dispatch, pool)
         await asyncio.wait_for(queue.produce(), 2)
-        assert order.index("B-sent") < order.index("A-saved")
-        assert pool.peak == 2 and pool.inflight == 0
+
+        assert order.index("A-saved") < order.index("B-sent")
+        assert queue.ready["B"].done()
+        assert pool.inflight == 0
 
     asyncio.run(scenario())
 
@@ -224,3 +228,4 @@ def test_failed_handoff_disk_does_not_leave_consumer_waiting(tmp_path, monkeypat
         assert pool.closed
 
     asyncio.run(scenario())
+

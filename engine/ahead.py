@@ -48,8 +48,14 @@ class AheadQueue:
         self.journal = Journal(Path(directory) / "handoffs.jsonl")
 
     async def produce(self):
-        # Enrol all admitted cells in order. The shared pool fills a free slot
-        # from the next cell without waiting for the previous cell's last reply.
+        """Dispatch cells strictly one at a time.
+
+        A cell's replies must all land before the next cell is allowed to send:
+        overlapping cells would interleave two tables' questions while only one
+        answer stream is being collected. The database consumer still runs in
+        parallel, so the handoff costs only the next cell's preparation time.
+        """
+
         async def dispatch_one(stage):
             name = stage["name"]
             if self.pool.closed:
@@ -82,7 +88,12 @@ class AheadQueue:
                 ):
                     await self.pool.drain()
 
-        await asyncio.gather(*(dispatch_one(stage) for stage in self.stages))
+        for index, stage in enumerate(self.stages):
+            await dispatch_one(stage)
+            if self.pool.closed:
+                for rest in self.stages[index + 1 :]:
+                    self.ready[rest["name"]].set_result(dict(stopped="pool_drained"))
+                break
 
     async def take(self, stage):
         value = await self.ready[stage["name"]]
