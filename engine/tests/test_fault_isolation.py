@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from engine.config import Endpoint
+from engine.config import Endpoint, EndpointPolicy
 from engine.errors import IntegrityError, PersistenceError
 from engine.fake import FakeTransport
 from engine.pipeline import run_stages
@@ -22,7 +22,7 @@ def endpoint(name="a", model="m", cap=128):
 @pytest.mark.parametrize("cap", [32, 128])
 def test_recovery_is_endpoint_local_and_requires_three_new_consecutive_successes(cap):
     async def scenario():
-        pool = DynamicPool(cap + 16)
+        pool = DynamicPool(cap + 16, policy=EndpointPolicy(failures_to_degrade=1))
         a, b = endpoint(cap=cap), endpoint("b", "other", 16)
         await pool.update([a, b])
         old = [await pool.acquire("m", 1) for _ in range(4)]
@@ -56,7 +56,7 @@ def test_recovery_is_endpoint_local_and_requires_three_new_consecutive_successes
 
 def test_hot_capacity_update_is_respected_when_restoring():
     async def scenario():
-        pool = DynamicPool(128)
+        pool = DynamicPool(128, policy=EndpointPolicy(failures_to_degrade=1))
         a = endpoint()
         await pool.update([a])
         permit = await pool.acquire("m", 1)
@@ -75,7 +75,7 @@ def test_hot_capacity_update_is_respected_when_restoring():
 
 def test_halving_drains_existing_requests_without_cancelling_them():
     async def scenario():
-        pool = DynamicPool(8)
+        pool = DynamicPool(8, policy=EndpointPolicy(failures_to_degrade=1))
         await pool.update([endpoint(cap=8)])
         permits = [await pool.acquire("m", 1) for _ in range(8)]
         await pool.record(permits[0], "infra")
@@ -120,6 +120,7 @@ def test_scheduler_sends_doubled_timeout_then_restores_base_timeout(tmp_path):
         scheduler, items, transport, ledger = await make_scheduler(
             tmp_path, cap=8, count=5, transport=Transport()
         )
+        scheduler.pool.policy = EndpointPolicy(failures_to_degrade=1)
         try:
             for item in items:
                 await scheduler.generate(item)

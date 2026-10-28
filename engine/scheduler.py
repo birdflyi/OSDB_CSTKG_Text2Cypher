@@ -11,7 +11,7 @@ from .config import CampaignSpec, DEFAULT_TIMEOUTS, canonical, digest
 from .ids import component, logical_key, request_id
 from .ledger import BudgetError
 from .errors import IntegrityError, PersistenceError
-from .pool import AdmissionTimeout, DynamicPool
+from .pool import AdmissionTimeout, DynamicPool, RouteUnavailable
 from .transport import endpoint_health, local_resource_error, retryable
 from .dispatch import BatchPacer, write_queue
 from .journal import write_new
@@ -96,6 +96,15 @@ class Scheduler:
                 )
             try:
                 prepared = self.transport.prepare(endpoint)
+            except ValueError as exc:
+                return dict(
+                    status="local_configuration_error",
+                    charged=False,
+                    error=type(exc).__name__,
+                    request_id=rid,
+                    logical_key=item.key,
+                    undispatched_reason="configuration",
+                )
             except OSError as exc:
                 if local_resource_error(exc) or isinstance(exc, FileNotFoundError):
                     return dict(
@@ -135,6 +144,7 @@ class Scheduler:
             self.ledger.claim(rid)
             reserve_seconds = time.monotonic() - reserve_started
             if prepared is not None:
+                prepared.scope = str(self.spec.run_dir)
                 self.journal.append(
                     "send_started",
                     request_id=rid,
@@ -190,6 +200,7 @@ class Scheduler:
         deadline = waiting + self.spec.timeouts.admission
         total_deadline = waiting + self.spec.timeouts.queue_total
         permit = None
+        blocked_reason = None
         while True:
             try:
                 permit = await self.pool.acquire(
@@ -198,6 +209,9 @@ class Scheduler:
                         60, max(0.001, min(deadline, total_deadline) - time.monotonic())
                     ),
                 )
+                break
+            except RouteUnavailable as exc:
+                blocked_reason = exc.reason
                 break
             except AdmissionTimeout:
                 stopped = self.draining.is_set() or self.pool.closed
@@ -225,12 +239,17 @@ class Scheduler:
             value = dict(
                 status=(
                     "not_dispatched"
-                    if self.draining.is_set() or self.pool.closed
+                    if blocked_reason or self.draining.is_set() or self.pool.closed
                     else "admission_timeout"
                 ),
                 charged=False,
                 undispatched_reason=(
-                    "stop" if self.draining.is_set() or self.pool.closed else "capacity"
+                    blocked_reason
+                    or (
+                        "stop"
+                        if self.draining.is_set() or self.pool.closed
+                        else "capacity"
+                    )
                 ),
                 logical_key=item.key,
                 admission_wait_seconds=time.monotonic() - waiting,

@@ -59,6 +59,27 @@ class Timeouts:
 DEFAULT_TIMEOUTS = Timeouts()
 
 
+@dataclass(frozen=True)
+class EndpointPolicy:
+    failures_to_degrade: int = 3
+    successes_to_restore: int = 3
+    degraded_ttl_seconds: float = 600
+    quarantine_seconds: float = 60
+
+    def __post_init__(self):
+        for name in ("failures_to_degrade", "successes_to_restore"):
+            if type(getattr(self, name)) is not int or getattr(self, name) < 1:
+                raise ValueError("Positive integer required: " + name)
+        for name in ("degraded_ttl_seconds", "quarantine_seconds"):
+            value = getattr(self, name)
+            if (
+                type(value) not in (int, float)
+                or not math.isfinite(value)
+                or value <= 0
+            ):
+                raise ValueError("Positive finite duration required: " + name)
+
+
 def timeouts_from(values=None):
     if isinstance(values, Timeouts):
         return values
@@ -157,7 +178,15 @@ class RetryPolicy:
     retry_unknown: bool = False
 
     def __post_init__(self):
-        if not 1 <= self.max_attempts <= 3 or self.wait_seconds < 10:
+        if (
+            type(self.max_attempts) is not int
+            or not 1 <= self.max_attempts <= 3
+            or type(self.wait_seconds) not in (int, float)
+            or not math.isfinite(self.wait_seconds)
+            or self.wait_seconds < 10
+            or type(self.before_write_only) is not bool
+            or type(self.retry_unknown) is not bool
+        ):
             raise ValueError("At most3 attempts; retry interval at least10 seconds")
         if self.retry_unknown and self.before_write_only:
             raise ValueError(
@@ -206,9 +235,14 @@ class CampaignSpec:
     queue_wait_until_available: bool = False
     max_queue_wait_seconds: float = None
     timeouts: Timeouts = field(default_factory=Timeouts)
+    endpoint_policy: EndpointPolicy = field(default_factory=EndpointPolicy)
 
     def __post_init__(self):
         timeouts = timeouts_from(self.timeouts)
+        if not isinstance(self.endpoint_policy, EndpointPolicy):
+            object.__setattr__(
+                self, "endpoint_policy", EndpointPolicy(**self.endpoint_policy)
+            )
         aliases = {
             name: value
             for name, value in (
@@ -222,8 +256,11 @@ class CampaignSpec:
             not self.name
             or not self.model
             or not self.budget_scope
+            or type(self.global_cap) is not int
             or self.global_cap < 1
+            or type(self.db_cap) is not int
             or self.db_cap < 1
+            or type(self.queue_wait_until_available) is not bool
             or type(self.batch_size) is not int
             or self.batch_size < 2
             or self.batch_interval_seconds < 0
@@ -231,8 +268,23 @@ class CampaignSpec:
             raise ValueError("Incomplete campaign or invalid concurrency limits")
 
 
-def endpoints_from_file(path: Path) -> list:
+def registry_from_file(path: Path) -> dict:
     value = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+    allowed = {"endpoints", "global_cap", "reload_seconds"}
+    if not isinstance(value, dict) or set(value) - allowed:
+        raise ValueError("Registry allows only: " + ", ".join(sorted(allowed)))
+    cap = value.get("global_cap")
+    if cap is not None and (type(cap) is not int or cap < 1):
+        raise ValueError("global_cap must be a positive integer")
+    interval = value.get("reload_seconds", 10)
+    if (
+        type(interval) not in (int, float)
+        or not math.isfinite(interval)
+        or interval <= 0
+    ):
+        raise ValueError("reload_seconds must be positive and finite")
+    if not isinstance(value.get("endpoints"), list):
+        raise ValueError("endpoints must be a list")
     rows = []
     for row in value["endpoints"]:
         data = dict(row)
@@ -241,4 +293,37 @@ def endpoints_from_file(path: Path) -> list:
         rows.append(Endpoint(**data))
     if len({row.name for row in rows}) != len(rows):
         raise ValueError("Endpoint names must be unique in each registry revision")
-    return rows
+    return dict(endpoints=rows, global_cap=cap, reload_seconds=interval)
+
+
+def endpoints_from_file(path: Path) -> list:
+    return registry_from_file(path)["endpoints"]
+
+
+def validate_run_fields(value):
+    """Reject misspelled runtime settings instead of silently ignoring them."""
+    allowed = {f.name for f in fields(CampaignSpec)} | {
+        "admission_path",
+        "manifest_path",
+        "registry_path",
+        "key_dir",
+        "legacy_ledger",
+        "protected_roots",
+        "path_rewrites",
+        "stages",
+        "analysis",
+        "recovery",
+        "continue_on_path_failures",
+        "performance_report",
+        "prefetch_initial",
+        "overlap_initial_generation",
+        "config_schema_version",
+    }
+    unknown = set(value) - allowed
+    if unknown:
+        raise ValueError(
+            "Unknown run settings: "
+            + ", ".join(sorted(unknown))
+            + "; allowed: "
+            + ", ".join(sorted(allowed))
+        )

@@ -156,6 +156,7 @@ async def execute_campaign(
                     registry_path,
                     stop,
                     on_reload=getattr(scheduler.transport, "configure", None),
+                    validate=getattr(scheduler.transport, "validate_keys", None),
                 )
             )
         )
@@ -179,7 +180,9 @@ async def execute_campaign(
 
     async def sample():
         while not stop.is_set():
-            network = getattr(scheduler.transport, "snapshot", lambda: {})()
+            network = getattr(scheduler.transport, "snapshot", lambda **kwargs: {})(
+                scope=str(spec.run_dir)
+            )
             samples.append(
                 dict(
                     t=time.time(),
@@ -295,17 +298,31 @@ async def execute_campaign(
                 e["undispatched_reason"] for e in scheduler.events if "undispatched_reason" in e
             )
         ),
-        peak_inflight=scheduler.pool.peak,
-        mean_inflight=area / (ended - started) if ended > started else 0,
-        actual_HTTP=getattr(scheduler.transport, "snapshot", lambda: {})(),
+        peak_inflight=getattr(scheduler.transport, "snapshot", lambda **kwargs: {})(
+            scope=str(spec.run_dir)
+        ).get("network_peak"),
+        peak_scope="campaign",
+        mean_admitted_inflight_global=area / (ended - started) if ended > started else 0,
+        mean_inflight=(
+            sum((b["t"] - a["t"]) * a["network_inflight"] for a, b in zip(samples, samples[1:]))
+            / (ended - started)
+            if ended > started and all("network_inflight" in s for s in samples)
+            else None
+        ),
+        actual_HTTP=getattr(scheduler.transport, "snapshot", lambda **kwargs: {})(
+            scope=str(spec.run_dir)
+        ),
         stop_reason=scheduler.stop_reason,
         endpoint_capacity=scheduler.pool.snapshot(),
         registry_issues=scheduler.pool.issues,
+        endpoint_transitions=list(scheduler.pool.transitions),
         recovery_admission=dict(
             authority="DynamicPool",
             capacity_factor=0.5,
             timeout_multiplier=2,
-            restore_after_successes=3,
+            restore_after_successes=scheduler.pool.policy.successes_to_restore,
+            failures_to_degrade=scheduler.pool.policy.failures_to_degrade,
+            degraded_ttl_seconds=scheduler.pool.policy.degraded_ttl_seconds,
         ),
         monetary_cost=None,
         server_decode_TPS=None,
@@ -322,7 +339,9 @@ async def execute_campaign(
                 completed=len(paths),
                 planned=len(items),
                 **scheduler.pool.snapshot(),
-                **getattr(scheduler.transport, "snapshot", lambda: {})(),
+                **getattr(scheduler.transport, "snapshot", lambda **kwargs: {})(
+                    scope=str(spec.run_dir)
+                ),
             ),
         ),
     )

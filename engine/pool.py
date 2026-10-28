@@ -1,15 +1,24 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+import random
 import time
 from pathlib import Path
 
-from .config import Endpoint, endpoints_from_file
+from .config import Endpoint, EndpointPolicy, registry_from_file
 
 
 class AdmissionTimeout(Exception):
     """No model request was sent or charged."""
+
+
+class RouteUnavailable(AdmissionTimeout):
+    """Every matching route has a known configuration/authentication failure."""
+
+    def __init__(self, reason):
+        super().__init__(reason)
+        self.reason = reason
 
 
 @dataclass
@@ -23,6 +32,8 @@ class EndpointState:
     degraded: bool = False
     recovery_successes: int = 0
     recovery_generation: int = 0
+    degraded_until: float = 0
+    quarantine_reason: str = None
 
 
 class Permit:
@@ -75,20 +86,35 @@ class DynamicPool:
         global_cap: int,
         *,
         clock=time.monotonic,
+        ceiling=None,
+        policy=None,
     ):
-        if global_cap < 1:
+        if type(global_cap) is not int or global_cap < 1:
             raise ValueError("Positive global cap required")
+        if ceiling is not None and (type(ceiling) is not int or ceiling < global_cap):
+            raise ValueError("Capacity ceiling must cover the initial global cap")
+        self.ceiling = ceiling
+        self.policy = (
+            policy
+            if isinstance(policy, EndpointPolicy)
+            else EndpointPolicy(**({} if policy is None else policy))
+        )
         self.global_cap = global_cap
         self.clock = clock
         self.condition = asyncio.Condition()
         self.states = {}
         self.inflight = self.peak = self.waiting = 0
         self.issues = []
+        self.transitions = []
         self.closed = False
         self._tickets = []
 
     async def update(self, endpoints: list, *, global_cap=None):
-        if global_cap is not None and global_cap < 1:
+        if global_cap is not None and (
+            type(global_cap) is not int
+            or global_cap < 1
+            or (self.ceiling is not None and global_cap > self.ceiling)
+        ):
             raise ValueError("Positive global cap required")
         if len({e.name for e in endpoints}) != len(endpoints):
             raise ValueError("Duplicate endpoint names")
@@ -134,6 +160,17 @@ class DynamicPool:
                     if self.closed:
                         raise AdmissionTimeout("Pool drained; no new admissions")
                     eligible = self._eligible(model)
+                    matching = [
+                        s
+                        for s in self.states.values()
+                        if s.spec.model == model and s.spec.enabled and not s.removed
+                    ]
+                    if matching and all(
+                        s.quarantine_reason == "auth_error"
+                        and s.quarantined_until > self.clock()
+                        for s in matching
+                    ):
+                        raise RouteUnavailable("auth_error")
                     # FIFO within a model; absent modelA does not block modelB.
                     first = next((t for t, m in self._tickets if m == model), None)
                     if ticket is first and self.inflight < self.global_cap and eligible:
@@ -160,6 +197,13 @@ class DynamicPool:
                         if s.spec.model == model
                         and max(s.quarantined_until, s.cooldown_until) > self.clock()
                     ]
+                    wakeups.extend(
+                        s.degraded_until - self.clock()
+                        for s in self.states.values()
+                        if s.spec.model == model
+                        and s.degraded
+                        and s.degraded_until > self.clock()
+                    )
                     wait_for = min([remaining] + wakeups)
                     try:
                         await asyncio.wait_for(self.condition.wait(), wait_for)
@@ -175,20 +219,29 @@ class DynamicPool:
             state = permit.state
             transition = None
             if status in ("model_mismatch", "auth_error"):
-                state.quarantined_until = self.clock() + 60
+                state.quarantined_until = self.clock() + self.policy.quarantine_seconds
+                state.quarantine_reason = status
                 state.recovery_successes = 0
                 state.recovery_generation += 1
                 transition = "quarantined"
-            elif status in ("infra", "unknown", "throttled"):
+            elif status == "throttled":
+                delay = max(0, retry_after)
+                state.cooldown_until = self.clock() + min(
+                    300, delay + random.uniform(0, min(1, delay * 0.1))
+                )
+            elif status in ("infra", "unknown"):
                 state.recovery_successes = 0
-                if not state.degraded:
+                state.failures += 1
+                if (
+                    not state.degraded
+                    and state.failures >= self.policy.failures_to_degrade
+                ):
                     state.degraded = True
+                    state.degraded_until = (
+                        self.clock() + self.policy.degraded_ttl_seconds
+                    )
                     state.recovery_generation += 1
                     transition = "degraded"
-                if status == "throttled":
-                    state.cooldown_until = self.clock() + max(0, retry_after)
-                else:
-                    state.failures += 1
             elif status in ("ok", "length", "empty", "refused"):
                 state.failures = 0
                 # Completions admitted before degradation do not certify the
@@ -199,7 +252,7 @@ class DynamicPool:
                     and permit.recovery_generation == state.recovery_generation
                 ):
                     state.recovery_successes += 1
-                    if state.recovery_successes == 3:
+                    if state.recovery_successes == self.policy.successes_to_restore:
                         state.degraded = False
                         state.recovery_successes = 0
                         state.recovery_generation += 1
@@ -208,20 +261,54 @@ class DynamicPool:
                 state.recovery_successes = 0
             self.condition.notify_all()
             if transition:
-                return dict(
+                event = dict(
                     endpoint=state.spec.name,
                     model=state.spec.model,
                     transition=transition,
                     configured_cap=state.spec.cap,
-                    effective_cap=self.capacity(state),
+                    effective_cap=(
+                        0
+                        if state.quarantined_until > self.clock()
+                        else self.capacity(state)
+                    ),
                     timeout_multiplier=2 if state.degraded else 1,
-                    required_successes=3,
+                    required_successes=self.policy.successes_to_restore,
                     trigger_status=status,
                 )
+                self.transitions.append(event)
+                return event
 
     def capacity(self, state):
+        if state.degraded and state.degraded_until <= self.clock():
+            state.degraded = False
+            state.failures = state.recovery_successes = 0
+            state.recovery_generation += 1
+            self.transitions.append(
+                dict(
+                    endpoint=state.spec.name,
+                    transition="restored_by_ttl",
+                    certified_by_successes=False,
+                )
+            )
         base = min(state.spec.cap, self.global_cap)
         return max(1, base // 2) if state.degraded and base else base
+
+    async def reset(self, name):
+        """Explicit operator reset; it never sends a model probe or changes caps."""
+        async with self.condition:
+            matches = [
+                s for s in self.states.values() if s.spec.name == name and not s.removed
+            ]
+            if not matches:
+                raise ValueError("Unknown current endpoint: " + name)
+            for state in matches:
+                state.degraded = False
+                state.quarantined_until = state.cooldown_until = 0
+                state.quarantine_reason = None
+                state.failures = state.recovery_successes = 0
+                state.recovery_generation += 1
+            self.transitions.append(dict(endpoint=name, transition="operator_reset"))
+            self.condition.notify_all()
 
     async def drain(self):
         async with self.condition:
@@ -231,6 +318,15 @@ class DynamicPool:
     def snapshot(self) -> dict:
         return dict(
             global_cap=self.global_cap,
+            global_cap_ceiling=self.ceiling,
+            enabled_capacity_sum=sum(
+                s.spec.cap
+                for s in self.states.values()
+                if s.spec.enabled and not s.removed
+            ),
+            admission_peak_scope="pool_lifetime",
+            endpoint_policy=asdict(self.policy),
+            recent_transitions=self.transitions[-20:],
             inflight=self.inflight,
             peak=self.peak,
             waiting=self.waiting,
@@ -258,6 +354,11 @@ class DynamicPool:
                     inflight=s.inflight,
                     consecutive_failures=s.failures,
                     quarantined=s.quarantined_until > self.clock(),
+                    quarantine_reason=(
+                        s.quarantine_reason
+                        if s.quarantined_until > self.clock()
+                        else None
+                    ),
                     quarantine_seconds_remaining=(
                         None
                         if s.quarantined_until == float("inf")
@@ -269,16 +370,34 @@ class DynamicPool:
             ],
         )
 
-    async def watch(self, path: Path, stop: asyncio.Event, interval=10, on_reload=None):
+    async def watch(
+        self,
+        path: Path,
+        stop: asyncio.Event,
+        interval=10,
+        on_reload=None,
+        validate=None,
+    ):
         last = None
         while not stop.is_set():
             try:
                 raw = Path(path).read_bytes()
                 if raw != last:
-                    endpoints = endpoints_from_file(path)
-                    await self.update(endpoints)
+                    registry = registry_from_file(path)
+                    endpoints = registry["endpoints"]
+                    cap = registry["global_cap"]
+                    if (
+                        cap is not None
+                        and self.ceiling is not None
+                        and cap > self.ceiling
+                    ):
+                        raise ValueError("Registry global_cap exceeds admitted ceiling")
+                    if validate is not None:
+                        validate(endpoints)
                     if on_reload is not None:
                         on_reload(endpoints)
+                    await self.update(endpoints, global_cap=cap)
+                    interval = registry["reload_seconds"]
                     last = raw
             except (OSError, ValueError, TypeError, KeyError) as exc:
                 issue = dict(

@@ -42,5 +42,11 @@
     "channel_close": 60,
     "process_terminate": 10,
     "reader_join": 2
+  },
+  "endpoint_policy": {
+    "failures_to_degrade": 3,
+    "successes_to_restore": 3,
+    "degraded_ttl_seconds": 600,
+    "quarantine_seconds": 60
   }
 }

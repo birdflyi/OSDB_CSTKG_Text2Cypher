@@ -82,6 +82,14 @@ def retryable(value, policy):
     return not (policy.before_write_only and value.get("write_started"))
 
 
+def retry_delay(value):
+    try:
+        delay = float(value)
+    except (TypeError, ValueError):
+        return 5
+    return min(300, max(0, delay)) if delay == delay else 5
+
+
 def classify(value: dict, expected_model: str) -> dict:
     """A complete HTTP error and unknown model-generation outcome are distinct."""
     result = dict(value)
@@ -93,9 +101,7 @@ def classify(value: dict, expected_model: str) -> dict:
         status == 503 and value.get("retry_after_seconds") is not None
     ):
         result["status"] = "throttled"
-        result["retry_after_seconds"] = min(
-            300, max(0, value.get("retry_after_seconds", 5))
-        )
+        result["retry_after_seconds"] = retry_delay(value.get("retry_after_seconds"))
         return result
     if status in (401, 403, 404, 405):
         result.update(status="auth_error", generation_outcome_unknown=False)
@@ -156,6 +162,7 @@ class PreparedHTTP:
         self.connected_seconds = connected_seconds
         self._key = key
         self.reusable = False
+        self.scope = None
 
     def send(self, wire: bytes, read_timeout: float) -> dict:
         connection = self.connection
@@ -179,7 +186,7 @@ class PreparedHTTP:
         timer = threading.Timer(read_timeout, abort)
         timer.daemon = True
         timer.start()
-        self.owner.enter_request(self.endpoint.name)
+        self.owner.enter_request(self.endpoint.name, self.scope)
         try:
             endpoint = urlsplit(self.endpoint.url)
             connection.sock.settimeout(read_timeout)
@@ -236,7 +243,7 @@ class PreparedHTTP:
             with guard:
                 active = False
             timer.cancel()
-            self.owner.leave_request(self.endpoint.name)
+            self.owner.leave_request(self.endpoint.name, self.scope)
         value.update(
             write_started=write_started,
             request_write_completed=written,
@@ -276,26 +283,45 @@ class HTTPTransport:
         self.lock = threading.Lock()
         self.active = self.peak = self.started = 0
         self.endpoint_active = defaultdict(int)
+        self.scopes = {}
 
-    def enter_request(self, endpoint="unknown"):
+    def enter_request(self, endpoint="unknown", scope=None):
         with self.lock:
             self.active += 1
             self.started += 1
             self.peak = max(self.peak, self.active)
             self.endpoint_active[endpoint] += 1
+            if scope is not None:
+                values = self.scopes.setdefault(
+                    scope, dict(active=0, peak=0, started=0)
+                )
+                values["active"] += 1
+                values["started"] += 1
+                values["peak"] = max(values["peak"], values["active"])
 
-    def leave_request(self, endpoint="unknown"):
+    def leave_request(self, endpoint="unknown", scope=None):
         with self.lock:
             self.active -= 1
             self.endpoint_active[endpoint] -= 1
+            if scope is not None:
+                self.scopes[scope]["active"] -= 1
 
-    def snapshot(self):
+    def snapshot(self, scope=None):
         with self.lock:
+            if scope is not None:
+                values = self.scopes.get(scope, dict(active=0, peak=0, started=0))
+                return dict(
+                    network_inflight=values["active"],
+                    network_peak=values["peak"],
+                    network_started=values["started"],
+                    peak_scope="campaign",
+                )
             return dict(
                 network_inflight=self.active,
                 network_peak=self.peak,
                 network_started=self.started,
                 network_by_endpoint=dict(self.endpoint_active),
+                peak_scope="transport_lifetime",
             )
 
     def configure(self, endpoints):
@@ -315,8 +341,13 @@ class HTTPTransport:
             raise ValueError("Key reference escapes private directory")
         key = path.read_text(encoding="utf-8").strip()
         if not key:
-            raise ValueError("Empty private key file")
+            raise ValueError("Empty private key file: " + str(path))
         return key
+
+    def validate_keys(self, endpoints):
+        for endpoint in endpoints:
+            if endpoint.enabled:
+                self.load_key(endpoint.key_ref)
 
     def prepare(self, endpoint) -> PreparedHTTP:
         # Key/file validation and TCP connect happen BEFORE a budget charge/write.

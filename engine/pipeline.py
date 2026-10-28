@@ -11,7 +11,8 @@ from .config import (
     CampaignSpec,
     canonical,
     digest,
-    endpoints_from_file,
+    registry_from_file,
+    validate_run_fields,
     retry_policy,
     timeouts_from,
 )
@@ -364,6 +365,7 @@ async def live_pipeline(config_path: Path, *, resume=False):
     from .cli import load_items
 
     config = json.loads(Path(config_path).read_text(encoding="utf-8-sig"))
+    validate_run_fields(config)
     admission = json.loads(Path(config["admission_path"]).read_text(encoding="utf-8-sig"))
     if (
         admission.get("approved") is not True
@@ -373,7 +375,8 @@ async def live_pipeline(config_path: Path, *, resume=False):
     ):
         raise ValueError("Exact code and pipeline admission required")
     registry = Path(config["registry_path"])
-    endpoints = endpoints_from_file(registry)
+    registry_settings = registry_from_file(registry)
+    endpoints = registry_settings["endpoints"]
     allowed = set(admission["models"])
     sealed = {}
     for stage in config["stages"]:
@@ -417,14 +420,19 @@ async def live_pipeline(config_path: Path, *, resume=False):
     ledger_dir, legacy_dir = Path(config["ledger_dir"]), Path(config["legacy_ledger"])
     validate_paths(root, ledger_dir, legacy_dir, [Path(p) for p in config["protected_roots"]])
     snapshot = scan_legacy(legacy_dir, config.get("path_rewrites", []))
-    pool = DynamicPool(config["global_cap"])
-    await pool.update(endpoints)
+    pool = DynamicPool(
+        config["global_cap"], ceiling=config["global_cap"], policy=config.get("endpoint_policy")
+    )
+    await pool.update(endpoints, global_cap=registry_settings["global_cap"])
     with Ledger(
         ledger_dir, Path(config["approval_path"]), snapshot, config["budget_scope"]
     ) as ledger:
         transport = HTTPTransport(
             Path(config["key_dir"]),
             connect_timeout=timeouts_from(config.get("timeouts")).http_connect,
+        )
+        getattr(transport, "validate_keys", lambda rows: None)(
+            [endpoint for endpoint in endpoints if endpoint.model in allowed]
         )
         from .dispatch import BatchPacer, write_queue
 

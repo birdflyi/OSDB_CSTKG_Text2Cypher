@@ -16,7 +16,8 @@ from .config import (
     Sampling,
     canonical,
     digest,
-    endpoints_from_file,
+    registry_from_file,
+    validate_run_fields,
     retry_policy,
 )
 from .fake import FakeTransport, MemoryLedger
@@ -100,6 +101,7 @@ def verify(directory: Path) -> dict:
 
 async def live(config_path: Path):
     value = json.loads(config_path.read_text(encoding="utf-8-sig"))
+    validate_run_fields(value)
     approval_path = Path(value["approval_path"])
     approval = json.loads(approval_path.read_text(encoding="utf-8-sig"))
     if not approval.get("active") or not approval.get("approved"):
@@ -129,7 +131,8 @@ async def live(config_path: Path):
     protected = [Path(p) for p in value["protected_roots"]]
     validate_paths(spec.run_dir, spec.ledger_dir, legacy_dir, protected)
     registry = Path(value["registry_path"])
-    endpoints = endpoints_from_file(registry)
+    registry_settings = registry_from_file(registry)
+    endpoints = registry_settings["endpoints"]
     items = load_items(manifest_path, spec.model)
     for endpoint in endpoints:
         if endpoint.model == spec.model and endpoint.enabled:
@@ -139,15 +142,17 @@ async def live(config_path: Path):
                         "Endpoint does not declare support for the frozen wire parameters"
                     )
     snapshot = scan_legacy(legacy_dir, value.get("path_rewrites", []))
-    pool = DynamicPool(spec.global_cap)
-    await pool.update(endpoints)
+    pool = DynamicPool(spec.global_cap, ceiling=spec.global_cap, policy=spec.endpoint_policy)
+    await pool.update(endpoints, global_cap=registry_settings["global_cap"])
+    transport = HTTPTransport(Path(value["key_dir"]), connect_timeout=spec.timeouts.http_connect)
+    transport.validate_keys([endpoint for endpoint in endpoints if endpoint.model == spec.model])
     with Ledger(spec.ledger_dir, spec.approval_path, snapshot, spec.budget_scope) as ledger:
         scheduler = Scheduler(
             spec,
             pool,
             ledger,
             Journal(spec.run_dir / "journal.jsonl"),
-            HTTPTransport(Path(value["key_dir"]), connect_timeout=spec.timeouts.http_connect),
+            transport,
         )
         return await execute_campaign(
             scheduler,

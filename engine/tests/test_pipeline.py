@@ -146,6 +146,6 @@ def test_admitted_smoke_purpose_reaches_route_validation(tmp_path, monkeypatch):
     def route_validation(path):
         raise RuntimeError("route validation reached")
 
-    monkeypatch.setattr(pipeline, "endpoints_from_file", route_validation)
+    monkeypatch.setattr(pipeline, "registry_from_file", route_validation)
     with pytest.raises(RuntimeError, match="route validation reached"):
         asyncio.run(pipeline.live_pipeline(config_path))
