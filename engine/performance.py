@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from .campaign import distribution
-from .journal import Journal, write_new
+from .journal import Journal, write_new, write_status
 from .config import canonical
 
 
@@ -110,5 +110,9 @@ def report_pipeline(root, stages, ledger, config):
         monetary_cost=None,
         backend_capacity_measured=False,
     )
-    write_new(root / "performance.json", canonical(result))
+    target = root / "performance.json"
+    if target.exists():
+        write_status(target, result)
+    else:
+        write_new(target, canonical(result))
     return result
