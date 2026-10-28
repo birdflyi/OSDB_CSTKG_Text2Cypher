@@ -19,10 +19,12 @@ class UnknownExecution(RuntimeError):
 class TracedRpcExecutor:
     """Per-path DB evidence; one shared correlated channel, no hidden query retry."""
 
-    def __init__(self, client, directory, *, graph_sha256, worker_version):
+    def __init__(self, client, directory, *, graph_sha256, worker_version, identity=None):
         self.client, self.directory = client, directory
         self.graph_sha256, self.worker_version = graph_sha256, worker_version
         self.index = 0
+        if identity is not None:
+            write_new(directory / "identity.json", canonical(identity))
 
     def execute(self, query, parameters):
         folder = self.directory / ("%03d" % self.index)

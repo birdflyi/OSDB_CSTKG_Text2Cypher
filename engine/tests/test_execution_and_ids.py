@@ -112,3 +112,31 @@ def test_per_path_rpc_trace_preserves_snapshot_and_unknown_is_not_retried(tmp_pa
     with pytest.raises(UnknownExecution):
         executor.execute("RETURN 1", {})
     assert len(calls) == 2 and (tmp_path / "unknown/000/unknown.json").exists()
+
+
+def test_bounded_database_trace_path_keeps_full_identity(tmp_path):
+    import json
+    from types import SimpleNamespace
+    from engine.adapters.cypherbench_runtime import traced_executor
+
+    item = SimpleNamespace(
+        key="full-logical-key",
+        model="deepseek-v4.1-flash-1017-n72-75",
+        task_id="0a81b219-7a72-4dd8-bdce-2cb4989216a6",
+        method="ours",
+        graph="flight_accident",
+    )
+    client = SimpleNamespace(request=lambda value, timeout: dict(status="EXECUTED", rows=[[1]]))
+    executor = traced_executor(
+        client,
+        tmp_path,
+        item,
+        "full_detail_control",
+        dict(expected_ready=dict(graph_sha256="fixture")),
+    )
+    assert len(executor.directory.name) == 32
+    identity = json.loads((executor.directory / "identity.json").read_text(encoding="utf-8"))
+    assert identity["model"] == item.model and identity["task_id"] == item.task_id
+    assert identity["phase"] == "full_detail_control"
+    assert executor.execute("RETURN 1", {})["rows"] == [[1]]
+    assert (executor.directory / "000/result.json").exists()

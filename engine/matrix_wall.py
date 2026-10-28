@@ -19,14 +19,15 @@ def snapshot(plan_path, root):
     progress = read(root / "progress.json")
     cells = []
     for cell in plan.get("cells", []):
-        block = root / "blocks" / cell["name"]
+        receipt_root = Path(cell.get("receipt_root", root))
+        block = receipt_root / "blocks" / cell["name"]
         receipt = (
             read(block / "completed.json")
             or read(block / "incomplete.json")
             or read(block / "skipped.json")
         )
         if not receipt and cell.get("shared_with"):
-            receipt = read(root / "blocks" / cell["shared_with"] / "completed.json")
+            receipt = read(receipt_root / "blocks" / cell["shared_with"] / "completed.json")
         missing = cell.get("missing", [])
         status = receipt.get("status") or ("缺项" if missing else "待运行")
         if not receipt and (block / "started.json").exists():

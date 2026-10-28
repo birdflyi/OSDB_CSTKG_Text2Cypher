@@ -11,13 +11,33 @@ from .cypherbench import GRAPHS, ExecutedAnswerAdapter, feedback_item
 from ..campaign import execute_campaign
 from ..config import canonical, digest
 from ..execution import JsonRpcClient, TracedRpcExecutor
-from ..ids import component
 from ..journal import Journal, write_new
 from ..replay import frozen_modules
 from ..scheduler import Scheduler
 from ..transport import HTTPTransport
 from ..errors import IntegrityError, PersistenceError
 from ..ahead import local_budget
+
+
+def traced_executor(client, directory, item, kind, worker):
+    identity = dict(
+        logical_key=item.key,
+        model=item.model,
+        task_id=item.task_id,
+        method=item.method,
+        graph=item.graph,
+        phase=kind,
+    )
+    # One bounded directory component, with the full identity retained inside.
+    # This also leaves room for atomic temporary filenames on Windows.
+    folder = Path(directory) / "db_traces" / digest(canonical(identity))[:32]
+    return TracedRpcExecutor(
+        client,
+        folder,
+        identity=identity,
+        graph_sha256=worker["expected_ready"]["graph_sha256"],
+        worker_version="engine-neo4j-v1",
+    )
 
 
 async def dispatch_initial(stage, items, config, make_spec, pool, ledger, transport, saved, pacer):
@@ -246,16 +266,7 @@ async def run_graphs(
         spec = replace(specs, name=specs.name + "-" + graph, run_dir=directory / graph)
 
         def executor(item, kind=None):
-            return TracedRpcExecutor(
-                client,
-                spec.run_dir
-                / "db_traces"
-                / component(item.model)
-                / component(item.task_id)
-                / (kind or item.phase),
-                graph_sha256=worker["expected_ready"]["graph_sha256"],
-                worker_version="engine-neo4j-v1",
-            )
+            return traced_executor(client, spec.run_dir, item, kind or item.phase, worker)
 
         adapter = ExecutedAnswerAdapter(
             {graph: schema}, methods.interpret, executor, scoring.score_executed_answer
