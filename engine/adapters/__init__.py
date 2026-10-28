@@ -1,3 +1,11 @@
-from __future__ import annotations
+"""One explicit registry: a new benchmark changes its adapter and this table."""
 
-"""Benchmark semantics stay here; the pool/transport do not inspect gold."""
+from .cypherbench import CypherBenchAdapter
+
+ADAPTERS = {"cypherbench": CypherBenchAdapter}
+
+
+def get(kind):
+    if kind not in ADAPTERS:
+        raise ValueError("Unknown benchmark adapter: " + str(kind))
+    return ADAPTERS[kind]()

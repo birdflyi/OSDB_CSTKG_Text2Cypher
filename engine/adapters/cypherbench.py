@@ -132,3 +132,39 @@ class ExecutedAnswerAdapter:
 
     def score(self, outcome, reference, **kwargs):
         return self.scorer(outcome, reference, **kwargs)
+
+
+class CypherBenchAdapter:
+    """Registry boundary around the existing frozen graph runner and scorer."""
+
+    kind = "cypherbench"
+
+    def validate(self, stage, items, models, purpose):
+        from collections import Counter
+
+        if stage["benchmark"] != "CypherBench":
+            raise ValueError("Benchmark name differs from the CypherBench adapter")
+        if purpose == "formal_T1" and Counter((i.model, i.graph) for i in items) != Counter(
+            {(model, graph): n for model in models for graph, n in GRAPHS.items()}
+        ):
+            raise ValueError("Formal rerun must retain all2348 tasks for each declared model")
+        if (
+            not items
+            or any(i.graph not in GRAPHS for i in items)
+            or len({i.key for i in items}) != len(items)
+        ):
+            raise ValueError("Tasks must be unique and belong to the admitted graphs")
+
+    def splits(self, items):
+        from .base import Split
+
+        return tuple(
+            Split(graph, tuple(i for i in items if i.graph == graph))
+            for graph in GRAPHS
+            if any(i.graph == graph for i in items)
+        )
+
+    async def run(self, *args, **services):
+        from .cypherbench_runtime import run_graphs
+
+        return await run_graphs(*args, **services)

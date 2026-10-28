@@ -149,11 +149,11 @@ class DynamicPool:
             and s.cooldown_until <= now
         ]
 
-    async def acquire(self, model: str, timeout: float) -> Permit:
+    async def acquire(self, model: str, timeout: float, *, priority=False) -> Permit:
         ticket = object()
         deadline = self.clock() + timeout
         async with self.condition:
-            self._tickets.append((ticket, model))
+            self._tickets.append((ticket, model, priority))
             self.waiting += 1
             try:
                 while True:
@@ -171,8 +171,13 @@ class DynamicPool:
                         for s in matching
                     ):
                         raise RouteUnavailable("auth_error")
-                    # FIFO within a model; absent modelA does not block modelB.
-                    first = next((t for t, m in self._tickets if m == model), None)
+                    # FIFO per model/priority; feedback leads queued initial work.
+                    matching_tickets = [row for row in self._tickets if row[1] == model]
+                    first = (
+                        min(matching_tickets, key=lambda row: not row[2])[0]
+                        if matching_tickets
+                        else None
+                    )
                     if ticket is first and self.inflight < self.global_cap and eligible:
                         state = min(
                             eligible,
@@ -210,7 +215,9 @@ class DynamicPool:
                     except asyncio.TimeoutError:
                         pass
             finally:
-                self._tickets = [(t, m) for t, m in self._tickets if t is not ticket]
+                self._tickets = [
+                    (t, m, p) for t, m, p in self._tickets if t is not ticket
+                ]
                 self.waiting -= 1
                 self.condition.notify_all()
 

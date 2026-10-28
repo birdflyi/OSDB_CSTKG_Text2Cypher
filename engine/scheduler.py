@@ -208,6 +208,7 @@ class Scheduler:
                     min(
                         60, max(0.001, min(deadline, total_deadline) - time.monotonic())
                     ),
+                    priority=item.phase == "feedback",
                 )
                 break
             except RouteUnavailable as exc:

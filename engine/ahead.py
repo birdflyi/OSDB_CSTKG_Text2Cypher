@@ -1,4 +1,4 @@
-"""Serial model producer and serial DB consumer, joined by durable handoffs.
+"""Ordered model demand and serial DB consumer, joined by durable handoffs.
 
 Only handoff filenames pass through the in-memory queue. Model request evidence
 is already durable before the producer moves on. HTTP and DB use their existing
@@ -42,21 +42,21 @@ class AheadQueue:
     def __init__(self, stages, directory, dispatch, pool):
         self.stages = [s for s in stages if not s.get("blocked_reason")]
         self.dispatch, self.pool = dispatch, pool
-        self.ready = {s["name"]: asyncio.get_running_loop().create_future() for s in self.stages}
+        self.ready = {
+            s["name"]: asyncio.get_running_loop().create_future() for s in self.stages
+        }
         self.journal = Journal(Path(directory) / "handoffs.jsonl")
 
     async def produce(self):
-        fatal = None
-        for stage in self.stages:
+        # Enrol all admitted cells in order. The shared pool fills a free slot
+        # from the next cell without waiting for the previous cell's last reply.
+        async def dispatch_one(stage):
             name = stage["name"]
-            if fatal is not None:
-                self.ready[name].set_result(dict(error=fatal))
-                continue
             if self.pool.closed:
                 self.ready[name].set_result(dict(stopped="pool_drained"))
-                continue
-            self.journal.append("dispatch_started", stage=name)
+                return
             try:
+                self.journal.append("dispatch_started", stage=name)
                 value = await self.dispatch(stage)
                 self.journal.append(
                     "dispatch_landed",
@@ -66,13 +66,23 @@ class AheadQueue:
                 )
                 self.ready[name].set_result(value)
             except Exception as exc:
-                self.journal.append("dispatch_failed", stage=name, error_type=type(exc).__name__)
-                self.ready[name].set_result(dict(error=exc))
+                # Release the consumer even if the disk that stores events fails.
+                # A persistence error must drain admissions, not strand take().
+                failure = exc
+                try:
+                    self.journal.append(
+                        "dispatch_failed", stage=name, error_type=type(exc).__name__
+                    )
+                except Exception as journal_error:
+                    failure = PersistenceError(str(journal_error))
+                self.ready[name].set_result(dict(error=failure))
                 if isinstance(
-                    exc, (IntegrityError, PersistenceError, FileExistsError, BudgetError)
+                    failure,
+                    (IntegrityError, PersistenceError, FileExistsError, BudgetError),
                 ):
-                    fatal = exc
                     await self.pool.drain()
+
+        await asyncio.gather(*(dispatch_one(stage) for stage in self.stages))
 
     async def take(self, stage):
         value = await self.ready[stage["name"]]

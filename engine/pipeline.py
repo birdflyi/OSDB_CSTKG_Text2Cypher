@@ -20,6 +20,7 @@ from .journal import Journal, write_new, write_status
 from .ledger import BudgetError, Ledger, scan_legacy
 from .errors import IntegrityError, PersistenceError
 from .pool import DynamicPool
+from .adapters import get as get_adapter
 from .scheduler import Scheduler
 from .transport import HTTPTransport
 
@@ -389,24 +390,9 @@ async def live_pipeline(config_path: Path, *, resume=False):
         if any(i.benchmark != stage["benchmark"] or i.method != stage["method"] for i in items):
             raise ValueError("Each block must contain exactly one benchmark and one method")
         if admission["purpose"] in ("formal_T1", "smoke_T1"):
-            from .adapters.cypherbench import GRAPHS
-            from collections import Counter
-
-            if (
-                stage["benchmark"] != "CypherBench"
-                or stage.get("adapter", {}).get("kind") != "cypherbench"
-            ):
-                raise ValueError("Formal block requires a benchmark-specific admitted adapter")
-            if admission["purpose"] == "formal_T1" and Counter(
-                (i.model, i.graph) for i in items
-            ) != Counter({(m, g): n for m in allowed for g, n in GRAPHS.items()}):
-                raise ValueError("Formal rerun must retain all2348 tasks for each declared model")
-            if admission["purpose"] == "smoke_T1" and (
-                not items
-                or any(i.graph not in GRAPHS for i in items)
-                or len({i.key for i in items}) != len(items)
-            ):
-                raise ValueError("Smoke tasks must be unique and belong to the admitted graphs")
+            get_adapter(stage.get("adapter", {}).get("kind")).validate(
+                stage, items, allowed, admission["purpose"]
+            )
         for item in items:
             matching = [e for e in endpoints if e.model == item.model and e.enabled]
             if not matching or any(
@@ -466,9 +452,8 @@ async def live_pipeline(config_path: Path, *, resume=False):
 
         async def block(stage, initial_handoff=None):
             if admission["purpose"] in ("formal_T1", "smoke_T1"):
-                from .adapters.cypherbench_runtime import run_graphs
-
-                result = await run_graphs(
+                adapter = get_adapter(stage["adapter"]["kind"])
+                result = await adapter.run(
                     stage,
                     sealed[stage["name"]],
                     config,
