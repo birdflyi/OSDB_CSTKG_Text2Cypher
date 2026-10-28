@@ -170,3 +170,22 @@ def test_actual_watch_entry_loads_paths_and_exits_without_dispatch(tmp_path, mon
     plan, root = fixture(tmp_path)
     monkeypatch.setattr(TerminalKeys, "poll", lambda self: "q")
     watch(plan, root, interval=0.01)
+
+
+def test_render_shows_model_capacity_and_draining_endpoint(tmp_path):
+    plan, root = fixture(tmp_path)
+    value = SnapshotReader().snapshot(plan, root, now=101)
+    value["models"] = [dict(model="m", cap=32, capacity=16, inflight=3,
+                            waiting=1, endpoints=2, enabled=1, unavailable=False)]
+    value["endpoints"][0]["state"] = "draining"
+    value["endpoints"][0]["permits"] = 3
+    selected = Selection()
+    selected.choose(value)
+    stream = io.StringIO()
+    Console(file=stream, width=160, height=80, color_system=None).print(
+        render(value, selected, 80, now=101)
+    )
+    text = stream.getvalue()
+    assert "模型容量" in text
+    assert "32 / 16" in text
+    assert "排空中 3" in text

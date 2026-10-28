@@ -244,34 +244,40 @@ class SnapshotReader:
             (self.read(c["registry_path"]) for c in configs if c.get("registry_path")), {}
         )
         pool_rows = {e["name"]: e for e in latest.get("endpoints", [])}
+        registry_rows = {e["name"]: e for e in registry.get("endpoints", [])}
         endpoints = []
         events = sorted(
             (e for c in cells if c.get("role") != "共享首轮结果" for e in c.get("events", [])),
             key=lambda e: e.get("t", 0),
         )
-        for e in registry.get("endpoints", []):
-            pool = pool_rows.get(e["name"], {})
-            actual = latest.get("network_by_endpoint", {}).get(e["name"])
+        # Declared endpoints first, then anything the pool still drains.
+        names = list(registry_rows) + [n for n in pool_rows if n not in registry_rows]
+        for name in names:
+            declared = registry_rows.get(name, {})
+            pool = pool_rows.get(name, {})
+            actual = latest.get("network_by_endpoint", {}).get(name)
             recent = [
                 v
                 for v in events
-                if v.get("endpoint") == e["name"] and now - 60 <= v.get("t", 0) <= now
+                if v.get("endpoint") == name and now - 60 <= v.get("t", 0) <= now
             ]
             attempts = [
                 v
                 for v in events
                 if v["kind"] == "attempt_terminal"
-                and v.get("endpoint") == e["name"]
+                and v.get("endpoint") == name
                 and now - 300 <= v.get("t", 0) <= now
             ]
             endpoints.append(
                 dict(
-                    name=e["name"],
-                    model=e["model"],
-                    url=e["url"],
-                    enabled=e["enabled"],
-                    cap=e["cap"],
-                    effective_cap=pool.get("effective_cap", e["cap"]),
+                    name=name,
+                    model=declared.get("model") or pool.get("model"),
+                    url=declared.get("url"),
+                    enabled=declared.get("enabled", pool.get("enabled", False)),
+                    cap=declared.get("cap", pool.get("cap")),
+                    effective_cap=pool.get("effective_cap", declared.get("cap")),
+                    state=pool.get("state"),
+                    removed=bool(pool.get("removed")),
                     inflight=actual if active and fresh else (None if active else 0),
                     permits=pool.get("inflight"),
                     sent_60s=sum(v["kind"] == "send_started" for v in recent),
@@ -289,7 +295,10 @@ class SnapshotReader:
             mode=plan.get("mode"),
             progress=progress,
             cells=cells,
+            models=latest.get("models", []),
             endpoints=endpoints,
+            global_waiting=latest.get("waiting"),
+            enabled_capacity_sum=latest.get("enabled_capacity_sum"),
             generated_epoch=now,
             source_age_seconds=age,
             stale=active and not fresh,

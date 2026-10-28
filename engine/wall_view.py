@@ -24,6 +24,19 @@ def bar(done, total, width=12):
     return "[" + "#" * filled + "-" * (width - filled) + f"] {done}/{total}"
 
 
+def endpoint_label(endpoint):
+    state = endpoint.get("state")
+    if state == "draining":
+        return f"排空中 {endpoint.get('permits') or 0}"
+    if state == "quarantined":
+        return "隔离"
+    if state == "degraded":
+        return "降级"
+    if not endpoint.get("enabled"):
+        return "已禁用"
+    return "启用"
+
+
 @dataclass
 class Selection:
     task: str = ""
@@ -120,6 +133,20 @@ def render(value, selection, height=50, now=None):
             )
         matrix.add_row(method, *values, style="bold cyan" if method == chosen.get("method") else "")
     matrix.caption = f"矩阵第{selection.matrix_page%pages+1}/{pages}页；进度按最终评分计算"
+    models = None
+    if value.get("models"):
+        models = Table(title="模型容量：上限 / 可用 · 在途 / 等待", expand=True)
+        for title in ("模型", "上限 / 可用", "在途 / 等待", "端点"):
+            models.add_column(title, overflow="fold")
+        for row in value["models"]:
+            cap = "--" if row.get("cap") is None else row["cap"]
+            models.add_row(
+                row.get("model") or "--",
+                f"{cap} / {row.get('capacity', '--')}",
+                f"{row.get('inflight', 0)} / {row.get('waiting', 0)}",
+                f"{row.get('endpoints', 0)}个（{row.get('enabled', 0)}启用）"
+                + (" 下架" if row.get("unavailable") else ""),
+            )
     endpoints = Table(title="模型端点：实际HTTP与容量", expand=True)
     for title in (
         "端点 / 模型",
@@ -143,7 +170,7 @@ def render(value, selection, height=50, now=None):
         )
         endpoints.add_row(
             urlsplit(endpoint["url"]).netloc + "\n" + endpoint["model"],
-            "启用" if endpoint["enabled"] else "已禁用",
+            endpoint_label(endpoint),
             f"{endpoint['cap']} / {effective}",
             occupancy,
             f"{endpoint['sent_60s']} / {endpoint['completed_60s']}",
@@ -214,6 +241,7 @@ def render(value, selection, height=50, now=None):
     if height < 40:
         return Group(
             Panel(Text(headline), title="实验流水线总览"),
+            *([models] if models else []),
             endpoints,
             task_panel,
             detail_panel,
@@ -223,6 +251,7 @@ def render(value, selection, height=50, now=None):
     return Group(
         Panel(Text(headline), title="实验流水线总览"),
         matrix,
+        *([models] if models else []),
         endpoints,
         task_panel,
         detail_panel,
