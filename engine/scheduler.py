@@ -10,8 +10,9 @@ import time
 from .config import CampaignSpec, canonical, digest
 from .ids import component, logical_key, request_id
 from .ledger import BudgetError
+from .errors import IntegrityError, PersistenceError
 from .pool import AdmissionTimeout, DynamicPool
-from .transport import local_resource_error
+from .transport import endpoint_health, local_resource_error
 from .dispatch import BatchPacer, write_queue
 from .journal import write_new
 
@@ -67,9 +68,6 @@ class Scheduler:
         self.stop_reason = None
         self.events, self.paths = [], []
         self.saved_replies = {}
-        from .retries import RecoveryGate
-
-        self.recovery_gate = RecoveryGate(spec.retry.recovery_cap, spec.retry.recovery_min_cap)
         self.retry_sleep = asyncio.sleep
         self.pacer = BatchPacer(spec.batch_size, spec.batch_interval_seconds)
 
@@ -78,7 +76,7 @@ class Scheduler:
         self.draining.set()
         await self.pool.drain()
 
-    def _physical(self, item: Item, endpoint, attempt_no: int) -> dict:
+    def _physical(self, item: Item, endpoint, attempt_no: int, timeout_multiplier=1) -> dict:
         """One worker owns one connection and at most one POST. No hidden retry."""
         rid = component(self.spec.name) + "__" + request_id(item.key, attempt_no)
         # Full IDs live in the ledger; bounded directory names also work under
@@ -142,7 +140,7 @@ class Scheduler:
                     attempt_no=attempt_no,
                     endpoint=endpoint.name,
                 )
-                value = prepared.send(item.wire, item.read_timeout_seconds)
+                value = prepared.send(item.wire, item.read_timeout_seconds * timeout_multiplier)
             value.update(
                 request_id=rid,
                 logical_key=item.key,
@@ -160,6 +158,9 @@ class Scheduler:
                 started_epoch=started,
                 ended_epoch=time.time(),
                 reserve_and_claim_seconds=reserve_seconds,
+                base_read_timeout_seconds=item.read_timeout_seconds,
+                effective_read_timeout_seconds=item.read_timeout_seconds * timeout_multiplier,
+                timeout_multiplier=timeout_multiplier,
             )
             self.ledger.finish(rid, value)
             return value
@@ -198,7 +199,11 @@ class Scheduler:
                 permit = await self.pool.acquire(item.model, self.spec.admission_timeout_seconds)
                 break
             except AdmissionTimeout:
-                if self.spec.queue_wait_until_available and not self.draining.is_set():
+                if (
+                    self.spec.queue_wait_until_available
+                    and not self.draining.is_set()
+                    and not self.pool.closed
+                ):
                     # Queue time is not a failed model attempt. Keep the real
                     # item queued through temporary capacity/route gaps.
                     self.journal.append(
@@ -229,7 +234,12 @@ class Scheduler:
                         undispatched_reason="stop",
                     )
                 work = loop.run_in_executor(
-                    self.http_workers, self._physical, item, permit.endpoint, attempt
+                    self.http_workers,
+                    self._physical,
+                    item,
+                    permit.endpoint,
+                    attempt,
+                    permit.timeout_multiplier,
                 )
                 try:
                     value = await asyncio.shield(work)
@@ -238,15 +248,16 @@ class Scheduler:
                     # permit until it terminates; stop admitting other work.
                     await self.drain("controller_cancelled_drain")
                     value = await work
-                await self.pool.record(
+                transition = await self.pool.record(
                     permit,
-                    (
-                        "model_mismatch"
-                        if value.get("protocol_error") == "model_mismatch"
-                        else value["status"]
-                    ),
+                    endpoint_health(value),
                     retry_after=value.get("retry_after_seconds", 0),
                 )
+                if transition:
+                    await loop.run_in_executor(
+                        self.http_workers,
+                        lambda: self.journal.append("endpoint_recovery", **transition),
+                    )
         except BaseException as exc:
             # The worker may already have sent bytes. Drain instead of blindly retrying.
             await self.drain("controller_or_persistence_error")
@@ -259,7 +270,6 @@ class Scheduler:
             )
         value["admission_wait_seconds"] = admission_wait
         self.events.append(value)
-        self.pacer.record(value["status"])
         if value.get("undispatched_reason") == "budget":
             await self.drain("budget")
         # fsync is blocking IO. Keep it off the admission/event loop.
@@ -281,7 +291,9 @@ class Scheduler:
         previous, count = None, 0
         if saved is not None:
             if digest(item.wire) != saved["wire_sha256"]:
-                raise ValueError("Saved response belongs to different request bytes; never resend")
+                raise IntegrityError(
+                    "Saved response belongs to different request bytes; never resend"
+                )
             history = saved.get("history", [saved])
             for entry in history:
                 previous = dict(
@@ -314,9 +326,7 @@ class Scheduler:
                         not_before_epoch=time.time() + remaining,
                     )
                     await self.retry_sleep(remaining)
-                async with self.recovery_gate.slot():
-                    value = await self._generate_once(item, attempt)
-                    await self.recovery_gate.record(value["status"])
+                value = await self._generate_once(item, attempt)
             else:
                 value = await self._generate_once(item, attempt)
             # Local preparation failed before any HTTP write or reservation.
@@ -325,10 +335,8 @@ class Scheduler:
             for local_retry in range(2):
                 if value["status"] != "local_resource_error" or self.draining.is_set():
                     break
-                await self.recovery_gate.record(value["status"])
                 await self.retry_sleep(self.spec.retry.wait_seconds)
-                async with self.recovery_gate.slot():
-                    value = await self._generate_once(item, attempt)
+                value = await self._generate_once(item, attempt)
             if value["status"] == "local_resource_error":
                 value["undispatched_reason"] = "local_resource"
             if not self._retryable(value) or attempt == self.spec.retry.max_attempts:
@@ -342,9 +350,11 @@ class Scheduler:
                 result = await asyncio.get_running_loop().run_in_executor(
                     self.db_workers, execute, item, reply
                 )
+            except (PersistenceError, FileExistsError, IntegrityError):
+                raise
             except Exception as exc:
-                await self.drain("unknown_database_execution")
-                return dict(status="unknown", error=type(exc).__name__, complete=False)
+                await self._case_issue(item, "database", exc)
+                return dict(status="case_error", error=type(exc).__name__, complete=False)
             return dict(result, db_client_wall_seconds=time.monotonic() - started)
 
     async def _path(self, item, execute, feedback):
@@ -369,7 +379,7 @@ class Scheduler:
                         or repaired.method != item.method
                         or repaired.model != item.model
                     ):
-                        raise ValueError("Only one same-path operational feedback is allowed")
+                        raise IntegrityError("Only one same-path operational feedback is allowed")
                     await asyncio.get_running_loop().run_in_executor(
                         None,
                         write_queue,
@@ -399,14 +409,53 @@ class Scheduler:
             model_attempts=history,
             views=views,
         )
+        return await self._save_path(value)
+
+    async def _save_path(self, value):
         await asyncio.get_running_loop().run_in_executor(
             None,
             write_new,
-            self.spec.run_dir / "finals" / (digest(item.key.encode())[:32] + ".json"),
+            self.spec.run_dir / "finals" / (digest(value["logical_key"].encode())[:32] + ".json"),
             canonical(value),
         )
         self.paths.append(value)
         return value
+
+    async def _case_issue(self, item, phase, exc):
+        import traceback
+
+        await asyncio.get_running_loop().run_in_executor(
+            None,
+            lambda: self.journal.append(
+                "case_error",
+                logical_key=item.key,
+                phase=phase,
+                error_type=type(exc).__name__,
+                traceback="".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
+                automatic_model_retry=False,
+            ),
+        )
+
+    async def _isolated_path(self, item, execute, feedback):
+        try:
+            return await self._path(item, execute, feedback)
+        except (PersistenceError, FileExistsError, IntegrityError):
+            raise
+        except Exception as exc:
+            await self._case_issue(item, "path", exc)
+            final = dict(status="case_error", complete=False, error=type(exc).__name__)
+            return await self._save_path(
+                dict(
+                    logical_key=item.key,
+                    task_id=item.task_id,
+                    graph=item.graph,
+                    method=item.method,
+                    model=item.model,
+                    final=final,
+                    model_attempts=[e for e in self.events if e.get("logical_key") == item.key],
+                    views=[dict(phase=item.phase, outcome=final)],
+                )
+            )
 
     async def run(self, items, *, execute=None, feedback=None):
         items = list(items)
@@ -417,7 +466,9 @@ class Scheduler:
             raise ValueError("Campaign model cannot be changed by endpoint routing")
         if feedback is not None and any(item.phase != "initial" for item in items):
             raise ValueError("Feedback orchestration starts from initial paths only")
-        tasks = [asyncio.create_task(self._path(item, execute, feedback)) for item in items]
+        tasks = [
+            asyncio.create_task(self._isolated_path(item, execute, feedback)) for item in items
+        ]
         try:
             for task in asyncio.as_completed(tasks):
                 try:

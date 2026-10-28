@@ -6,10 +6,28 @@ from pathlib import Path
 import threading
 import time
 import uuid
+from functools import wraps
 
 from .config import canonical
+from .errors import PersistenceError
 
 
+def _evidence_write(function):
+    """Keep storage failures distinct from recoverable network/case errors."""
+
+    @wraps(function)
+    def guarded(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except FileExistsError:
+            raise  # Existing immutable evidence is never overwritten.
+        except OSError as exc:
+            raise PersistenceError("Evidence write failed: " + function.__name__) from exc
+
+    return guarded
+
+
+@_evidence_write
 def write_new(path: Path, data: bytes):
     """Publish a complete immutable file; never replace an existing artifact."""
     path = Path(path)
@@ -25,6 +43,7 @@ def write_new(path: Path, data: bytes):
         temporary.unlink(missing_ok=True)
 
 
+@_evidence_write
 def write_status(path: Path, value: dict):
     """Replace a derived status atomically; immutable evidence uses write_new."""
     path = Path(path)
@@ -45,6 +64,7 @@ class Journal:
         self.path = Path(path)
         self.lock = threading.RLock()
 
+    @_evidence_write
     def append(self, kind: str, **fields):
         event = dict(t=time.time(), kind=kind, **fields)
         self.path.parent.mkdir(parents=True, exist_ok=True)

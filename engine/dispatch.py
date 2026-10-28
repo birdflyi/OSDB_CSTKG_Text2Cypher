@@ -12,20 +12,18 @@ from .journal import write_new
 class BatchPacer:
     """Release small batches without waiting for earlier responses to finish.
 
-    Endpoint/global permits remain the authority for actual concurrency. After
-    failures, finer batches keep the same release rate, rather than permanently
-    collapsing the whole recovery queue to a single outstanding request.
+    Endpoint/global permits own concurrency and recovery. This gate only spaces
+    releases; endpoint failures never change its configured sending interval.
     """
 
-    def __init__(self, size=8, interval=0, minimum=2):
-        if size < 1 or interval < 0 or not 1 <= minimum <= size:
+    def __init__(self, size=8, interval=0):
+        if size < 1 or interval < 0:
             raise ValueError("Invalid paced batch limits")
-        self.maximum, self.size, self.minimum = size, size, minimum
+        self.size = size
         self.interval = interval
         self.per_request = interval / size
         self.remaining, self.next_release = 0, 0
         self.released = 0
-        self.window = []
         self.lock = asyncio.Lock()
 
     async def wait(self, drain):
@@ -48,16 +46,6 @@ class BatchPacer:
                 self.remaining -= 1
             self.released += 1
             return True
-
-    def record(self, status):
-        self.window.append(status in ("infra", "unknown", "throttled", "local_resource_error"))
-        if len(self.window) == 8:
-            failures = sum(self.window)
-            if failures >= 2:
-                self.size = max(self.minimum, self.size // 2)
-            elif failures == 0:
-                self.size = min(self.maximum, self.size * 2)
-            self.window.clear()
 
     def snapshot(self):
         return dict(

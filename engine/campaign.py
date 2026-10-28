@@ -37,9 +37,12 @@ CORE_FILES = (
     "results.py",
     "monitor.py",
     "recovery.py",
-    "retries.py",
+    "errors.py",
     "dispatch.py",
     "launch.py",
+    "matrix.py",
+    "matrix_wall.py",
+    "mirror.py",
 )
 
 
@@ -171,8 +174,6 @@ async def execute_campaign(
             samples.append(
                 dict(
                     t=time.time(),
-                    retry_cap=scheduler.recovery_gate.cap,
-                    retry_inflight=scheduler.recovery_gate.active,
                     dispatch=scheduler.pacer.snapshot(),
                     **scheduler.pool.snapshot(),
                     **network,
@@ -247,6 +248,7 @@ async def execute_campaign(
             terminal=run_budget["terminal"],
             logical_paths_finished=len(paths),
             by_status=dict(statuses),
+            case_failures=sum(p["final"].get("status") == "case_error" for p in paths),
         ),
         denominators=dict(
             by_graph=dict(Counter(i.graph for i in items)),
@@ -291,9 +293,10 @@ async def execute_campaign(
         endpoint_capacity=scheduler.pool.snapshot(),
         registry_issues=scheduler.pool.issues,
         recovery_admission=dict(
-            cap=scheduler.recovery_gate.cap,
-            minimum=scheduler.recovery_gate.minimum,
-            reductions=scheduler.recovery_gate.changes,
+            authority="DynamicPool",
+            capacity_factor=0.5,
+            timeout_multiplier=2,
+            restore_after_successes=3,
         ),
         monetary_cost=None,
         server_decode_TPS=None,

@@ -87,15 +87,12 @@ def test_pipeline_drain_reaches_capacity_waiting_campaign(tmp_path):
     asyncio.run(scenario())
 
 
-def test_failures_make_finer_batches_without_serializing_or_lowering_release_rate():
+def test_batch_pacing_is_a_fixed_rate_independent_of_endpoint_recovery():
     async def scenario():
         pacer = BatchPacer(8, 2)
-        for _ in range(16):
-            pacer.record("unknown")
-        assert pacer.size == 2 and pacer.snapshot()["interval_seconds"] == 0.5
-        for _ in range(16):
-            pacer.record("ok")
-        assert pacer.size == 8 and pacer.snapshot()["interval_seconds"] == 2
+        snapshot = pacer.snapshot()
+        assert snapshot["batch_size"] == 8 and snapshot["interval_seconds"] == 2
+        assert snapshot["response_barrier"] is False
 
     asyncio.run(scenario())
 

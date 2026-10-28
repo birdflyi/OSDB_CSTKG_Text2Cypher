@@ -10,7 +10,6 @@ import pytest
 
 from engine.config import RetryPolicy, digest
 from engine.fake import FakeTransport
-from engine.retries import RecoveryGate
 from engine.tests.test_scheduler import make_scheduler
 from engine.workers.neo4j import check_bolt_available
 
@@ -185,20 +184,6 @@ def test_quality_outcomes_are_not_transport_retried(tmp_path, status):
         )
         await scheduler.run(items)
         assert transport.calls == 1
-
-    asyncio.run(scenario())
-
-
-def test_failure_window_shrinks_retry_gate_and_releases_all_slots():
-    async def scenario():
-        gate = RecoveryGate(16, 4)
-        for _ in range(16):
-            async with gate.slot():
-                await gate.record("infra")
-        assert gate.cap == 4 and gate.active == 0
-        for _ in range(8):
-            await gate.record("ok")
-        assert gate.cap == 4 and len(gate.changes) == 2
 
     asyncio.run(scenario())
 

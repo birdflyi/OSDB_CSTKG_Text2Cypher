@@ -138,11 +138,7 @@ async def live(config_path: Path):
                         "Endpoint does not declare support for the frozen wire parameters"
                     )
     snapshot = scan_legacy(legacy_dir, value.get("path_rewrites", []))
-    pool = DynamicPool(
-        spec.global_cap,
-        consecutive_failures=spec.consecutive_failures,
-        quarantine_seconds=spec.quarantine_seconds,
-    )
+    pool = DynamicPool(spec.global_cap)
     await pool.update(endpoints)
     with Ledger(spec.ledger_dir, spec.approval_path, snapshot, spec.budget_scope) as ledger:
         scheduler = Scheduler(

@@ -6,6 +6,7 @@ import pytest
 
 from engine.config import Endpoint, Sampling
 from engine.pipeline import run_stages
+from engine.errors import IntegrityError
 from engine.tests.test_scheduler import make_scheduler
 
 
@@ -36,10 +37,10 @@ def test_serial_blocks_continue_without_another_user_prompt(tmp_path):
 def test_interrupted_block_is_never_implicitly_resent(tmp_path):
     async def scenario():
         async def fail(stage):
-            raise RuntimeError("interrupted")
+            raise IntegrityError("interrupted")
 
         stages = [dict(name="a"), dict(name="b")]
-        with pytest.raises(RuntimeError):
+        with pytest.raises(IntegrityError):
             await run_stages(tmp_path / "p", stages, fail)
         calls = []
 

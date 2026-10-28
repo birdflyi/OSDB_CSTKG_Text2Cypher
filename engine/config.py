@@ -102,14 +102,10 @@ class RetryPolicy:
     wait_seconds: float = 10
     before_write_only: bool = True
     retry_unknown: bool = False
-    recovery_cap: int = 16
-    recovery_min_cap: int = 4
 
     def __post_init__(self):
         if not 1 <= self.max_attempts <= 3 or self.wait_seconds < 10:
             raise ValueError("At most3 attempts; retry interval at least10 seconds")
-        if not 1 <= self.recovery_min_cap <= self.recovery_cap:
-            raise ValueError("Invalid recovery concurrency bounds")
         if self.retry_unknown and self.before_write_only:
             raise ValueError("Unknown-outcome retry requires explicit after-write authorization")
 
@@ -122,10 +118,8 @@ class CampaignSpec:
     ledger_dir: Path
     approval_path: Path
     budget_scope: str
-    global_cap: int = 128
+    global_cap: int
     admission_timeout_seconds: float = 600
-    quarantine_seconds: float = 60
-    consecutive_failures: int = 3
     db_cap: int = 4
     retry: RetryPolicy = field(default_factory=RetryPolicy)
     compare_with_legacy: bool = False
@@ -145,8 +139,6 @@ class CampaignSpec:
             or type(self.batch_size) is not int
             or self.batch_size < 2
             or self.batch_interval_seconds < 0
-            or self.quarantine_seconds < 0
-            or self.consecutive_failures < 1
         ):
             raise ValueError("Incomplete campaign or invalid concurrency limits")
 

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from .config import digest
+from .errors import IntegrityError
 
 
 def checkpoint_replies(path, ledger):
@@ -38,13 +39,13 @@ def saved_replies(manifest_path, expected_sha256, ledger):
     """
     path = Path(manifest_path)
     if digest(path.read_bytes()) != expected_sha256:
-        raise ValueError("Changed response recovery manifest")
+        raise IntegrityError("Changed response recovery manifest")
     entries = json.loads(path.read_text(encoding="utf-8"))
     # A partial import could reset the cross-version attempt count. Require the
     # complete charged scope, not just the caller's preferred response subset.
     expected_ids = {r["request_id"] for r in ledger.records.values() if r["scope"] == ledger.scope}
     if {e["request_id"] for e in entries} != expected_ids:
-        raise ValueError("Recovery must account for every charged attempt in its scope")
+        raise IntegrityError("Recovery must account for every charged attempt in its scope")
     replies = {}
     for entry in sorted(entries, key=lambda e: ledger.records[e["request_id"]]["slot"]):
         record = ledger.records[entry["request_id"]]
@@ -55,21 +56,23 @@ def saved_replies(manifest_path, expected_sha256, ledger):
             or digest(request.read_bytes()) != entry["request_sha256"]
             or digest(terminal.read_bytes()) != entry["terminal_sha256"]
         ):
-            raise ValueError("Changed charged response/request")
+            raise IntegrityError("Changed charged response/request")
         value = json.loads(terminal.read_text(encoding="utf-8"))
         if value["request_id"] != entry["request_id"] or value["budget_slot"] != record["slot"]:
-            raise ValueError("Cached physical identity differs")
+            raise IntegrityError("Cached physical identity differs")
         previous = replies.get(record["logical_key"])
         history = list(previous["history"]) if previous else []
         if previous and (
             previous["response"]["status"] not in ("infra", "unknown", "throttled")
             or previous["wire_sha256"] != entry["request_sha256"]
         ):
-            raise ValueError("Recovery cannot replace a completed model response or change bytes")
+            raise IntegrityError(
+                "Recovery cannot replace a completed model response or change bytes"
+            )
         if len(history) >= 3:
-            raise ValueError("Recovery history exceeds three physical attempts")
+            raise IntegrityError("Recovery history exceeds three physical attempts")
         if any(r["response"]["request_id"] == entry["request_id"] for r in history):
-            raise ValueError("Duplicate physical recovery identity")
+            raise IntegrityError("Duplicate physical recovery identity")
         history.append(
             dict(
                 response=value,

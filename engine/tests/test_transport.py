@@ -104,14 +104,23 @@ def test_hot_removal_closes_idle_and_late_returned_connections(tmp_path):
 def test_server_closed_idle_connection_is_retired_before_any_post(tmp_path):
     import time
 
+    closed = threading.Event()
+
+    class Server(http.server.ThreadingHTTPServer):
+        def shutdown_request(self, request):
+            super().shutdown_request(request)
+            closed.set()
+
     class Handler(http.server.BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
         timeout = 0.05
         clients = []
+        sessions = []
 
         def do_POST(self):
             self.rfile.read(int(self.headers["Content-Length"]))
             Handler.clients.append(self.client_address)
+            Handler.sessions.append(self)
             body = b'{"model":"m","choices":[{"finish_reason":"stop","message":{"content":"ok"}}]}'
             self.send_response(200)
             self.send_header("Content-Length", str(len(body)))
@@ -121,7 +130,7 @@ def test_server_closed_idle_connection_is_retired_before_any_post(tmp_path):
         def log_message(self, *args):
             pass
 
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    server = Server(("127.0.0.1", 0), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     (tmp_path / "test.txt").write_text("synthetic-key", encoding="utf-8")
     endpoint = Endpoint("a", "http://127.0.0.1:%d/test" % server.server_port, "m", "test", 2)
@@ -132,8 +141,8 @@ def test_server_closed_idle_connection_is_retired_before_any_post(tmp_path):
             assert prepared.send(b'{"model":"m"}', 2)["status"] == "ok"
             prepared.close()
             if n == 0:
-                time.sleep(0.12)
-        assert len(Handler.clients) == 2 and Handler.clients[0] != Handler.clients[1]
+                assert closed.wait(3), "server did not close the idle connection"
+        assert len(Handler.sessions) == 2 and Handler.sessions[0] is not Handler.sessions[1]
         assert transport.started == 2
     finally:
         transport.close()

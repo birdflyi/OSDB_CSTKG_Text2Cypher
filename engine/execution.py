@@ -9,6 +9,7 @@ import uuid
 
 from .config import canonical
 from .journal import write_new
+from .errors import IntegrityError
 
 
 class UnknownExecution(RuntimeError):
@@ -79,7 +80,7 @@ class JsonRpcClient:
         try:
             self.ready_value = self.ready.result(ready_timeout)
             if any(self.ready_value.get(k) != v for k, v in expected_ready.items()):
-                raise ValueError("Worker READY owner/snapshot/version mismatch")
+                raise IntegrityError("Worker READY owner/snapshot/version mismatch")
             self.startup_roundtrip_seconds = time.monotonic() - started
         except BaseException:
             self.close()

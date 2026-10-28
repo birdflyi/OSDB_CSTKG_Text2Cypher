@@ -20,6 +20,9 @@ class EndpointState:
     quarantined_until: float = 0
     cooldown_until: float = 0
     removed: bool = False
+    degraded: bool = False
+    recovery_successes: int = 0
+    recovery_generation: int = 0
 
 
 class Permit:
@@ -27,6 +30,8 @@ class Permit:
         self.pool, self.state = pool, state
         self.endpoint = state.spec  # Immutable routing snapshot for this attempt.
         self.released = False
+        self.timeout_multiplier = 2 if state.degraded else 1
+        self.recovery_generation = state.recovery_generation
 
     async def release(self):
         async with self.pool.condition:
@@ -55,15 +60,11 @@ class DynamicPool:
         self,
         global_cap: int,
         *,
-        consecutive_failures=3,
-        quarantine_seconds=60,
         clock=time.monotonic,
     ):
         if global_cap < 1:
             raise ValueError("Positive global cap required")
         self.global_cap = global_cap
-        self.consecutive_failures = consecutive_failures
-        self.quarantine_seconds = quarantine_seconds
         self.clock = clock
         self.condition = asyncio.Condition()
         self.states = {}
@@ -101,7 +102,7 @@ class DynamicPool:
             if s.spec.model == model
             and s.spec.enabled
             and not s.removed
-            and s.spec.cap > s.inflight
+            and self.capacity(s) > s.inflight
             and s.quarantined_until <= now
             and s.cooldown_until <= now
         ]
@@ -121,7 +122,8 @@ class DynamicPool:
                     first = next((t for t, m in self._tickets if m == model), None)
                     if ticket is first and self.inflight < self.global_cap and eligible:
                         state = min(
-                            eligible, key=lambda s: ((s.inflight + 1) / s.spec.cap, s.spec.name)
+                            eligible,
+                            key=lambda s: ((s.inflight + 1) / self.capacity(s), s.spec.name),
                         )
                         state.inflight += 1
                         self.inflight += 1
@@ -150,18 +152,54 @@ class DynamicPool:
     async def record(self, permit: Permit, status: str, *, retry_after=0):
         async with self.condition:
             state = permit.state
+            transition = None
             if status == "model_mismatch":
                 state.quarantined_until = float("inf")
-            elif status in ("infra", "unknown"):
-                state.failures += 1
-                if state.failures >= self.consecutive_failures:
-                    state.quarantined_until = self.clock() + self.quarantine_seconds
-                    state.failures = 0
-            elif status == "throttled":
-                state.cooldown_until = self.clock() + max(0, retry_after)
-            elif status not in ("local_resource_error", "admission_timeout"):
+                state.recovery_successes = 0
+                state.recovery_generation += 1
+            elif status in ("infra", "unknown", "throttled"):
+                state.recovery_successes = 0
+                if not state.degraded:
+                    state.degraded = True
+                    state.recovery_generation += 1
+                    transition = "degraded"
+                if status == "throttled":
+                    state.cooldown_until = self.clock() + max(0, retry_after)
+                else:
+                    state.failures += 1
+            elif status in ("ok", "length", "empty", "refused"):
                 state.failures = 0
+                # Completions admitted before degradation do not certify the
+                # reduced-capacity / extended-timeout recovery policy.
+                if (
+                    state.degraded
+                    and permit.timeout_multiplier == 2
+                    and permit.recovery_generation == state.recovery_generation
+                ):
+                    state.recovery_successes += 1
+                    if state.recovery_successes == 3:
+                        state.degraded = False
+                        state.recovery_successes = 0
+                        state.recovery_generation += 1
+                        transition = "restored"
+            elif state.degraded:
+                state.recovery_successes = 0
             self.condition.notify_all()
+            if transition:
+                return dict(
+                    endpoint=state.spec.name,
+                    model=state.spec.model,
+                    transition=transition,
+                    configured_cap=state.spec.cap,
+                    effective_cap=self.capacity(state),
+                    timeout_multiplier=2 if state.degraded else 1,
+                    required_successes=3,
+                    trigger_status=status,
+                )
+
+    def capacity(self, state):
+        base = min(state.spec.cap, self.global_cap)
+        return max(1, base // 2) if state.degraded and base else base
 
     async def drain(self):
         async with self.condition:
@@ -179,6 +217,10 @@ class DynamicPool:
                     name=s.spec.name,
                     model=s.spec.model,
                     cap=s.spec.cap,
+                    effective_cap=self.capacity(s),
+                    degraded=s.degraded,
+                    recovery_successes=s.recovery_successes,
+                    timeout_multiplier=2 if s.degraded else 1,
                     enabled=s.spec.enabled,
                     removed=s.removed,
                     inflight=s.inflight,

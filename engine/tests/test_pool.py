@@ -65,9 +65,9 @@ def test_model_groups_and_global_capacity_are_independent():
     asyncio.run(scenario())
 
 
-def test_quarantine_is_endpoint_local_and_throttling_is_not_failure():
+def test_failure_reduces_capacity_without_pausing_and_throttling_is_endpoint_local():
     async def scenario():
-        pool = DynamicPool(2, quarantine_seconds=0.03)
+        pool = DynamicPool(2)
         await pool.update([endpoint("a", 1), endpoint("b", 1)])
         for _ in range(3):
             permit = await pool.acquire("m", 1)
@@ -75,10 +75,14 @@ def test_quarantine_is_endpoint_local_and_throttling_is_not_failure():
             await pool.record(permit, "infra")
             await permit.release()
         permit = await pool.acquire("m", 1)
-        assert permit.endpoint.name == "b"
+        assert permit.endpoint.name == "a" and permit.timeout_multiplier == 2
+        assert permit.state.quarantined_until == 0
         await pool.record(permit, "throttled", retry_after=0.01)
-        assert permit.state.failures == 0
+        assert permit.state.recovery_successes == 0
         await permit.release()
+        other = await pool.acquire("m", 1)
+        assert other.endpoint.name == "b" and other.timeout_multiplier == 1
+        await other.release()
         await asyncio.sleep(0.04)
         permit = await pool.acquire("m", 1)
         assert permit.endpoint.name == "a"

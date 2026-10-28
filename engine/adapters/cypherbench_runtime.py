@@ -16,34 +16,44 @@ from ..journal import Journal, write_new
 from ..replay import frozen_modules
 from ..scheduler import Scheduler
 from ..transport import HTTPTransport
+from ..errors import IntegrityError, PersistenceError
+
+
+def _score_answer(qid, outcome, references, scoring, compare):
+    try:
+        reference = references[qid]
+        status = outcome.get("legacy_status", outcome["status"])
+        if status not in ("EXECUTED", "TRUNCATED", "UNSUPPORTED", "MODEL_ERROR", "EXECUTION_ERROR"):
+            status = "INFRASTRUCTURE_ERROR"
+        score = scoring.score_executed_answer(
+            status=status,
+            predicted_rows=outcome.get("rows"),
+            reference_rows=scoring.read_reference_answer(reference["answer_json"]),
+            order_matters="order by" in reference["gold_cypher"].lower(),
+            qid=qid,
+            compare=compare,
+        )
+        return dict(status=status, score=score)
+    except (PersistenceError, FileExistsError, IntegrityError):
+        raise
+    except Exception as exc:
+        import traceback
+
+        return dict(
+            status="SCORING_ERROR",
+            score=None,
+            scoring_error=dict(error_type=type(exc).__name__, traceback=traceback.format_exc()),
+        )
 
 
 def score_paths(paths, references, scoring, compare):
     """Evaluator-only reference access, after final answers have been committed."""
     scores = []
     for path in paths:
-        reference = references[path["task_id"]]
         for label, outcome in [
             ("initial", path["views"][0]["outcome"]),
             ("final", path["final"]),
         ]:
-            status = outcome.get("legacy_status", outcome["status"])
-            if status not in (
-                "EXECUTED",
-                "TRUNCATED",
-                "UNSUPPORTED",
-                "MODEL_ERROR",
-                "EXECUTION_ERROR",
-            ):
-                status = "INFRASTRUCTURE_ERROR"
-            score = scoring.score_executed_answer(
-                status=status,
-                predicted_rows=outcome.get("rows"),
-                reference_rows=scoring.read_reference_answer(reference["answer_json"]),
-                order_matters="order by" in reference["gold_cypher"].lower(),
-                qid=path["task_id"],
-                compare=compare,
-            )
             scores.append(
                 dict(
                     model=path["model"],
@@ -51,8 +61,7 @@ def score_paths(paths, references, scoring, compare):
                     qid=path["task_id"],
                     graph=path["graph"],
                     view=label,
-                    status=status,
-                    score=score,
+                    **_score_answer(path["task_id"], outcome, references, scoring, compare),
                 )
             )
     return scores
@@ -70,7 +79,6 @@ async def run_graphs(
     client_factory=JsonRpcClient,
     shared_transport=None,
     saved_replies=None,
-    recovery_gate=None,
     pacer=None,
 ):
     """One method/benchmark block; lifecycle-serial graphs, rolling model requests.
@@ -80,9 +88,12 @@ async def run_graphs(
     need their own admitted adapter; they cannot be cast into CypherBench.
     """
     settings = stage["adapter"]
-    _, methods, scoring = frozen_modules(
-        Path(settings["code_root"]), Path(settings["legacy_freeze"])
-    )
+    try:
+        _, methods, scoring = frozen_modules(
+            Path(settings["code_root"]), Path(settings["legacy_freeze"])
+        )
+    except ValueError as exc:
+        raise IntegrityError("Frozen method sources differ") from exc
     data = Path(settings["data"])
     compare = scoring.load_official_comparator(Path(settings["official_source"]))
     specs = make_spec(stage)
@@ -90,6 +101,7 @@ async def run_graphs(
     directory.mkdir(parents=True, exist_ok=False)
     scores, summaries = [], []
     undispatched = Counter()
+    case_failures = 0
     drain_paths = [Path(config.get("run_dir", directory.parent)) / "DRAIN", directory / "DRAIN"]
     if any(i.graph not in GRAPHS for i in items):
         raise ValueError("Formal CypherBench requires the seven declared test graphs")
@@ -115,8 +127,6 @@ async def run_graphs(
         )
         pre_scheduler.saved_replies = saved_replies or {}
         pre_scheduler.extra_drain_paths = drain_paths
-        if recovery_gate is not None:
-            pre_scheduler.recovery_gate = recovery_gate
         if pacer is not None:
             pre_scheduler.pacer = pacer
         pre_summary = await execute_campaign(
@@ -138,7 +148,7 @@ async def run_graphs(
             raise ValueError("Missing graph in fixed formal denominator")
         worker = settings["workers"][graph]
         if digest(canonical(worker)) != settings["worker_sha256"][graph]:
-            raise ValueError("Changed graph runtime contract")
+            raise IntegrityError("Changed graph runtime contract")
         schema = json.loads(
             (data / "upstream/graphs/schemas" / (graph + "_schema.json")).read_text(
                 encoding="utf-8"
@@ -187,8 +197,6 @@ async def run_graphs(
             )
             scheduler.saved_replies = saved_replies or {}
             scheduler.extra_drain_paths = drain_paths
-            if recovery_gate is not None:
-                scheduler.recovery_gate = recovery_gate
             if pacer is not None:
                 scheduler.pacer = pacer
             summary = await execute_campaign(
@@ -213,7 +221,7 @@ async def run_graphs(
             )
             if hard_stop or (
                 summary["undispatched_by_reason"]
-                and not config.get("continue_on_path_failures", False)
+                and not config.get("continue_on_path_failures", True)
             ):
                 return dict(
                     stop_reason=summary["stop_reason"]
@@ -278,26 +286,31 @@ async def run_graphs(
             for control in controls:
                 if control["status"] != "shared_plan_control":
                     continue
-                reference = references[control["qid"]]
                 outcome = control["full_detail"]
-                score = scoring.score_executed_answer(
-                    status=outcome["status"],
-                    predicted_rows=outcome.get("rows"),
-                    reference_rows=scoring.read_reference_answer(reference["answer_json"]),
-                    order_matters="order by" in reference["gold_cypher"].lower(),
-                    qid=control["qid"],
-                    compare=compare,
-                )
+                scored = _score_answer(control["qid"], outcome, references, scoring, compare)
                 control_scores.append(
                     dict(
                         qid=control["qid"],
                         model=control["model"],
                         graph=graph,
-                        full_detail_score=score,
-                        simple_correct_score=score,
+                        full_detail_score=scored["score"],
+                        simple_correct_score=scored["score"],
+                        scoring_error=scored.get("scoring_error"),
                         independent_model_method=False,
                     )
                 )
+            failures = {
+                p["task_id"] for p in scheduler.paths if p["final"].get("status") == "case_error"
+            }
+            failures.update(
+                r["qid"] for r in graph_scores + control_scores if r.get("scoring_error")
+            )
+            case_failures += len(failures)
+            for row in graph_scores + control_scores:
+                if row.get("scoring_error"):
+                    scheduler.journal.append(
+                        "scoring_error", qid=row["qid"], **row["scoring_error"]
+                    )
             write_new(spec.run_dir / "shared_control_scores.json", canonical(control_scores))
             scores.extend(graph_scores)
             write_new(spec.run_dir / "scores.json", canonical(graph_scores))
@@ -312,5 +325,6 @@ async def run_graphs(
         scored_views=len(scores),
         denominators_by_model=dict(Counter(i.model for i in items)),
         undispatched_by_reason=dict(undispatched),
+        case_failures=case_failures,
         result_kind="new_model_rerun_not_replacement_of_historical_results",
     )

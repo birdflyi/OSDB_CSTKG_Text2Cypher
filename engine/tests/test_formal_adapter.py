@@ -52,8 +52,9 @@ def test_final_answer_scoring_keeps_models_initial_feedback_and_failure_denomina
 
 
 @pytest.mark.parametrize("prefetch", [False, True])
+@pytest.mark.parametrize("bad_score", [False, True])
 def test_seven_graph_lifecycle_execution_controls_and_scoring_are_connected(
-    tmp_path, monkeypatch, prefetch
+    tmp_path, monkeypatch, prefetch, bad_score
 ):
     from engine.adapters import cypherbench_runtime as runtime
 
@@ -84,14 +85,22 @@ def test_seven_graph_lifecycle_execution_controls_and_scoring_are_connected(
     def execute_plan(plan, schema, execute, **kwargs):
         return execute("RETURN 1", {})
 
+    def score(**kwargs):
+        if bad_score and kwargs["qid"] == next(iter(GRAPHS)):
+            raise ValueError("Synthetic scoring case")
+        return dict(
+            ex=float(
+                kwargs["status"] == "EXECUTED"
+                and kwargs["predicted_rows"] == kwargs["reference_rows"]
+            ),
+            status=kwargs["status"],
+            returned_answer=kwargs["status"] == "EXECUTED",
+        )
+
     scoring = SimpleNamespace(
         load_official_comparator=lambda _: None,
         read_reference_answer=json.loads,
-        score_executed_answer=lambda **k: dict(
-            ex=float(k["status"] == "EXECUTED" and k["predicted_rows"] == k["reference_rows"]),
-            status=k["status"],
-            returned_answer=k["status"] == "EXECUTED",
-        ),
+        score_executed_answer=score,
     )
     monkeypatch.setattr(
         runtime,
@@ -164,6 +173,8 @@ def test_seven_graph_lifecycle_execution_controls_and_scoring_are_connected(
                 shared_transport=transport,
             )
         assert result["scored_views"] == 14 and all(c.closed and len(c.calls) == 2 for c in clients)
+        assert result["case_failures"] == int(bad_score)
+        assert transport.calls == 7
         assert len(json.loads((tmp_path / "run/scores.json").read_text(encoding="utf-8"))) == 14
         assert all((tmp_path / "run" / g / "shared_control_scores.json").exists() for g in GRAPHS)
 

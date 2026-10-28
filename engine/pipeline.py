@@ -9,7 +9,8 @@ import time
 
 from .config import CampaignSpec, RetryPolicy, canonical, digest, endpoints_from_file
 from .journal import Journal, write_new, write_status
-from .ledger import Ledger, scan_legacy
+from .ledger import BudgetError, Ledger, scan_legacy
+from .errors import IntegrityError, PersistenceError
 from .pool import DynamicPool
 from .scheduler import Scheduler
 from .transport import HTTPTransport
@@ -71,8 +72,6 @@ def prepare_pipeline(config_path: Path, output: Path):
                 "queue_wait_until_available",
                 "continue_on_path_failures",
                 "retry",
-                "quarantine_seconds",
-                "consecutive_failures",
             )
         },
     )
@@ -81,13 +80,20 @@ def prepare_pipeline(config_path: Path, output: Path):
 
 
 async def run_stages(
-    root: Path, stages: list, run_block, *, resume=False, continue_on_path_failures=False
+    root: Path,
+    stages: list,
+    run_block,
+    *,
+    resume=False,
+    continue_on_path_failures=True,
+    pending_requests=lambda: [],
 ):
     """Serial blocks, concurrent work inside each block; no timer-driven dispatch.
 
     Only a completed receipt can be reused. An interrupted block is never blindly
     rerun. An unavailable scientific/resource prerequisite is logged, and other
-    independently admitted blocks can proceed. An execution exception stops work.
+    independently admitted blocks can proceed. Ordinary stage exceptions are
+    isolated; integrity, persistence and budget errors retain explicit stops.
     """
     root = Path(root)
     names = [stage["name"] for stage in stages]
@@ -113,14 +119,24 @@ async def run_stages(
             name = stage["name"]
             receipt = root / "blocks" / name / "completed.json"
             started = receipt.with_name("started.json")
+            partial = receipt.with_name("incomplete.json")
             if receipt.exists():
                 row = json.loads(receipt.read_text(encoding="utf-8"))
                 if row["stage_sha256"] != digest(canonical(stage)):
                     raise ValueError("Completed block identity changed")
                 receipts.append(row)
                 continue
+            if partial.exists():
+                row = json.loads(partial.read_text(encoding="utf-8"))
+                if row["stage_sha256"] != digest(canonical(stage)):
+                    raise IntegrityError("Incomplete block identity changed")
+                receipts.append(row)
+                incomplete.append(name)
+                continue
             if started.exists():
-                raise ValueError("Interrupted block: audit charged identities before a new version")
+                raise IntegrityError(
+                    "Interrupted block: audit charged identities before a new version"
+                )
             if (root / "DRAIN").exists():
                 journal.append("pipeline_drained", next_block=name)
                 break
@@ -146,17 +162,39 @@ async def run_stages(
                 ),
             )
             journal.append("block_started", stage=name)
-            result = await run_block(stage)
+            try:
+                result = await run_block(stage)
+            except (PersistenceError, FileExistsError, IntegrityError, BudgetError):
+                raise
+            except Exception as exc:
+                import traceback
+
+                pending = pending_requests()
+                issues.append(
+                    "stage_error",
+                    stage=name,
+                    error_type=type(exc).__name__,
+                    traceback=traceback.format_exc(),
+                    next_independent_stage=continue_on_path_failures and not bool(pending),
+                )
+                result = dict(
+                    stop_reason=None,
+                    case_failures=1,
+                    error_type=type(exc).__name__,
+                    budget=dict(pending=pending),
+                )
             if (
                 result.get("stop_reason")
                 or result.get("budget", {}).get("pending")
                 or result.get("undispatched_by_reason")
+                or result.get("case_failures")
             ):
                 journal.append(
                     "block_stopped",
                     stage=name,
                     reason=result.get("stop_reason"),
                     pending=result.get("budget", {}).get("pending"),
+                    case_failures=result.get("case_failures", 0),
                 )
                 issues.append(
                     "block_incomplete",
@@ -197,7 +235,7 @@ async def run_stages(
             completed=sum(r["status"] == "completed" for r in receipts),
             blocked=sum(r["status"] == "blocked" for r in receipts),
             planned=len(stages),
-            dispatched_blocks=len([r for r in receipts if r["status"] == "completed"]),
+            dispatched_blocks=sum(r["status"] in ("completed", "incomplete") for r in receipts),
             incomplete=incomplete,
         )
         progress = {k: v for k, v in result.items() if k != "blocks"}
@@ -269,7 +307,7 @@ async def live_pipeline(config_path: Path, *, resume=False):
         items = load_items(manifest, allowed)
         if any(i.benchmark != stage["benchmark"] or i.method != stage["method"] for i in items):
             raise ValueError("Each block must contain exactly one benchmark and one method")
-        if admission["purpose"] == "formal_T1":
+        if admission["purpose"] in ("formal_T1", "smoke_T1"):
             from .adapters.cypherbench import GRAPHS
             from collections import Counter
 
@@ -278,10 +316,16 @@ async def live_pipeline(config_path: Path, *, resume=False):
                 or stage.get("adapter", {}).get("kind") != "cypherbench"
             ):
                 raise ValueError("Formal block requires a benchmark-specific admitted adapter")
-            if Counter((i.model, i.graph) for i in items) != Counter(
-                {(m, g): n for m in allowed for g, n in GRAPHS.items()}
-            ):
+            if admission["purpose"] == "formal_T1" and Counter(
+                (i.model, i.graph) for i in items
+            ) != Counter({(m, g): n for m in allowed for g, n in GRAPHS.items()}):
                 raise ValueError("Formal rerun must retain all2348 tasks for each declared model")
+            if admission["purpose"] == "smoke_T1" and (
+                not items
+                or any(i.graph not in GRAPHS for i in items)
+                or len({i.key for i in items}) != len(items)
+            ):
+                raise ValueError("Smoke tasks must be unique and belong to the admitted graphs")
         for item in items:
             matching = [e for e in endpoints if e.model == item.model and e.enabled]
             if not matching or any(
@@ -295,20 +339,12 @@ async def live_pipeline(config_path: Path, *, resume=False):
     ledger_dir, legacy_dir = Path(config["ledger_dir"]), Path(config["legacy_ledger"])
     validate_paths(root, ledger_dir, legacy_dir, [Path(p) for p in config["protected_roots"]])
     snapshot = scan_legacy(legacy_dir, config.get("path_rewrites", []))
-    pool = DynamicPool(
-        config["global_cap"],
-        consecutive_failures=config.get("consecutive_failures", 3),
-        quarantine_seconds=config.get("quarantine_seconds", 60),
-    )
+    pool = DynamicPool(config["global_cap"])
     await pool.update(endpoints)
     with Ledger(
         ledger_dir, Path(config["approval_path"]), snapshot, config["budget_scope"]
     ) as ledger:
         transport = HTTPTransport(Path(config["key_dir"]))
-        from .retries import RecoveryGate
-
-        retry_policy = RetryPolicy(**config.get("retry", {}))
-        recovery_gate = RecoveryGate(retry_policy.recovery_cap, retry_policy.recovery_min_cap)
         from .dispatch import BatchPacer, write_queue
 
         pacer = BatchPacer(config.get("batch_size", 8), config.get("batch_interval_seconds", 0))
@@ -334,7 +370,7 @@ async def live_pipeline(config_path: Path, *, resume=False):
             return CampaignSpec(**values)
 
         async def block(stage):
-            if admission["purpose"] == "formal_T1":
+            if admission["purpose"] in ("formal_T1", "smoke_T1"):
                 from .adapters.cypherbench_runtime import run_graphs
 
                 return await run_graphs(
@@ -346,7 +382,6 @@ async def live_pipeline(config_path: Path, *, resume=False):
                     ledger,
                     shared_transport=transport,
                     saved_replies=saved,
-                    recovery_gate=recovery_gate,
                     pacer=pacer,
                 )
             spec = make_spec(stage)
@@ -359,7 +394,6 @@ async def live_pipeline(config_path: Path, *, resume=False):
                 close_transport=False,
             )
             scheduler.saved_replies = saved
-            scheduler.recovery_gate = recovery_gate
             scheduler.pacer = pacer
             scheduler.extra_drain_paths = [root / "DRAIN"]
             return await execute_campaign(
@@ -385,7 +419,8 @@ async def live_pipeline(config_path: Path, *, resume=False):
                 config["stages"],
                 block,
                 resume=True,
-                continue_on_path_failures=config.get("continue_on_path_failures", False),
+                continue_on_path_failures=config.get("continue_on_path_failures", True),
+                pending_requests=lambda: ledger.summary()["pending"],
             )
         finally:
             transport.close()

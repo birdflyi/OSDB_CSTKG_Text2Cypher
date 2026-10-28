@@ -150,17 +150,30 @@ def test_model_permits_are_released_before_slow_db_work(tmp_path):
         scheduler, items, transport, ledger = await make_scheduler(
             tmp_path, cap=8, count=24, db_cap=1
         )
+        import threading
+
+        release_db = threading.Event()
         observed = []
 
         def execute(item, reply):
             observed.append((transport.calls, scheduler.pool.inflight))
-            time.sleep(0.01)
+            assert release_db.wait(10), "model work did not progress while DB was held"
             return dict(status="executed", complete=True, rows=[[1]], columns=["n"])
 
-        result = await scheduler.run(items, execute=execute)
+        task = asyncio.create_task(scheduler.run(items, execute=execute))
+        try:
+
+            async def all_models_started():
+                while transport.calls < 24:
+                    await asyncio.sleep(0.005)
+
+            await asyncio.wait_for(all_models_started(), 10)
+        finally:
+            release_db.set()
+        result = await task
         assert len(result) == 24 and transport.calls == 24
         # While one DB thread is occupied, the remaining model work keeps moving.
-        assert max(v[0] for v in observed[:8]) == 24
+        assert observed and transport.calls == 24
 
     asyncio.run(scenario())
 

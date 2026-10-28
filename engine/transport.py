@@ -31,6 +31,21 @@ def local_resource_error(exc: BaseException) -> bool:
     )
 
 
+def endpoint_health(value):
+    """Do not treat bad queries, HTTP400s or malformed model outputs as load failures."""
+    if value.get("protocol_error") == "model_mismatch":
+        return "model_mismatch"
+    if value.get("status") == "throttled":
+        return "throttled"
+    if value.get("transport_error") or (value.get("http_status") or 0) >= 500:
+        return "infra"
+    if value.get("status") == "local_resource_error":
+        return "infra"
+    if value.get("status") in ("infra", "ok", "length", "empty", "refused"):
+        return value["status"]
+    return "neutral"
+
+
 def classify(value: dict, expected_model: str) -> dict:
     """A complete HTTP error and unknown model-generation outcome are distinct."""
     result = dict(value)
