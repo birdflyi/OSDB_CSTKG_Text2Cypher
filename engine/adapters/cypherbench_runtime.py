@@ -386,6 +386,7 @@ async def run_graphs(
             write_new(spec.run_dir / "shared_control_scores.json", canonical(control_scores))
             scores.extend(graph_scores)
             write_new(spec.run_dir / "scores.json", canonical(graph_scores))
+            scheduler.journal.append("graph_scored", graph=graph, scored_views=len(graph_scores))
         finally:
             await asyncio.get_running_loop().run_in_executor(consumer_executor, client.close)
             stderr.close()

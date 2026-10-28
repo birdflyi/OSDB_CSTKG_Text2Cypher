@@ -520,6 +520,10 @@ async def live_pipeline(config_path: Path, *, resume=False):
             consumer_workers.shutdown(wait=True)
             transport.close()
         runnable = sum(not s.get("blocked_reason") for s in config["stages"])
+        if config.get("performance_report"):
+            from .performance import report_pipeline
+
+            result["performance"] = report_pipeline(root, config["stages"], ledger, config)
         if (
             admission["purpose"] == "formal_T1"
             and result["completed"] == runnable

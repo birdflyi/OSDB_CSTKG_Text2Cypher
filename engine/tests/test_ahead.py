@@ -175,6 +175,7 @@ def test_next_32_requests_start_while_previous_db_is_waiting(tmp_path, monkeypat
         db_cap=2,
         stages=stages,
         overlap_initial_generation=True,
+        performance_report=True,
         run_dir=str(tmp_path / "run"),
         ledger_dir=str(tmp_path / "ledger"),
         legacy_ledger=str(legacy),
@@ -203,6 +204,12 @@ def test_next_32_requests_start_while_previous_db_is_waiting(tmp_path, monkeypat
     )
     result = asyncio.run(pipeline.live_pipeline(config_path))
     assert transport.calls == 64 and transport.peak <= 32
+    assert len(result["performance"]["cells"]) == 2
+    for cell in result["performance"]["cells"]:
+        assert cell["planned_cases"] == 32
+        assert cell["new_physical_calls"] == 32
+        assert cell["request_seconds"]["known"] == 32
+        assert cell["actual_HTTP"]["peak"] <= 32
     assert b_started.is_set() and db_threads and not any("http" in name for name in db_threads)
     assert result["completed"] == (1 if bad_score else 2)
     assert result["incomplete"] == (["direct"] if bad_score else [])

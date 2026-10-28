@@ -424,11 +424,23 @@ class Scheduler:
         return await self._save_path(value)
 
     async def _save_path(self, value):
+        def persist():
+            write_new(
+                self.spec.run_dir
+                / "finals"
+                / (digest(value["logical_key"].encode())[:32] + ".json"),
+                canonical(value),
+            )
+            self.journal.append(
+                "path_final_saved",
+                logical_key=value["logical_key"],
+                task_id=value["task_id"],
+                graph=value["graph"],
+            )
+
         await asyncio.get_running_loop().run_in_executor(
             None,
-            write_new,
-            self.spec.run_dir / "finals" / (digest(value["logical_key"].encode())[:32] + ".json"),
-            canonical(value),
+            persist,
         )
         self.paths.append(value)
         return value
