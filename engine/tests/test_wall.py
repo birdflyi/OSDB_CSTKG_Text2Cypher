@@ -163,3 +163,10 @@ def test_eta_requires_recent_completed_work():
     assert estimate_remaining([50, 50, 50], 10, 100) is None
     assert estimate_remaining([50, 60, 70], 6, 100) == 60
     assert estimate_remaining([50], 0, 100) == 0
+
+
+def test_actual_watch_entry_loads_paths_and_exits_without_dispatch(tmp_path, monkeypatch):
+    from engine.wall_view import TerminalKeys, watch
+    plan, root = fixture(tmp_path)
+    monkeypatch.setattr(TerminalKeys, "poll", lambda self: "q")
+    watch(plan, root, interval=0.01)
