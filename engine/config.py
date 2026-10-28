@@ -270,7 +270,7 @@ class CampaignSpec:
 
 def registry_from_file(path: Path) -> dict:
     value = json.loads(Path(path).read_text(encoding="utf-8-sig"))
-    allowed = {"endpoints", "global_cap", "reload_seconds"}
+    allowed = {"endpoints", "global_cap", "reload_seconds", "per_model_cap"}
     if not isinstance(value, dict) or set(value) - allowed:
         raise ValueError("Registry allows only: " + ", ".join(sorted(allowed)))
     cap = value.get("global_cap")
@@ -293,7 +293,21 @@ def registry_from_file(path: Path) -> dict:
         rows.append(Endpoint(**data))
     if len({row.name for row in rows}) != len(rows):
         raise ValueError("Endpoint names must be unique in each registry revision")
-    return dict(endpoints=rows, global_cap=cap, reload_seconds=interval)
+    model_caps = value.get("per_model_cap", {})
+    if not isinstance(model_caps, dict):
+        raise ValueError("per_model_cap must be a mapping")
+    models = {row.model for row in rows}
+    for model, limit in model_caps.items():
+        if model not in models:
+            raise ValueError("per_model_cap names an undeclared model: " + model)
+        if type(limit) is not int or limit < 1:
+            raise ValueError("per_model_cap must be a positive integer: " + model)
+    return dict(
+        endpoints=rows,
+        global_cap=cap,
+        reload_seconds=interval,
+        per_model_cap=dict(model_caps),
+    )
 
 
 def endpoints_from_file(path: Path) -> list:

@@ -21,6 +21,14 @@ class RouteUnavailable(AdmissionTimeout):
         self.reason = reason
 
 
+class ModelUnavailable(AdmissionTimeout):
+    """The model has no enabled endpoint left after waiting."""
+
+    def __init__(self, model):
+        super().__init__("No endpoint for model: " + model)
+        self.model = model
+
+
 @dataclass
 class EndpointState:
     spec: Endpoint
@@ -40,6 +48,7 @@ class Permit:
     def __init__(self, pool: DynamicPool, state: EndpointState):
         self.pool, self.state = pool, state
         self.endpoint = state.spec  # Immutable routing snapshot for this attempt.
+        self.model = state.spec.model
         self.released = False
         self.timeout_multiplier = 2 if state.degraded else 1
         self.recovery_generation = state.recovery_generation
@@ -65,6 +74,9 @@ class Permit:
             self.released = True
             self.state.inflight -= 1
             self.pool.inflight -= 1
+            self.pool.model_inflight[self.model] = max(
+                0, self.pool.model_inflight.get(self.model, 0) - 1
+            )
             self.pool.condition.notify_all()
 
     async def __aenter__(self):
@@ -104,12 +116,15 @@ class DynamicPool:
         self.condition = asyncio.Condition()
         self.states = {}
         self.inflight = self.peak = self.waiting = 0
+        self.per_model_cap = {}
+        self.model_inflight = {}
+        self.model_waiting = {}
         self.issues = []
         self.transitions = []
         self.closed = False
         self._tickets = []
 
-    async def update(self, endpoints: list, *, global_cap=None):
+    async def update(self, endpoints: list, *, global_cap=None, per_model_cap=None):
         if global_cap is not None and (
             type(global_cap) is not int
             or global_cap < 1
@@ -118,9 +133,20 @@ class DynamicPool:
             raise ValueError("Positive global cap required")
         if len({e.name for e in endpoints}) != len(endpoints):
             raise ValueError("Duplicate endpoint names")
+        if per_model_cap is not None:
+            models = {e.model for e in endpoints}
+            if not isinstance(per_model_cap, dict):
+                raise ValueError("per_model_cap must be a mapping")
+            for model, cap in per_model_cap.items():
+                if model not in models:
+                    raise ValueError("per_model_cap names an undeclared model: " + model)
+                if type(cap) is not int or cap < 1:
+                    raise ValueError("per_model_cap must be a positive integer: " + model)
         async with self.condition:
             if global_cap is not None:
                 self.global_cap = global_cap
+            if per_model_cap is not None:
+                self.per_model_cap = dict(per_model_cap)
             identities = {e.identity for e in endpoints}
             for key, state in self.states.items():
                 state.removed = key not in identities
@@ -135,6 +161,18 @@ class DynamicPool:
                 k: s for k, s in self.states.items() if not s.removed or s.inflight
             }
             self.condition.notify_all()
+
+    def model_capacity(self, model: str) -> int:
+        """Sum of live endpoint capacity, capped by the model's own limit."""
+        endpoints = sum(
+            self.capacity(state)
+            for state in self.states.values()
+            if state.spec.model == model
+            and not state.removed
+            and state.spec.enabled
+        )
+        limit = self.per_model_cap.get(model)
+        return endpoints if limit is None else min(limit, endpoints)
 
     def _eligible(self, model: str):
         now = self.clock()
@@ -155,6 +193,7 @@ class DynamicPool:
         async with self.condition:
             self._tickets.append((ticket, model, priority))
             self.waiting += 1
+            self.model_waiting[model] = self.model_waiting.get(model, 0) + 1
             try:
                 while True:
                     if self.closed:
@@ -178,7 +217,16 @@ class DynamicPool:
                         if matching_tickets
                         else None
                     )
-                    if ticket is first and self.inflight < self.global_cap and eligible:
+                    if (
+                        ticket is first
+                        and self.inflight < self.global_cap
+                        and (
+                            model not in self.per_model_cap
+                            or self.model_inflight.get(model, 0)
+                            < self.model_capacity(model)
+                        )
+                        and eligible
+                    ):
                         state = min(
                             eligible,
                             key=lambda s: (
@@ -188,10 +236,13 @@ class DynamicPool:
                         )
                         state.inflight += 1
                         self.inflight += 1
+                        self.model_inflight[model] = self.model_inflight.get(model, 0) + 1
                         self.peak = max(self.peak, self.inflight)
                         return Permit(self, state)
                     remaining = deadline - self.clock()
                     if remaining <= 0:
+                        if not matching:
+                            raise ModelUnavailable(model)
                         raise AdmissionTimeout(
                             "No matching model capacity before deadline"
                         )
@@ -219,6 +270,7 @@ class DynamicPool:
                     (t, m, p) for t, m, p in self._tickets if t is not ticket
                 ]
                 self.waiting -= 1
+                self.model_waiting[model] = max(0, self.model_waiting.get(model, 0) - 1)
                 self.condition.notify_all()
 
     async def record(self, permit: Permit, status: str, *, retry_after=0):
@@ -322,6 +374,39 @@ class DynamicPool:
             self.closed = True
             self.condition.notify_all()
 
+    def _endpoint_label(self, state) -> str:
+        if state.removed:
+            return "draining" if state.inflight else "removed"
+        if not state.spec.enabled:
+            return "disabled"
+        if state.quarantined_until > self.clock():
+            return "quarantined"
+        if state.degraded:
+            return "degraded"
+        return "active"
+
+    def _model_rows(self) -> list:
+        models = sorted({state.spec.model for state in self.states.values()})
+        rows = []
+        for model in models:
+            live = [
+                state
+                for state in self.states.values()
+                if state.spec.model == model and not state.removed and state.spec.enabled
+            ]
+            rows.append(dict(
+                model=model,
+                cap=self.per_model_cap.get(model),
+                capacity=self.model_capacity(model),
+                inflight=self.model_inflight.get(model, 0),
+                waiting=self.model_waiting.get(model, 0),
+                endpoints=sum(
+                    1 for state in self.states.values() if state.spec.model == model),
+                enabled=len(live),
+                unavailable=not live,
+            ))
+        return rows
+
     def snapshot(self) -> dict:
         return dict(
             global_cap=self.global_cap,
@@ -337,6 +422,7 @@ class DynamicPool:
             inflight=self.inflight,
             peak=self.peak,
             waiting=self.waiting,
+            models=self._model_rows(),
             endpoints=[
                 dict(
                     name=s.spec.name,
@@ -358,6 +444,7 @@ class DynamicPool:
                     timeout_multiplier=2 if s.degraded else 1,
                     enabled=s.spec.enabled,
                     removed=s.removed,
+                    state=self._endpoint_label(s),
                     inflight=s.inflight,
                     consecutive_failures=s.failures,
                     quarantined=s.quarantined_until > self.clock(),
@@ -403,7 +490,10 @@ class DynamicPool:
                         validate(endpoints)
                     if on_reload is not None:
                         on_reload(endpoints)
-                    await self.update(endpoints, global_cap=cap)
+                    await self.update(
+                        endpoints, global_cap=cap,
+                        per_model_cap=registry["per_model_cap"],
+                    )
                     interval = registry["reload_seconds"]
                     last = raw
             except (OSError, ValueError, TypeError, KeyError) as exc:

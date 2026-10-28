@@ -409,7 +409,10 @@ async def live_pipeline(config_path: Path, *, resume=False):
     pool = DynamicPool(
         config["global_cap"], ceiling=config["global_cap"], policy=config.get("endpoint_policy")
     )
-    await pool.update(endpoints, global_cap=registry_settings["global_cap"])
+    await pool.update(
+        endpoints, global_cap=registry_settings["global_cap"],
+        per_model_cap=registry_settings["per_model_cap"],
+    )
     with Ledger(
         ledger_dir, Path(config["approval_path"]), snapshot, config["budget_scope"]
     ) as ledger:
