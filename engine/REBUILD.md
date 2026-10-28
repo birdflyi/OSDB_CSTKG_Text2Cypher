@@ -124,3 +124,7 @@ MTQ10个dump加StarWars CSV已离线装载为11图；ZOG pole43/pole50已装载�
 ### 准备第三批：schema与依赖环境
 
 MTQ10113记录全部绑定作者schema（Manual bloom显式映射bloom50）；与ZOG共12图/schema映射。StarWars原匿名:ID不保存schema声明的id属性，v3只派生id:ID表头，保留原档/旧store，离线导入260节点611关系3502属性；无任务查询。15个本地依赖模块归档，4纯组件在禁网络的本地及Linux环境导入成功。43个LinuxCP312wheel（71067402字节）全hash锁；自有venv_preparation_v3离线安装、pip check与源码编译通过。新准备环境不等于作者训练环境，Windows图工厂仍未成为Linuxengine适配器。证据preparation_v3_delivery.json及T1_PREPARATION_STATUS_20261029.md；模型/训练/基准查询0。继续剩余原生适配/参考身份与方法材料准备，不能因依赖安装成功便标全流水线或作者模型就绪。
+
+### 准备第四批：原生回复消费接口
+
+新增operations/analysis/text2gql_receipt_consumer_dev_20261029.py与合成验收脚本，显式绑定已审计Scheduler receipt摘要/身份及原生答案journal；拒答、未派发、基础设施失败、未知和实际最终答案分开，反馈只生成未发送诊断，来源计费不重记。11模块固定包同步自有Linux，15项新合成检查本地/Linux均通过；未注册完整生产adapter，无模型/DB/训练。11项Text2GQL未知参考均为Geography归档STRING/INT64查询错误，保留3826位置，不自动修复/删题。真实账本当前18005/21992，工程378/384；原五处外部未提交修改未暂存或改写。详见T1_TEXT2GQL_NATIVE_CONSUMER_PREPARATION_V4_20261029.md和preparation_v4_delivery.json；下一步仍准备完整适配器、控制与其他基准评分，不能自动开跑。
