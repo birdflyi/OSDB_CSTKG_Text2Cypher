@@ -132,3 +132,7 @@ MTQ10113记录全部绑定作者schema（Manual bloom显式映射bloom50）；�
 ### 准备第五批：MTQ/ZOG输入与评估隔离
 
 新增property_graph_input_contract_dev_20261029.py和13项合成验收：公共对象只含graph/question/schema，MTQ10113、ZOG两输入轨道各3370全部保留，评估/分类/参考与公共加载分开。最终包在本地/Linux均加载16853条公共记录，13检查均通过，19文件摘要核验；无模型/DB/训练/新adapter注册。CB的Neo4j .eid等约定不能直接移植到MTQ/ZOG，静态缺口已记录，下一步准备原生身份和类型化答案合同，不能用补假属性或省略方法替代。见T1_MTQ_ZOG_PUBLIC_PACKAGES_V5_20261029.md与preparation_v5_delivery.json；旧五处外部未提交修改保留。
+
+### 准备第六批：Neo4j原生类型与身份范围
+
+新增neo4j_native_answer_contract_dev_20261029.py和25项驱动对象合成验收，本地/Linux均通过，无数据库连接/模型/训练。保留节点/关系/路径、时间空间及标量类型、重复行列与完整性；精确类型辅助比较不当作者主指标。固定SDK明确element_id跨事务可变，Record.data丢节点身份已复现；CaptureScope须绑定单一读事务，未认证的跨采集实体比较拒绝，不能补假eid或用图/批次名代替事务身份。原生编译身份/事务执行/参考配对/完整adapter仍未实现，全部45格保留不判科学NA。独立venv离线依赖及源码包证据见T1_NEO4J_TYPED_ANSWERS_V6_20261029.md和preparation_v6_delivery.json；旧五处外部核心修改保留，不自动开跑。
