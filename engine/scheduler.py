@@ -87,7 +87,7 @@ class Scheduler:
         try:
             if not set(json.loads(item.wire)) <= set(endpoint.wire_params):
                 return dict(
-                    status="admission_timeout",
+                    status="not_dispatched",
                     charged=False,
                     request_id=rid,
                     undispatched_reason="invalid_endpoint_capabilities",
@@ -114,7 +114,7 @@ class Scheduler:
                 )
             if self.draining.is_set():
                 return dict(
-                    status="admission_timeout",
+                    status="not_dispatched",
                     charged=False,
                     request_id=rid,
                     undispatched_reason="stop",
@@ -166,7 +166,7 @@ class Scheduler:
             return value
         except BudgetError as exc:
             return dict(
-                status="admission_timeout",
+                status="not_dispatched",
                 request_id=rid,
                 charged=False,
                 undispatched_reason="budget",
@@ -193,31 +193,43 @@ class Scheduler:
     async def _generate_once(self, item, attempt):
         loop = asyncio.get_running_loop()
         waiting = time.monotonic()
+        deadline = waiting + self.spec.admission_timeout_seconds
         permit = None
         while True:
             try:
-                permit = await self.pool.acquire(item.model, self.spec.admission_timeout_seconds)
+                permit = await self.pool.acquire(
+                    item.model, min(60, max(0.001, deadline - time.monotonic()))
+                )
                 break
             except AdmissionTimeout:
-                if (
-                    self.spec.queue_wait_until_available
-                    and not self.draining.is_set()
-                    and not self.pool.closed
-                ):
-                    # Queue time is not a failed model attempt. Keep the real
-                    # item queued through temporary capacity/route gaps.
+                stopped = self.draining.is_set() or self.pool.closed
+                if not stopped:
                     self.journal.append(
                         "queue_deferred",
                         logical_key=item.key,
-                        reason="capacity_wait_elapsed_no_request_sent",
+                        reason="waiting_for_model_capacity",
+                        seconds=time.monotonic() - waiting,
+                        network_request_sent=False,
                     )
+                    if time.monotonic() < deadline:
+                        continue
+                if self.spec.queue_wait_until_available and not stopped:
+                    # Queue time is not a failed model attempt. Keep the real
+                    # item queued through temporary capacity/route gaps.
+                    deadline = time.monotonic() + self.spec.admission_timeout_seconds
                     continue
                 break
         if permit is None:
             value = dict(
-                status="admission_timeout",
+                status=(
+                    "not_dispatched"
+                    if self.draining.is_set() or self.pool.closed
+                    else "admission_timeout"
+                ),
                 charged=False,
-                undispatched_reason="stop" if self.draining.is_set() else "admission",
+                undispatched_reason=(
+                    "stop" if self.draining.is_set() or self.pool.closed else "capacity"
+                ),
                 logical_key=item.key,
                 admission_wait_seconds=time.monotonic() - waiting,
             )
@@ -228,7 +240,7 @@ class Scheduler:
             async with permit:
                 if not await self.pacer.wait(self.draining):
                     return dict(
-                        status="admission_timeout",
+                        status="not_dispatched",
                         charged=False,
                         logical_key=item.key,
                         undispatched_reason="stop",
@@ -309,7 +321,7 @@ class Scheduler:
         for attempt in range(count + 1, self.spec.retry.max_attempts + 1):
             if self.draining.is_set():
                 return dict(
-                    status="admission_timeout",
+                    status="not_dispatched",
                     charged=False,
                     undispatched_reason="stop",
                 )

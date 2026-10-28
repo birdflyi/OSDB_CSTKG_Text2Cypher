@@ -110,6 +110,28 @@ class RetryPolicy:
             raise ValueError("Unknown-outcome retry requires explicit after-write authorization")
 
 
+def retry_policy(values):
+    """Migrate only named obsolete knobs; never silently ignore an unknown policy."""
+    import warnings
+    from dataclasses import fields
+
+    values = dict(values)
+    removed = sorted(set(values) & {"recovery_cap", "recovery_min_cap"})
+    if removed:
+        warnings.warn(
+            "Removed retry settings ignored: "
+            + ", ".join(removed)
+            + "; endpoint-local recovery now owns capacity",
+            UserWarning,
+        )
+        for key in removed:
+            values.pop(key)
+    unknown = set(values) - {f.name for f in fields(RetryPolicy)}
+    if unknown:
+        raise ValueError("Unknown retry policy fields: " + ", ".join(sorted(unknown)))
+    return RetryPolicy(**values)
+
+
 @dataclass(frozen=True)
 class CampaignSpec:
     name: str

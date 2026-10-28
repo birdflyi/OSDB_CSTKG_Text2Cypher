@@ -17,6 +17,7 @@ from .config import (
     canonical,
     digest,
     endpoints_from_file,
+    retry_policy,
 )
 from .fake import FakeTransport, MemoryLedger
 from .journal import Journal, write_new
@@ -122,7 +123,7 @@ async def live(config_path: Path):
     spec_values = {k: v for k, v in value.items() if k in spec_fields}
     for key in ("run_dir", "ledger_dir", "approval_path"):
         spec_values[key] = Path(spec_values[key])
-    spec_values["retry"] = RetryPolicy(**value.get("retry", {}))
+    spec_values["retry"] = retry_policy(value.get("retry", {}))
     spec = CampaignSpec(**spec_values)
     legacy_dir = Path(value["legacy_ledger"])
     protected = [Path(p) for p in value["protected_roots"]]

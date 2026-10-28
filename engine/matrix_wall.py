@@ -20,13 +20,17 @@ def snapshot(plan_path, root):
     cells = []
     for cell in plan.get("cells", []):
         block = root / "blocks" / cell["name"]
-        receipt = read(block / "completed.json") or read(block / "incomplete.json")
+        receipt = (
+            read(block / "completed.json")
+            or read(block / "incomplete.json")
+            or read(block / "skipped.json")
+        )
         missing = cell.get("missing", [])
         status = receipt.get("status") or ("缺项" if missing else "待运行")
         if not receipt and (block / "started.json").exists():
             status = "运行中" if progress.get("phase") == "运行中" else "中断待审计"
         result = receipt.get("result", {})
-        runtime = read(cell["progress_path"]) if cell.get("progress_path") else {}
+        runtime = read_runtime(cell)
         cells.append(
             dict(
                 method=cell["method"],
@@ -38,9 +42,34 @@ def snapshot(plan_path, root):
                 planned=cell.get("planned_paths"),
                 completed=runtime.get("completed"),
                 network=runtime.get("network_inflight"),
+                model_completed=runtime.get("model_completed"),
             )
         )
     return dict(mode=plan.get("mode"), progress=progress, cells=cells)
+
+
+def read_runtime(cell):
+    if not cell.get("progress_path"):
+        return {}
+    path = Path(cell["progress_path"])
+    direct = read(path)
+    if direct:
+        return direct
+    generation = read(path.parent / "_generation" / "progress.json")
+    graphs = [
+        read(p) for p in path.parent.glob("*/progress.json") if p.parent.name != "_generation"
+    ]
+    rows = [r for r in [generation] + graphs if r]
+    if not rows:
+        return {}
+    # HTTP is one shared transport. Summing snapshots from completed graphs
+    # would double count old samples; take the newest one instead.
+    latest = max(rows, key=lambda r: r.get("updated_epoch", 0))
+    return dict(
+        completed=sum(r.get("completed", 0) for r in graphs),
+        model_completed=generation.get("completed"),
+        network_inflight=latest.get("network_inflight"),
+    )
 
 
 def watch(plan_path, root, interval=2):
@@ -57,6 +86,7 @@ def watch(plan_path, root, interval=2):
             "Method / control",
             "状态",
             "完成/计划",
+            "首轮模型完成",
             "HTTP在途",
             "Smoke通过",
             "缺项 / 范围",
@@ -70,6 +100,7 @@ def watch(plan_path, root, interval=2):
                 str(row["completed"] if row["completed"] is not None else "?")
                 + "/"
                 + str(row["planned"] if row["planned"] is not None else "?"),
+                str(row.get("model_completed") if row.get("model_completed") is not None else "?"),
                 str(row["network"] if row["network"] is not None else "?"),
                 "是" if row["smoke"] else "否",
                 row["missing"] or row["role"],

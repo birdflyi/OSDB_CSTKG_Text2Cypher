@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import time
 
-from .config import CampaignSpec, RetryPolicy, canonical, digest, endpoints_from_file
+from .config import CampaignSpec, canonical, digest, endpoints_from_file, retry_policy
 from .journal import Journal, write_new, write_status
 from .ledger import BudgetError, Ledger, scan_legacy
 from .errors import IntegrityError, PersistenceError
@@ -115,11 +115,34 @@ async def run_stages(
                 raise ValueError("Pipeline plan changed; create a separately versioned run")
         else:
             write_new(root / "plan.json", sealed)
-        for stage in stages:
+
+        def skip_remaining(remaining, reason):
+            for entry in remaining:
+                row = dict(
+                    stage=entry["name"],
+                    status="skipped",
+                    reason=reason,
+                    stage_sha256=digest(canonical(entry)),
+                    ended_epoch=time.time(),
+                )
+                path = root / "blocks" / entry["name"] / "skipped.json"
+                if not path.exists():
+                    write_new(path, canonical(row))
+                receipts.append(row)
+                journal.append("block_not_run", **row)
+
+        for stage_index, stage in enumerate(stages):
             name = stage["name"]
             receipt = root / "blocks" / name / "completed.json"
             started = receipt.with_name("started.json")
             partial = receipt.with_name("incomplete.json")
+            skipped = receipt.with_name("skipped.json")
+            if skipped.exists():
+                row = json.loads(skipped.read_text(encoding="utf-8"))
+                if row["stage_sha256"] != digest(canonical(stage)):
+                    raise IntegrityError("Skipped block identity changed")
+                receipts.append(row)
+                continue
             if receipt.exists():
                 row = json.loads(receipt.read_text(encoding="utf-8"))
                 if row["stage_sha256"] != digest(canonical(stage)):
@@ -134,11 +157,28 @@ async def run_stages(
                 incomplete.append(name)
                 continue
             if started.exists():
-                raise IntegrityError(
-                    "Interrupted block: audit charged identities before a new version"
+                checkpoint = json.loads(started.read_text(encoding="utf-8"))
+                if checkpoint["stage_sha256"] != digest(canonical(stage)):
+                    raise IntegrityError("Interrupted block identity changed")
+                row = dict(
+                    stage=name,
+                    status="incomplete",
+                    stage_sha256=digest(canonical(stage)),
+                    ended_epoch=time.time(),
+                    result=dict(
+                        case_failures=1,
+                        reason="interrupted_requires_request_audit",
+                        automatic_resend=False,
+                    ),
                 )
+                write_new(partial, canonical(row))
+                issues.append("interrupted_block_isolated", **row)
+                receipts.append(row)
+                incomplete.append(name)
+                continue
             if (root / "DRAIN").exists():
                 journal.append("pipeline_drained", next_block=name)
+                skip_remaining(stages[stage_index:], "operator_drain")
                 break
             if stage.get("blocked_reason"):
                 row = dict(stage=name, status="blocked", reason=stage["blocked_reason"])
@@ -203,22 +243,32 @@ async def run_stages(
                     undispatched=result.get("undispatched_by_reason", {}),
                     pending=result.get("budget", {}).get("pending"),
                 )
+                incomplete.append(name)
+                row = dict(
+                    stage=name,
+                    status="incomplete",
+                    stage_sha256=digest(canonical(stage)),
+                    ended_epoch=time.time(),
+                    result=result,
+                )
+                write_new(partial, canonical(row))
+                receipts.append(row)
+                reason = result.get("stop_reason") or ""
+                hard_stop = reason in (
+                    "budget",
+                    "operator_drain",
+                    "controller_cancelled_drain",
+                    "controller_or_persistence_error",
+                ) or reason.startswith("path_controller_error:")
                 if (
                     continue_on_path_failures
-                    and not result.get("stop_reason")
+                    and not hard_stop
                     and not result.get("budget", {}).get("pending")
                 ):
-                    incomplete.append(name)
-                    row = dict(
-                        stage=name,
-                        status="incomplete",
-                        stage_sha256=digest(canonical(stage)),
-                        ended_epoch=time.time(),
-                        result=result,
-                    )
-                    write_new(receipt.with_name("incomplete.json"), canonical(row))
-                    receipts.append(row)
                     continue
+                skip_remaining(
+                    stages[stage_index + 1 :], reason or "unresolved_pending_or_stop_policy"
+                )
                 break
             row = dict(
                 stage=name,
@@ -234,6 +284,7 @@ async def run_stages(
             blocks=receipts,
             completed=sum(r["status"] == "completed" for r in receipts),
             blocked=sum(r["status"] == "blocked" for r in receipts),
+            skipped=sum(r["status"] == "skipped" for r in receipts),
             planned=len(stages),
             dispatched_blocks=sum(r["status"] in ("completed", "incomplete") for r in receipts),
             incomplete=incomplete,
@@ -289,7 +340,7 @@ async def live_pipeline(config_path: Path, *, resume=False):
     admission = json.loads(Path(config["admission_path"]).read_text(encoding="utf-8-sig"))
     if (
         admission.get("approved") is not True
-        or admission.get("purpose") not in ("model_only_prefetch", "formal_T1")
+        or admission.get("purpose") not in ("model_only_prefetch", "formal_T1", "smoke_T1")
         or admission.get("code_files") != code_manifest()
         or admission.get("plan_sha256") != digest(canonical(config))
     ):
@@ -365,7 +416,7 @@ async def live_pipeline(config_path: Path, *, resume=False):
                 run_dir=root / "runs" / stage["name"],
                 ledger_dir=ledger_dir,
                 approval_path=Path(config["approval_path"]),
-                retry=RetryPolicy(**config.get("retry", {})),
+                retry=retry_policy(config.get("retry", {})),
             )
             return CampaignSpec(**values)
 
