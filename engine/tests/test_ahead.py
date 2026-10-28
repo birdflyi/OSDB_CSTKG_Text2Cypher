@@ -21,8 +21,9 @@ from engine.ledger import audit_new
 
 @pytest.mark.parametrize("bad_score", [False, True])
 @pytest.mark.parametrize("single_graph", [False, True])
+@pytest.mark.parametrize("legacy_overlap", [False, True])
 def test_next_32_requests_start_while_previous_db_is_waiting(
-    tmp_path, monkeypatch, bad_score, single_graph
+    tmp_path, monkeypatch, bad_score, single_graph, legacy_overlap
 ):
     b_started = threading.Event()
     starts, ends, db_threads = [], [], []
@@ -45,7 +46,7 @@ def test_next_32_requests_start_while_previous_db_is_waiting(
             return prepared
 
     transport = Transport(0.2)
-    monkeypatch.setattr(pipeline, "HTTPTransport", lambda _: transport)
+    monkeypatch.setattr(pipeline, "HTTPTransport", lambda _, **kwargs: transport)
 
     class Client:
         def __init__(self, command, **kwargs):
@@ -181,7 +182,7 @@ def test_next_32_requests_start_while_previous_db_is_waiting(
         global_cap=32,
         db_cap=2,
         stages=stages,
-        overlap_initial_generation=True,
+        overlap_initial_generation=legacy_overlap,
         performance_report=True,
         run_dir=str(tmp_path / "run"),
         ledger_dir=str(tmp_path / "ledger"),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict
 import importlib
 import json
 import os
@@ -11,7 +12,7 @@ import subprocess
 import sys
 import time
 
-from ..config import canonical, digest
+from ..config import DEFAULT_TIMEOUTS, canonical, digest, timeouts_from
 from ..campaign import code_manifest
 from ..execution import serve_stream
 from ..journal import Journal, write_new
@@ -24,8 +25,17 @@ class ReadHandler:
     shared; model permits and model credentials never enter this process.
     """
 
-    def __init__(self, driver, resolver, read_query, normalize, query_class):
+    def __init__(
+        self,
+        driver,
+        resolver,
+        read_query,
+        normalize,
+        query_class,
+        timeouts=DEFAULT_TIMEOUTS,
+    ):
         self.driver, self.resolver = driver, resolver
+        self.timeouts = timeouts_from(timeouts)
         self.read_query, self.normalize, self.query_class = (
             read_query,
             normalize,
@@ -49,12 +59,13 @@ class ReadHandler:
         # These are protocol limits, not arbitrary per-question tuning knobs.
         with self.driver.session(default_access_mode="READ") as session:
             explained = session.run(
-                self.query_class("EXPLAIN " + query, timeout=30), parameters
+                self.query_class("EXPLAIN " + query, timeout=self.timeouts.explain),
+                parameters,
             ).consume()
             if explained.query_type != "r":
                 raise ValueError("EXPLAIN did not certify read-only query")
             after_explain = time.monotonic()
-            cursor = session.run(self.query_class(query, timeout=60), parameters)
+            cursor = session.run(self.query_class(query, timeout=self.timeouts.query), parameters)
             columns, rows, complete, size = list(cursor.keys()), [], True, 2
             for record in cursor:
                 values = [self.normalize(record[c]) for c in columns]
@@ -216,7 +227,14 @@ class OwnedRuntime:
             if counts != [validation["nodes"], validation["edges"]]:
                 raise ValueError("Graph identity/counts differ")
             milestone("graph_counts_complete")
-            self.handler = ReadHandler(self.driver, resolver, guard, normalize, Query)
+            self.handler = ReadHandler(
+                self.driver,
+                resolver,
+                guard,
+                normalize,
+                Query,
+                timeouts=settings.get("timeouts"),
+            )
             self.ready = dict(
                 kind="READY",
                 hostname=socket.gethostname(),
@@ -233,6 +251,7 @@ class OwnedRuntime:
                 worker_pid=os.getpid(),
                 max_rows=1000000,
                 max_result_bytes=64 * 1024 * 1024,
+                timeouts=asdict(self.handler.timeouts),
             )
             write_new(diagnostics / "ready.json", canonical(self.ready))
             milestone("ready_persisted")

@@ -107,7 +107,7 @@ def test_seven_graph_lifecycle_execution_controls_and_scoring_are_connected(
         "frozen_modules",
         lambda *_: (None, SimpleNamespace(interpret=interpret, execute_plan=execute_plan), scoring),
     )
-    workers = {g: dict(command=[], expected_ready=dict(graph_sha256="test")) for g in GRAPHS}
+    workers = {g: dict(command=["fixture"], expected_ready=dict(graph_sha256="test")) for g in GRAPHS}
     settings = dict(
         code_root="unused",
         legacy_freeze="unused",
@@ -168,7 +168,7 @@ def test_seven_graph_lifecycle_execution_controls_and_scoring_are_connected(
                 lambda _: spec,
                 pool,
                 ledger,
-                transport_factory=lambda _: FakeTransport(0),
+                transport_factory=lambda _, **kwargs: FakeTransport(0),
                 client_factory=Client,
                 shared_transport=transport,
             )

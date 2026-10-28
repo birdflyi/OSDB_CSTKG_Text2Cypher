@@ -7,12 +7,12 @@ import json
 from pathlib import Path
 import time
 
-from .config import CampaignSpec, canonical, digest
+from .config import CampaignSpec, DEFAULT_TIMEOUTS, canonical, digest
 from .ids import component, logical_key, request_id
 from .ledger import BudgetError
 from .errors import IntegrityError, PersistenceError
 from .pool import AdmissionTimeout, DynamicPool
-from .transport import endpoint_health, local_resource_error
+from .transport import endpoint_health, local_resource_error, retryable
 from .dispatch import BatchPacer, write_queue
 from .journal import write_new
 
@@ -26,7 +26,7 @@ class Item:
     wire: bytes
     model: str
     phase: str = "initial"
-    read_timeout_seconds: float = 240
+    read_timeout_seconds: float = DEFAULT_TIMEOUTS.model
 
     @property
     def key(self):
@@ -182,27 +182,13 @@ class Scheduler:
                 prepared.close()
 
     def _retryable(self, value):
-        policy = self.spec.retry
-        status = value["status"]
-        if status == "unknown":
-            return bool(
-                policy.retry_unknown
-                and value.get("charged") is True
-                and not value.get("protocol_error")
-                and (
-                    value.get("transport_error")
-                    or (value.get("http_status") or 0) >= 500
-                )
-            )
-        return status in ("infra", "throttled") and not (
-            policy.before_write_only and value.get("write_started")
-        )
+        return retryable(value, self.spec.retry)
 
     async def _generate_once(self, item, attempt):
         loop = asyncio.get_running_loop()
         waiting = time.monotonic()
-        deadline = waiting + self.spec.admission_timeout_seconds
-        total_deadline = waiting + self.spec.max_queue_wait_seconds
+        deadline = waiting + self.spec.timeouts.admission
+        total_deadline = waiting + self.spec.timeouts.queue_total
         permit = None
         while True:
             try:
@@ -232,7 +218,7 @@ class Scheduler:
                 ):
                     # Queue time is not a failed model attempt. Keep the real
                     # item queued through temporary capacity/route gaps.
-                    deadline = time.monotonic() + self.spec.admission_timeout_seconds
+                    deadline = time.monotonic() + self.spec.timeouts.admission
                     continue
                 break
         if permit is None:

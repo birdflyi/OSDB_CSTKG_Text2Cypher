@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import Counter
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import json
 import os
 from pathlib import Path
@@ -95,7 +95,10 @@ def distribution(values) -> dict:
 
 async def watch_drain(scheduler, stop: asyncio.Event, interval=0.2):
     while not stop.is_set():
-        paths = [scheduler.spec.run_dir / "DRAIN", *getattr(scheduler, "extra_drain_paths", ())]
+        paths = [
+            scheduler.spec.run_dir / "DRAIN",
+            *getattr(scheduler, "extra_drain_paths", ()),
+        ]
         if any(path.exists() for path in paths):
             await scheduler.drain()
             return
@@ -138,6 +141,7 @@ async def execute_campaign(
                 simulated=simulated,
                 metadata=metadata or {},
                 queue=queue,
+                timeouts=asdict(spec.timeouts),
             )
         ),
     )
@@ -340,3 +344,63 @@ def finalize_campaign(directory, summary):
     write_new(directory / "artifact_manifest.json", raw)
     summary["artifact_manifest_sha256"] = digest(raw)
     write_new(directory / "summary.json", canonical(summary))
+
+
+async def generate_initial(
+    spec,
+    items,
+    pool,
+    ledger,
+    transport,
+    *,
+    registry_path,
+    saved=None,
+    pacer=None,
+    drain_paths=(),
+):
+    """Persist one cell's initial replies without opening a graph or reading gold."""
+    from .recovery import checkpoint_replies
+    from .scheduler import Scheduler
+    from .ahead import local_budget
+
+    items = list(items)
+    directory = spec.run_dir
+    directory.mkdir(parents=True, exist_ok=True)
+    initial = replace(spec, name=spec.name + "-prepared", run_dir=directory / "_generation")
+    scheduler = Scheduler(
+        initial,
+        pool,
+        ledger,
+        Journal(initial.run_dir / "journal.jsonl"),
+        transport,
+        close_transport=False,
+    )
+    scheduler.saved_replies = saved or {}
+    scheduler.pacer = pacer or scheduler.pacer
+    scheduler.extra_drain_paths = list(drain_paths)
+    summary = await execute_campaign(
+        scheduler,
+        items,
+        registry_path=Path(registry_path),
+        metadata=dict(
+            purpose="frozen_initial_generation_no_DB_no_gold",
+            methods=sorted({i.method for i in items}),
+        ),
+    )
+    value = dict(
+        stage=spec.name,
+        keys=[i.key for i in items],
+        summary=summary,
+        budget=local_budget(ledger, directory),
+    )
+    if (
+        not summary["stop_reason"]
+        and not value["budget"]["pending"]
+        and not summary["undispatched_by_reason"]
+    ):
+        history = directory / "generation_history.json"
+        checkpoint_replies(history, ledger, logical_keys=set(value["keys"]))
+        value.update(history=str(history), history_sha256=digest(history.read_bytes()))
+    path = directory / "initial_handoff.json"
+    write_new(path, canonical(value))
+    return dict(path=str(path), sha256=digest(path.read_bytes()))

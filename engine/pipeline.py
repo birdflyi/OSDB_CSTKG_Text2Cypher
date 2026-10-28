@@ -7,7 +7,14 @@ import os
 from pathlib import Path
 import time
 
-from .config import CampaignSpec, canonical, digest, endpoints_from_file, retry_policy
+from .config import (
+    CampaignSpec,
+    canonical,
+    digest,
+    endpoints_from_file,
+    retry_policy,
+    timeouts_from,
+)
 from .journal import Journal, write_new, write_status
 from .ledger import BudgetError, Ledger, scan_legacy
 from .errors import IntegrityError, PersistenceError
@@ -286,7 +293,8 @@ async def run_stages(
                 ):
                     continue
                 skip_remaining(
-                    stages[stage_index + 1 :], reason or "unresolved_pending_or_stop_policy"
+                    stages[stage_index + 1 :],
+                    reason or "unresolved_pending_or_stop_policy",
                 )
                 break
             row = dict(
@@ -414,7 +422,10 @@ async def live_pipeline(config_path: Path, *, resume=False):
     with Ledger(
         ledger_dir, Path(config["approval_path"]), snapshot, config["budget_scope"]
     ) as ledger:
-        transport = HTTPTransport(Path(config["key_dir"]))
+        transport = HTTPTransport(
+            Path(config["key_dir"]),
+            connect_timeout=timeouts_from(config.get("timeouts")).http_connect,
+        )
         from .dispatch import BatchPacer, write_queue
 
         pacer = BatchPacer(config.get("batch_size", 8), config.get("batch_interval_seconds", 0))
@@ -517,22 +528,20 @@ async def live_pipeline(config_path: Path, *, resume=False):
                     pending_requests=lambda stage: pending_under(ledger, make_spec(stage).run_dir),
                 )
 
-            if config.get("overlap_initial_generation"):
-                if admission["purpose"] not in ("formal_T1", "smoke_T1") or resume:
-                    raise ValueError("Dispatch-ahead requires a fresh admitted benchmark pipeline")
-                from .adapters.cypherbench_runtime import dispatch_initial
+            if admission["purpose"] in ("formal_T1", "smoke_T1") and not resume:
+                from .campaign import generate_initial
 
                 async def dispatch(stage):
-                    return await dispatch_initial(
-                        stage,
+                    return await generate_initial(
+                        make_spec(stage),
                         sealed[stage["name"]],
-                        config,
-                        make_spec,
                         pool,
                         ledger,
                         transport,
-                        saved,
-                        pacer,
+                        registry_path=registry,
+                        saved=saved,
+                        pacer=pacer,
+                        drain_paths=[root / "DRAIN"],
                     )
 
                 result = await overlap(

@@ -11,6 +11,8 @@ import threading
 import time
 from urllib.parse import urlsplit
 
+from .config import DEFAULT_TIMEOUTS
+
 
 LOCAL_ERRNOS = {
     errno.EADDRINUSE,
@@ -33,25 +35,51 @@ def local_resource_error(exc: BaseException) -> bool:
     )
 
 
-def endpoint_health(value):
-    """Do not treat bad queries, HTTP400s or malformed model outputs as load failures."""
+def failure_kind(value):
+    """Classify once; health and retries use different projections of this fact.
+
+    Stored status still describes whether the billed generation is known. A
+    protocol error can therefore remain status=unknown without blaming capacity.
+    """
+    status = value.get("status")
+    if status in ("ok", "length", "empty", "refused"):
+        return status
     if value.get("protocol_error") == "model_mismatch":
         return "model_mismatch"
-    if value.get("status") == "throttled":
+    if status == "model_mismatch":
+        return status
+    if status == "throttled":
         return "throttled"
-    if value.get("status") == "local_resource_error":
-        return "neutral"
-    if value.get("http_status") in (401, 403, 404, 405):
+    if status == "local_resource_error":
+        return status
+    if status == "auth_error" or value.get("http_status") in (401, 403, 404, 405):
         return "auth_error"
     if value.get("protocol_error"):
-        return "neutral"
+        return "protocol_error"
     if value.get("http_status") in (408, 409):
         return "infra"
     if value.get("transport_error") or (value.get("http_status") or 0) >= 500:
         return "infra"
-    if value.get("status") in ("infra", "ok", "length", "empty", "refused"):
-        return value["status"]
+    if status == "infra":
+        return status
     return "neutral"
+
+
+def endpoint_health(value):
+    kind = failure_kind(value)
+    return {"local_resource_error": "neutral", "protocol_error": "neutral"}.get(
+        kind, kind
+    )
+
+
+def retryable(value, policy):
+    """Transport retries never reroll a usable reply or bypass billing limits."""
+    kind = failure_kind(value)
+    if kind not in ("infra", "throttled", "protocol_error"):
+        return False
+    if value.get("status") == "unknown":
+        return bool(policy.retry_unknown and value.get("charged") is True)
+    return not (policy.before_write_only and value.get("write_started"))
 
 
 def classify(value: dict, expected_model: str) -> dict:
@@ -233,7 +261,7 @@ class HTTPTransport:
         self,
         key_dir: Path,
         *,
-        connect_timeout=10,
+        connect_timeout=DEFAULT_TIMEOUTS.http_connect,
         max_response_bytes=4 * 1024**2,
         max_idle_seconds=2,
     ):

@@ -8,9 +8,9 @@ from pathlib import Path
 import time
 
 from .cypherbench import GRAPHS, ExecutedAnswerAdapter, feedback_item
-from ..campaign import execute_campaign, finalize_campaign
+from ..campaign import execute_campaign, finalize_campaign, generate_initial
 from ..config import canonical, digest
-from ..execution import JsonRpcClient, TracedRpcExecutor
+from ..execution import JsonRpcClient, TracedRpcExecutor, verify_worker_timeouts, worker_command
 from ..journal import Journal, write_new
 from ..replay import frozen_modules
 from ..scheduler import Scheduler
@@ -19,7 +19,7 @@ from ..errors import IntegrityError, PersistenceError
 from ..ahead import local_budget
 
 
-def traced_executor(client, directory, item, kind, worker):
+def traced_executor(client, directory, item, kind, worker, timeouts=None):
     identity = dict(
         logical_key=item.key,
         model=item.model,
@@ -37,59 +37,21 @@ def traced_executor(client, directory, item, kind, worker):
         identity=identity,
         graph_sha256=worker["expected_ready"]["graph_sha256"],
         worker_version="engine-neo4j-v1",
+        timeouts=timeouts,
     )
-
-
-async def dispatch_initial(stage, items, config, make_spec, pool, ledger, transport, saved, pacer):
-    """Persist one cell's initial replies without opening a graph or reading gold."""
-    from dataclasses import replace
-    from ..recovery import checkpoint_replies
-
-    spec = make_spec(stage)
-    directory = spec.run_dir
-    directory.mkdir(parents=True, exist_ok=True)
-    initial = replace(spec, name=spec.name + "-prepared", run_dir=directory / "_generation")
-    scheduler = Scheduler(
-        initial,
-        pool,
-        ledger,
-        Journal(initial.run_dir / "journal.jsonl"),
-        transport,
-        close_transport=False,
-    )
-    scheduler.saved_replies = saved or {}
-    scheduler.pacer = pacer or scheduler.pacer
-    scheduler.extra_drain_paths = [Path(config.get("run_dir", directory.parent)) / "DRAIN"]
-    summary = await execute_campaign(
-        scheduler,
-        items,
-        registry_path=Path(config["registry_path"]),
-        metadata=dict(purpose="frozen_initial_generation_no_DB_no_gold", method=stage["method"]),
-    )
-    value = dict(
-        stage=stage.get("name", spec.name),
-        keys=[i.key for i in items],
-        summary=summary,
-        budget=local_budget(ledger, directory),
-    )
-    if (
-        not summary["stop_reason"]
-        and not value["budget"]["pending"]
-        and not summary["undispatched_by_reason"]
-    ):
-        history = directory / "generation_history.json"
-        checkpoint_replies(history, ledger, logical_keys=set(value["keys"]))
-        value.update(history=str(history), history_sha256=digest(history.read_bytes()))
-    path = directory / "initial_handoff.json"
-    write_new(path, canonical(value))
-    return dict(path=str(path), sha256=digest(path.read_bytes()))
 
 
 def _score_answer(qid, outcome, references, scoring, compare):
     try:
         reference = references[qid]
         status = outcome.get("legacy_status", outcome["status"])
-        if status not in ("EXECUTED", "TRUNCATED", "UNSUPPORTED", "MODEL_ERROR", "EXECUTION_ERROR"):
+        if status not in (
+            "EXECUTED",
+            "TRUNCATED",
+            "UNSUPPORTED",
+            "MODEL_ERROR",
+            "EXECUTION_ERROR",
+        ):
             status = "INFRASTRUCTURE_ERROR"
         score = scoring.score_executed_answer(
             status=status,
@@ -198,7 +160,9 @@ async def run_graphs(
         raise IntegrityError("Frozen method sources differ") from exc
     data = Path(settings["data"])
     compare = await asyncio.get_running_loop().run_in_executor(
-        consumer_executor, scoring.load_official_comparator, Path(settings["official_source"])
+        consumer_executor,
+        scoring.load_official_comparator,
+        Path(settings["official_source"]),
     )
     specs = make_spec(stage)
     directory = specs.run_dir
@@ -206,14 +170,27 @@ async def run_graphs(
     scores, summaries = [], []
     undispatched = Counter()
     case_failures = 0
-    drain_paths = [Path(config.get("run_dir", directory.parent)) / "DRAIN", directory / "DRAIN"]
+    drain_paths = [
+        Path(config.get("run_dir", directory.parent)) / "DRAIN",
+        directory / "DRAIN",
+    ]
     if any(i.graph not in GRAPHS for i in items):
         raise ValueError("Formal CypherBench requires the seven declared test graphs")
     if initial_handoff is None and config.get("prefetch_initial", False):
-        transport = shared_transport or transport_factory(Path(config["key_dir"]))
+        transport = shared_transport or transport_factory(
+            Path(config["key_dir"]), connect_timeout=specs.timeouts.http_connect
+        )
         try:
-            initial_handoff = await dispatch_initial(
-                stage, items, config, make_spec, pool, ledger, transport, saved_replies, pacer
+            initial_handoff = await generate_initial(
+                specs,
+                items,
+                pool,
+                ledger,
+                transport,
+                registry_path=config["registry_path"],
+                saved=saved_replies,
+                pacer=pacer,
+                drain_paths=drain_paths,
             )
         finally:
             if shared_transport is None:
@@ -237,7 +214,10 @@ async def run_graphs(
                 undispatched_by_reason=value["summary"].get("undispatched_by_reason", {}),
             )
         cached = load_replies(
-            value["history"], value["history_sha256"], ledger, logical_keys=set(value["keys"])
+            value["history"],
+            value["history_sha256"],
+            ledger,
+            logical_keys=set(value["keys"]),
         )
         saved_replies = dict(saved_replies or {}, **cached)
     for graph in GRAPHS:
@@ -258,10 +238,13 @@ async def run_graphs(
         client = await asyncio.get_running_loop().run_in_executor(
             consumer_executor,
             lambda: client_factory(
-                worker["command"],
+                worker_command(worker["command"], specs.timeouts),
                 expected_ready=worker["expected_ready"],
                 stderr=stderr,
-                ready_timeout=settings.get("worker_startup_timeout_seconds", 600),
+                ready_timeout=settings.get(
+                    "worker_startup_timeout_seconds", specs.timeouts.worker_ready
+                ),
+                timeouts=specs.timeouts,
             ),
         )
         from dataclasses import replace
@@ -269,12 +252,15 @@ async def run_graphs(
         spec = replace(specs, name=specs.name + "-" + graph, run_dir=directory / graph)
 
         def executor(item, kind=None):
-            return traced_executor(client, spec.run_dir, item, kind or item.phase, worker)
+            return traced_executor(
+                client, spec.run_dir, item, kind or item.phase, worker, spec.timeouts
+            )
 
         adapter = ExecutedAnswerAdapter(
             {graph: schema}, methods.interpret, executor, scoring.score_executed_answer
         )
         try:
+            verify_worker_timeouts(client.ready_value, spec.timeouts)
             scheduler = Scheduler(
                 spec,
                 pool,
@@ -283,7 +269,9 @@ async def run_graphs(
                 (
                     shared_transport
                     if shared_transport is not None
-                    else transport_factory(Path(config["key_dir"]))
+                    else transport_factory(
+                        Path(config["key_dir"]), connect_timeout=specs.timeouts.http_connect
+                    )
                 ),
                 close_transport=shared_transport is None,
             )
@@ -366,7 +354,10 @@ async def run_graphs(
                     *[loop.run_in_executor(workers, control, p) for p in scheduler.paths]
                 )
             write_new(spec.run_dir / "shared_controls.json", canonical(controls))
-            graph_scores, control_scores = await asyncio.get_running_loop().run_in_executor(
+            (
+                graph_scores,
+                control_scores,
+            ) = await asyncio.get_running_loop().run_in_executor(
                 consumer_executor,
                 score_graph,
                 scheduler.paths,

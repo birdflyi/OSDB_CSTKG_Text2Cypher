@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from dataclasses import fields, replace
 import hashlib
 import json
+import math
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -22,13 +24,59 @@ def digest(data: bytes) -> str:
 
 
 @dataclass(frozen=True)
+class Timeouts:
+    """Runtime deadlines. Model input manifests retain their explicit read limit."""
+
+    model: float = 240
+    worker_ready: float = 600
+    explain: float = 30
+    query: float = 60
+    rpc: float = 125
+    http_connect: float = 10
+    ssh_connect: float = 10
+    ssh_keepalive_interval: float = 15
+    ssh_keepalive_count: int = 4
+    admission: float = 600
+    queue_total: float = 900
+    channel_close: float = 60
+    process_terminate: float = 10
+    reader_join: float = 2
+
+    def __post_init__(self):
+        for name, value in vars(self).items():
+            if (
+                type(value) not in (int, float)
+                or not math.isfinite(value)
+                or value <= 0
+            ):
+                raise ValueError("Timeout must be positive and finite: " + name)
+        if type(self.ssh_keepalive_count) is not int:
+            raise ValueError("ssh_keepalive_count must be an integer")
+        if self.rpc <= self.explain + self.query:
+            raise ValueError("RPC deadline must exceed EXPLAIN plus query deadlines")
+
+
+DEFAULT_TIMEOUTS = Timeouts()
+
+
+def timeouts_from(values=None):
+    if isinstance(values, Timeouts):
+        return values
+    values = {} if values is None else dict(values)
+    unknown = set(values) - {f.name for f in fields(Timeouts)}
+    if unknown:
+        raise ValueError("Unknown timeout fields: " + ", ".join(sorted(unknown)))
+    return Timeouts(**values)
+
+
+@dataclass(frozen=True)
 class Sampling:
     model: str
     temperature: float = 0.2
     top_p: float = 0.95
     reasoning_effort: str = "high"
     max_tokens: int = 8192
-    read_timeout_seconds: float = 240
+    read_timeout_seconds: float = DEFAULT_TIMEOUTS.model
     reasoning_format: str = "standard"
     reasoning_budget: int = 50
 
@@ -148,7 +196,7 @@ class CampaignSpec:
     approval_path: Path
     budget_scope: str
     global_cap: int
-    admission_timeout_seconds: float = 600
+    admission_timeout_seconds: float = None  # Read-only compatibility with old configs.
     db_cap: int = 4
     retry: RetryPolicy = field(default_factory=RetryPolicy)
     compare_with_legacy: bool = False
@@ -156,17 +204,26 @@ class CampaignSpec:
     batch_size: int = 8
     batch_interval_seconds: float = 0
     queue_wait_until_available: bool = False
-    max_queue_wait_seconds: float = 900
+    max_queue_wait_seconds: float = None
+    timeouts: Timeouts = field(default_factory=Timeouts)
 
     def __post_init__(self):
+        timeouts = timeouts_from(self.timeouts)
+        aliases = {
+            name: value
+            for name, value in (
+                ("admission", self.admission_timeout_seconds),
+                ("queue_total", self.max_queue_wait_seconds),
+            )
+            if value is not None
+        }
+        object.__setattr__(self, "timeouts", replace(timeouts, **aliases))
         if (
             not self.name
             or not self.model
             or not self.budget_scope
             or self.global_cap < 1
             or self.db_cap < 1
-            or self.admission_timeout_seconds <= 0
-            or self.max_queue_wait_seconds <= 0
             or type(self.batch_size) is not int
             or self.batch_size < 2
             or self.batch_interval_seconds < 0

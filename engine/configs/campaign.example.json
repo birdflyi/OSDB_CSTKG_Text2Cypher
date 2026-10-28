@@ -10,13 +10,37 @@
   "registry_path": "D:/ch7/state/ENGINE_ENDPOINTS_20261028.json",
   "key_dir": "D:/ch7/state/keys",
   "legacy_ledger": "D:/ch7/experiments/ch7_private/continuation_20261021/budget",
-  "protected_roots": ["D:/ch7/experiments/public_benchmark_v1/core_main_v1_20261024"],
-  "path_rewrites": [["C:\\Users\\10651\\Documents\\trae_projects\\ch7_private", "D:/ch7/experiments/ch7_private"]],
-  "global_cap": 128,
+  "protected_roots": [
+    "D:/ch7/experiments/public_benchmark_v1/core_main_v1_20261024"
+  ],
+  "path_rewrites": [
+    [
+      "C:\\Users\\10651\\Documents\\trae_projects\\ch7_private",
+      "D:/ch7/experiments/ch7_private"
+    ]
+  ],
+  "global_cap": 32,
   "db_cap": 4,
-  "admission_timeout_seconds": 600,
-  "quarantine_seconds": 60,
-  "consecutive_failures": 3,
   "compare_with_legacy": false,
-  "retry": {"max_attempts": 1, "wait_seconds": 10, "before_write_only": true}
+  "retry": {
+    "max_attempts": 1,
+    "wait_seconds": 10,
+    "before_write_only": true
+  },
+  "timeouts": {
+    "model": 240,
+    "worker_ready": 600,
+    "explain": 30,
+    "query": 60,
+    "rpc": 125,
+    "http_connect": 10,
+    "ssh_connect": 10,
+    "ssh_keepalive_interval": 15,
+    "ssh_keepalive_count": 4,
+    "admission": 600,
+    "queue_total": 900,
+    "channel_close": 60,
+    "process_terminate": 10,
+    "reader_join": 2
+  }
 }

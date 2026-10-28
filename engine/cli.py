@@ -147,7 +147,7 @@ async def live(config_path: Path):
             pool,
             ledger,
             Journal(spec.run_dir / "journal.jsonl"),
-            HTTPTransport(Path(value["key_dir"])),
+            HTTPTransport(Path(value["key_dir"]), connect_timeout=spec.timeouts.http_connect),
         )
         return await execute_campaign(
             scheduler,

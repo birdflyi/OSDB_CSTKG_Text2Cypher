@@ -53,3 +53,24 @@
 42候选格仍阻塞。此批为工程冒烟，不是整张T1。
 当前工程scope265/384，累计15993/21992；无unknown、orphan或missing intent。费用未知。
 原freeze与原结果保留。只读审计：`dashboard_v18_readonly_closure_v19.json`。
+
+
+## 第二阶段：统一入口、配置与失败决策（2026-10-28）
+
+- 复查首批修复后继续施工；原冻结、原始回复、方法、参考和评分器保持原样。
+- `campaign.generate_initial` 是公共首轮生成入口，内部仍只调用Scheduler；CypherBench适配器不再定义dispatch_initial。
+- 新鲜准入的CypherBench流水线统一启动独立producer/consumer；旧overlap开关不再让它回到等DB/评分的路径。历史完成回执/显式resume仍走兼容检查，不据此宣称任意崩溃已能自动恢复。
+- `Timeouts`集中模型默认、排队、HTTP/SSH、RPC、数据库读和关闭时限，拒绝非有限数、非正数和未知键。
+- 模型响应时限仍以已冻结输入manifest的显式值为准；统一配置提供生成新输入时的默认值，不能暗改旧输入。恢复时限仍是该值的两倍，不另写480常量。
+- 旧admission_timeout_seconds/max_queue_wait_seconds仍可读取，映射到同一个Timeouts；旧显式字段优先。新示例只写timeouts块，移除两个未生效的旧顶层策略字段。其他池策略的统一仍属E阶段。
+- `failure_kind`是共享失败事实分类；端点健康和重试从中各自取决策，保留unknown是否计费的独立语义。畸形协议仅在retry_unknown已授权且有计费终结记录时有界重试；有效输出、不同模型和auth错误不重试。
+- DB EXPLAIN/query、RPC和HTTP connect已接入配置；worker READY报告查询时限，非默认值必须与客户端一致，避免只改客户端而未改服务端。
+- SSH命令公共构造器始终加入BatchMode、ConnectTimeout和15秒/4次保活默认；它只补argv，不拼接shell，也不改变目标主机/端口/私钥。
+- DB容量建议公式支持显式rpc_per_case，不人为设置最小5路。测量值若已经包含整题DB耗时，应传1，避免重复计算。
+
+本阶段仅离线验收。在线部署、真实SSH故障/无孤儿验收尚未执行，不能从参数测试推断故障根因已完全解决。
+剩余重点：E端点配置/恢复阈值/局部峰值，F持久化I/O分离，B通道断裂及进程清理，A单图复用，C事件恢复。不得把本阶段称整条流水线已验收。
+
+测试证据：pytest_rebuild_d_v20_release.xml。中间targeted.xml有一项因测试期间编辑源码触发身份闸门，保留该失败证据；之后固定源码重新完整验收。新API/DB调用0，工程scope265/384，累计15993/21992，无未知、孤儿或缺失意图。
+
+完整回归157通过、1跳过；最终清理仅删除一个不可达的重复条件，另用8场producer/consumer合同复查。只有transport中的一个物理POST入口（AST核对）。
