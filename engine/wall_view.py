@@ -185,7 +185,7 @@ def render(value, selection, height=50, now=None):
             c["task_id"][:12],
             c["graph"],
             c["state"],
-            duration(now - c["stage_started"]) if c.get("stage_started") else "--",
+            duration(now - c["stage_started"]) if c.get("stage_started") and not c.get("scored") else "--",
             str(c["attempts"]),
             grade,
             style="bold cyan" if c["task_id"] == selection.case else "",
