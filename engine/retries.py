@@ -35,7 +35,7 @@ class RecoveryGate:
 
     async def record(self, status):
         async with self.condition:
-            self.window.append(status in ("infra", "unknown", "throttled"))
+            self.window.append(status in ("infra", "unknown", "throttled", "local_resource_error"))
             if len(self.window) == 8:
                 if sum(self.window) >= 2:
                     previous = self.cap

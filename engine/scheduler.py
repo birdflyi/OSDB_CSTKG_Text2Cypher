@@ -99,6 +99,9 @@ class Scheduler:
                         status="local_resource_error",
                         charged=False,
                         error=type(exc).__name__,
+                        errno=getattr(exc, "errno", None),
+                        winerror=getattr(exc, "winerror", None),
+                        logical_key=item.key,
                         request_id=rid,
                     )
                 value = dict(
@@ -276,6 +279,18 @@ class Scheduler:
                     await self.recovery_gate.record(value["status"])
             else:
                 value = await self._generate_once(item, attempt)
+            # Local preparation failed before any HTTP write or reservation.
+            # Retry that same physical ordinal, rather than consuming its model
+            # attempt number. Exhausted preparation is explicitly undispatched.
+            for local_retry in range(2):
+                if value["status"] != "local_resource_error" or self.draining.is_set():
+                    break
+                await self.recovery_gate.record(value["status"])
+                await self.retry_sleep(self.spec.retry.wait_seconds)
+                async with self.recovery_gate.slot():
+                    value = await self._generate_once(item, attempt)
+            if value["status"] == "local_resource_error":
+                value["undispatched_reason"] = "local_resource"
             if not self._retryable(value) or attempt == self.spec.retry.max_attempts:
                 return value
             previous = value

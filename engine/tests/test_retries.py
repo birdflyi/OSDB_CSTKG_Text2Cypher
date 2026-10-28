@@ -203,6 +203,42 @@ def test_failure_window_shrinks_retry_gate_and_releases_all_slots():
     asyncio.run(scenario())
 
 
+@pytest.mark.parametrize("failures", [2, 3])
+def test_local_preparation_retry_does_not_reset_or_consume_physical_ordinal(tmp_path, failures):
+    import errno
+
+    class Transport(FakeTransport):
+        preparations = 0
+
+        def prepare(self, endpoint):
+            self.preparations += 1
+            if self.preparations <= failures:
+                raise OSError(errno.ENOBUFS, "Synthetic local preparation failure")
+            return super().prepare(endpoint)
+
+    async def scenario():
+        scheduler, items, transport, ledger = await make_scheduler(
+            tmp_path, count=1, transport=Transport(0)
+        )
+
+        async def sleep(unused):
+            pass
+
+        scheduler.retry_sleep = sleep
+        paths = await scheduler.run(items)
+        assert transport.preparations == 3
+        assert transport.calls == (1 if failures == 2 else 0)
+        assert len(ledger.terminals) == transport.calls
+        assert scheduler.events[0]["errno"] == errno.ENOBUFS
+        if failures == 2:
+            assert paths[0]["final"]["attempt_no"] == 1
+            assert not any("undispatched_reason" in e for e in scheduler.events)
+        else:
+            assert paths[0]["final"]["undispatched_reason"] == "local_resource"
+
+    asyncio.run(scenario())
+
+
 @pytest.mark.skipif(
     sys.platform == "win32",
     reason="Owned Neo4j worker runs on Linux; Windows SO_REUSEADDR permits duplicate bind",
