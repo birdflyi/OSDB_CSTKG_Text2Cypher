@@ -148,3 +148,8 @@ MTQ10113记录全部绑定作者schema（Manual bloom显式映射bloom50）；�
 ### 准备第九批：原生集合、共享控制和保存
 
 新增neo4j_native_plan_dev_20261029.py：同事务实体集合组合、受限计数证书、共享计划控制、方法最终答案先保存、文件独占/fsync/摘要记录；simple_correct与full_detail等价明确标注。编译器参数前缀API升v2，旧v8包和原CB冻结保留。26组合检查+29编译回归本地/Linux通过，39事件示例为人工传输响应，不当DB验收/EX/性能。实际图、原调用成本、参考隔离/主评分/全量adapter与任意崩溃恢复仍未完成；模型DB训练0，见T1_NATIVE_PLAN_AND_CONTROLS_V9_20261029.md。
+
+
+### 准备第十批：来源回复与原生答案消费
+
+新增audited_model_reply_dev_20261029.py、neo4j_reply_consumer_dev_20261029.py及35项合成验收。本地/Linux相同检查通过，来源请求/终结/计费槽摘要关联、未知计费保留、Direct原查询/Ours原生计划、方法先保存再共享控制、未发送反馈；旧V4/冻结材料不改。无模型/真实DB/训练，未注册adapter。图生命周期/公共输入绑定、参考隔离/作者主评分/完整分母与全部尝试成本汇总仍待接线，见T1_NATIVE_REPLY_CONSUMER_V10_20261029.md。
