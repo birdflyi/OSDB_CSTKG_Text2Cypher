@@ -14,7 +14,7 @@ import time
 from ..config import canonical, digest
 from ..campaign import code_manifest
 from ..execution import serve_stream
-from ..journal import write_new
+from ..journal import Journal, write_new
 
 
 class ReadHandler:
@@ -107,18 +107,19 @@ def check_bolt_available(port=17688):
 class OwnedRuntime:
     def __init__(self, settings: dict):
         startup_started = time.monotonic()
+        diagnostics = None
 
         def milestone(phase):
+            record = dict(
+                graph=settings["graph"],
+                phase=phase,
+                elapsed_seconds=time.monotonic() - startup_started,
+                epoch=time.time(),
+            )
+            if diagnostics is not None:
+                Journal(diagnostics / "startup.jsonl").append("worker_startup", **record)
             print(
-                json.dumps(
-                    dict(
-                        kind="worker_startup",
-                        graph=settings["graph"],
-                        phase=phase,
-                        elapsed_seconds=time.monotonic() - startup_started,
-                        epoch=time.time(),
-                    )
-                ),
+                json.dumps(dict(kind="worker_startup", **record)),
                 file=sys.stderr,
                 flush=True,
             )
@@ -137,6 +138,12 @@ class OwnedRuntime:
             or owner["hostname"] != settings["expected_hostname"]
         ):
             raise ValueError("Execution owner/hostname mismatch")
+        diagnostics = (
+            self.root / "worker_diagnostics" / (settings["graph"] + "-" + str(os.getpid()))
+        )
+        diagnostics.mkdir(parents=True, exist_ok=False)
+        self.diagnostics = diagnostics
+        milestone("owner_verified")
         self.folder = self.root / "test_runtime_v1" / settings["graph"]
         validation = json.loads((self.folder / "graph_validation.json").read_text())
         if validation.get("all_properties_labels_and_endpoints_match") is not True:
@@ -222,9 +229,13 @@ class OwnedRuntime:
                 worker_source_sha256=digest(Path(__file__).read_bytes()),
                 runtime_code_sha256=digest(canonical(code_manifest())),
                 workers=settings["workers"],
+                diagnostics_dir=str(diagnostics),
+                worker_pid=os.getpid(),
                 max_rows=1000000,
                 max_result_bytes=64 * 1024 * 1024,
             )
+            write_new(diagnostics / "ready.json", canonical(self.ready))
+            milestone("ready_persisted")
         except BaseException:
             self.close()
             raise
