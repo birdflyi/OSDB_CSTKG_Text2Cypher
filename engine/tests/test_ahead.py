@@ -20,7 +20,10 @@ from engine.ledger import audit_new
 
 
 @pytest.mark.parametrize("bad_score", [False, True])
-def test_next_32_requests_start_while_previous_db_is_waiting(tmp_path, monkeypatch, bad_score):
+@pytest.mark.parametrize("single_graph", [False, True])
+def test_next_32_requests_start_while_previous_db_is_waiting(
+    tmp_path, monkeypatch, bad_score, single_graph
+):
     b_started = threading.Event()
     starts, ends, db_threads = [], [], []
 
@@ -94,6 +97,9 @@ def test_next_32_requests_start_while_previous_db_is_waiting(tmp_path, monkeypat
             positions.append((qid, graph))
             refs.append(dict(qid=qid, answer_json="[[1]]", gold_cypher="RETURN 1"))
     evaluator = data / "evaluator/test.jsonl"
+    if single_graph:
+        positions = positions[:2]
+    count = len(positions)
     evaluator.parent.mkdir(parents=True)
     evaluator.write_text("\n".join(json.dumps(r) for r in refs), encoding="utf-8")
     registry = tmp_path / "registry.json"
@@ -164,8 +170,8 @@ def test_next_32_requests_start_while_previous_db_is_waiting(tmp_path, monkeypat
             dict(
                 approved=True,
                 active=True,
-                cumulative_cap=64,
-                scope_caps={"fixture": 64},
+                cumulative_cap=count * 2,
+                scope_caps={"fixture": count * 2},
                 ledger_dir=str(tmp_path / "ledger"),
             )
         )
@@ -204,22 +210,34 @@ def test_next_32_requests_start_while_previous_db_is_waiting(tmp_path, monkeypat
         )
     )
     result = asyncio.run(pipeline.live_pipeline(config_path))
-    assert transport.calls == 64 and transport.peak <= 32
+    assert transport.calls == count * 2 and transport.peak <= 32
     assert len(result["performance"]["cells"]) == 2
     for cell in result["performance"]["cells"]:
-        assert cell["planned_cases"] == 32
-        assert cell["new_physical_calls"] == 32
-        assert cell["request_seconds"]["known"] == 32
+        assert cell["planned_cases"] == count
+        assert cell["new_physical_calls"] == count
+        assert cell["request_seconds"]["known"] == count
         assert cell["actual_HTTP"]["peak"] <= 32
     assert b_started.is_set() and db_threads and not any("http" in name for name in db_threads)
     assert result["completed"] == (1 if bad_score else 2)
     assert result["incomplete"] == (["direct"] if bad_score else [])
     assert min(t for m, t in starts if m == "ours") - max(t for m, t in ends if m == "direct") < 30
     ledger = audit_new(tmp_path / "ledger")
-    assert ledger["charged"] == 64 and not ledger["unknown"]
+    assert ledger["charged"] == count * 2 and not ledger["unknown"]
     assert len(list((tmp_path / "run/runs").glob("*/initial_handoff.json"))) == 2
     assert all(
         len(json.loads((tmp_path / "run/runs" / m / "scores.json").read_text(encoding="utf-8")))
-        == 64
+        == count * 2
         for m in ["direct", "ours"]
     )
+    for seal in (tmp_path / "run/runs").rglob("artifact_manifest.json"):
+        for name, expected in json.loads(seal.read_text(encoding="utf-8")).items():
+            assert digest((seal.parent / name).read_bytes()) == expected
+    # Subset support is only an engineering/smoke capability. Formal admission
+    # must still reject these fewer-than2348 inputs before any new dispatch.
+    admission_path = tmp_path / "admission.json"
+    formal = json.loads(admission_path.read_text(encoding="utf-8"))
+    formal["purpose"] = "formal_T1"
+    admission_path.write_bytes(canonical(formal))
+    with pytest.raises(ValueError, match="retain all2348"):
+        asyncio.run(pipeline.live_pipeline(config_path))
+    assert transport.calls == count * 2

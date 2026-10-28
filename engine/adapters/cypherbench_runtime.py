@@ -8,7 +8,7 @@ from pathlib import Path
 import time
 
 from .cypherbench import GRAPHS, ExecutedAnswerAdapter, feedback_item
-from ..campaign import execute_campaign
+from ..campaign import execute_campaign, finalize_campaign
 from ..config import canonical, digest
 from ..execution import JsonRpcClient, TracedRpcExecutor
 from ..journal import Journal, write_new
@@ -243,7 +243,9 @@ async def run_graphs(
     for graph in GRAPHS:
         selected = [i for i in items if i.graph == graph]
         if not selected:
-            raise ValueError("Missing graph in fixed formal denominator")
+            # Formal population is checked before dispatch by live_pipeline.
+            # Smoke/recovery inventories may explicitly contain fewer graphs.
+            continue
         worker = settings["workers"][graph]
         if digest(canonical(worker)) != settings["worker_sha256"][graph]:
             raise IntegrityError("Changed graph runtime contract")
@@ -295,6 +297,7 @@ async def run_graphs(
                 registry_path=Path(config["registry_path"]),
                 execute=adapter.execute,
                 feedback=feedback_item,
+                defer_seal=True,
                 metadata=dict(
                     purpose="formal_T1",
                     worker_READY=client.ready_value,
@@ -313,6 +316,7 @@ async def run_graphs(
                 summary["undispatched_by_reason"]
                 and not config.get("continue_on_path_failures", True)
             ):
+                finalize_campaign(spec.run_dir, summary)
                 return dict(
                     stop_reason=summary["stop_reason"]
                     or ("undispatched_paths" if summary["undispatched_by_reason"] else "pending"),
@@ -388,6 +392,7 @@ async def run_graphs(
             scores.extend(graph_scores)
             write_new(spec.run_dir / "scores.json", canonical(graph_scores))
             scheduler.journal.append("graph_scored", graph=graph, scored_views=len(graph_scores))
+            finalize_campaign(spec.run_dir, summary)
         finally:
             await asyncio.get_running_loop().run_in_executor(consumer_executor, client.close)
             stderr.close()

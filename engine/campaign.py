@@ -112,6 +112,7 @@ async def execute_campaign(
     execute=None,
     feedback=None,
     metadata=None,
+    defer_seal=False,
 ):
     spec = scheduler.spec
     if spec.run_dir.exists():
@@ -304,15 +305,6 @@ async def execute_campaign(
         server_decode_TPS=None,
         server_GPU_load=None,
     )
-    artifacts = {
-        str(p.relative_to(spec.run_dir)): digest(p.read_bytes())
-        for p in spec.run_dir.rglob("*")
-        if p.is_file()
-    }
-    raw = canonical(artifacts)
-    write_new(spec.run_dir / "artifact_manifest.json", raw)
-    summary["artifact_manifest_sha256"] = digest(raw)
-    write_new(spec.run_dir / "summary.json", canonical(summary))
     await asyncio.get_running_loop().run_in_executor(
         None,
         lambda: write_status(
@@ -328,4 +320,21 @@ async def execute_campaign(
             ),
         ),
     )
+    if not defer_seal:
+        finalize_campaign(spec.run_dir, summary)
     return summary
+
+
+def finalize_campaign(directory, summary):
+    """Seal once after the last event/progress/score write; wrappers avoid a hash cycle."""
+    directory = Path(directory)
+    wrappers = {directory / "artifact_manifest.json", directory / "summary.json"}
+    artifacts = {
+        str(p.relative_to(directory)): digest(p.read_bytes())
+        for p in directory.rglob("*")
+        if p.is_file() and p not in wrappers
+    }
+    raw = canonical(artifacts)
+    write_new(directory / "artifact_manifest.json", raw)
+    summary["artifact_manifest_sha256"] = digest(raw)
+    write_new(directory / "summary.json", canonical(summary))
