@@ -112,3 +112,10 @@
 准备表独立记录5个数据集与45个方法格：方法组件就绪3/延后22/不确定20/不可应用0。作者权重或协议未取得不能写成科学不适用。OSDB四项是项目图，复用现有图工厂与控制代码，不误建四类数据库。旧结果和主表不改。材料、脚本和完整证据在D:/ch7/assets/t1_preparation_20261029与D:/ch7/reports/t1_preparation_20261029；状态在D:/ch7/state/T1_PREPARATION_MATRIX_20261029.json，说明在D:/ch7/discussion/T1_PREPARATION_STATUS_20261029.md。全部准备尚未完成，自动接续仅推进准备。
 
 独立核查c820ac7的203测试通过1跳过，但发现table_cli合并重签准入、结果按尝试计数/混评分视图等P1问题，均未在本阶段修复。不得据测试数量称全流水线已验收。
+
+
+### 准备阶段第二批：离线图与45格合同
+
+MTQ10个dump加StarWars CSV已离线装载为11图；ZOG pole43/pole50已装载，pole35/pole40旧格式失败保留。14归档info通过、12装载成功；另1CSV导入成功（260节点611关系）。13份store metadata可读，pole43仍为4.3格式，不能冒称5.x执行就绪。没有启动DB或执行基准查询，模型/训练0。StarWars首版CLI参数错误与成功v2均保留。
+
+静态审计发现MTQ Manual/Automated测试1241相同(图,问题,参考)记录；Automated训练测试26相同(图,问题)，其中2也同参考。MTQ/ZOG Pole5图dump相同。保留全部题，不自动改分母，跨轨/跨基准结论须披露重叠。45格准备合同与作者部分训练配方已归档；作者权重和协议仍缺，生成库不等于训练好的模型。证据目录D:/ch7/reports/t1_preparation_20261029/，详见T1_PREPARATION_STATUS_20261029.md。下一步只补图/schema与评分/方法资源合同，不重复已完成装载，不启动实验。
