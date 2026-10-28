@@ -136,3 +136,7 @@ MTQ10113记录全部绑定作者schema（Manual bloom显式映射bloom50）；�
 ### 准备第六批：Neo4j原生类型与身份范围
 
 新增neo4j_native_answer_contract_dev_20261029.py和25项驱动对象合成验收，本地/Linux均通过，无数据库连接/模型/训练。保留节点/关系/路径、时间空间及标量类型、重复行列与完整性；精确类型辅助比较不当作者主指标。固定SDK明确element_id跨事务可变，Record.data丢节点身份已复现；CaptureScope须绑定单一读事务，未认证的跨采集实体比较拒绝，不能补假eid或用图/批次名代替事务身份。原生编译身份/事务执行/参考配对/完整adapter仍未实现，全部45格保留不判科学NA。独立venv离线依赖及源码包证据见T1_NEO4J_TYPED_ANSWERS_V6_20261029.md和preparation_v6_delivery.json；旧五处外部核心修改保留，不自动开跑。
+
+### 准备第七批：原生读事务接口
+
+新增neo4j_read_capture_dev_20261029.py：一个显式事务保存带身份的原生答案，原生实体投影不补eid，读取和保存失败不重试/不伪成功，独立用途与阶段成本。24项假传输层+真实SDK值检查本地/Linux通过，无模型/DB/训练。固定驱动显式事务使用整笔超时，不能套Query(timeout)，旧协议不改。完整选择/分组/组合编译、图不可变证明、生产日志/参考隔离与全量adapter仍缺，见T1_NEO4J_READ_TRANSACTION_V7_20261029.md。
