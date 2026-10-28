@@ -140,3 +140,7 @@ MTQ10113记录全部绑定作者schema（Manual bloom显式映射bloom50）；�
 ### 准备第七批：原生读事务接口
 
 新增neo4j_read_capture_dev_20261029.py：一个显式事务保存带身份的原生答案，原生实体投影不补eid，读取和保存失败不重试/不伪成功，独立用途与阶段成本。24项假传输层+真实SDK值检查本地/Linux通过，无模型/DB/训练。固定驱动显式事务使用整笔超时，不能套Query(timeout)，旧协议不改。完整选择/分组/组合编译、图不可变证明、生产日志/参考隔离与全量adapter仍缺，见T1_NEO4J_READ_TRANSACTION_V7_20261029.md。
+
+### 准备第八批：原生选择编译
+
+新增neo4j_native_selection_dev_20261029.py与28项离线验收，本地/Linux通过；MTQ标签属性与ZOG全局属性词表分别解析，12份schema机械编译检查不当EX或真实DB验收。原生实体投影/分组、NULL/OPTIONAL、参数类型与显式排序限制，不注入eid/rid，不改旧CB。OSM端点专有标签属性缺口、两套pole签名18/17差异保留。集合组合/实际执行/图与日志/作者评分仍缺，模型DB训练0；见T1_NATIVE_SELECTION_PREPARATION_V8_20261029.md。
