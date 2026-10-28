@@ -34,6 +34,20 @@ class Permit:
         self.recovery_generation = state.recovery_generation
 
     async def release(self):
+        # Retain and join the release task even if its owner is cancelled while
+        # waiting for the condition lock. Never leave a charged POST's slot lost.
+        task = asyncio.create_task(self._release())
+        cancelled = False
+        while not task.done():
+            try:
+                await asyncio.shield(task)
+            except asyncio.CancelledError:
+                cancelled = True
+        task.result()
+        if cancelled:
+            raise asyncio.CancelledError
+
+    async def _release(self):
         async with self.pool.condition:
             if self.released:
                 raise RuntimeError("Model permit released twice")
@@ -91,7 +105,9 @@ class DynamicPool:
                 else:
                     state.spec, state.removed = endpoint, False
             # Keep removed generations until their in-flight permits drain.
-            self.states = {k: s for k, s in self.states.items() if not s.removed or s.inflight}
+            self.states = {
+                k: s for k, s in self.states.items() if not s.removed or s.inflight
+            }
             self.condition.notify_all()
 
     def _eligible(self, model: str):
@@ -123,7 +139,10 @@ class DynamicPool:
                     if ticket is first and self.inflight < self.global_cap and eligible:
                         state = min(
                             eligible,
-                            key=lambda s: ((s.inflight + 1) / self.capacity(s), s.spec.name),
+                            key=lambda s: (
+                                (s.inflight + 1) / self.capacity(s),
+                                s.spec.name,
+                            ),
                         )
                         state.inflight += 1
                         self.inflight += 1
@@ -131,7 +150,9 @@ class DynamicPool:
                         return Permit(self, state)
                     remaining = deadline - self.clock()
                     if remaining <= 0:
-                        raise AdmissionTimeout("No matching model capacity before deadline")
+                        raise AdmissionTimeout(
+                            "No matching model capacity before deadline"
+                        )
                     # Timed wake only for cooldown/quarantine expiry, not polling.
                     wakeups = [
                         max(s.quarantined_until, s.cooldown_until) - self.clock()
@@ -153,10 +174,11 @@ class DynamicPool:
         async with self.condition:
             state = permit.state
             transition = None
-            if status == "model_mismatch":
-                state.quarantined_until = float("inf")
+            if status in ("model_mismatch", "auth_error"):
+                state.quarantined_until = self.clock() + 60
                 state.recovery_successes = 0
                 state.recovery_generation += 1
+                transition = "quarantined"
             elif status in ("infra", "unknown", "throttled"):
                 state.recovery_successes = 0
                 if not state.degraded:
@@ -217,7 +239,17 @@ class DynamicPool:
                     name=s.spec.name,
                     model=s.spec.model,
                     cap=s.spec.cap,
-                    effective_cap=self.capacity(s),
+                    effective_cap=(
+                        self.capacity(s)
+                        if s.spec.enabled
+                        and not s.removed
+                        and s.quarantined_until <= self.clock()
+                        else 0
+                    ),
+                    admissible=(
+                        s in self._eligible(s.spec.model)
+                        and self.inflight < self.global_cap
+                    ),
                     degraded=s.degraded,
                     recovery_successes=s.recovery_successes,
                     timeout_multiplier=2 if s.degraded else 1,
@@ -249,7 +281,9 @@ class DynamicPool:
                         on_reload(endpoints)
                     last = raw
             except (OSError, ValueError, TypeError, KeyError) as exc:
-                issue = dict(kind="invalid_registry_keep_previous", error=type(exc).__name__)
+                issue = dict(
+                    kind="invalid_registry_keep_previous", error=type(exc).__name__
+                )
                 if not self.issues or self.issues[-1] != issue:
                     self.issues.append(issue)
             try:

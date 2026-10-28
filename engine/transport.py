@@ -23,7 +23,9 @@ LOCAL_ERRNOS = {
 
 
 def local_resource_error(exc: BaseException) -> bool:
-    return getattr(exc, "errno", None) in LOCAL_ERRNOS or getattr(exc, "winerror", None) in (
+    return getattr(exc, "errno", None) in LOCAL_ERRNOS or getattr(
+        exc, "winerror", None
+    ) in (
         10048,
         10049,
         10055,
@@ -37,9 +39,15 @@ def endpoint_health(value):
         return "model_mismatch"
     if value.get("status") == "throttled":
         return "throttled"
-    if value.get("transport_error") or (value.get("http_status") or 0) >= 500:
-        return "infra"
     if value.get("status") == "local_resource_error":
+        return "neutral"
+    if value.get("http_status") in (401, 403, 404, 405):
+        return "auth_error"
+    if value.get("protocol_error"):
+        return "neutral"
+    if value.get("http_status") in (408, 409):
+        return "infra"
+    if value.get("transport_error") or (value.get("http_status") or 0) >= 500:
         return "infra"
     if value.get("status") in ("infra", "ok", "length", "empty", "refused"):
         return value["status"]
@@ -53,18 +61,37 @@ def classify(value: dict, expected_model: str) -> dict:
     if value.get("transport_error"):
         result["status"] = "unknown" if value.get("write_started") else "infra"
         return result
-    if status == 429 or (status == 503 and value.get("retry_after_seconds") is not None):
+    if status == 429 or (
+        status == 503 and value.get("retry_after_seconds") is not None
+    ):
         result["status"] = "throttled"
+        result["retry_after_seconds"] = min(
+            300, max(0, value.get("retry_after_seconds", 5))
+        )
+        return result
+    if status in (401, 403, 404, 405):
+        result.update(status="auth_error", generation_outcome_unknown=False)
         return result
     if status != 200:
         result.update(status="unknown", generation_outcome_unknown=True)
         return result
     body = value.get("body")
-    if not isinstance(body, dict) or body.get("model") != expected_model:
+    if (
+        not isinstance(body, dict)
+        or not isinstance(body.get("model"), str)
+        or not body["model"]
+    ):
+        result.update(status="unknown", protocol_error="invalid_response_envelope")
+        return result
+    if body["model"] != expected_model:
         result.update(status="unknown", protocol_error="model_mismatch")
         return result
     choices = body.get("choices")
-    if not isinstance(choices, list) or len(choices) != 1 or not isinstance(choices[0], dict):
+    if (
+        not isinstance(choices, list)
+        or len(choices) != 1
+        or not isinstance(choices[0], dict)
+    ):
         result.update(status="unknown", protocol_error="invalid_response_envelope")
         return result
     choice = choices[0]
@@ -94,7 +121,9 @@ def classify(value: dict, expected_model: str) -> dict:
 
 
 class PreparedHTTP:
-    def __init__(self, owner: HTTPTransport, endpoint, connection, connected_seconds, key):
+    def __init__(
+        self, owner: HTTPTransport, endpoint, connection, connected_seconds, key
+    ):
         self.owner, self.endpoint, self.connection = owner, endpoint, connection
         self.connected_seconds = connected_seconds
         self._key = key
@@ -144,14 +173,18 @@ class PreparedHTTP:
             value["response_headers"] = {
                 k.lower(): v
                 for k, v in response.getheaders()
-                if k.lower() in ("content-type", "content-length", "retry-after", "x-request-id")
+                if k.lower()
+                in ("content-type", "content-length", "retry-after", "x-request-id")
             }
             retry_after = value["response_headers"].get("retry-after")
             if retry_after is not None:
                 try:
-                    value["retry_after_seconds"] = max(0, float(retry_after))
+                    parsed = float(retry_after)
+                    value["retry_after_seconds"] = (
+                        min(300, max(0, parsed)) if parsed == parsed else 5
+                    )
                 except ValueError:
-                    value["retry_after_seconds"] = 60
+                    value["retry_after_seconds"] = 5
             phase = "reading_body"
             raw = response.read(self.owner.max_response_bytes + 1)
             value["raw_body"] = raw.decode("utf-8", errors="replace")
@@ -205,7 +238,10 @@ class HTTPTransport:
         max_idle_seconds=2,
     ):
         self.key_dir = Path(key_dir).resolve()
-        self.connect_timeout, self.max_response_bytes = connect_timeout, max_response_bytes
+        self.connect_timeout, self.max_response_bytes = (
+            connect_timeout,
+            max_response_bytes,
+        )
         self.max_idle_seconds = max_idle_seconds
         self.idle = defaultdict(list)
         self.limits = None
@@ -277,7 +313,9 @@ class HTTPTransport:
         if connection is None:
             url = urlsplit(endpoint.url)
             cls = (
-                http.client.HTTPSConnection if url.scheme == "https" else http.client.HTTPConnection
+                http.client.HTTPSConnection
+                if url.scheme == "https"
+                else http.client.HTTPConnection
             )
             connection = cls(url.hostname, url.port, timeout=self.connect_timeout)
             try:
@@ -289,7 +327,11 @@ class HTTPTransport:
 
     def release(self, endpoint, connection, reusable):
         with self.lock:
-            limit = endpoint.cap if self.limits is None else self.limits.get(endpoint.identity, 0)
+            limit = (
+                endpoint.cap
+                if self.limits is None
+                else self.limits.get(endpoint.identity, 0)
+            )
             if reusable and len(self.idle[endpoint.identity]) < limit:
                 self.idle[endpoint.identity].append((connection, time.monotonic()))
             else:

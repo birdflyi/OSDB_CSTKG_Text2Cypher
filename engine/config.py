@@ -35,7 +35,10 @@ class Sampling:
     def __post_init__(self):
         if not self.model or self.max_tokens < 1 or self.read_timeout_seconds <= 0:
             raise ValueError("Explicit model and positive limits required")
-        if self.reasoning_format not in ("standard", "chat_template") or self.reasoning_budget < 1:
+        if (
+            self.reasoning_format not in ("standard", "chat_template")
+            or self.reasoning_budget < 1
+        ):
             raise ValueError("Explicit reasoning wire format required")
 
     def body(self, messages: list) -> dict:
@@ -79,6 +82,8 @@ class Endpoint:
             or not self.model
             or type(self.cap) is not int
             or self.cap < 0
+            or type(self.enabled) is not bool
+            or (self.enabled and self.cap == 0)
             or url.scheme not in ("http", "https")
             or not url.hostname
             or url.username
@@ -107,7 +112,9 @@ class RetryPolicy:
         if not 1 <= self.max_attempts <= 3 or self.wait_seconds < 10:
             raise ValueError("At most3 attempts; retry interval at least10 seconds")
         if self.retry_unknown and self.before_write_only:
-            raise ValueError("Unknown-outcome retry requires explicit after-write authorization")
+            raise ValueError(
+                "Unknown-outcome retry requires explicit after-write authorization"
+            )
 
 
 def retry_policy(values):
@@ -149,6 +156,7 @@ class CampaignSpec:
     batch_size: int = 8
     batch_interval_seconds: float = 0
     queue_wait_until_available: bool = False
+    max_queue_wait_seconds: float = 900
 
     def __post_init__(self):
         if (
@@ -158,6 +166,7 @@ class CampaignSpec:
             or self.global_cap < 1
             or self.db_cap < 1
             or self.admission_timeout_seconds <= 0
+            or self.max_queue_wait_seconds <= 0
             or type(self.batch_size) is not int
             or self.batch_size < 2
             or self.batch_interval_seconds < 0

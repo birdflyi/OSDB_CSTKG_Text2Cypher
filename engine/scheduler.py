@@ -76,7 +76,9 @@ class Scheduler:
         self.draining.set()
         await self.pool.drain()
 
-    def _physical(self, item: Item, endpoint, attempt_no: int, timeout_multiplier=1) -> dict:
+    def _physical(
+        self, item: Item, endpoint, attempt_no: int, timeout_multiplier=1
+    ) -> dict:
         """One worker owns one connection and at most one POST. No hidden retry."""
         rid = component(self.spec.name) + "__" + request_id(item.key, attempt_no)
         # Full IDs live in the ledger; bounded directory names also work under
@@ -140,7 +142,9 @@ class Scheduler:
                     attempt_no=attempt_no,
                     endpoint=endpoint.name,
                 )
-                value = prepared.send(item.wire, item.read_timeout_seconds * timeout_multiplier)
+                value = prepared.send(
+                    item.wire, item.read_timeout_seconds * timeout_multiplier
+                )
             value.update(
                 request_id=rid,
                 logical_key=item.key,
@@ -159,7 +163,8 @@ class Scheduler:
                 ended_epoch=time.time(),
                 reserve_and_claim_seconds=reserve_seconds,
                 base_read_timeout_seconds=item.read_timeout_seconds,
-                effective_read_timeout_seconds=item.read_timeout_seconds * timeout_multiplier,
+                effective_read_timeout_seconds=item.read_timeout_seconds
+                * timeout_multiplier,
                 timeout_multiplier=timeout_multiplier,
             )
             self.ledger.finish(rid, value)
@@ -184,7 +189,10 @@ class Scheduler:
                 policy.retry_unknown
                 and value.get("charged") is True
                 and not value.get("protocol_error")
-                and (value.get("transport_error") or (value.get("http_status") or 0) >= 500)
+                and (
+                    value.get("transport_error")
+                    or (value.get("http_status") or 0) >= 500
+                )
             )
         return status in ("infra", "throttled") and not (
             policy.before_write_only and value.get("write_started")
@@ -194,11 +202,15 @@ class Scheduler:
         loop = asyncio.get_running_loop()
         waiting = time.monotonic()
         deadline = waiting + self.spec.admission_timeout_seconds
+        total_deadline = waiting + self.spec.max_queue_wait_seconds
         permit = None
         while True:
             try:
                 permit = await self.pool.acquire(
-                    item.model, min(60, max(0.001, deadline - time.monotonic()))
+                    item.model,
+                    min(
+                        60, max(0.001, min(deadline, total_deadline) - time.monotonic())
+                    ),
                 )
                 break
             except AdmissionTimeout:
@@ -211,9 +223,13 @@ class Scheduler:
                         seconds=time.monotonic() - waiting,
                         network_request_sent=False,
                     )
-                    if time.monotonic() < deadline:
+                    if time.monotonic() < min(deadline, total_deadline):
                         continue
-                if self.spec.queue_wait_until_available and not stopped:
+                if (
+                    self.spec.queue_wait_until_available
+                    and not stopped
+                    and time.monotonic() < total_deadline
+                ):
                     # Queue time is not a failed model attempt. Keep the real
                     # item queued through temporary capacity/route gaps.
                     deadline = time.monotonic() + self.spec.admission_timeout_seconds
@@ -232,6 +248,11 @@ class Scheduler:
                 ),
                 logical_key=item.key,
                 admission_wait_seconds=time.monotonic() - waiting,
+                reason=(
+                    "queue_exhausted"
+                    if time.monotonic() >= total_deadline
+                    else "capacity"
+                ),
             )
             self.events.append(value)
             return value
@@ -375,7 +396,9 @@ class Scheduler:
                 raise
             except Exception as exc:
                 await self._case_issue(item, "database", exc)
-                return dict(status="case_error", error=type(exc).__name__, complete=False)
+                return dict(
+                    status="case_error", error=type(exc).__name__, complete=False
+                )
             return dict(result, db_client_wall_seconds=time.monotonic() - started)
 
     async def _stage(self, item, stage):
@@ -414,7 +437,9 @@ class Scheduler:
                         or repaired.method != item.method
                         or repaired.model != item.model
                     ):
-                        raise IntegrityError("Only one same-path operational feedback is allowed")
+                        raise IntegrityError(
+                            "Only one same-path operational feedback is allowed"
+                        )
                     await asyncio.get_running_loop().run_in_executor(
                         None,
                         write_queue,
@@ -478,7 +503,9 @@ class Scheduler:
                 logical_key=item.key,
                 phase=phase,
                 error_type=type(exc).__name__,
-                traceback="".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
+                traceback="".join(
+                    traceback.format_exception(type(exc), exc, exc.__traceback__)
+                ),
                 automatic_model_retry=False,
             ),
         )
@@ -499,7 +526,9 @@ class Scheduler:
                     method=item.method,
                     model=item.model,
                     final=final,
-                    model_attempts=[e for e in self.events if e.get("logical_key") == item.key],
+                    model_attempts=[
+                        e for e in self.events if e.get("logical_key") == item.key
+                    ],
                     views=[dict(phase=item.phase, outcome=final)],
                 )
             )
@@ -514,7 +543,8 @@ class Scheduler:
         if feedback is not None and any(item.phase != "initial" for item in items):
             raise ValueError("Feedback orchestration starts from initial paths only")
         tasks = [
-            asyncio.create_task(self._isolated_path(item, execute, feedback)) for item in items
+            asyncio.create_task(self._isolated_path(item, execute, feedback))
+            for item in items
         ]
         try:
             for task in asyncio.as_completed(tasks):
