@@ -7,14 +7,23 @@ from .config import digest
 from .errors import IntegrityError
 
 
-def checkpoint_replies(path, ledger):
-    """Seal the complete charged scope after a drained generation phase."""
+def checkpoint_replies(path, ledger, *, logical_keys=None):
+    """Seal all attempts for the scope, or all attempts for declared cell keys.
+
+    Cell keys come from the admitted immutable input inventory. This permits a
+    consumer to load A while B has active attempts, without importing half of B.
+    It never selects a preferred reply or drops failed attempts for those keys.
+    """
     from .config import canonical
     from .journal import write_new
 
     entries = []
-    for row in ledger.records.values():
-        if row["scope"] != ledger.scope:
+    with ledger.lock:
+        records = list(ledger.records.values())
+    for row in records:
+        if row["scope"] != ledger.scope or (
+            logical_keys is not None and row["logical_key"] not in logical_keys
+        ):
             continue
         terminal = Path(row["request_path"]).with_name("terminal.json")
         # A missing terminal is an unresolved attempt, never a free retry.
@@ -26,10 +35,10 @@ def checkpoint_replies(path, ledger):
             )
         )
     write_new(path, canonical(entries))
-    return saved_replies(path, digest(path.read_bytes()), ledger)
+    return saved_replies(path, digest(path.read_bytes()), ledger, logical_keys=logical_keys)
 
 
-def saved_replies(manifest_path, expected_sha256, ledger):
+def saved_replies(manifest_path, expected_sha256, ledger, *, logical_keys=None):
     """Explicit versioned recovery: reuse charged responses, including unknowns.
 
     Import all physical attempts in slot order. A later attempt is admissible
@@ -43,7 +52,13 @@ def saved_replies(manifest_path, expected_sha256, ledger):
     entries = json.loads(path.read_text(encoding="utf-8"))
     # A partial import could reset the cross-version attempt count. Require the
     # complete charged scope, not just the caller's preferred response subset.
-    expected_ids = {r["request_id"] for r in ledger.records.values() if r["scope"] == ledger.scope}
+    with ledger.lock:
+        records = list(ledger.records.values())
+    expected_ids = {
+        r["request_id"]
+        for r in records
+        if r["scope"] == ledger.scope and (logical_keys is None or r["logical_key"] in logical_keys)
+    }
     if {e["request_id"] for e in entries} != expected_ids:
         raise IntegrityError("Recovery must account for every charged attempt in its scope")
     replies = {}

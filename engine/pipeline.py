@@ -86,7 +86,7 @@ async def run_stages(
     *,
     resume=False,
     continue_on_path_failures=True,
-    pending_requests=lambda: [],
+    pending_requests=lambda stage: [],
 ):
     """Serial blocks, concurrent work inside each block; no timer-driven dispatch.
 
@@ -209,7 +209,7 @@ async def run_stages(
             except Exception as exc:
                 import traceback
 
-                pending = pending_requests()
+                pending = pending_requests(stage)
                 issues.append(
                     "stage_error",
                     stage=name,
@@ -420,11 +420,17 @@ async def live_pipeline(config_path: Path, *, resume=False):
             )
             return CampaignSpec(**values)
 
-        async def block(stage):
+        from concurrent.futures import ThreadPoolExecutor
+
+        consumer_workers = ThreadPoolExecutor(
+            max_workers=config.get("db_cap", 4), thread_name_prefix="engine-consumer"
+        )
+
+        async def block(stage, initial_handoff=None):
             if admission["purpose"] in ("formal_T1", "smoke_T1"):
                 from .adapters.cypherbench_runtime import run_graphs
 
-                return await run_graphs(
+                result = await run_graphs(
                     stage,
                     sealed[stage["name"]],
                     config,
@@ -434,7 +440,17 @@ async def live_pipeline(config_path: Path, *, resume=False):
                     shared_transport=transport,
                     saved_replies=saved,
                     pacer=pacer,
+                    initial_handoff=initial_handoff,
+                    consumer_executor=consumer_workers,
                 )
+                if admission["purpose"] == "smoke_T1":
+                    result["smoke_passed"] = not (
+                        result.get("stop_reason")
+                        or result.get("case_failures")
+                        or result.get("undispatched_by_reason")
+                        or result.get("budget", {}).get("pending")
+                    )
+                return result
             spec = make_spec(stage)
             scheduler = Scheduler(
                 spec,
@@ -465,15 +481,43 @@ async def live_pipeline(config_path: Path, *, resume=False):
             queue_path = root / "prepared_queue.jsonl"
             if not queue_path.exists():
                 write_queue(queue_path, [i for rows in sealed.values() for i in rows], saved)
-            result = await run_stages(
-                root,
-                config["stages"],
-                block,
-                resume=True,
-                continue_on_path_failures=config.get("continue_on_path_failures", True),
-                pending_requests=lambda: ledger.summary()["pending"],
-            )
+            from .ahead import overlap, pending_under
+
+            async def consume_blocks(consume):
+                return await run_stages(
+                    root,
+                    config["stages"],
+                    consume,
+                    resume=True,
+                    continue_on_path_failures=config.get("continue_on_path_failures", True),
+                    pending_requests=lambda stage: pending_under(ledger, make_spec(stage).run_dir),
+                )
+
+            if config.get("overlap_initial_generation"):
+                if admission["purpose"] not in ("formal_T1", "smoke_T1") or resume:
+                    raise ValueError("Dispatch-ahead requires a fresh admitted benchmark pipeline")
+                from .adapters.cypherbench_runtime import dispatch_initial
+
+                async def dispatch(stage):
+                    return await dispatch_initial(
+                        stage,
+                        sealed[stage["name"]],
+                        config,
+                        make_spec,
+                        pool,
+                        ledger,
+                        transport,
+                        saved,
+                        pacer,
+                    )
+
+                result = await overlap(
+                    config["stages"], root, dispatch, block, consume_blocks, pool
+                )
+            else:
+                result = await consume_blocks(block)
         finally:
+            consumer_workers.shutdown(wait=True)
             transport.close()
         runnable = sum(not s.get("blocked_reason") for s in config["stages"])
         if (

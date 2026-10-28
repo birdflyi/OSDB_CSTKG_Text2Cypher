@@ -25,12 +25,21 @@ def snapshot(plan_path, root):
             or read(block / "incomplete.json")
             or read(block / "skipped.json")
         )
+        if not receipt and cell.get("shared_with"):
+            receipt = read(root / "blocks" / cell["shared_with"] / "completed.json")
         missing = cell.get("missing", [])
         status = receipt.get("status") or ("缺项" if missing else "待运行")
         if not receipt and (block / "started.json").exists():
             status = "运行中" if progress.get("phase") == "运行中" else "中断待审计"
         result = receipt.get("result", {})
         runtime = read_runtime(cell)
+        if not receipt and runtime.get("model_completed") is not None:
+            if runtime["model_completed"] < (cell.get("planned_paths") or 0):
+                status = "发送请求"
+            elif (block / "started.json").exists():
+                status = "数据库/评分"
+            else:
+                status = "等待数据库"
         cells.append(
             dict(
                 method=cell["method"],
@@ -87,7 +96,7 @@ def watch(plan_path, root, interval=2):
             "状态",
             "完成/计划",
             "首轮模型完成",
-            "HTTP在途",
+            "全池HTTP快照",
             "Smoke通过",
             "缺项 / 范围",
         ):

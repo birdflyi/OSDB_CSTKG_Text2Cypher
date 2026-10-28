@@ -89,6 +89,32 @@ async def run_matrix(plan_path, output, *, resume=False, run_pipeline=None):
     retain the engine's explicit stop rather than risk duplicate paid requests.
     """
     plan = load_plan(plan_path)
+    if plan.get("dispatch_pipeline"):
+        entry = plan["dispatch_pipeline"]
+        config_path = Path(entry["path"])
+        if digest(config_path.read_bytes()) != entry["sha256"]:
+            raise ValueError("Changed shared dispatch pipeline")
+        config = json.loads(config_path.read_text(encoding="utf-8-sig"))
+        if (
+            not config.get("overlap_initial_generation")
+            or Path(config["run_dir"]).resolve() != Path(output).resolve()
+        ):
+            raise ValueError(
+                "Shared dispatch requires an overlapping pipeline with the same output"
+            )
+        ready = {
+            c["name"]: (c["method"], c["benchmark"])
+            for c in plan["cells"]
+            if not c.get("shared_with") and not inspect_cell(c)["reasons"]
+        }
+        admitted = {
+            s["name"]: (s["method"], s["benchmark"])
+            for s in config["stages"]
+            if not s.get("blocked_reason")
+        }
+        if ready != admitted:
+            raise ValueError("Shared pipeline cells differ from the admitted matrix")
+        return await (run_pipeline or live_pipeline)(config_path, resume=resume)
     stages = []
     for cell in plan["cells"]:
         row = inspect_cell(cell)

@@ -43,6 +43,7 @@ CORE_FILES = (
     "matrix.py",
     "matrix_wall.py",
     "mirror.py",
+    "ahead.py",
 )
 
 

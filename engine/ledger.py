@@ -275,26 +275,27 @@ class Ledger:
         write_new(Path(value["request_path"]).parent / "terminal.json", canonical(terminal))
 
     def summary(self) -> dict:
+        with self.lock:
+            records = list(self.records.items())
         pending = [
             rid
-            for rid, value in self.records.items()
+            for rid, value in records
             if not (Path(value["request_path"]).parent / "terminal.json").exists()
         ]
         return dict(
             legacy_charged=self.legacy.charged,
-            new_charged=len(self.records),
-            total_charged=self.legacy.charged + len(self.records),
+            new_charged=len(records),
+            total_charged=self.legacy.charged + len(records),
             cap=self.cap,
             scope=self.scope,
             pending=pending,
         )
 
     def run_status(self, run_dir: Path) -> dict:
-        records = [
-            v
-            for v in self.records.values()
-            if Path(v["run_dir"]).resolve() == Path(run_dir).resolve()
-        ]
+        target = os.path.normcase(str(Path(run_dir).resolve()))
+        with self.lock:
+            snapshot = list(self.records.values())
+        records = [v for v in snapshot if os.path.normcase(str(Path(v["run_dir"]))) == target]
         pending = [
             v["request_id"]
             for v in records

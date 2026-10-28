@@ -17,6 +17,52 @@ from ..replay import frozen_modules
 from ..scheduler import Scheduler
 from ..transport import HTTPTransport
 from ..errors import IntegrityError, PersistenceError
+from ..ahead import local_budget
+
+
+async def dispatch_initial(stage, items, config, make_spec, pool, ledger, transport, saved, pacer):
+    """Persist one cell's initial replies without opening a graph or reading gold."""
+    from dataclasses import replace
+    from ..recovery import checkpoint_replies
+
+    spec = make_spec(stage)
+    directory = spec.run_dir
+    directory.mkdir(parents=True, exist_ok=True)
+    initial = replace(spec, name=spec.name + "-prepared", run_dir=directory / "_generation")
+    scheduler = Scheduler(
+        initial,
+        pool,
+        ledger,
+        Journal(initial.run_dir / "journal.jsonl"),
+        transport,
+        close_transport=False,
+    )
+    scheduler.saved_replies = saved or {}
+    scheduler.pacer = pacer or scheduler.pacer
+    scheduler.extra_drain_paths = [Path(config.get("run_dir", directory.parent)) / "DRAIN"]
+    summary = await execute_campaign(
+        scheduler,
+        items,
+        registry_path=Path(config["registry_path"]),
+        metadata=dict(purpose="frozen_initial_generation_no_DB_no_gold", method=stage["method"]),
+    )
+    value = dict(
+        stage=stage.get("name", spec.name),
+        keys=[i.key for i in items],
+        summary=summary,
+        budget=local_budget(ledger, directory),
+    )
+    if (
+        not summary["stop_reason"]
+        and not value["budget"]["pending"]
+        and not summary["undispatched_by_reason"]
+    ):
+        history = directory / "generation_history.json"
+        checkpoint_replies(history, ledger, logical_keys=set(value["keys"]))
+        value.update(history=str(history), history_sha256=digest(history.read_bytes()))
+    path = directory / "initial_handoff.json"
+    write_new(path, canonical(value))
+    return dict(path=str(path), sha256=digest(path.read_bytes()))
 
 
 def _score_answer(qid, outcome, references, scoring, compare):
@@ -67,6 +113,37 @@ def score_paths(paths, references, scoring, compare):
     return scores
 
 
+def score_graph(paths, controls, data, graph, scoring, compare):
+    """Evaluator work runs in consumer threads, away from HTTP admission."""
+    references = {
+        r["qid"]: r
+        for r in (
+            json.loads(line)
+            for line in (Path(data) / "evaluator/test.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        )
+    }
+    graph_scores = score_paths(paths, references, scoring, compare)
+    control_scores = []
+    for control in controls:
+        if control["status"] != "shared_plan_control":
+            continue
+        scored = _score_answer(control["qid"], control["full_detail"], references, scoring, compare)
+        control_scores.append(
+            dict(
+                qid=control["qid"],
+                model=control["model"],
+                graph=graph,
+                full_detail_score=scored["score"],
+                simple_correct_score=scored["score"],
+                scoring_error=scored.get("scoring_error"),
+                independent_model_method=False,
+            )
+        )
+    return graph_scores, control_scores
+
+
 async def run_graphs(
     stage,
     items,
@@ -80,6 +157,8 @@ async def run_graphs(
     shared_transport=None,
     saved_replies=None,
     pacer=None,
+    initial_handoff=None,
+    consumer_executor=None,
 ):
     """One method/benchmark block; lifecycle-serial graphs, rolling model requests.
 
@@ -89,59 +168,58 @@ async def run_graphs(
     """
     settings = stage["adapter"]
     try:
-        _, methods, scoring = frozen_modules(
-            Path(settings["code_root"]), Path(settings["legacy_freeze"])
+        _, methods, scoring = await asyncio.get_running_loop().run_in_executor(
+            consumer_executor,
+            frozen_modules,
+            Path(settings["code_root"]),
+            Path(settings["legacy_freeze"]),
         )
     except ValueError as exc:
         raise IntegrityError("Frozen method sources differ") from exc
     data = Path(settings["data"])
-    compare = scoring.load_official_comparator(Path(settings["official_source"]))
+    compare = await asyncio.get_running_loop().run_in_executor(
+        consumer_executor, scoring.load_official_comparator, Path(settings["official_source"])
+    )
     specs = make_spec(stage)
     directory = specs.run_dir
-    directory.mkdir(parents=True, exist_ok=False)
+    directory.mkdir(parents=True, exist_ok=initial_handoff is not None)
     scores, summaries = [], []
     undispatched = Counter()
     case_failures = 0
     drain_paths = [Path(config.get("run_dir", directory.parent)) / "DRAIN", directory / "DRAIN"]
     if any(i.graph not in GRAPHS for i in items):
         raise ValueError("Formal CypherBench requires the seven declared test graphs")
-    if config.get("prefetch_initial", False):
-        # Generation does not need a running graph. Persist all initial replies
-        # first, across the fixed graph inventory, before serial DB validation.
-        # This prevents cached DB replay from leaving the model idle for hours.
-        from dataclasses import replace
-        from ..recovery import checkpoint_replies
-
-        pre_spec = replace(specs, name=specs.name + "-prepared", run_dir=directory / "_generation")
-        pre_scheduler = Scheduler(
-            pre_spec,
-            pool,
-            ledger,
-            Journal(pre_spec.run_dir / "journal.jsonl"),
-            (
-                shared_transport
-                if shared_transport is not None
-                else transport_factory(Path(config["key_dir"]))
-            ),
-            close_transport=shared_transport is None,
-        )
-        pre_scheduler.saved_replies = saved_replies or {}
-        pre_scheduler.extra_drain_paths = drain_paths
-        if pacer is not None:
-            pre_scheduler.pacer = pacer
-        pre_summary = await execute_campaign(
-            pre_scheduler,
-            items,
-            registry_path=Path(config["registry_path"]),
-            metadata=dict(
-                purpose="frozen_initial_generation_no_DB_no_gold", method=stage["method"]
-            ),
-        )
-        if pre_summary["stop_reason"] or pre_summary["budget"]["pending"]:
-            return dict(
-                stop_reason=pre_summary["stop_reason"] or "pending", budget=ledger.summary()
+    if initial_handoff is None and config.get("prefetch_initial", False):
+        transport = shared_transport or transport_factory(Path(config["key_dir"]))
+        try:
+            initial_handoff = await dispatch_initial(
+                stage, items, config, make_spec, pool, ledger, transport, saved_replies, pacer
             )
-        saved_replies = checkpoint_replies(directory / "generation_history.json", ledger)
+        finally:
+            if shared_transport is None:
+                transport.close()
+    if initial_handoff is not None:
+        from ..recovery import saved_replies as load_replies
+
+        path = Path(initial_handoff["path"])
+        if digest(path.read_bytes()) != initial_handoff["sha256"]:
+            raise IntegrityError("Changed generation handoff")
+        value = json.loads(path.read_text(encoding="utf-8"))
+        if value["stage"] != stage.get("name", specs.name) or set(value["keys"]) != {
+            i.key for i in items
+        }:
+            raise IntegrityError("Generation handoff belongs to another cell")
+        if "history" not in value:
+            return dict(
+                stop_reason=value["summary"].get("stop_reason"),
+                case_failures=1,
+                budget=local_budget(ledger, directory),
+                undispatched_by_reason=value["summary"].get("undispatched_by_reason", {}),
+            )
+        cached = load_replies(
+            value["history"], value["history_sha256"], ledger, logical_keys=set(value["keys"])
+        )
+        saved_replies = dict(saved_replies or {}, **cached)
     for graph in GRAPHS:
         selected = [i for i in items if i.graph == graph]
         if not selected:
@@ -156,7 +234,7 @@ async def run_graphs(
         )
         stderr = (directory / (graph + "_worker_stderr.log")).open("x", encoding="utf-8")
         client = await asyncio.get_running_loop().run_in_executor(
-            None,
+            consumer_executor,
             lambda: client_factory(
                 worker["command"],
                 expected_ready=worker["expected_ready"],
@@ -216,7 +294,7 @@ async def run_graphs(
             undispatched.update(summary["undispatched_by_reason"])
             hard_stop = (
                 summary["stop_reason"]
-                or summary["budget"]["pending"]
+                or local_budget(ledger, directory)["pending"]
                 or summary["undispatched_by_reason"].get("budget")
             )
             if hard_stop or (
@@ -226,7 +304,7 @@ async def run_graphs(
                 return dict(
                     stop_reason=summary["stop_reason"]
                     or ("undispatched_paths" if summary["undispatched_by_reason"] else "pending"),
-                    budget=ledger.summary(),
+                    budget=local_budget(ledger, directory),
                 )
             # execute_campaign has already persisted every method final answer.
             # Shared-planner controls are separate reads/costs, never model arms.
@@ -272,33 +350,16 @@ async def run_graphs(
                     *[loop.run_in_executor(workers, control, p) for p in scheduler.paths]
                 )
             write_new(spec.run_dir / "shared_controls.json", canonical(controls))
-            references = {
-                r["qid"]: r
-                for r in (
-                    json.loads(line)
-                    for line in (data / "evaluator/test.jsonl")
-                    .read_text(encoding="utf-8")
-                    .splitlines()
-                )
-            }
-            graph_scores = score_paths(scheduler.paths, references, scoring, compare)
-            control_scores = []
-            for control in controls:
-                if control["status"] != "shared_plan_control":
-                    continue
-                outcome = control["full_detail"]
-                scored = _score_answer(control["qid"], outcome, references, scoring, compare)
-                control_scores.append(
-                    dict(
-                        qid=control["qid"],
-                        model=control["model"],
-                        graph=graph,
-                        full_detail_score=scored["score"],
-                        simple_correct_score=scored["score"],
-                        scoring_error=scored.get("scoring_error"),
-                        independent_model_method=False,
-                    )
-                )
+            graph_scores, control_scores = await asyncio.get_running_loop().run_in_executor(
+                consumer_executor,
+                score_graph,
+                scheduler.paths,
+                controls,
+                data,
+                graph,
+                scoring,
+                compare,
+            )
             failures = {
                 p["task_id"] for p in scheduler.paths if p["final"].get("status") == "case_error"
             }
@@ -315,12 +376,12 @@ async def run_graphs(
             scores.extend(graph_scores)
             write_new(spec.run_dir / "scores.json", canonical(graph_scores))
         finally:
-            await asyncio.get_running_loop().run_in_executor(None, client.close)
+            await asyncio.get_running_loop().run_in_executor(consumer_executor, client.close)
             stderr.close()
     write_new(directory / "scores.json", canonical(scores))
     return dict(
         stop_reason=None,
-        budget=ledger.summary(),
+        budget=local_budget(ledger, directory),
         graphs=summaries,
         scored_views=len(scores),
         denominators_by_model=dict(Counter(i.model for i in items)),

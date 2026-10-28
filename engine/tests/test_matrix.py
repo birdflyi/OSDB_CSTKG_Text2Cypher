@@ -113,3 +113,48 @@ def test_changed_config_is_not_dispatched(tmp_path):
 
     result = asyncio.run(run_matrix(plan, tmp_path / "run", run_pipeline=forbidden))
     assert result["blocked"] == 1 and result["dispatched_blocks"] == 0
+
+
+def test_matrix_uses_one_shared_dispatch_pipeline(tmp_path):
+    root = tmp_path / "run"
+    config = tmp_path / "config.json"
+    config.write_bytes(
+        canonical(
+            dict(
+                overlap_initial_generation=True,
+                run_dir=str(root),
+                stages=[
+                    dict(name="a", method="Direct", benchmark="fixture"),
+                    dict(name="b", method="Ours", benchmark="fixture"),
+                ],
+            )
+        )
+    )
+    sha = digest(config.read_bytes())
+    plan = tmp_path / "matrix.json"
+    plan.write_bytes(
+        canonical(
+            dict(
+                mode="smoke",
+                dispatch_pipeline=dict(path=str(config), sha256=sha),
+                cells=[
+                    dict(
+                        name=name,
+                        method=method,
+                        benchmark="fixture",
+                        pipeline_config=str(config),
+                        config_sha256=sha,
+                    )
+                    for name, method in [("a", "Direct"), ("b", "Ours")]
+                ],
+            )
+        )
+    )
+    calls = []
+
+    async def pipeline(path, resume=False):
+        calls.append(path)
+        return dict(completed=2)
+
+    result = asyncio.run(run_matrix(plan, root, run_pipeline=pipeline))
+    assert calls == [config] and result["completed"] == 2
