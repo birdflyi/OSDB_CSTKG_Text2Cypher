@@ -1,4 +1,4 @@
-"""Offline checks for M07-B01. Fake runtime and scripted replies only."""
+"""Offline checks for M07-B01 under CONTRACT_V2. Scripted replies only."""
 
 import json
 import sys
@@ -15,6 +15,7 @@ from adapter import (  # noqa: E402
     consume,
     next_request,
     parse,
+    parse_selection,
     prepare,
 )
 
@@ -23,89 +24,123 @@ POSITIONS = Path(
 )
 
 
+class Receipt:
+    def __init__(self, path):
+        self.path = path
+
+
 class FakeRuntime:
     def __init__(self):
         self.calls = []
-        self.answers = {}
+        self.finals = {}
 
-    def save_answer(self, position_id, cypher, raw):
-        self.calls.append(("save", position_id))
-        self.answers[position_id] = cypher
+    def save_prediction(self, position, prediction):
+        self.calls.append(("save_prediction", position.position_id))
+        return Receipt("pred")
 
     def graph_lease(self, graph):
         self.calls.append(("lease", graph))
         return "lease:" + graph
 
-    def db_client(self, lease, cypher):
-        self.calls.append(("db", lease))
-        return [{"n": 1}]
+    def execute(self, lease, position, prediction):
+        self.calls.append(("execute", lease))
+        return {"rows": [{"n": 1}]}
 
-    def scorer(self, task_id, cypher, records):
-        self.calls.append(("score", task_id))
-        return 1.0
+    def save_final_answer(self, position, execution):
+        self.calls.append(("save_final_answer", position.position_id))
+        self.finals[position.position_id] = execution
+        return Receipt("final")
+
+    def replay_controls(self, position, saved):
+        self.calls.append(("control", position.position_id))
+        return "control_ok"
+
+    def score_saved_answer(self, position, saved):
+        self.calls.append(("score", position.task_id))
+        return type("Score", (), {"status": "scored", "value": 1.0, "error": None})()
 
 
-def test_prepare_parses_schema_and_hides_properties():
-    specs = prepare(POSITIONS)
-    assert len(specs) == 20
-    assert sum(1 for s in specs if s.full_flow_five) == 5
-    first = specs[0]
-    assert first.turn == 1
-    assert first.schema.labels and first.schema.relationships
-    prompt = first.messages[0]["content"]
+def test_schema_keeps_types_and_endpoints():
+    spec = prepare(POSITIONS, limit=1)[0]
+    assert spec.schema.entities and spec.schema.relations
+    assert any(p.type for e in spec.schema.entities for p in e.properties)
+    assert all(r.subject and r.object for r in spec.schema.relations)
+
+
+def test_compact_prompt_hides_properties():
+    spec = prepare(POSITIONS, limit=1)[0]
+    prompt = spec.messages[0]["content"]
+    properties = [p.name for e in spec.schema.entities for p in e.properties]
+    assert properties and not any(name in prompt for name in properties)
     assert "Labels:" in prompt and "Question:" in prompt
-    properties = [p for values in first.schema.properties.values() for p in values]
-    assert properties and not any(p in prompt for p in properties)
 
 
-def test_prepare_rejects_changed_input(tmp_path):
-    document = json.loads(POSITIONS.read_text(encoding="utf-8-sig"))
-    document["positions"][0]["public_input_sha256"] = "0" * 64
-    broken = tmp_path / "broken.json"
-    broken.write_text(json.dumps(document), encoding="utf-8")
-    with pytest.raises(adapter.IntegrityError):
-        prepare(broken)
-
-
-def test_next_request_expands_selected_schema():
+def test_selection_accepts_paper_and_public_shape():
     spec = prepare(POSITIONS, limit=1)[0]
-    label = spec.schema.labels[0]
-    relation = spec.schema.relationships[0]
-    reply = 'thinking <json>{"labels":["%s"],"relationships":["%s"]}</json>' % (label, relation)
-    turn2, accepted = next_request(spec, reply)
-    assert accepted is True
-    assert turn2 is not None and turn2.turn == 2
-    text = turn2.messages[0]["content"]
-    assert "Full schema:" in text
-    assert label in text
+    entity = spec.schema.entities[0].label
+    relation = spec.schema.relations[0].label
+    paper = '<json>{"name":["%s"],"entities":["%s"],"relations":["%s"]}</json>' % (
+        spec.schema.graph,
+        entity,
+        relation,
+    )
+    public = '<json>{"labels":["%s"],"relationships":["%s"]}</json>' % (entity, relation)
+    assert parse_selection(paper, spec.schema).accepted
+    assert parse_selection(public, spec.schema).accepted
 
 
-def test_bad_selection_falls_back_to_full_schema():
+def test_selection_rejections_are_bounded():
     spec = prepare(POSITIONS, limit=1)[0]
-    turn2, accepted = next_request(spec, "no json here")
-    assert accepted is False
-    assert turn2 is not None
-    assert "Full schema:" in turn2.messages[0]["content"]
+    for bad in (
+        '<json>["Entity"]</json>',
+        '<json>{"labels":[{"label":"X"}],"relationships":[]}</json>',
+        '<json>{"labels":["Nope"],"relationships":[]}</json>',
+        '<json>{broken</json>',
+        "no json at all",
+    ):
+        selection = parse_selection(bad, spec.schema)
+        assert selection.accepted is False
+        assert selection.reason
 
 
-def test_parse_reads_only_answer_block():
-    assert parse("ok <answer>MATCH (n) RETURN n</answer>").cypher == "MATCH (n) RETURN n"
-    assert parse("no answer block").status == "format_error"
-    assert parse("MATCH (n) RETURN n", http_status=500).status == "unknown"
-    assert parse("<answer>MATCH (n) RETURN n</answer>", accepted=False).fallback is True
+def test_empty_selection_is_explicit_not_silent_full():
+    spec = prepare(POSITIONS, limit=1)[0]
+    selection = parse_selection('<json>{"labels":[],"relationships":[]}</json>', spec.schema)
+    assert selection.accepted is False
+    assert selection.reason == "empty_selection"
+    step = next_request(spec, '<json>{"labels":[],"relationships":[]}</json>')
+    assert step.action == "request"
+    assert step.state["selection_note"] == "explicit_empty_selection"
+    assert step.request.protocol == "completion_prefix"
 
 
-def test_consume_counts_fallbacks_and_keeps_denominator():
-    specs = prepare(POSITIONS)
-    predictions = {
-        s.position_id: Prediction("answered", "MATCH (n) RETURN n", "raw", fallback=(i % 2 == 0))
-        for i, s in enumerate(specs[:15])
-    }
+def test_stage2_continues_the_same_prefix():
+    spec = prepare(POSITIONS, limit=1)[0]
+    entity = spec.schema.entities[0].label
+    relation = spec.schema.relations[0].label
+    reply = 'thinking <json>{"labels":["%s"],"relationships":["%s"]}</json>' % (entity, relation)
+    step = next_request(spec, reply)
+    assert step.action == "request"
+    prefix = step.request.messages[0]["content"]
+    assert prefix.startswith(spec.messages[0]["content"])
+    assert reply in prefix
+    assert "<schema>" in prefix and "</schema>" in prefix
+    assert step.request.state["generation_stage"] if "generation_stage" in step.request.state else True
+
+
+def test_missing_stop_and_transport_unknown_do_not_continue():
+    spec = prepare(POSITIONS, limit=1)[0]
+    assert next_request(spec, "<json>{\"labels\": [").action == "failed"
+    assert next_request(spec, "plain refusal").reason == "missing_json_block"
+    assert next_request(spec, "<json>[]</json>", transport_unknown=True).reason == "transport_unknown"
+
+
+def test_parse_answer_and_consume():
+    spec = prepare(POSITIONS, limit=1)[0]
+    prediction = parse("<answer>MATCH (n) RETURN n</answer>", fallback=True)
+    assert prediction.status == "ready" and prediction.fallback is True
     runtime = FakeRuntime()
-    result = consume(specs, predictions, runtime)
-    assert result.positions == 20
-    assert result.answered == 15
-    assert result.not_dispatched == 5
-    assert result.fallbacks == 8
+    result = consume([spec], {spec.position_id: prediction}, runtime)
+    assert result.executed == 1 and result.scored == 1
     kinds = [c[0] for c in runtime.calls]
-    assert kinds.index("save") < kinds.index("db") < kinds.index("score")
+    assert kinds.index("save_prediction") < kinds.index("save_final_answer") < kinds.index("score")

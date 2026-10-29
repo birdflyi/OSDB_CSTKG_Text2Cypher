@@ -1,12 +1,18 @@
-"""M07-B01: Cypher-RI x CypherBench adapter (offline preparation only).
+"""M07-B01: Cypher-RI x CypherBench adapter under CONTRACT_V2.
 
-Cypher-RI needs two model turns: pick a schema slice, then answer with the
-selected slice expanded. The paper describes this protocol but publishes no
-controller, so the protocol below is *our* implementation; only the weights are
-the authors' (anonymous Hugging Face release).
+The authors published the paper and an anonymous Hugging Face release but no
+controller, so this protocol is *our* implementation. It follows CONTRACT_V2:
 
-``prepare`` builds turn 1, ``next_request`` derives turn 2 from a reply, and
-``parse`` reads the final ``<answer>``. Nothing here sends HTTP or opens a DB.
+* stage ``schema_select`` stops at ``</json>``; a missing stop is a truncation,
+  not a selection;
+* stage ``answer_continue`` continues the same assistant prefix
+  (prompt + stage-1 text + ``<schema>...</schema>``), it is not a second user
+  question;
+* invalid JSON or unknown names fall back to the full schema and record why;
+  an explicit empty list is recorded as our own choice, not silently expanded;
+* transport-unknown replies never produce a second stage.
+
+No HTTP, no driver, no reference set.
 """
 
 from __future__ import annotations
@@ -14,16 +20,27 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from common.consumption import consume as consume_positions  # noqa: E402
+
 SCHEMA_HEAD = "Graph schema:"
 QUESTION_HEAD = "Question:"
-SELECTION_BLOCK = re.compile(r"<json>(.*?)</json>", re.DOTALL | re.IGNORECASE)
+JSON_BLOCK = re.compile(r"<json>(.*?)</json>", re.DOTALL | re.IGNORECASE)
+JSON_OPEN = re.compile(r"<json>", re.IGNORECASE)
 ANSWER_BLOCK = re.compile(r"<answer>(.*?)</answer>", re.DOTALL | re.IGNORECASE)
-ANSWER_HINT = re.compile(r"\b(match|optional match|return|with|call)\b", re.IGNORECASE)
-
-STATUSES = ("answered", "refused", "format_error", "run_error", "not_dispatched", "unknown")
+REFUSAL = re.compile(
+    r"^\s*(i\s*(am|'m)\s+sorry|sorry[,.]|i\s+can('t|not)|i\s+am\s+unable|as an ai)",
+    re.IGNORECASE,
+)
+CLAUSE = re.compile(
+    r"\b(match|optional\s+match|unwind|return|with|call|create|merge|delete|set|remove)\b",
+    re.IGNORECASE,
+)
 
 
 class IntegrityError(RuntimeError):
@@ -31,56 +48,107 @@ class IntegrityError(RuntimeError):
 
 
 @dataclass(frozen=True)
+class Property:
+    name: str
+    type: str
+
+
+@dataclass(frozen=True)
+class Entity:
+    label: str
+    properties: tuple
+
+
+@dataclass(frozen=True)
+class Relation:
+    label: str
+    subject: str
+    object: str
+    properties: tuple
+    direction: str = "->"
+
+
+@dataclass(frozen=True)
 class Schema:
-    labels: tuple = ()
-    relationships: tuple = ()
-    properties: dict = field(default_factory=dict)
+    graph: str
+    entities: tuple
+    relations: tuple
 
     def compact_text(self) -> str:
+        """Names only: labels and relation labels."""
         return "Labels: %s\nRelationships: %s" % (
-            ", ".join(self.labels),
-            ", ".join(self.relationships),
+            ", ".join(e.label for e in self.entities),
+            ", ".join(r.label for r in self.relations),
         )
 
-    def full_text(self, selection: dict) -> str:
-        labels = selection.get("labels") or list(self.labels)
-        rels = selection.get("relationships") or list(self.relationships)
+    def expanded_text(self, selection) -> str:
+        """Selected entities/relations with property types and endpoints."""
+        entities = [e for e in self.entities if not selection.labels or e.label in selection.labels]
+        relations = [
+            r for r in self.relations if not selection.relations or r.label in selection.relations
+        ]
         lines = ["Labels:"]
-        for name in labels:
-            lines.append("  %s(%s)" % (name, ", ".join(self.properties.get(name, ()))))
+        for entity in entities:
+            props = ", ".join("%s:%s" % (p.name, p.type) for p in entity.properties)
+            lines.append("  %s(%s)" % (entity.label, props))
         lines.append("Relationships:")
-        for name in rels:
-            lines.append("  %s(%s)" % (name, ", ".join(self.properties.get(name, ()))))
+        for relation in relations:
+            props = ", ".join("%s:%s" % (p.name, p.type) for p in relation.properties)
+            lines.append(
+                "  (%s)-[%s%s]->(%s)"
+                % (relation.subject, relation.label, (" " + props) if props else "", relation.object)
+            )
         return "\n".join(lines)
 
 
 @dataclass(frozen=True)
+class Selection:
+    labels: tuple
+    relations: tuple
+    accepted: bool
+    reason: str
+
+
+@dataclass(frozen=True)
 class RequestSpec:
+    cell_id: str
     position_id: str
     task_id: str
+    benchmark: str
+    method: str
     graph: str
     category: str | None
     ordinal: int
     full_flow_five: bool
-    turn: int
+    generation_stage: str
+    protocol: str
     messages: tuple
     input_path: str
     input_sha256: str
     question: str = ""
-    schema: Schema = field(default_factory=Schema, compare=False)
+    schema: Schema | None = None
+    state: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return dict(
+            cell_id=self.cell_id,
             position_id=self.position_id,
             task_id=self.task_id,
+            benchmark=self.benchmark,
+            method=self.method,
             graph=self.graph,
             category=self.category,
             ordinal=self.ordinal,
             full_flow_five=self.full_flow_five,
-            turn=self.turn,
-            messages=[dict(m) for m in self.messages],
-            input_path=self.input_path,
-            input_sha256=self.input_sha256,
+            generation_stage=self.generation_stage,
+            protocol=self.protocol,
+            public_input_sha256=self.input_sha256,
+            body=(
+                {"messages": [dict(m) for m in self.messages]}
+                if self.protocol == "chat"
+                else {"prefix": self.messages[0]["content"]}
+            ),
+            state=dict(self.state),
         )
 
 
@@ -106,35 +174,11 @@ class Prediction:
 
 
 @dataclass(frozen=True)
-class CellResult:
-    positions: int
-    answered: int
-    refused: int
-    format_error: int
-    run_error: int
-    not_dispatched: int
-    unknown: int
-    scored: int
-    attempts: int
-    cost: float | None
-    fallbacks: int
-    rows: tuple = field(default_factory=tuple)
-
-    def as_dict(self) -> dict:
-        return dict(
-            positions=self.positions,
-            answered=self.answered,
-            refused=self.refused,
-            format_error=self.format_error,
-            run_error=self.run_error,
-            not_dispatched=self.not_dispatched,
-            unknown=self.unknown,
-            scored=self.scored,
-            attempts=self.attempts,
-            cost=self.cost,
-            fallbacks=self.fallbacks,
-            rows=list(self.rows),
-        )
+class NextStep:
+    action: str
+    request: RequestSpec | None = None
+    state: dict = field(default_factory=dict)
+    reason: str | None = None
 
 
 def _sha(path: Path) -> str:
@@ -145,59 +189,92 @@ def schema_from_message(content: str) -> Schema:
     start = content.index(SCHEMA_HEAD) + len(SCHEMA_HEAD)
     text = content[start:].lstrip()
     document, end = json.JSONDecoder().raw_decode(text)
-    remainder = text[end:]
-    labels, properties = [], {}
+    entities = []
     for entity in document.get("entities", []):
-        labels.append(entity["label"])
-        properties[entity["label"]] = sorted((entity.get("properties") or {}).keys())
-    relationships = []
+        props = tuple(Property(name, str(kind)) for name, kind in (entity.get("properties") or {}).items())
+        entities.append(Entity(entity["label"], props))
+    relations = []
     for relation in document.get("relations") or document.get("relationships") or []:
-        name = relation.get("label") or relation.get("type") or relation.get("name")
-        if name:
-            relationships.append(name)
-            properties[name] = sorted((relation.get("properties") or {}).keys())
-    question = remainder.split(QUESTION_HEAD, 1)[-1].strip() if remainder else ""
-    return Schema(labels=tuple(labels), relationships=tuple(relationships), properties=properties)
+        props = tuple(Property(name, str(kind)) for name, kind in (relation.get("properties") or {}).items())
+        relations.append(
+            Relation(
+                relation.get("label") or relation.get("type") or relation.get("name"),
+                relation.get("subj_label") or relation.get("subject") or "",
+                relation.get("obj_label") or relation.get("object") or "",
+                props,
+            )
+        )
+    return Schema(document.get("name", ""), tuple(entities), tuple(relations))
 
 
 def first_prompt(question: str, schema: Schema) -> str:
     return (
         "You generate Cypher for a property graph.\n"
-        "First think, then choose the labels and relationships you need.\n"
-        'Output a JSON object <json>{"labels": [...], "relationships": [...]}</json>.\n\n'
+        "Think first, then choose the labels and relationships you need.\n"
+        'Finish with <json>{"name": [...], "entities": [...], "relations": [...]}</json> '
+        "and stop immediately after </json>.\n\n"
         "Schema (names only):\n%s\n\nQuestion: %s" % (schema.compact_text(), question)
     )
 
 
-def second_prompt(question: str, schema: Schema, selection: dict, reasoning: str) -> str:
-    return (
-        "The schema you selected is now expanded. Continue the same answer.\n"
-        "Think, then finish with <answer>...</answer> containing one Cypher query.\n\n"
-        "Full schema:\n%s\n\nQuestion: %s\n\nYour earlier reasoning:\n%s"
-        % (schema.full_text(selection), question, reasoning)
+def continuation_prefix(prompt: str, stage1: str, schema: Schema, selection: Selection) -> str:
+    return "%s%s<schema>\n%s\n</schema>\n" % (prompt, stage1, schema.expanded_text(selection))
+
+
+def _names(value) -> tuple:
+    if not isinstance(value, list):
+        raise ValueError("selection field is not a list")
+    names = []
+    for item in value:
+        if isinstance(item, str):
+            names.append(item)
+        elif isinstance(item, dict) and isinstance(item.get("label"), str):
+            names.append(item["label"])
+        else:
+            raise ValueError("selection element is neither a name nor a label object")
+    return tuple(names)
+
+
+def parse_selection(reply: str, schema: Schema) -> Selection:
+    """Accept the paper protocol and the public-schema field names, nothing else."""
+    text = reply or ""
+    match = JSON_BLOCK.search(text)
+    if not match:
+        return Selection((), (), False, "missing_json_block")
+    try:
+        value = json.loads(match.group(1).strip())
+    except ValueError:
+        return Selection((), (), False, "invalid_json")
+    if not isinstance(value, dict):
+        return Selection((), (), False, "invalid_shape")
+    try:
+        if "name" in value or "entities" in value:
+            labels = _names(value.get("entities", []))
+            relations = _names(value.get("relations", []))
+        else:
+            labels = _names(value.get("labels", []))
+            relations = _names(value.get("relationships", []))
+    except ValueError as exc:
+        return Selection((), (), False, "invalid_selection:" + str(exc))
+    if not labels and not relations:
+        return Selection((), (), False, "empty_selection")
+    known_labels = {e.label for e in schema.entities}
+    known_relations = {r.label for r in schema.relations}
+    if not set(labels) <= known_labels or not set(relations) <= known_relations:
+        return Selection((), (), False, "unknown_names")
+    return Selection(labels, relations, True, "ok")
+
+
+def _full_selection(schema: Schema) -> Selection:
+    return Selection(
+        tuple(e.label for e in schema.entities),
+        tuple(r.label for r in schema.relations),
+        False,
+        "fallback_full_schema",
     )
 
 
-def parse_selection(reply: str, schema: Schema) -> tuple:
-    block = SELECTION_BLOCK.search(reply or "")
-    fallback = {"labels": list(schema.labels), "relationships": list(schema.relationships)}
-    if not block:
-        return fallback, False
-    try:
-        value = json.loads(block.group(1).strip())
-    except ValueError:
-        return fallback, False
-    labels, rels = value.get("labels"), value.get("relationships")
-    if not isinstance(labels, list) or not isinstance(rels, list):
-        return fallback, False
-    if not labels or not rels:
-        return fallback, False
-    if not set(labels) <= set(schema.labels) or not set(rels) <= set(schema.relationships):
-        return fallback, False
-    return {"labels": labels, "relationships": rels}, True
-
-
-def prepare(positions_path, *, limit=None) -> list:
+def prepare(positions_path, *, limit=None, cell_id="M07-B01") -> list:
     document = json.loads(Path(positions_path).read_text(encoding="utf-8-sig"))
     rows = document["positions"]
     if limit is not None:
@@ -212,125 +289,91 @@ def prepare(positions_path, *, limit=None) -> list:
             raise IntegrityError("public input leaks gold: " + str(path))
         content = payload["messages"][0]["content"]
         schema = schema_from_message(content)
-        question = content.split(QUESTION_HEAD, 1)[-1].strip()
+        question = content.split(QUESTION_HEAD, 1)[-1].strip() if QUESTION_HEAD in content else content
+        prompt = first_prompt(question, schema)
         specs.append(
             RequestSpec(
+                cell_id=cell_id,
                 position_id=row["position_id"],
                 task_id=row["task_id"],
+                benchmark=row.get("benchmark") or document["benchmark"],
+                method=document.get("method") or "cypher-ri",
                 graph=row["graph"],
                 category=row.get("category"),
                 ordinal=row["ordinal"],
                 full_flow_five=bool(row.get("full_flow_five")),
-                turn=1,
-                messages=(dict(role="user", content=first_prompt(question, schema)),),
+                generation_stage="schema_select",
+                protocol="chat",
+                messages=(dict(role="user", content=prompt),),
                 input_path=str(path),
                 input_sha256=row["public_input_sha256"],
                 question=question,
                 schema=schema,
+                state=dict(stage="schema_select", token_budget_remaining=None),
             )
         )
     return specs
 
 
-def next_request(spec: RequestSpec, reply: str) -> tuple:
-    """Return (turn-2 spec, accepted selection) or (None, False) when turn 1 failed."""
-    if not (reply or "").strip():
-        return None, False
-    selection, accepted = parse_selection(reply, spec.schema)
-    reasoning = SELECTION_BLOCK.sub("", reply).strip()
-    turn2 = RequestSpec(
+def next_request(spec: RequestSpec, reply: str, *, transport_unknown=False) -> NextStep:
+    """Derive stage 2 from a stage-1 reply; never guess past a bad stop."""
+    state = dict(spec.state)
+    state.update(stage="schema_select", parent_request_id=spec.position_id)
+    if transport_unknown:
+        return NextStep("failed", None, state, "transport_unknown")
+    text = reply or ""
+    if not JSON_BLOCK.search(text):
+        if JSON_OPEN.search(text):
+            return NextStep("failed", None, state, "truncated_before_stop")
+        return NextStep("failed", None, state, "missing_json_block")
+    selection = parse_selection(text, spec.schema)
+    accepted = selection.accepted
+    if selection.reason == "empty_selection":
+        state["selection_note"] = "explicit_empty_selection"
+    if not accepted and selection.reason not in ("empty_selection",):
+        selection = _full_selection(spec.schema)
+        state["fallback_reason"] = selection.reason
+    state.update(
+        stage="answer_continue",
+        selection={"labels": list(selection.labels), "relations": list(selection.relations)},
+        selection_accepted=accepted,
+        selection_reason=selection.reason,
+    )
+    prefix = continuation_prefix(spec.messages[0]["content"], text, spec.schema, selection)
+    request = RequestSpec(
+        cell_id=spec.cell_id,
         position_id=spec.position_id,
         task_id=spec.task_id,
+        benchmark=spec.benchmark,
+        method=spec.method,
         graph=spec.graph,
         category=spec.category,
         ordinal=spec.ordinal,
         full_flow_five=spec.full_flow_five,
-        turn=2,
-        messages=(
-            dict(
-                role="user",
-                content=second_prompt(spec.question, spec.schema, selection, reasoning),
-            ),
-        ),
+        generation_stage="answer_continue",
+        protocol="completion_prefix",
+        messages=(dict(role="assistant", content=prefix),),
         input_path=spec.input_path,
         input_sha256=spec.input_sha256,
         question=spec.question,
         schema=spec.schema,
+        state=state,
     )
-    return turn2, accepted
+    return NextStep("request", request, state, None)
 
 
-def parse(reply: str, *, http_status=None, attempts=1, cost=None, accepted=True) -> Prediction:
+def parse(reply: str, *, http_status=None, attempts=1, cost=None, fallback=False) -> Prediction:
     text = reply or ""
     if http_status is not None and not 200 <= http_status < 300:
-        return Prediction("unknown", None, text, http_status, attempts, cost, not accepted)
+        return Prediction("unknown", None, text, http_status, attempts, cost, fallback)
     block = ANSWER_BLOCK.search(text)
     candidate = (block.group(1) if block else "").strip().rstrip(";").strip()
-    if not candidate or not ANSWER_HINT.search(candidate):
-        return Prediction("format_error", None, text, http_status, attempts, cost, not accepted)
-    return Prediction("answered", candidate, text, http_status, attempts, cost, not accepted)
+    if REFUSAL.search(candidate) and not CLAUSE.search(candidate):
+        return Prediction("refused", None, text, http_status, attempts, cost, fallback)
+    if not candidate or not CLAUSE.search(candidate):
+        return Prediction("format_error", None, text, http_status, attempts, cost, fallback)
+    return Prediction("ready", candidate, text, http_status, attempts, cost, fallback)
 
 
-def consume(positions, predictions, runtime) -> CellResult:
-    counts = {name: 0 for name in STATUSES}
-    counts["scored"] = 0
-    attempts = 0
-    costs = []
-    fallbacks = 0
-    rows = []
-    for position in positions:
-        prediction = predictions.get(position.position_id)
-        if prediction is None:
-            counts["not_dispatched"] += 1
-            rows.append(dict(position_id=position.position_id, status="not_dispatched"))
-            continue
-        attempts += prediction.attempts
-        costs.append(prediction.cost)
-        fallbacks += 1 if prediction.fallback else 0
-        if prediction.status != "answered":
-            counts[prediction.status] = counts.get(prediction.status, 0) + 1
-            rows.append(dict(position_id=position.position_id, status=prediction.status))
-            continue
-        runtime.save_answer(position.position_id, prediction.cypher, prediction.raw)
-        lease = runtime.graph_lease(position.graph)
-        try:
-            records = runtime.db_client(lease, prediction.cypher)
-        except Exception as exc:
-            counts["run_error"] += 1
-            rows.append(
-                dict(
-                    position_id=position.position_id,
-                    status="run_error",
-                    cypher=prediction.cypher,
-                    error=type(exc).__name__,
-                )
-            )
-            continue
-        score = runtime.scorer(position.task_id, prediction.cypher, records)
-        counts["answered"] += 1
-        counts["scored"] += 1
-        rows.append(
-            dict(
-                position_id=position.position_id,
-                status="answered",
-                cypher=prediction.cypher,
-                rows=len(records) if hasattr(records, "__len__") else None,
-                score=score,
-                fallback=prediction.fallback,
-            )
-        )
-    total_cost = None if any(c is None for c in costs) else round(sum(costs), 6)
-    return CellResult(
-        positions=len(positions),
-        answered=counts["answered"],
-        refused=counts["refused"],
-        format_error=counts["format_error"],
-        run_error=counts["run_error"],
-        not_dispatched=counts["not_dispatched"],
-        unknown=counts["unknown"],
-        scored=counts["scored"],
-        attempts=attempts,
-        cost=total_cost,
-        fallbacks=fallbacks,
-        rows=tuple(rows),
-    )
+def consume(positions, predictions, runtime):
+    return consume_positions(positions, predictions, runtime)

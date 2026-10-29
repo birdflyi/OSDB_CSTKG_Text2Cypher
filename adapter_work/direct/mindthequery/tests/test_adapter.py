@@ -1,4 +1,4 @@
-"""Offline checks for M01-B03. Fake runtime only: no model, no database, no network."""
+"""Offline checks for M01-B03 under CONTRACT_V2. Fake runtime only."""
 
 import json
 import sys
@@ -17,38 +17,58 @@ POSITIONS = Path(
 )
 
 
-class FakeRuntime:
-    def __init__(self, fail_graphs=()):
-        self.calls = []
-        self.answers = {}
-        self.fail_graphs = set(fail_graphs)
+class Receipt:
+    def __init__(self, path):
+        self.path = path
 
-    def save_answer(self, position_id, cypher, raw):
-        self.calls.append(("save", position_id))
-        self.answers[position_id] = cypher
+
+class FakeRuntime:
+    def __init__(self, fail_graphs=(), score_fail_tasks=()):
+        self.calls = []
+        self.predictions = {}
+        self.finals = {}
+        self.fail_graphs = set(fail_graphs)
+        self.score_fail_tasks = set(score_fail_tasks)
+
+    def save_prediction(self, position, prediction):
+        self.calls.append(("save_prediction", position.position_id))
+        self.predictions[position.position_id] = prediction.cypher
+        return Receipt("pred/" + position.position_id)
 
     def graph_lease(self, graph):
         self.calls.append(("lease", graph))
         return "lease:" + graph
 
-    def db_client(self, lease, cypher):
-        self.calls.append(("db", lease))
+    def execute(self, lease, position, prediction):
+        self.calls.append(("execute", lease))
         if lease.split(":", 1)[1] in self.fail_graphs:
             raise TimeoutError("neo4j timeout")
-        return [{"n": 1}]
+        return {"rows": [{"id": 1}]}
 
-    def scorer(self, task_id, cypher, records):
-        self.calls.append(("score", task_id))
-        return 1.0 if records else 0.0
+    def save_final_answer(self, position, execution):
+        self.calls.append(("save_final_answer", position.position_id))
+        self.finals[position.position_id] = execution
+        return Receipt("final/" + position.position_id)
+
+    def replay_controls(self, position, saved):
+        self.calls.append(("control", position.position_id))
+        return "control_ok"
+
+    def score_saved_answer(self, position, saved):
+        self.calls.append(("score", position.task_id))
+        if position.task_id in self.score_fail_tasks:
+            raise RuntimeError("scorer crashed")
+        return type("Score", (), {"status": "scored", "value": 1.0, "error": None})()
 
 
-def test_prepare_builds_messages_and_checks_sha():
+def test_prepare_composes_prompt_and_checks_sha():
     specs = prepare(POSITIONS)
     assert len(specs) == 20
     assert sum(1 for s in specs if s.full_flow_five) == 5
     assert len({s.graph for s in specs}) == 11
     assert len({s.category for s in specs}) == 5
     assert all("Graph schema:" in s.messages[0]["content"] for s in specs)
+    assert specs[0].cell_id == "M01-B03"
 
 
 def test_prepare_rejects_changed_input(tmp_path):
@@ -60,45 +80,43 @@ def test_prepare_rejects_changed_input(tmp_path):
         prepare(broken)
 
 
-def test_parse_classifies_replies():
-    assert parse("```cypher\nMATCH (n) RETURN n\n```").status == "answered"
-    assert parse("MATCH (n) RETURN n;").cypher == "MATCH (n) RETURN n"
+def test_parse_handles_refusal_and_query_literal():
+    assert parse("```cypher\nMATCH (n) RETURN n\n```").status == "ready"
     assert parse("I cannot answer that").status == "refused"
     assert parse("").status == "format_error"
     assert parse("hello").status == "format_error"
     assert parse("MATCH (n) RETURN n", http_status=503).status == "unknown"
+    assert parse("MATCH (n) WHERE n.x = 'sorry' RETURN n").status == "ready"
 
 
-def test_consume_keeps_denominator_and_order():
-    specs = prepare(POSITIONS)
-    predictions = {}
-    for index, spec in enumerate(specs):
-        if index < 14:
-            predictions[spec.position_id] = Prediction("answered", "MATCH (n) RETURN n", "raw")
-        elif index < 17:
-            predictions[spec.position_id] = Prediction("refused", None, "no")
-        elif index < 19:
-            predictions[spec.position_id] = Prediction("format_error", None, "?")
+def test_consume_order_and_counts():
+    specs = prepare(POSITIONS)[:3]
+    predictions = {
+        specs[0].position_id: Prediction("ready", "MATCH (n) RETURN n", "raw"),
+        specs[1].position_id: Prediction("refused", None, "no"),
+    }
     runtime = FakeRuntime()
     result = consume(specs, predictions, runtime)
-    assert result.positions == 20
-    assert (result.answered, result.refused, result.format_error, result.not_dispatched) == (14, 3, 2, 1)
-    assert result.attempts == 19
+    assert result.positions == 3
+    assert (result.executed, result.refused, result.not_dispatched) == (1, 1, 1)
     kinds = [c[0] for c in runtime.calls]
-    assert kinds.index("save") < kinds.index("db") < kinds.index("score")
+    assert kinds.index("save_prediction") < kinds.index("execute") < kinds.index("save_final_answer")
+    assert kinds.index("save_final_answer") < kinds.index("score")
 
 
-def test_db_failure_keeps_saved_answer():
-    specs = prepare(POSITIONS)[:1]
-    predictions = {specs[0].position_id: Prediction("answered", "MATCH (n) RETURN n", "raw")}
+def test_scoring_failure_continues():
+    specs = prepare(POSITIONS)[:2]
+    predictions = {s.position_id: Prediction("ready", "MATCH (n) RETURN n", "raw") for s in specs}
+    runtime = FakeRuntime(score_fail_tasks={specs[0].task_id})
+    result = consume(specs, predictions, runtime)
+    assert result.executed == 2
+    assert result.scoring_error == 1 and result.scored == 1
+
+
+def test_execute_failure_keeps_prediction():
+    specs = prepare(POSITIONS)[:2]
+    predictions = {s.position_id: Prediction("ready", "MATCH (n) RETURN n", "raw") for s in specs}
     runtime = FakeRuntime(fail_graphs={specs[0].graph})
     result = consume(specs, predictions, runtime)
-    assert result.run_error == 1 and result.answered == 0
-    assert specs[0].position_id in runtime.answers
-    assert result.rows[0]["error"] == "TimeoutError"
-
-
-def test_unknown_cost_stays_null():
-    specs = prepare(POSITIONS)[:1]
-    predictions = {specs[0].position_id: Prediction("answered", "MATCH (n) RETURN n", "raw", cost=None)}
-    assert consume(specs, predictions, FakeRuntime()).cost is None
+    assert result.run_error == 1
+    assert specs[0].position_id in runtime.predictions

@@ -2,21 +2,26 @@
  "cell": "M07-B01",
  "method": "cypher-ri",
  "benchmark": "CypherBench",
- "code_commit": "02fe257",
+ "contract": "CONTRACT_V2 (delegation_bc_v23)",
  "offline_checks": {
   "command": "python -m pytest tests -q",
-  "result": "6 passed",
+  "result": "8 passed",
   "network": "none",
   "database": "none"
  },
- "completed": [
-  "prepare verifies every frozen public input SHA",
-  "parse classifies replies without treating HTTP 200 as correct",
-  "consume keeps the 20-position denominator and orders save_answer -> db_client -> scorer"
+ "fixed_review_items": [
+  "R1 prediction and final answer saved separately",
+  "R2 scoring failure keeps the cell running",
+  "R3 RI stage 2 continues the same assistant prefix",
+  "R4 malformed selections fall back without raising",
+  "R5 public schema name/entities/relations accepted",
+  "R6 empty selection recorded explicitly",
+  "R7 refusal is anchored text, query literals do not trigger it"
  ],
  "not_completed": [
-  "registration into the central runtime",
-  "real model requests and real DB reads (not authorised)"
+  "central NextStep dispatch (engine_integration.patch pending)",
+  "real model requests and real DB reads",
+  "RI tokenizer/chat template and prefix-continuation backend (resource_pending)"
  ],
  "requires": {
   "model_calls": 0,

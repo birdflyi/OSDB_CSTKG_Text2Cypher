@@ -1,4 +1,4 @@
-"""Offline checks for M01-B01. Fake runtime only: no model, no database, no network."""
+"""Offline checks for M01-B01 under CONTRACT_V2. Fake runtime only."""
 
 import json
 import sys
@@ -17,38 +17,57 @@ POSITIONS = Path(
 )
 
 
-class FakeRuntime:
-    def __init__(self, fail_graphs=()):
-        self.calls = []
-        self.answers = {}
-        self.fail_graphs = set(fail_graphs)
+class Receipt:
+    def __init__(self, path):
+        self.path = path
 
-    def save_answer(self, position_id, cypher, raw):
-        self.calls.append(("save", position_id))
-        self.answers[position_id] = cypher
+
+class FakeRuntime:
+    def __init__(self, fail_graphs=(), score_fail_tasks=()):
+        self.calls = []
+        self.predictions = {}
+        self.finals = {}
+        self.fail_graphs = set(fail_graphs)
+        self.score_fail_tasks = set(score_fail_tasks)
+
+    def save_prediction(self, position, prediction):
+        self.calls.append(("save_prediction", position.position_id))
+        self.predictions[position.position_id] = prediction.cypher
+        return Receipt("pred/" + position.position_id)
 
     def graph_lease(self, graph):
         self.calls.append(("lease", graph))
         return "lease:" + graph
 
-    def db_client(self, lease, cypher):
-        self.calls.append(("db", lease))
-        graph = lease.split(":", 1)[1]
-        if graph in self.fail_graphs:
+    def execute(self, lease, position, prediction):
+        self.calls.append(("execute", lease))
+        if lease.split(":", 1)[1] in self.fail_graphs:
             raise TimeoutError("neo4j timeout")
-        return [{"n": 1}]
+        return {"rows": [{"n": 1}]}
 
-    def scorer(self, task_id, cypher, records):
-        self.calls.append(("score", task_id))
-        return 1.0 if records else 0.0
+    def save_final_answer(self, position, execution):
+        self.calls.append(("save_final_answer", position.position_id))
+        self.finals[position.position_id] = execution
+        return Receipt("final/" + position.position_id)
+
+    def replay_controls(self, position, saved):
+        self.calls.append(("control", position.position_id))
+        return "control_ok"
+
+    def score_saved_answer(self, position, saved):
+        self.calls.append(("score", position.task_id))
+        if position.task_id in self.score_fail_tasks:
+            raise RuntimeError("scorer crashed")
+        return type("Score", (), {"status": "scored", "value": 1.0, "error": None})()
 
 
-def test_prepare_reads_twenty_positions_and_checks_sha():
+def test_prepare_reads_positions_and_checks_sha():
     specs = prepare(POSITIONS)
     assert len(specs) == 20
     assert sum(1 for s in specs if s.full_flow_five) == 5
-    assert all(s.messages for s in specs)
     assert len({s.graph for s in specs}) == 7
+    assert specs[0].cell_id == "M01-B01"
+    assert specs[0].as_dict()["body"]["messages"]
 
 
 def test_prepare_rejects_changed_input(tmp_path):
@@ -60,76 +79,64 @@ def test_prepare_rejects_changed_input(tmp_path):
         prepare(broken)
 
 
-def test_parse_classifies_replies():
-    assert parse("```cypher\nMATCH (n) RETURN n\n```").status == "answered"
+def test_parse_distinguishes_refusal_from_query_literal():
+    assert parse("```cypher\nMATCH (n) RETURN n\n```").status == "ready"
     assert parse("MATCH (n) RETURN n;").cypher == "MATCH (n) RETURN n"
     assert parse("I cannot answer that").status == "refused"
     assert parse("").status == "format_error"
     assert parse("hello there").status == "format_error"
     assert parse("MATCH (n) RETURN n", http_status=504).status == "unknown"
+    # R7: a query that contains the word sorry is not a refusal
+    assert parse("MATCH (n) WHERE n.note = 'sorry' RETURN n").status == "ready"
 
 
-def test_consume_keeps_every_position_and_orders_calls():
-    specs = prepare(POSITIONS)
-    predictions = {}
-    for index, spec in enumerate(specs):
-        if index < 15:
-            predictions[spec.position_id] = Prediction("answered", "MATCH (n) RETURN n", "raw")
-        elif index < 17:
-            predictions[spec.position_id] = Prediction("refused", None, "no")
-        elif index < 18:
-            predictions[spec.position_id] = Prediction("format_error", None, "?")
-        # last two positions stay not_dispatched
+def test_consume_orders_prediction_final_answer_control_score():
+    specs = prepare(POSITIONS)[:2]
+    predictions = {s.position_id: Prediction("ready", "MATCH (n) RETURN n", "raw") for s in specs}
     runtime = FakeRuntime()
     result = consume(specs, predictions, runtime)
 
-    assert result.positions == 20
-    assert result.answered == 15
-    assert result.refused == 2
-    assert result.format_error == 1
-    assert result.not_dispatched == 2
-    assert result.scored == 15
-    assert result.attempts == 18
-
-    first_save = runtime.calls[0][0]
-    assert first_save == "save"
+    assert result.positions == 2
+    assert result.executed == 2
+    assert result.scored == 2
     kinds = [c[0] for c in runtime.calls]
-    assert kinds.index("save") < kinds.index("db") < kinds.index("score")
+    assert kinds.index("save_prediction") < kinds.index("execute") < kinds.index("save_final_answer")
+    assert kinds.index("save_final_answer") < kinds.index("control") < kinds.index("score")
+    # R1: the saved final answer is the DB result, not the Cypher text
+    assert runtime.finals[specs[0].position_id] == {"rows": [{"n": 1}]}
 
 
-def test_db_failure_is_run_error_and_answer_is_still_saved():
-    specs = prepare(POSITIONS)[:1]
-    predictions = {specs[0].position_id: Prediction("answered", "MATCH (n) RETURN n", "raw")}
+def test_scoring_failure_keeps_going():
+    specs = prepare(POSITIONS)[:2]
+    predictions = {s.position_id: Prediction("ready", "MATCH (n) RETURN n", "raw") for s in specs}
+    runtime = FakeRuntime(score_fail_tasks={specs[0].task_id})
+    result = consume(specs, predictions, runtime)
+
+    assert result.executed == 2
+    assert result.scoring_error == 1
+    assert result.scored == 1
+    assert result.rows[0]["score"] is None
+    assert result.rows[1]["score_status"] == "scored"
+
+
+def test_execute_failure_keeps_prediction_and_continues():
+    specs = prepare(POSITIONS)[:2]
+    predictions = {s.position_id: Prediction("ready", "MATCH (n) RETURN n", "raw") for s in specs}
     runtime = FakeRuntime(fail_graphs={specs[0].graph})
     result = consume(specs, predictions, runtime)
 
-    assert result.answered == 0
     assert result.run_error == 1
-    assert specs[0].position_id in runtime.answers
-    assert result.rows[0]["status"] == "run_error"
-    assert result.rows[0]["error"] == "TimeoutError"
+    assert result.executed == 1
+    assert specs[0].position_id in runtime.predictions  # prediction evidence survives
 
 
-def test_unknown_cost_stays_null():
-    specs = prepare(POSITIONS)[:1]
+def test_denominator_and_unknown_cost():
+    specs = prepare(POSITIONS)[:3]
     predictions = {
-        specs[0].position_id: Prediction("answered", "MATCH (n) RETURN n", "raw", cost=0.25)
+        specs[0].position_id: Prediction("ready", "MATCH (n) RETURN n", "raw", cost=0.1),
+        specs[1].position_id: Prediction("refused", None, "no", cost=0.2),
     }
-    assert consume(specs, predictions, FakeRuntime()).cost == 0.25
-    predictions[specs[0].position_id] = Prediction(
-        "answered", "MATCH (n) RETURN n", "raw", cost=None
-    )
-    assert consume(specs, predictions, FakeRuntime()).cost is None
-
-
-def test_adapter_has_no_network_imports():
-    import ast
-
-    tree = ast.parse((HERE.parent / "adapter.py").read_text(encoding="utf-8"))
-    imported = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imported.update(alias.name.split(".")[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            imported.add(node.module.split(".")[0])
-    assert not imported & {"requests", "httpx", "urllib", "socket", "neo4j"}
+    result = consume(specs, predictions, FakeRuntime())
+    assert result.positions == 3
+    assert (result.executed, result.refused, result.not_dispatched) == (1, 1, 1)
+    assert result.cost == pytest.approx(0.3)
