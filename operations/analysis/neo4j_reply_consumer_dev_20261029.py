@@ -5,6 +5,7 @@ and engine registration remain external. Tests supply fake drivers only.
 """
 
 from copy import deepcopy
+import hashlib
 import os
 from pathlib import Path
 import time
@@ -62,7 +63,7 @@ def _feedback(source, result):
 
 
 def consume_recorded_reply(source, schema, *, driver, directory, capture_settings,
-                           run_controls=False, allow_feedback=False):
+                           run_controls=False, allow_feedback=False, evaluator=None):
     """Persist source before reads and method final before shared controls.
 
     Ordinary protocol/guard/DB errors save an incomplete outcome. Evidence,
@@ -76,6 +77,8 @@ def consume_recorded_reply(source, schema, *, driver, directory, capture_setting
         raise ValueError('This prepared native consumer supports MTQ/ZOGRASCOPE only')
     if type(run_controls) is not bool or type(allow_feedback) is not bool:
         raise ValueError('Explicit boolean control/feedback policy required')
+    if evaluator is not None and not callable(evaluator):
+        raise ValueError('Explicit post-seal evaluator callback required')
     if run_controls and source.identity.method != 'ours':
         raise ValueError('Shared-plan controls require an Ours source, not a Direct query')
     if source.identity.method == 'ours' and source.status == 'READY':
@@ -87,7 +90,7 @@ def consume_recorded_reply(source, schema, *, driver, directory, capture_setting
     source_link = source.source_link()
     save_new(directory/'source.json',source_link)
     started = time.monotonic()
-    prepared, controls = None, None
+    prepared, controls, evaluation = None, None, None
     if source.status != 'READY':
         result = failure(source.status)
     else:
@@ -130,6 +133,14 @@ def consume_recorded_reply(source, schema, *, driver, directory, capture_setting
                             controls = dict(status='COMPLETED',results=chain.run_controls())
                         except (ReadOnlyViolation,Neo4jError,DriverError) as error:
                             controls = dict(status='INCOMPLETE',error_type=type(error).__name__)
+                    if evaluator is not None:
+                        if capture.state == 'open':
+                            path = directory/'method_final.json'
+                            evaluation = evaluator(capture,path,
+                                hashlib.sha256(path.read_bytes()).hexdigest(),source.identity)
+                        else:
+                            evaluation = dict(reference_status='NOT_RUN_CAPTURE_FAILED',
+                                auxiliary_exact=None,primary_score=None)
             except ReadOnlyViolation as error:
                 result = failure('GUARD_REJECTED',type(error).__name__)
             except (Neo4jError,DriverError) as error:
@@ -138,7 +149,7 @@ def consume_recorded_reply(source, schema, *, driver, directory, capture_setting
                     raise
                 status = 'EXECUTION_ERROR' if isinstance(error,ClientError) else 'INFRASTRUCTURE_ERROR'
                 result = failure(status,type(error).__name__)
-    outcome = dict(source=source_link,method=result,controls=controls,
+    outcome = dict(source=source_link,method=result,controls=controls,evaluation=evaluation,
         feedback_draft=_feedback(source,result) if allow_feedback else None,
         feedback_dispatched=False,consumer_wall_seconds=time.monotonic()-started,
         new_model_calls=0,monetary_cost=None,formal_admission=False,
