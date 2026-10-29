@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from engine.config import Endpoint, canonical, digest
+from engine.config import Endpoint, canonical, digest, registry_from_file
 from engine.fake import FakeTransport
 from engine.journal import Journal, claim_owner, owner_alive
 from engine.ledger import Ledger, LegacySnapshot
@@ -21,12 +21,40 @@ def alias():
                     serves=("m",), alias_evidence_sha256="a" * 64)
 
 
-def test_family_or_unverified_alias_does_not_establish_equivalence():
+def test_operator_family_and_alias_do_not_need_an_additional_evidence_gate():
     endpoint = Endpoint("a", "http://localhost/a", "revision-1", "fixture", 1,
                         family="revision", serves=("revision-2",))
     assert serves(endpoint, "revision-1")
-    assert not serves(endpoint, "revision-2")
-    assert not serves(endpoint, "revision-3")
+    assert serves(endpoint, "revision-2")
+    assert serves(endpoint, "revision-3")
+    assert not serves(endpoint, "revision2-3")
+    assert not serves(endpoint, "unrelated")
+
+
+def test_family_only_model_cap_returns_the_requested_slot():
+    async def scenario():
+        endpoint = Endpoint("a", "http://localhost/a", "revision-1", "fixture", 2,
+                            family="revision")
+        pool = DynamicPool(2)
+        await pool.update([endpoint], per_model_cap={"revision-2": 1})
+        permit = await pool.acquire("revision-2", 1)
+        assert pool.model_inflight["revision-2"] == 1
+        await permit.release()
+        assert pool.model_inflight["revision-2"] == 0
+    asyncio.run(scenario())
+
+
+def test_registry_accepts_authorized_alias_and_family_caps_without_evidence_hash(tmp_path):
+    path = tmp_path / "registry.json"
+    path.write_bytes(canonical(dict(global_cap=8, endpoints=[dict(
+        name="replica", url="http://localhost/unused", model="model-v1-node1",
+        key_ref="unused", cap=8, family="model-v1", serves=["explicit-alias"])],
+        per_model_cap={"model-v1-node2": 4, "explicit-alias": 2})))
+    config = registry_from_file(path)
+    endpoint = config["endpoints"][0]
+    assert serves(endpoint, "model-v1-node2")
+    assert not serves(endpoint, "model-v10-node2")
+    assert config["per_model_cap"] == {"model-v1-node2": 4, "explicit-alias": 2}
 
 
 def test_alias_permit_returns_requested_model_slot_after_reload():

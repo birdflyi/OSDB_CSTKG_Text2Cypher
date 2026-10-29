@@ -27,14 +27,28 @@ class Item:
     model: str
     phase: str = "initial"
     read_timeout_seconds: float = DEFAULT_TIMEOUTS.model
+    purpose: str = "experiment"
+    probe_run_id: str = ""
+
+    def __post_init__(self):
+        if not isinstance(self.probe_run_id, str):
+            raise ValueError("Probe identity must be a string")
+        if self.purpose not in ("experiment", "stability_probe"):
+            raise ValueError("Unknown request purpose")
+        if (self.purpose == "stability_probe") != bool(self.probe_run_id):
+            raise ValueError("A stability probe needs its own explicit run identity")
+        if self.probe_run_id:
+            component(self.probe_run_id)
 
     @property
     def key(self):
-        return (
+        key = (
             component(self.model)
             + "__"
             + logical_key(self.benchmark, self.task_id, self.method, self.phase)
         )
+        return ("probe__" + component(self.probe_run_id) + "__" + key
+                if self.purpose == "stability_probe" else key)
 
 
 def sent_wire(wire: bytes, served_model: str) -> bytes:
@@ -183,6 +197,8 @@ class Scheduler:
                 method=item.method,
                 graph=item.graph,
                 phase=item.phase,
+                purpose=item.purpose,
+                probe_run_id=item.probe_run_id or None,
                 started_epoch=started,
                 ended_epoch=time.time(),
                 reserve_and_claim_seconds=reserve_seconds,

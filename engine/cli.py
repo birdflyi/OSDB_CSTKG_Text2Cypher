@@ -48,6 +48,8 @@ def load_items(path: Path, model):
                 wire_model,
                 row.get("phase", "initial"),
                 row["read_timeout_seconds"],
+                row.get("purpose", "experiment"),
+                row.get("probe_run_id") or "",
             )
         )
     return result

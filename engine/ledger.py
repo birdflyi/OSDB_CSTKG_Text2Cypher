@@ -159,6 +159,7 @@ class Ledger:
         self.lock = threading.RLock()
         self.records = {}
         self.new_by_scope = Counter()
+        self.run_caps = {}
         self.head = "0" * 64
         self.owner_path = self.directory / ".writer.lock"
         self.owner = canonical(
@@ -257,6 +258,13 @@ class Ledger:
                 >= self.scope_caps[scope]
             ):
                 raise BudgetError("Cumulative/scope budget exhausted")
+            target = Path(run_dir).resolve()
+            matching_limits = []
+            for root, limit in self.run_caps.items():
+                if target == root or target.is_relative_to(root):
+                    if limit["used"] >= limit["cap"]:
+                        raise BudgetError("Pipeline physical-attempt cap exhausted")
+                    matching_limits.append(limit)
             write_new(request_path, wire)
             journal.append(
                 "dispatch_intent",
@@ -287,7 +295,23 @@ class Ledger:
             write_new(self.directory / ("%08d.json" % slot), raw)
             self.records[request_id], self.head = value, digest(raw)
             self.new_by_scope[scope] += 1
+            for limit in matching_limits:
+                limit["used"] += 1
             return dict(value)
+
+    def limit_run(self, root: Path, cap: int):
+        """One cap shared by every stage and retry below this pipeline directory."""
+        if type(cap) is not int or cap < 0:
+            raise BudgetError("A nonnegative physical-attempt limit is required")
+        root = Path(root).resolve()
+        with self.lock:
+            if root in self.run_caps and self.run_caps[root]["cap"] != cap:
+                raise BudgetError("Run cap changed inside an active ledger")
+            used = sum(Path(v["run_dir"]) == root or Path(v["run_dir"]).is_relative_to(root)
+                       for v in self.records.values())
+            if used > cap:
+                raise BudgetError("Historical attempts already exceed this run cap")
+            self.run_caps[root] = dict(cap=cap, used=used)
 
     def claim(self, request_id: str):
         with self.lock:

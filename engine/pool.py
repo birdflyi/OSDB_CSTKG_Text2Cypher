@@ -92,14 +92,12 @@ class Permit:
 
 
 def serves(spec, model: str) -> bool:
-    """Family names describe routes; they never establish model equivalence.
+    """Apply the operator's exact, alias or family routing declaration.
 
-    An alias needs explicit membership and a pinned, reviewed evidence record.
-    The hash is an admission reference, not automatic verification of weights.
+    Evidence hashes are recorded by the sender, not an extra approval gate.
+    A delimiter boundary prevents family ``model-v1`` from matching ``model-v10``.
     """
-    return spec.model == model or (
-        model in spec.serves and bool(spec.alias_evidence_sha256)
-    )
+    return spec.supports_model(model)
 
 
 class DynamicPool:
@@ -155,7 +153,7 @@ class DynamicPool:
             if not isinstance(per_model_cap, dict):
                 raise ValueError("per_model_cap must be a mapping")
             for model, cap in per_model_cap.items():
-                if model not in models:
+                if model not in models and not any(serves(e, model) for e in endpoints):
                     raise ValueError("per_model_cap names an undeclared model: " + model)
                 if type(cap) is not int or cap < 1:
                     raise ValueError("per_model_cap must be a positive integer: " + model)

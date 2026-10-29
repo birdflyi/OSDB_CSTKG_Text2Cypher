@@ -436,6 +436,8 @@ async def live_pipeline(config_path: Path, *, resume=False, phase="all"):
     with Ledger(
         ledger_dir, Path(config["approval_path"]), snapshot, config["budget_scope"]
     ) as ledger:
+        if "scope_cap" in admission:
+            ledger.limit_run(root, admission["scope_cap"])
         transport = HTTPTransport(
             Path(config["key_dir"]),
             connect_timeout=timeouts_from(config.get("timeouts")).http_connect,

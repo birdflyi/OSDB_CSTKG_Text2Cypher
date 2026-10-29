@@ -170,11 +170,17 @@ class Endpoint:
             len(self.alias_evidence_sha256) != 64
             or any(c not in "0123456789abcdef" for c in self.alias_evidence_sha256)
         ):
-            raise ValueError("alias_evidence_sha256 must identify vetted equivalence evidence")
+            raise ValueError("alias_evidence_sha256 must be a SHA256 evidence reference")
         if not all(isinstance(name, str) and name for name in self.serves):
             raise ValueError("serves must list non-empty model names")
         if Path(self.key_ref).name != self.key_ref or not self.key_ref:
             raise ValueError("key_ref must be a plain local key name")
+
+    def supports_model(self, model: str) -> bool:
+        """Use the operator's exact name, aliases and delimited family routes."""
+        return (self.model == model or model in self.serves
+                or bool(self.family and (model == self.family
+                                         or model.startswith(self.family + "-"))))
 
     @property
     def identity(self) -> tuple:
@@ -309,9 +315,9 @@ def registry_from_file(path: Path) -> dict:
     if not isinstance(model_caps, dict):
         raise ValueError("per_model_cap must be a mapping")
     models = {row.model for row in rows}
-    models.update(alias for row in rows if row.alias_evidence_sha256 for alias in row.serves)
+    models.update(alias for row in rows for alias in row.serves)
     for model, limit in model_caps.items():
-        if model not in models:
+        if model not in models and not any(row.supports_model(model) for row in rows):
             raise ValueError("per_model_cap names an undeclared model: " + model)
         if type(limit) is not int or limit < 1:
             raise ValueError("per_model_cap must be a positive integer: " + model)
