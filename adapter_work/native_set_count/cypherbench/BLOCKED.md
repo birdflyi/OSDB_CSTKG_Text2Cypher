@@ -1,7 +1,7 @@
 # M06-B01: native-set-count x CypherBench
 
-Status: blocked before adapter work.
+Status: blocked before adapter work (wiring, not definition).
 
-Reason: definition_pending: the native set-count equivalence per benchmark is not defined. Do not guess.
+Reason: limited native-count rule and code exist; register per backend and keep unsupported positions with reasons
 
-Evidence: D:/ch7/discussion/B_GROUP_MAINTENANCE_DSH_20261030.md and the V22 positions.
+Entry points: adapter_work/common/data/backend_capabilities.json and control_profiles.json.

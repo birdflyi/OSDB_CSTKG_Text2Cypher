@@ -1,0 +1,32 @@
+{
+ "version": 1,
+ "note": "Control rules already exist; differences are versions, applicability and disclosure.",
+ "profiles": [
+  {
+   "method": "correct-detail",
+   "rule": "full_detail",
+   "entry": [
+    "schema_services.execute_plan(strategy=full_detail)",
+    "NativePlanChain.run_controls()"
+   ],
+   "status": "rule exists; version alignment and wiring pending"
+  },
+  {
+   "method": "simple-correct",
+   "rule": "safe_rule",
+   "entry": [
+    "NativePlanChain.run_controls()"
+   ],
+   "status": "currently maps to full_detail (simple_correct_equals_full_detail=true); must disclose or align to 2026-10-27 definition"
+  },
+  {
+   "method": "native-set-count",
+   "rule": "native_count",
+   "entry": [
+    "osdb_native_set_count_control_dev.py",
+    "native_set_count_query"
+   ],
+   "status": "limited applicability; register per backend and keep unsupported positions with reasons"
+  }
+ ]
+}

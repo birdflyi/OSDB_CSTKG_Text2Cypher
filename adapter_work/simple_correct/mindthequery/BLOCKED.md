@@ -1,7 +1,7 @@
 # M05-B03: simple-correct x MindTheQuery
 
-Status: blocked before adapter work.
+Status: blocked before adapter work (wiring, not definition).
 
-Reason: definition_pending: the safe-rule set of this control is not published. Do not guess a control method.
+Reason: rule exists but currently equals full_detail (simple_correct_equals_full_detail=true); disclose or align before running
 
-Evidence: D:/ch7/discussion/B_GROUP_MAINTENANCE_DSH_20261030.md and the V22 positions.
+Entry points: adapter_work/common/data/backend_capabilities.json and control_profiles.json.

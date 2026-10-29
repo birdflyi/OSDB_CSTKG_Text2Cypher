@@ -1,0 +1,74 @@
+{
+ "version": 1,
+ "note": "Existing compilers and control code; wiring status only. Source: IR_AND_CONTROL_IMPLEMENTATION_MAP_20261030.md",
+ "backends": [
+  {
+   "benchmark": "CypherBench",
+   "entry": "experiment-harness/public_benchmark_v1/schema_services.py",
+   "symbols": [
+    "compile_selection",
+    "execute_plan"
+   ],
+   "covers": [
+    "selection",
+    "aggregation",
+    "limited set composition"
+   ],
+   "status": "exists; adapter wrapper pending"
+  },
+  {
+   "benchmark": "Text2GQL",
+   "entry": "experiment-harness/public_benchmark_v1/tugraph_execution.py",
+   "symbols": [
+    "execute_native_plan"
+   ],
+   "covers": [
+    "strict JSON plan",
+    "native journal"
+   ],
+   "status": "exists; lifecycle and native scoring pending"
+  },
+  {
+   "benchmark": "OSDB-STKG",
+   "entry": "operations/analysis/observed_neo4j_services_dev_v2.py",
+   "symbols": [
+    "compile_selection"
+   ],
+   "covers": [
+    "observed properties",
+    "identity",
+    "time semantics"
+   ],
+   "status": "development path; formal tasks and freeze pending"
+  },
+  {
+   "benchmark": "MindTheQuery",
+   "entry": "operations/analysis/neo4j_native_selection_dev_20261029.py",
+   "symbols": [
+    "NativeSchema",
+    "compile_selection"
+   ],
+   "covers": [
+    "match",
+    "projection",
+    "aggregation",
+    "order",
+    "limit"
+   ],
+   "status": "exists; real backend type semantics and registration pending"
+  },
+  {
+   "benchmark": "ZOGRASCOPE",
+   "entry": "operations/analysis/neo4j_native_plan_dev_20261029.py",
+   "symbols": [
+    "PreparedPlan",
+    "NativePlanChain"
+   ],
+   "covers": [
+    "same-plan controls",
+    "native identity sets"
+   ],
+   "status": "exists; lifecycle and main scoring pending"
+  }
+ ]
+}

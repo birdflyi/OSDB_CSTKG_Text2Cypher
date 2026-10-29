@@ -4,7 +4,9 @@ from pathlib import Path
 ADAPTER_WORK = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ADAPTER_WORK))
 
-import adapter  # noqa: E402
+from common.loader import load  # noqa: E402
+
+adapter = load(Path(__file__).resolve().parents[1] / "adapter.py")
 
 
 def test_prepare_reads_twenty_positions():

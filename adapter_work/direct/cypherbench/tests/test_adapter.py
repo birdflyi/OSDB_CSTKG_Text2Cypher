@@ -9,8 +9,13 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import adapter  # noqa: E402
-from adapter import Prediction, consume, parse, prepare  # noqa: E402
+from common.loader import load  # noqa: E402
+
+adapter = load(Path(__file__).resolve().parents[1] / "adapter.py")
+Prediction = adapter.Prediction
+consume = adapter.consume
+parse = adapter.parse
+prepare = adapter.prepare
 
 POSITIONS = Path(
     r"D:\ch7\reports\t1_preparation_20261029\adapter_positions_v22\cells\direct__CypherBench.positions.json"
