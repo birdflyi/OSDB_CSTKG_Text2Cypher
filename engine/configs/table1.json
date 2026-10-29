@@ -179,8 +179,8 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：候选HF权重与作者关联未认证；仍缺schema选择/返回/续写控制器与图适配配置",
-    "owner": "author_resource_and_protocol",
+    "missing": "权重公开(HF Anonymous234/Cypher-RI, Apache-2.0, 15.2GB)；待 vLLM 部署与 schema-selection 协议实现",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -189,8 +189,8 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：缺目标模型ID/checkpoint、训练数据/过滤和推理配置；2488/2348差额未解释；同名PyPI包未认证",
-    "owner": "author_resource_and_protocol",
+    "missing": "无公开代码/权重；属合成数据+微调类方法，复现需训练",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -199,8 +199,8 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：生成库35文件已下载；仍缺图/划分/底模/seed对应微调权重或完整训练配方",
-    "owner": "author_resource_and_protocol",
+    "missing": "本地为数据生成器而非求解器；在比较表中的角色待确认",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -269,8 +269,8 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：候选HF权重与作者关联未认证；仍缺schema选择/返回/续写控制器与图适配配置",
-    "owner": "author_resource_and_protocol",
+    "missing": "权重公开(HF Anonymous234/Cypher-RI, Apache-2.0, 15.2GB)；待 vLLM 部署与 schema-selection 协议实现",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -279,8 +279,8 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：缺目标模型ID/checkpoint、训练数据/过滤和推理配置；2488/2348差额未解释；同名PyPI包未认证",
-    "owner": "author_resource_and_protocol",
+    "missing": "无公开代码/权重；属合成数据+微调类方法，复现需训练",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -289,8 +289,8 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：生成库35文件已下载；仍缺图/划分/底模/seed对应微调权重或完整训练配方",
-    "owner": "author_resource_and_protocol",
+    "missing": "本地为数据生成器而非求解器；在比较表中的角色待确认",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -359,8 +359,8 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：候选HF权重与作者关联未认证；仍缺schema选择/返回/续写控制器与图适配配置",
-    "owner": "author_resource_and_protocol",
+    "missing": "权重公开(HF Anonymous234/Cypher-RI, Apache-2.0, 15.2GB)；待 vLLM 部署与 schema-selection 协议实现",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -369,8 +369,8 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：缺目标模型ID/checkpoint、训练数据/过滤和推理配置；2488/2348差额未解释；同名PyPI包未认证",
-    "owner": "author_resource_and_protocol",
+    "missing": "无公开代码/权重；属合成数据+微调类方法，复现需训练",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -379,8 +379,8 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：生成库35文件已下载；仍缺图/划分/底模/seed对应微调权重或完整训练配方",
-    "owner": "author_resource_and_protocol",
+    "missing": "本地为数据生成器而非求解器；在比较表中的角色待确认",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -449,8 +449,8 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：候选HF权重与作者关联未认证；仍缺schema选择/返回/续写控制器与图适配配置",
-    "owner": "author_resource_and_protocol",
+    "missing": "权重公开(HF Anonymous234/Cypher-RI, Apache-2.0, 15.2GB)；待 vLLM 部署与 schema-selection 协议实现",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -459,8 +459,8 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：缺目标模型ID/checkpoint、训练数据/过滤和推理配置；2488/2348差额未解释；同名PyPI包未认证",
-    "owner": "author_resource_and_protocol",
+    "missing": "无公开代码/权重；属合成数据+微调类方法，复现需训练",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -469,8 +469,8 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：生成库35文件已下载；仍缺图/划分/底模/seed对应微调权重或完整训练配方",
-    "owner": "author_resource_and_protocol",
+    "missing": "本地为数据生成器而非求解器；在比较表中的角色待确认",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -539,8 +539,8 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "missing": "数据集未就绪：osdb-stkg",
-    "owner": "author_resource_and_protocol",
+    "missing": "权重公开(HF Anonymous234/Cypher-RI, Apache-2.0, 15.2GB)；待 vLLM 部署与 schema-selection 协议实现",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -549,8 +549,8 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "数据集未就绪：osdb-stkg",
-    "owner": "author_resource_and_protocol",
+    "missing": "无公开代码/权重；属合成数据+微调类方法，复现需训练",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -559,8 +559,8 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "数据集未就绪：osdb-stkg",
-    "owner": "author_resource_and_protocol",
+    "missing": "本地为数据生成器而非求解器；在比较表中的角色待确认",
+    "owner": "external",
     "effort_days": null
    }
   }
