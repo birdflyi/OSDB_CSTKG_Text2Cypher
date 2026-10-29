@@ -2,7 +2,7 @@
  "cell": "M07-B01",
  "method": "cypher-ri",
  "benchmark": "CypherBench",
- "code_commit": "4ab2018c3bf0bbe2793e7b014518175b44f914b4",
+ "code_commit": "02fe257",
  "offline_checks": {
   "command": "python -m pytest tests -q",
   "result": "6 passed",
