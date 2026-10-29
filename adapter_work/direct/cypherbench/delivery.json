@@ -1,0 +1,32 @@
+{
+ "cell": "M01-B01",
+ "method": "direct",
+ "benchmark": "CypherBench",
+ "code_commit": "6a7535d86092535dcc5379e32ce7988dadd6a6a5",
+ "contract": "CONTRACT.md",
+ "offline_checks": {
+  "command": "python -m pytest tests -q",
+  "result": "7 passed",
+  "network": "none",
+  "database": "none"
+ },
+ "completed": [
+  "prepare returns 20 request specs and verifies every public input SHA",
+  "parse classifies answered / refused / format_error / unknown without treating HTTP 200 as correct",
+  "consume keeps the 20-position denominator and orders save_answer -> db_client -> scorer",
+  "database failure becomes run_error while the saved answer is preserved",
+  "cost stays null when any attempt cost is unknown"
+ ],
+ "not_completed": [
+  "registration into the central runtime (adapter is not wired to the engine yet)",
+  "real model requests and real Neo4j reads (not authorised in this phase)",
+  "official EX scoring (delegated to runtime.scorer and not verified here)"
+ ],
+ "requires": {
+  "model_calls": 0,
+  "database_runs": 0,
+  "budget": "none"
+ },
+ "admission_signed_by_adapter": false,
+ "notes": "20 positions are an adapter sample; no accuracy claim is made."
+}
