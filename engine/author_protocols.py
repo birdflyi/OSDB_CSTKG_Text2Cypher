@@ -59,7 +59,7 @@ def smith_filter_decision(full_logprob, reduced_logprobs, *, rule):
     """Expose the unresolved paper alternatives instead of silently choosing one.
 
     Log probabilities avoid underflow. The three reduced contexts omit the
-    ontology, question and relations respectively. This does not compute LLM
+    ontology, question and reasoning respectively. This does not compute LLM
     likelihoods or assert which rule the authors actually implemented.
     """
     if len(reduced_logprobs) != 3:
