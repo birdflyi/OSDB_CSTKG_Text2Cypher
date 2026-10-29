@@ -6,6 +6,7 @@ historical results, freezes, approval files and budget records are not edited.
 """
 
 import argparse
+import ast
 from copy import deepcopy
 import hashlib
 import json
@@ -242,6 +243,8 @@ def apply_corrections(output):
 
 def finalize_bundle(output):
     """Pin changed source and reuse V13 author assets; never include runtime keys."""
+    output.mkdir(parents=True,exist_ok=True)
+    (output/'cells').mkdir(exist_ok=True)
     contracts = prepare_contracts(load(REPORTS / 'execution_contracts_v13.json'))
     save(output/'execution_contracts_v14.json',contracts)
     for cell in contracts['cells']:
@@ -261,6 +264,10 @@ def finalize_bundle(output):
     sources.update({path.relative_to(ROOT).as_posix():path
                     for path in (ROOT/'experiment-harness/public_benchmark_v1').glob('*.py')})
     sources.update({'operations/analysis/'+name:ROOT/'operations/analysis'/name for name in analysis_names})
+    for cell in contracts['cells']:
+        for item in cell['prepared_code']:
+            sources[item['file']] = ROOT/item['file']
+    include_local_dependencies(sources)
     sources['preparation/execution_contracts_v14.json'] = output/'execution_contracts_v14.json'
     for name in ('author_resources_v13_catalog.json','author_reproduction_recipes_v13.json'):
         sources['preparation/'+name] = REPORTS/name
@@ -280,6 +287,39 @@ def finalize_bundle(output):
         execution_enabled=False,source_manifest_sha256=hashlib.sha256((output/'bundle_manifest.json').read_bytes()).hexdigest())
     save(output/'bundle_receipt.json',receipt)
     return receipt
+
+
+def include_local_dependencies(sources):
+    """Include static local imports without importing or executing their code.
+
+    Runtime engine and legacy harness files are already included as complete
+    directories. This closes the older standalone analysis modules' imports;
+    dynamic runtime configuration remains an explicit separate prerequisite.
+    """
+    pending = [path for path in sources.values() if path.suffix == '.py']
+    visited = set()
+    while pending:
+        path = pending.pop()
+        if path in visited:
+            continue
+        visited.add(path)
+        tree = ast.parse(path.read_text(encoding='utf-8-sig'))
+        modules = []
+        for node in ast.walk(tree):
+            if isinstance(node,ast.Import):
+                modules.extend(alias.name for alias in node.names)
+            elif isinstance(node,ast.ImportFrom) and node.level == 0 and node.module:
+                modules.append(node.module)
+        for module in modules:
+            relative = Path(*module.split('.')).with_suffix('.py')
+            for directory in (ROOT,ROOT/'operations/analysis',ROOT/'experiment-harness/public_benchmark_v1'):
+                candidate = directory/relative
+                if candidate.is_file():
+                    name = candidate.relative_to(ROOT).as_posix()
+                    if name not in sources:
+                        sources[name] = candidate
+                        pending.append(candidate)
+                    break
 
 
 if __name__ == "__main__":
