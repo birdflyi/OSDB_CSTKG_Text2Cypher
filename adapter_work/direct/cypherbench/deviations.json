@@ -1,0 +1,32 @@
+[
+  {
+    "item": "20 positions are an adapter sample, not the full 2,348-task population",
+    "choice": "The adapter reports counts over exactly the 20 frozen positions and never extrapolates accuracy",
+    "reason": "V22 freezes positions only; full population stays with the central runtime",
+    "impact": "No accuracy claim can be made from this cell alone"
+  },
+  {
+    "item": "Official CypherBench query categories are not present in the frozen public material",
+    "choice": "category stays null; nothing is inferred from gold",
+    "reason": "Inferring categories from reference queries would leak the reference side",
+    "impact": "Category-stratified analysis is unavailable for this sample"
+  },
+  {
+    "item": "Scoring is normally the official CypherBench EX implementation",
+    "choice": "Delegated to runtime.scorer; the adapter stores whatever score it receives",
+    "reason": "Scoring needs the reference side, which this adapter must not read",
+    "impact": "A wrong scorer in the runtime would not be detected here"
+  },
+  {
+    "item": "Retries and attempt accounting are usually handled by the transport layer",
+    "choice": "parse accepts attempts and cost; consume sums them; no retry logic in the adapter",
+    "reason": "The central scheduler owns quota, retries and evidence",
+    "impact": "Cost is null unless every attempt reports a known cost"
+  },
+  {
+    "item": "A 2xx HTTP status can still carry an unusable body",
+    "choice": "parse classifies the body; non-2xx becomes unknown, never a normal failure",
+    "reason": "HTTP 200 does not mean a correct answer",
+    "impact": "Unknown rows stay unknown and remain in the denominator"
+  }
+]

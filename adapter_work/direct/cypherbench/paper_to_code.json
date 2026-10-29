@@ -1,0 +1,33 @@
+{
+  "cell": "M01-B01",
+  "method": "direct",
+  "benchmark": "CypherBench",
+  "paper": "CypherBench: official direct text-to-Cypher baseline (public benchmark paper)",
+  "mapping": [
+    {
+      "paper_step": "Provide the public question together with the graph schema",
+      "code": "adapter.prepare",
+      "note": "Messages come verbatim from the frozen V22 public input; no prompt engineering and no gold."
+    },
+    {
+      "paper_step": "Ask the model for one Cypher statement",
+      "code": "adapter.parse",
+      "note": "The adapter classifies the raw reply; it does not rewrite the statement beyond stripping fences and a trailing semicolon."
+    },
+    {
+      "paper_step": "Execute the produced Cypher on the target graph",
+      "code": "adapter.consume -> runtime.db_client",
+      "note": "Execution is injected by the central runtime; the adapter never opens a driver."
+    },
+    {
+      "paper_step": "Compare the query result with the official reference",
+      "code": "adapter.consume -> runtime.scorer",
+      "note": "Official scoring stays in the runtime; the adapter only preserves the answer and records the score it receives."
+    }
+  ],
+  "not_implemented_here": [
+    "HTTP transport, retries and budget accounting (central runtime)",
+    "Neo4j graph lifecycle and read-only enforcement (central runtime)",
+    "Official EX computation (delegated to runtime.scorer)"
+  ]
+}
