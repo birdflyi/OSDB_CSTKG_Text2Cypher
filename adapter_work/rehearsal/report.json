@@ -1,0 +1,19 @@
+{
+ "cells": 45,
+ "positions": 600,
+ "model_requests": 700,
+ "replays": 300,
+ "executed": 600,
+ "unsupported": 0,
+ "format_error": 0,
+ "refused": 0,
+ "run_error": 0,
+ "scored": 600,
+ "controls": {
+  "executed": 300,
+  "not_applicable": 0,
+  "execution_error": 0
+ },
+ "plan_artifacts": 100,
+ "charge_ids": 5
+}
