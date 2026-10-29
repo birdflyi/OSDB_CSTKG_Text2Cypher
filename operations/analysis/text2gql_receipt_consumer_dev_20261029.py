@@ -165,3 +165,46 @@ def consume_recorded_reply(path, expected_sha256, identity, schema, journal, *,
                   feedback_messages=diagnostic, feedback_dispatched=False,
                   new_model_calls=0, formal_admission=False)
     return result
+
+
+def consume_audited_reply(source, schema, journal, *, directory, allow_feedback):
+    """Use the shared slot/request/terminal contract, including unknown charges.
+
+    The older receipt-only API above remains for its frozen preparation pack.
+    New integration uses this API: persist the source first, then the actual
+    method answer, then an unsent operation-feedback draft. No evaluator input
+    or source fee is inferred, no source is billed again, and no retry occurs.
+    """
+    from audited_model_reply_dev_20261029 import RecordedReply
+    from engine.config import canonical, digest
+    from engine.journal import write_new
+
+    if not isinstance(source, RecordedReply) or source.identity.benchmark != 'text2gql':
+        raise ReceiptConflict('Audited native Text2GQL source required')
+    if type(allow_feedback) is not bool:
+        raise ValueError('Explicit feedback policy required')
+    directory = Path(directory)
+    directory.mkdir(parents=True,exist_ok=False)
+    link = source.source_link()
+    write_new(directory/'source.json',canonical(link))
+    terminal = source.terminal
+    status = source.status
+    if status in ('UNKNOWN','UNDISPATCHED','INFRASTRUCTURE_ERROR'):
+        record = dict(outcome_unknown=True)
+    else:
+        message = terminal['body']['choices'][0]['message']
+        record = dict(http_status=terminal['http_status'],content=terminal.get('content'),
+            finish_reason=terminal.get('finish_reason'),refusal=message.get('refusal'))
+    result = consume_reply(source.identity.method,record,schema,journal,
+        request_prefix='source_'+digest(canonical(link))[:32],graph=source.identity.graph)
+    if status in ('UNKNOWN','UNDISPATCHED','INFRASTRUCTURE_ERROR'):
+        result['final_answer']['status'] = status
+    write_new(directory/'method_final.json',canonical(dict(source=link,result=result)))
+    feedback = None
+    if allow_feedback and source.identity.phase == 'initial' and status == 'READY':
+        feedback = feedback_messages(source.request['messages'],terminal.get('content'),result,
+                                     previous_feedback_count=0)
+    outcome = dict(source=link,result=result,feedback_draft=feedback,feedback_dispatched=False,
+                   new_model_calls=0,monetary_cost=None,formal_admission=False)
+    write_new(directory/'outcome.json',canonical(outcome))
+    return outcome

@@ -94,15 +94,33 @@ class RecordedReply:
     exact slot/request hash binding. No reasoning text becomes answer content.
     """
 
-    def __init__(self, identity, *, request, terminal, slot=None):
+    def __init__(self, identity, *, request, terminal, slot=None,
+                 logical_request=None, alias_evidence_sha256=None):
         if not isinstance(identity, ReplyIdentity):
             raise ReplyConflict('Frozen ReplyIdentity required')
         self._identity = identity
         self._request = request.load()
+        self._served_model = self._request.get('model')
         self._terminal = terminal.load()
         value = self._terminal
-        if self._request.get('model') != identity.model:
-            raise ReplyConflict('Request model differs from frozen identity')
+        if self._served_model != identity.model:
+            # Both source files are independently pinned by the caller's audit.
+            # A family name or a self-reported response model is not evidence.
+            if (logical_request is None or not alias_evidence_sha256
+                    or value.get('alias_evidence_sha256') != alias_evidence_sha256):
+                raise ReplyConflict('Aliased source needs logical bytes and vetted equivalence evidence')
+            logical = logical_request.load()
+            logical_raw = Path(logical_request.path).read_bytes()
+            physical_raw = Path(request.path).read_bytes()
+            from engine.scheduler import sent_wire
+            if (hashlib.sha256(logical_raw).hexdigest() != logical_request.sha256
+                    or hashlib.sha256(physical_raw).hexdigest() != request.sha256
+                    or logical.get('model') != identity.model
+                    or value.get('requested_model') != identity.model
+                    or value.get('logical_request_sha256') != logical_request.sha256
+                    or sent_wire(logical_raw,self._served_model) != physical_raw):
+                raise ReplyConflict('Logical and physical routed request differ')
+            self._request = logical
         messages = self._request.get('messages')
         if (type(messages) is not list or not messages
                 or any(type(m) is not dict or type(m.get('role')) is not str for m in messages)):
@@ -110,6 +128,8 @@ class RecordedReply:
         if value.get('logical_key') != identity.key:
             raise ReplyConflict('Terminal logical identity mismatch')
         for key, expected in asdict(identity).items():
+            if key == 'model':
+                expected = self._served_model
             if key in value and value[key] != expected:
                 raise ReplyConflict('Terminal identity field mismatch')
         if 'charged' not in value or (value['charged'] is not None and type(value['charged']) is not bool):
@@ -131,7 +151,8 @@ class RecordedReply:
             raise ReplyConflict('A source slot contradicts false/unknown charge state; audit first')
         self._lifecycle = self._status()
         self._pins = dict(request=asdict(request), terminal=asdict(terminal),
-                         slot=asdict(slot) if slot is not None else None)
+                         slot=asdict(slot) if slot is not None else None,
+                         logical_request=asdict(logical_request) if logical_request else None)
 
     @property
     def identity(self):
@@ -166,13 +187,14 @@ class RecordedReply:
             return 'INFRASTRUCTURE_ERROR'
         if status not in ('ok','length','refused','empty'):
             raise ReplyConflict('Unrecognized scheduler terminal')
-        if any(value.get(k) != v for k, v in asdict(self.identity).items()):
+        expected_identity = dict(asdict(self.identity),model=self._served_model)
+        if any(value.get(k) != v for k, v in expected_identity.items()):
             raise ReplyConflict('Usable reply lacks full terminal identity')
         if (value.get('transport_error') or value.get('protocol_error')
                 or type(value.get('http_status')) is not int or value['http_status'] != 200):
             raise ReplyConflict('Usable reply lacks a complete HTTP success')
         body = value.get('body')
-        if type(body) is not dict or body.get('model') != self.identity.model:
+        if type(body) is not dict or body.get('model') != self._served_model:
             raise ReplyConflict('Response model differs from request')
         choices = body.get('choices')
         if type(choices) is not list or len(choices) != 1 or type(choices[0]) is not dict:
@@ -206,4 +228,6 @@ class RecordedReply:
             source_charged=value['charged'], source_status=value['status'],
             source_usage=deepcopy(value.get('usage')), source_ledger_chain_reaudited=False,
             requires_outcome_audit=self.status=='UNKNOWN', new_model_calls=0,
+            served_model=self._served_model, requested_model=self.identity.model,
+            alias_evidence_sha256=value.get('alias_evidence_sha256'),
             monetary_cost=None, formal_admission=False)

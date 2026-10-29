@@ -18,7 +18,7 @@ def owner_alive(path) -> bool:
     try:
         value = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return False
+        return True  # An unreadable owner is unknown, not permission to delete.
     if value.get("hostname") != socket.gethostname():
         return True
     pid = value.get("pid")

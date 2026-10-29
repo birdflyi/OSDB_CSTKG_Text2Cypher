@@ -14,48 +14,18 @@ from .config import canonical, digest
 from .journal import Journal, write_new, write_status
 
 
-CORE_FILES = (
-    "__init__.py",
-    "config.py",
-    "ids.py",
-    "pool.py",
-    "journal.py",
-    "ledger.py",
-    "transport.py",
-    "scheduler.py",
-    "execution.py",
-    "campaign.py",
-    "cli.py",
-    "fake.py",
-    "replay.py",
-    "adapters/__init__.py",
-    "adapters/base.py",
-    "adapters/cypherbench.py",
-    "workers/__init__.py",
-    "workers/neo4j.py",
-    "pipeline.py",
-    "adapters/cypherbench_runtime.py",
-    "results.py",
-    "monitor.py",
-    "recovery.py",
-    "errors.py",
-    "dispatch.py",
-    "launch.py",
-    "matrix.py",
-    "table.py",
-    "table_cli.py",
-    "matrix_wall.py",
-    "mirror.py",
-    "ahead.py",
-    "performance.py",
-    "wall_data.py",
-    "wall_view.py",
-)
-
-
 def code_manifest() -> dict:
+    """Freeze every engine runtime module, including newly added adapters.
+
+    Tests are excluded. Keeping a second hand-maintained module list would
+    leave newly extracted scoring or accounting code outside the freeze.
+    """
     root = Path(__file__).parent
-    return {name: digest((root / name).read_bytes()) for name in CORE_FILES}
+    return {
+        path.relative_to(root).as_posix(): digest(path.read_bytes())
+        for path in sorted(root.rglob("*.py"))
+        if "tests" not in path.relative_to(root).parts
+    }
 
 
 def validate_paths(run_dir: Path, ledger_dir: Path, legacy_ledger: Path, protected_roots: list):

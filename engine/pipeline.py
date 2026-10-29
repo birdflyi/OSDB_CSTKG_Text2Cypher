@@ -4,6 +4,7 @@ import asyncio
 from dataclasses import fields
 import json
 import os
+import socket
 from pathlib import Path
 import time
 
@@ -19,7 +20,7 @@ from .config import (
 from .journal import Journal, claim_owner, write_new, write_status
 from .ledger import BudgetError, Ledger, scan_legacy
 from .errors import IntegrityError, PersistenceError
-from .pool import DynamicPool
+from .pool import DynamicPool, serves
 from .adapters import get as get_adapter
 from .scheduler import Scheduler
 from .transport import HTTPTransport
@@ -130,7 +131,7 @@ async def run_stages(
     if root.exists() and not resume:
         raise ValueError("Existing pipeline requires explicit resume verification")
     root.mkdir(parents=True, exist_ok=True)
-    owner = canonical(dict(pid=os.getpid(), started_epoch=time.time()))
+    owner = canonical(dict(pid=os.getpid(), hostname=socket.gethostname(), started_epoch=time.time()))
     claim_owner(root / ".pipeline.lock", owner)
     journal = Journal(root / "pipeline.jsonl")
     issues = Journal(root / "issues.jsonl")
@@ -361,11 +362,19 @@ async def run_stages(
             (root / ".pipeline.lock").unlink()
 
 
-async def live_pipeline(config_path: Path, *, resume=False):
+async def live_pipeline(config_path: Path, *, resume=False, phase="all"):
+    """Run the admitted plan, or its initial-generation/consumer phase.
+
+    Splitting phases never changes a request, admission or budget. The durable
+    generation receipt binds later consumption to the same configuration.
+    Feedback remains in the consumer because it needs an operation diagnostic.
+    """
     from .campaign import code_manifest, execute_campaign, validate_paths
     from .cli import load_items
 
     config = json.loads(Path(config_path).read_text(encoding="utf-8-sig"))
+    if phase not in ("all", "generate", "consume"):
+        raise ValueError("Unknown pipeline phase")
     validate_run_fields(config)
     admission = json.loads(Path(config["admission_path"]).read_text(encoding="utf-8-sig"))
     if (
@@ -394,13 +403,24 @@ async def live_pipeline(config_path: Path, *, resume=False):
                 stage, items, allowed, admission["purpose"]
             )
         for item in items:
-            matching = [e for e in endpoints if e.model == item.model and e.enabled]
+            matching = [e for e in endpoints if serves(e, item.model) and e.enabled]
             if not matching or any(
                 not set(json.loads(item.wire)) <= set(e.wire_params) for e in matching
             ):
                 raise ValueError("Missing endpoint or unsupported frozen wire parameter")
         sealed[stage["name"]] = items
     root = Path(config["run_dir"])
+    generation_receipt = root / "generation_receipt.json"
+    generated = None
+    if phase == "consume" or (phase == "generate" and resume and generation_receipt.exists()):
+        generated = json.loads(generation_receipt.read_text(encoding="utf-8"))
+        if generated["config_sha256"] != digest(canonical(config)):
+            raise IntegrityError("Generation belongs to another configuration")
+        for handoff in generated["handoffs"].values():
+            if digest(Path(handoff["path"]).read_bytes()) != handoff["sha256"]:
+                raise IntegrityError("Changed generation receipt")
+        if phase == "generate":
+            return generated
     if root.exists() and not resume:
         raise ValueError("Existing pipeline requires explicit resume verification")
     ledger_dir, legacy_dir = Path(config["ledger_dir"]), Path(config["legacy_ledger"])
@@ -421,7 +441,8 @@ async def live_pipeline(config_path: Path, *, resume=False):
             connect_timeout=timeouts_from(config.get("timeouts")).http_connect,
         )
         getattr(transport, "validate_keys", lambda rows: None)(
-            [endpoint for endpoint in endpoints if endpoint.model in allowed]
+            [endpoint for endpoint in endpoints if endpoint.enabled
+             and any(serves(endpoint, model) for model in allowed)]
         )
         from .dispatch import BatchPacer, write_queue
 
@@ -524,7 +545,11 @@ async def live_pipeline(config_path: Path, *, resume=False):
                     pending_requests=lambda stage: pending_under(ledger, make_spec(stage).run_dir),
                 )
 
-            if admission["purpose"] in ("formal_T1", "smoke_T1") and not resume:
+            if phase == "consume":
+                result = await consume_blocks(
+                    lambda stage: block(stage, generated["handoffs"].get(stage["name"]))
+                )
+            elif admission["purpose"] in ("formal_T1", "smoke_T1") and not resume:
                 from .campaign import generate_initial
 
                 async def dispatch(stage):
@@ -540,10 +565,22 @@ async def live_pipeline(config_path: Path, *, resume=False):
                         drain_paths=[root / "DRAIN"],
                     )
 
-                result = await overlap(
-                    config["stages"], root, dispatch, block, consume_blocks, pool
-                )
+                if phase == "generate":
+                    handoffs = {}
+                    for stage in config["stages"]:
+                        if not stage.get("blocked_reason"):
+                            handoffs[stage["name"]] = await dispatch(stage)
+                    generated = dict(config_sha256=digest(canonical(config)), handoffs=handoffs,
+                                     purpose="initial_generation_only", database_started=False)
+                    write_new(generation_receipt, canonical(generated))
+                    return generated
+                else:
+                    result = await overlap(
+                        config["stages"], root, dispatch, block, consume_blocks, pool
+                    )
             else:
+                if phase != "all":
+                    raise ValueError("Missing initial generation receipt; explicit recovery required")
                 result = await consume_blocks(block)
         finally:
             endpoint_stop.set()

@@ -22,8 +22,9 @@ from engine.ledger import audit_new
 @pytest.mark.parametrize("bad_score", [False, True])
 @pytest.mark.parametrize("single_graph", [False, True])
 @pytest.mark.parametrize("legacy_overlap", [False, True])
+@pytest.mark.parametrize("split_phases", [False, True])
 def test_next_32_requests_start_while_previous_db_is_waiting(
-    tmp_path, monkeypatch, bad_score, single_graph, legacy_overlap
+    tmp_path, monkeypatch, bad_score, single_graph, legacy_overlap, split_phases
 ):
     b_started = threading.Event()
     starts, ends, db_threads = [], [], []
@@ -210,7 +211,13 @@ def test_next_32_requests_start_while_previous_db_is_waiting(
             )
         )
     )
-    result = asyncio.run(pipeline.live_pipeline(config_path))
+    if split_phases:
+        generated = asyncio.run(pipeline.live_pipeline(config_path, phase="generate"))
+        assert not db_threads and transport.calls == count * 2
+        assert generated["database_started"] is False
+        result = asyncio.run(pipeline.live_pipeline(config_path, phase="consume", resume=True))
+    else:
+        result = asyncio.run(pipeline.live_pipeline(config_path))
     assert transport.calls == count * 2 and transport.peak <= 32
     assert len(result["performance"]["cells"]) == 2
     for cell in result["performance"]["cells"]:

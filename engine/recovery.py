@@ -7,6 +7,29 @@ from .config import digest
 from .errors import IntegrityError
 
 
+def logical_request_digest(request, terminal):
+    """Verify routed bytes against the separately saved logical request.
+
+    Legacy exact-model attempts have no logical copy. They retain their old
+    physical hash and cannot silently become an aliased logical request.
+    """
+    from .scheduler import sent_wire
+
+    logical = request.with_name("logical_request.json")
+    if not logical.exists():
+        return digest(request.read_bytes())
+    raw = logical.read_bytes()
+    body = json.loads(raw)
+    physical = request.read_bytes()
+    if (
+        terminal.get("logical_request_sha256") != digest(raw)
+        or terminal.get("requested_model") != body.get("model")
+        or sent_wire(raw, terminal["model"]) != physical
+    ):
+        raise IntegrityError("Routed request differs from its logical source")
+    return digest(raw)
+
+
 def checkpoint_replies(path, ledger, *, logical_keys=None):
     """Seal all attempts for the scope, or all attempts for declared cell keys.
 
@@ -75,11 +98,12 @@ def saved_replies(manifest_path, expected_sha256, ledger, *, logical_keys=None):
         value = json.loads(terminal.read_text(encoding="utf-8"))
         if value["request_id"] != entry["request_id"] or value["budget_slot"] != record["slot"]:
             raise IntegrityError("Cached physical identity differs")
+        logical_sha = logical_request_digest(request, value)
         previous = replies.get(record["logical_key"])
         history = list(previous["history"]) if previous else []
         if previous and (
             previous["response"]["status"] not in ("infra", "unknown", "throttled")
-            or previous["wire_sha256"] != entry["request_sha256"]
+            or previous["wire_sha256"] != logical_sha
         ):
             raise IntegrityError(
                 "Recovery cannot replace a completed model response or change bytes"
@@ -97,7 +121,7 @@ def saved_replies(manifest_path, expected_sha256, ledger, *, logical_keys=None):
         )
         replies[record["logical_key"]] = dict(
             response=value,
-            wire_sha256=entry["request_sha256"],
+            wire_sha256=logical_sha,
             source_terminal=str(terminal),
             source_terminal_sha256=entry["terminal_sha256"],
             history=history,

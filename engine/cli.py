@@ -35,7 +35,8 @@ def load_items(path: Path, model):
         source = (Path(path).parent / row["wire_path"]).resolve()
         wire = source.read_bytes()
         wire_model = json.loads(wire).get("model")
-        if digest(wire) != row["wire_sha256"] or wire_model not in allowed:
+        if (digest(wire) != row["wire_sha256"] or wire_model not in allowed
+                or row.get("model", wire_model) != wire_model):
             raise ValueError("Input/model differs from sealed manifest")
         result.append(
             Item(

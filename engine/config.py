@@ -145,6 +145,7 @@ class Endpoint:
     )
     serves: tuple = ()
     family: str = ""
+    alias_evidence_sha256: str = ""
 
     def __post_init__(self):
         url = urlsplit(self.url)
@@ -165,6 +166,11 @@ class Endpoint:
             raise ValueError("Invalid endpoint; URL credentials/query are forbidden")
         if not isinstance(self.family, str):
             raise ValueError("family must be a string")
+        if self.alias_evidence_sha256 and (
+            len(self.alias_evidence_sha256) != 64
+            or any(c not in "0123456789abcdef" for c in self.alias_evidence_sha256)
+        ):
+            raise ValueError("alias_evidence_sha256 must identify vetted equivalence evidence")
         if not all(isinstance(name, str) and name for name in self.serves):
             raise ValueError("serves must list non-empty model names")
         if Path(self.key_ref).name != self.key_ref or not self.key_ref:
@@ -303,6 +309,7 @@ def registry_from_file(path: Path) -> dict:
     if not isinstance(model_caps, dict):
         raise ValueError("per_model_cap must be a mapping")
     models = {row.model for row in rows}
+    models.update(alias for row in rows if row.alias_evidence_sha256 for alias in row.serves)
     for model, limit in model_caps.items():
         if model not in models:
             raise ValueError("per_model_cap names an undeclared model: " + model)

@@ -45,10 +45,10 @@ class EndpointState:
 
 
 class Permit:
-    def __init__(self, pool: DynamicPool, state: EndpointState):
+    def __init__(self, pool: DynamicPool, state: EndpointState, requested_model: str):
         self.pool, self.state = pool, state
         self.endpoint = state.spec  # Immutable routing snapshot for this attempt.
-        self.model = state.spec.model
+        self.model = requested_model
         self.released = False
         self.timeout_multiplier = 2 if state.degraded else 1
         self.recovery_generation = state.recovery_generation
@@ -92,10 +92,14 @@ class Permit:
 
 
 def serves(spec, model: str) -> bool:
-    """An endpoint serves its own name, an explicit alias, or its model family."""
-    if spec.model == model or model in spec.serves:
-        return True
-    return bool(spec.family) and spec.family.lower() in model.lower()
+    """Family names describe routes; they never establish model equivalence.
+
+    An alias needs explicit membership and a pinned, reviewed evidence record.
+    The hash is an admission reference, not automatic verification of weights.
+    """
+    return spec.model == model or (
+        model in spec.serves and bool(spec.alias_evidence_sha256)
+    )
 
 
 class DynamicPool:
@@ -147,6 +151,7 @@ class DynamicPool:
             raise ValueError("Duplicate endpoint names")
         if per_model_cap is not None:
             models = {e.model for e in endpoints}
+            models.update(alias for e in endpoints for alias in e.serves if serves(e, alias))
             if not isinstance(per_model_cap, dict):
                 raise ValueError("per_model_cap must be a mapping")
             for model, cap in per_model_cap.items():
@@ -268,7 +273,7 @@ class DynamicPool:
                         self.inflight += 1
                         self.model_inflight[model] = self.model_inflight.get(model, 0) + 1
                         self.peak = max(self.peak, self.inflight)
-                        return Permit(self, state)
+                        return Permit(self, state, model)
                     remaining = deadline - self.clock()
                     if remaining <= 0:
                         if not matching:
@@ -416,13 +421,17 @@ class DynamicPool:
         return "active"
 
     def _model_rows(self) -> list:
-        models = sorted({state.spec.model for state in self.states.values()})
+        models = {state.spec.model for state in self.states.values()}
+        models.update(self.model_inflight)
+        models.update(self.per_model_cap)
+        models.update(alias for state in self.states.values() for alias in state.spec.serves
+                      if serves(state.spec, alias))
         rows = []
-        for model in models:
+        for model in sorted(models):
             live = [
                 state
                 for state in self.states.values()
-                if state.spec.model == model and not state.removed and state.spec.enabled
+                if serves(state.spec, model) and not state.removed and state.spec.enabled
             ]
             rows.append(dict(
                 model=model,
@@ -431,7 +440,7 @@ class DynamicPool:
                 inflight=self.model_inflight.get(model, 0),
                 waiting=self.model_waiting.get(model, 0),
                 endpoints=sum(
-                    1 for state in self.states.values() if state.spec.model == model),
+                    1 for state in self.states.values() if serves(state.spec, model)),
                 enabled=len(live),
                 unavailable=not live,
             ))

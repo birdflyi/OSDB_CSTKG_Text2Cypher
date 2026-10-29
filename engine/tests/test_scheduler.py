@@ -268,15 +268,27 @@ def test_length_reply_can_receive_one_legacy_format_feedback_without_being_score
 
 
 def test_cancel_does_not_release_a_running_thread_permit_early(tmp_path):
+    import threading
+
+    entered, finish = threading.Event(), threading.Event()
+
+    def response(*args):
+        entered.set()
+        assert finish.wait(5), "test must release the simulated physical request"
+        return dict(status="ok",content="RETURN 1",seconds=0)
+
     async def scenario():
         scheduler, items, transport, ledger = await make_scheduler(
-            tmp_path, cap=1, count=1, transport=FakeTransport(0.08)
+            tmp_path, cap=1, count=1, transport=FakeTransport(0,response)
         )
         task = asyncio.create_task(scheduler.generate(items[0]))
-        await asyncio.sleep(0.02)
-        task.cancel()
-        await asyncio.sleep(0.01)
-        assert scheduler.pool.inflight == 1 and transport.active == 1
+        assert await asyncio.to_thread(entered.wait,5), "physical send did not start"
+        try:
+            task.cancel()
+            await asyncio.sleep(0)
+            assert scheduler.pool.inflight == 1 and transport.active == 1
+        finally:
+            finish.set()
         await task
         assert scheduler.pool.inflight == 0 and len(ledger.terminals) == 1
         scheduler.http_workers.shutdown()

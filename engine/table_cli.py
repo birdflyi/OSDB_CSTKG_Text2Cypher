@@ -1,6 +1,7 @@
 """Run Table 1 cells through their own approved pipeline configurations.
 
-One cell at a time, each with the admission signed for that exact configuration.
+Initial generation advances through cells before DB consumers run. Each cell
+keeps the admission signed for its exact configuration and its durable handoff.
 This module never creates or rewrites an admission, never merges two cells into
 one plan, and never talks to a model directly.
 """
@@ -13,84 +14,47 @@ from pathlib import Path
 from . import table
 from .config import digest
 from .journal import write_status
+from .table_results import VIEWS, shape
 
 STAGES = ("smoke", "batch", "full")
 RUNNABLE = (table.STATUS_EMPTY, table.STATUS_PARTIAL)
 
 
-async def _live_pipeline(config_path: Path, *, resume=False):
+async def _live_pipeline(config_path: Path, *, resume=False, phase="all"):
     from .pipeline import live_pipeline
 
-    return await live_pipeline(config_path, resume=resume)
+    return await live_pipeline(config_path, resume=resume, phase=phase)
 
 
 def _read(path):
     return json.loads(Path(path).read_text(encoding="utf-8-sig"))
 
 
-def _stage_of(cell):
-    config = _read((cell.get("execution") or {})["config"])
+def _binding(cell, phase):
+    execution = cell.get("execution") or {}
+    binding = execution.get("stages", {}).get(phase, execution)
+    if binding.get("stage") != phase:
+        raise ValueError("Cell needs an explicit execution binding for stage: " + phase)
+    path = Path(binding.get("config", ""))
+    if not path.is_file() or digest(path.read_bytes()) != binding.get("config_sha256"):
+        raise ValueError("Cell execution config missing or changed: " + str(path))
+    config = _read(path)
+    admission = _read(config["admission_path"])
+    purpose = "formal_T1" if phase == "full" else "smoke_T1"
+    if admission.get("approved") is not True or admission.get("purpose") != purpose:
+        raise ValueError("Execution purpose does not match the requested stage")
     stages = [s for s in config["stages"] if not s.get("blocked_reason")]
     if len(stages) != 1:
         raise ValueError("A cell execution config must hold exactly one stage")
-    return stages[0]
-
-
-def _planned_by_graph(stage):
-    counts = {}
-    for row in _read(stage["manifest_path"]):
-        counts[row["graph"]] = counts.get(row["graph"], 0) + 1
-    return counts
-
-
-def _initial_scores(root):
-    """Initial-view rows only: retries and the final view must not double count."""
-    rows = []
-    for path in (Path(root).rglob("scores.json") if Path(root).exists() else []):
-        try:
-            rows.extend(row for row in _read(path) if row.get("view") == "initial")
-        except (OSError, ValueError):
-            continue
-    return rows
-
-
-def _shape(cell, stage, phase):
-    """Completed means distinct answered tasks, scored from the initial view."""
-    planned = _planned_by_graph(stage)
-    rows = _initial_scores(cell["run_dir"])
-    answered = {}
-    for row in rows:
-        answered.setdefault(row["qid"], row)
-    splits = {
-        graph: dict(
-            planned=number,
-            terminal=sum(1 for row in answered.values() if row.get("graph") == graph),
-        )
-        for graph, number in planned.items()
-    }
-    total = sum(planned.values())
-    completed = len(answered)
-    clean = bool(total) and completed == total
-    graded = [
-        (row.get("score") or {}).get("ex")
-        for row in answered.values()
-        if (row.get("score") or {}).get("ex") is not None
-    ]
-    return dict(
-        stage=phase,
-        complete=clean and phase == "full",
-        full_population=clean and phase == "full",
-        model=(rows[0].get("model") if rows else None),
-        score=(sum(graded) / len(graded) if graded and phase == "full" else None),
-        evidence=str(cell["run_dir"]),
-        splits=splits,
-        planned=total,
-        completed=completed,
-    )
+    spec = stages[0]
+    if (spec["method"] != VIEWS[cell["method"]][0]
+            or spec["benchmark"] != cell["benchmark"]):
+        raise ValueError("Execution stage belongs to another cell")
+    return path, config, admission, spec
 
 
 def run(table_path, *, cell=None, stage="smoke", resume=False, pipeline=None):
-    """Run runnable cells one at a time, each with its own signed admission."""
+    """Generate independent initials, then consume; keep each admission intact."""
     if stage not in STAGES:
         raise ValueError("Unknown stage: " + stage)
     path = Path(table_path)
@@ -108,16 +72,29 @@ def run(table_path, *, cell=None, stage="smoke", resume=False, pipeline=None):
     runner = pipeline or _live_pipeline
     ran = []
     sha = digest(path.read_bytes())
-    for target in targets:
-        execution = target.get("execution") or {}
-        config = Path(execution.get("config", ""))
-        if not config.is_file():
-            raise ValueError("Cell execution config is missing: " + str(config))
-        if digest(config.read_bytes()) != execution.get("config_sha256"):
-            raise ValueError("Cell execution config changed: " + str(config))
-        stage_spec = _stage_of(target)
-        result = asyncio.run(runner(config, resume=resume)) or {}
-        shaped = _shape(dict(target, run_dir=_read(config)["run_dir"]), stage_spec, stage)
+    # Validate every binding before the first cell can dispatch.
+    bindings = [_binding(target, stage) for target in targets]
+    for target, (config, settings, admission, stage_spec) in zip(targets, bindings):
+        if admission["models"] != [loaded["track"]["model"]]:
+            raise ValueError("Cell model differs from the table track")
+    unique_bindings, run_owners = {}, {}
+    for binding in bindings:
+        config, settings, admission, stage_spec = binding
+        key, directory = config.resolve(), Path(settings["run_dir"]).resolve()
+        if directory in run_owners and run_owners[directory] != key:
+            raise ValueError("Different cell configurations cannot share a run directory")
+        run_owners[directory] = key
+        unique_bindings.setdefault(key, binding)
+    for config, settings, admission, stage_spec in unique_bindings.values():
+        asyncio.run(runner(config, resume=resume, phase="generate"))
+    results = {}
+    for config, settings, admission, stage_spec in unique_bindings.values():
+        results[config.resolve()] = asyncio.run(runner(config, resume=True, phase="consume")) or {}
+    for target, (config, settings, admission, stage_spec) in zip(targets, bindings):
+        result = results[config.resolve()]
+        benchmark = next(b for b in loaded["benchmarks"] if b["id"] == target["benchmark"])
+        shaped = shape(dict(target, run_dir=settings["run_dir"]), stage_spec, stage,
+                       model=loaded["track"]["model"], population=benchmark.get("population"))
         table.write_back(
             path, target["method"], target["benchmark"], shaped, expected_sha256=sha
         )
@@ -127,7 +104,7 @@ def run(table_path, *, cell=None, stage="smoke", resume=False, pipeline=None):
             stage=stage,
             completed=shaped["completed"],
             planned=shaped["planned"],
-            status="partial" if stage != "full" else "measured",
+            status="measured" if shaped["complete"] else "partial",
             blocks=result.get("completed"),
         ))
     return dict(ran=ran)

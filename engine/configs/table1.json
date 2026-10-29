@@ -65,11 +65,6 @@
  "cells": [
   {
    "benchmark": "cypherbench",
-   "execution": {
-    "budget_scope": "T1_NEW_CYPHERBENCH_PRIMARY_20261028",
-    "config": "D:\\ch7\\experiments\\ch7_engine_20261028\\t1_full_20261029\\config-direct.json",
-    "config_sha256": "ae0d74983dcc13be26efc7f7f67fa167b5074578389e637a83bcd8384fadba49"
-   },
    "method": "direct",
    "order": 1,
    "result": {
@@ -121,27 +116,45 @@
     "nba": 270,
     "politics": 390
    },
-   "status": "partial"
+   "status": "blocked",
+   "historical_execution_binding": {
+    "budget_scope": "T1_NEW_CYPHERBENCH_PRIMARY_20261028",
+    "config": "D:\\ch7\\experiments\\ch7_engine_20261028\\t1_full_20261029\\config-direct.json",
+    "config_sha256": "ae0d74983dcc13be26efc7f7f67fa167b5074578389e637a83bcd8384fadba49"
+   },
+   "unblock": {
+    "missing": [
+     "七图/2348任务/官方评分历史材料保留；本轮已修路由与结果入口，尚无新运行准入。原9392子池绑定Ling，不能借给DS。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
+   }
   },
   {
    "benchmark": "cypherbench",
-   "execution": {
+   "method": "ours",
+   "order": 2,
+   "status": "blocked",
+   "historical_execution_binding": {
     "budget_scope": "T1_NEW_CYPHERBENCH_PRIMARY_20261028",
     "config": "D:\\ch7\\experiments\\ch7_engine_20261028\\t1_full_20261029\\config-ours.json",
     "config_sha256": "8cb525599d340c0fff69227510f24169a2fab6d7943c1cf061958098c190a971"
    },
-   "method": "ours",
-   "order": 2,
-   "status": "empty"
+   "unblock": {
+    "missing": [
+     "七图/2348任务/官方评分历史材料保留；本轮已修路由与结果入口，尚无新运行准入。原9392子池绑定Ling，不能借给DS。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
+   }
   },
   {
    "benchmark": "cypherbench",
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "missing": "反馈轮协议未定（派发/预算/评分口径）",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "七图/2348任务/官方评分历史材料保留；本轮已修路由与结果入口，尚无新运行准入。原9392子池绑定Ling，不能借给DS。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -149,9 +162,10 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "missing": "策略定义缺失：正确全明细的取列/组装规则未定义，不能以猜测实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "七图/2348任务/官方评分历史材料保留；本轮已修路由与结果入口，尚无新运行准入。原9392子池绑定Ling，不能借给DS。",
+     "2026-10-27路线§3已定义并有原生组件：必要身份/payload及完整集合运算。尚缺逐基准生产接线、范围验收和独立成本；共享Ours计划。"
+    ]
    }
   },
   {
@@ -159,9 +173,10 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "missing": "策略定义缺失：安全规则集未列出，不能以猜测实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "七图/2348任务/官方评分历史材料保留；本轮已修路由与结果入口，尚无新运行准入。原9392子池绑定Ling，不能借给DS。",
+     "2026-10-27路线§3已定义：有严格互斥证明才加计数，否则完整身份集合。已有组件；现与Ours等价如实披露，尚缺逐基准生产接线。"
+    ]
    }
   },
   {
@@ -169,9 +184,10 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "missing": "需按每个基准定义集合计数的原生语义；随适配器实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "七图/2348任务/官方评分历史材料保留；本轮已修路由与结果入口，尚无新运行准入。原9392子池绑定Ling，不能借给DS。",
+     "已有同计划原生集合计数组件及OSDB108/108历史证据；仅适用类回放，不能删除整格或缩主方法分母；尚缺逐基准接线。"
+    ]
    }
   },
   {
@@ -179,9 +195,10 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "missing": "权重公开(HF Anonymous234/Cypher-RI, Apache-2.0, 15.2GB)；待 vLLM 部署与 schema-selection 协议实现",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "七图/2348任务/官方评分历史材料保留；本轮已修路由与结果入口，尚无新运行准入。原9392子池绑定Ling，不能借给DS。",
+     "候选HF权重未获作者身份认证；缺tokenizer/chat模板/完整prompt/训练ID；批量128与1024未决。已实现离线schema选择/回退/同rollout追加原语，不当官方复现。"
+    ]
    }
   },
   {
@@ -189,9 +206,10 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "无公开代码/训练数据/权重；按 reported 引用，不入复现实验",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "七图/2348任务/官方评分历史材料保留；本轮已修路由与结果入口，尚无新运行准入。原9392子池绑定Ling，不能借给DS。",
+     "未取得认证代码/数据/目标模型/训练检查点；过滤文字与公式不同；2488对2348题目ID未齐。两种过滤规则已显式实现，未替作者选定；暂存reported独立轨道，不永久删格。"
+    ]
    }
   },
   {
@@ -199,9 +217,10 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "数据生成方法而非求解器；不参与方法对比，相关章节讨论",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "七图/2348任务/官方评分历史材料保留；本轮已修路由与结果入口，尚无新运行准入。原9392子池绑定Ling，不能借给DS。",
+     "作者生成器已固定；论文训练并评估parser，不可因生成器定位删格。代码许可、图专用语料/训练脚本/检查点/种子/解码协议未齐。"
+    ]
    }
   },
   {
@@ -209,9 +228,10 @@
    "method": "direct",
    "status": "blocked",
    "unblock": {
-    "missing": "已备当前Scheduler终结回复到原生journal/最终答案/评分的候选组件；本地和Linux15项合成检查通过，未注册完整adapter，仍待图/预算/反馈/控制接线",
-    "owner": "engineering_integration",
-    "effort_days": null
+    "missing": [
+     "原生六图/3826位置材料已备；3815已知参考及11项STRING/INT64异常保留。图生命周期/主评分协议/反馈与控制生产接线未齐。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -219,9 +239,10 @@
    "method": "ours",
    "status": "blocked",
    "unblock": {
-    "missing": "已备当前Scheduler终结回复到原生journal/最终答案/评分的候选组件；本地和Linux15项合成检查通过，未注册完整adapter，仍待图/预算/反馈/控制接线",
-    "owner": "engineering_integration",
-    "effort_days": null
+    "missing": [
+     "原生六图/3826位置材料已备；3815已知参考及11项STRING/INT64异常保留。图生命周期/主评分协议/反馈与控制生产接线未齐。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -229,9 +250,10 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "missing": "反馈轮协议未定（派发/预算/评分口径）",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "原生六图/3826位置材料已备；3815已知参考及11项STRING/INT64异常保留。图生命周期/主评分协议/反馈与控制生产接线未齐。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -239,9 +261,10 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "missing": "策略定义缺失：正确全明细的取列/组装规则未定义，不能以猜测实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "原生六图/3826位置材料已备；3815已知参考及11项STRING/INT64异常保留。图生命周期/主评分协议/反馈与控制生产接线未齐。",
+     "2026-10-27路线§3已定义并有原生组件：必要身份/payload及完整集合运算。尚缺逐基准生产接线、范围验收和独立成本；共享Ours计划。"
+    ]
    }
   },
   {
@@ -249,9 +272,10 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "missing": "策略定义缺失：安全规则集未列出，不能以猜测实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "原生六图/3826位置材料已备；3815已知参考及11项STRING/INT64异常保留。图生命周期/主评分协议/反馈与控制生产接线未齐。",
+     "2026-10-27路线§3已定义：有严格互斥证明才加计数，否则完整身份集合。已有组件；现与Ours等价如实披露，尚缺逐基准生产接线。"
+    ]
    }
   },
   {
@@ -259,9 +283,10 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "missing": "需按每个基准定义集合计数的原生语义；随适配器实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "原生六图/3826位置材料已备；3815已知参考及11项STRING/INT64异常保留。图生命周期/主评分协议/反馈与控制生产接线未齐。",
+     "已有同计划原生集合计数组件及OSDB108/108历史证据；仅适用类回放，不能删除整格或缩主方法分母；尚缺逐基准接线。"
+    ]
    }
   },
   {
@@ -269,9 +294,10 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "missing": "权重公开(HF Anonymous234/Cypher-RI, Apache-2.0, 15.2GB)；待 vLLM 部署与 schema-selection 协议实现",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "原生六图/3826位置材料已备；3815已知参考及11项STRING/INT64异常保留。图生命周期/主评分协议/反馈与控制生产接线未齐。",
+     "候选HF权重未获作者身份认证；缺tokenizer/chat模板/完整prompt/训练ID；批量128与1024未决。已实现离线schema选择/回退/同rollout追加原语，不当官方复现。"
+    ]
    }
   },
   {
@@ -279,9 +305,10 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "无公开代码/训练数据/权重；按 reported 引用，不入复现实验",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "原生六图/3826位置材料已备；3815已知参考及11项STRING/INT64异常保留。图生命周期/主评分协议/反馈与控制生产接线未齐。",
+     "未取得认证代码/数据/目标模型/训练检查点；过滤文字与公式不同；2488对2348题目ID未齐。两种过滤规则已显式实现，未替作者选定；暂存reported独立轨道，不永久删格。"
+    ]
    }
   },
   {
@@ -289,9 +316,10 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "数据生成方法而非求解器；不参与方法对比，相关章节讨论",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "原生六图/3826位置材料已备；3815已知参考及11项STRING/INT64异常保留。图生命周期/主评分协议/反馈与控制生产接线未齐。",
+     "作者生成器已固定；论文训练并评估parser，不可因生成器定位删格。代码许可、图专用语料/训练脚本/检查点/种子/解码协议未齐。"
+    ]
    }
   },
   {
@@ -299,9 +327,10 @@
    "method": "direct",
    "status": "blocked",
    "unblock": {
-    "missing": "公共输入装载与全量身份/schema绑定已备；原生执行、最终答案/反馈与评分仍待接线，当前不注册adapter",
-    "owner": "engineering_integration",
-    "effort_days": null
+    "missing": [
+     "11图离线store/schema和10113原问题公共输入包已备；认证、只读不可变图、主评分与完整运行接线未验收。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -309,9 +338,10 @@
    "method": "ours",
    "status": "blocked",
    "unblock": {
-    "missing": "公共输入已备；不能套用CB的.eid身份与字段假设，需原生Neo4j身份/结果及控制/评分接线；此是工程缺口，不判科学不适用",
-    "owner": "engineering_integration",
-    "effort_days": null
+    "missing": [
+     "11图离线store/schema和10113原问题公共输入包已备；认证、只读不可变图、主评分与完整运行接线未验收。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -319,9 +349,10 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "missing": "反馈轮协议未定（派发/预算/评分口径）",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "11图离线store/schema和10113原问题公共输入包已备；认证、只读不可变图、主评分与完整运行接线未验收。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -329,9 +360,10 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "missing": "策略定义缺失：正确全明细的取列/组装规则未定义，不能以猜测实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "11图离线store/schema和10113原问题公共输入包已备；认证、只读不可变图、主评分与完整运行接线未验收。",
+     "2026-10-27路线§3已定义并有原生组件：必要身份/payload及完整集合运算。尚缺逐基准生产接线、范围验收和独立成本；共享Ours计划。"
+    ]
    }
   },
   {
@@ -339,9 +371,10 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "missing": "策略定义缺失：安全规则集未列出，不能以猜测实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "11图离线store/schema和10113原问题公共输入包已备；认证、只读不可变图、主评分与完整运行接线未验收。",
+     "2026-10-27路线§3已定义：有严格互斥证明才加计数，否则完整身份集合。已有组件；现与Ours等价如实披露，尚缺逐基准生产接线。"
+    ]
    }
   },
   {
@@ -349,9 +382,10 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "missing": "需按每个基准定义集合计数的原生语义；随适配器实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "11图离线store/schema和10113原问题公共输入包已备；认证、只读不可变图、主评分与完整运行接线未验收。",
+     "已有同计划原生集合计数组件及OSDB108/108历史证据；仅适用类回放，不能删除整格或缩主方法分母；尚缺逐基准接线。"
+    ]
    }
   },
   {
@@ -359,9 +393,10 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "missing": "权重公开(HF Anonymous234/Cypher-RI, Apache-2.0, 15.2GB)；待 vLLM 部署与 schema-selection 协议实现",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "11图离线store/schema和10113原问题公共输入包已备；认证、只读不可变图、主评分与完整运行接线未验收。",
+     "候选HF权重未获作者身份认证；缺tokenizer/chat模板/完整prompt/训练ID；批量128与1024未决。已实现离线schema选择/回退/同rollout追加原语，不当官方复现。"
+    ]
    }
   },
   {
@@ -369,9 +404,10 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "无公开代码/训练数据/权重；按 reported 引用，不入复现实验",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "11图离线store/schema和10113原问题公共输入包已备；认证、只读不可变图、主评分与完整运行接线未验收。",
+     "未取得认证代码/数据/目标模型/训练检查点；过滤文字与公式不同；2488对2348题目ID未齐。两种过滤规则已显式实现，未替作者选定；暂存reported独立轨道，不永久删格。"
+    ]
    }
   },
   {
@@ -379,9 +415,10 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "数据生成方法而非求解器；不参与方法对比，相关章节讨论",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "11图离线store/schema和10113原问题公共输入包已备；认证、只读不可变图、主评分与完整运行接线未验收。",
+     "作者生成器已固定；论文训练并评估parser，不可因生成器定位删格。代码许可、图专用语料/训练脚本/检查点/种子/解码协议未齐。"
+    ]
    }
   },
   {
@@ -389,9 +426,10 @@
    "method": "direct",
    "status": "blocked",
    "unblock": {
-    "missing": "公共输入装载与全量身份/schema绑定已备；原生执行、最终答案/反馈与评分仍待接线，当前不注册adapter",
-    "owner": "engineering_integration",
-    "effort_days": null
+    "missing": [
+     "Pole5与plain/gold_linked输入包已备；IID768/COMP1349/LEN1253分列，论文划分计数差异保留；认证/原生主评分和运行接线未验收。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -399,9 +437,10 @@
    "method": "ours",
    "status": "blocked",
    "unblock": {
-    "missing": "公共输入已备；不能套用CB的.eid身份与字段假设，需原生Neo4j身份/结果及控制/评分接线；此是工程缺口，不判科学不适用",
-    "owner": "engineering_integration",
-    "effort_days": null
+    "missing": [
+     "Pole5与plain/gold_linked输入包已备；IID768/COMP1349/LEN1253分列，论文划分计数差异保留；认证/原生主评分和运行接线未验收。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -409,9 +448,10 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "missing": "反馈轮协议未定（派发/预算/评分口径）",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "Pole5与plain/gold_linked输入包已备；IID768/COMP1349/LEN1253分列，论文划分计数差异保留；认证/原生主评分和运行接线未验收。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -419,9 +459,10 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "missing": "策略定义缺失：正确全明细的取列/组装规则未定义，不能以猜测实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "Pole5与plain/gold_linked输入包已备；IID768/COMP1349/LEN1253分列，论文划分计数差异保留；认证/原生主评分和运行接线未验收。",
+     "2026-10-27路线§3已定义并有原生组件：必要身份/payload及完整集合运算。尚缺逐基准生产接线、范围验收和独立成本；共享Ours计划。"
+    ]
    }
   },
   {
@@ -429,9 +470,10 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "missing": "策略定义缺失：安全规则集未列出，不能以猜测实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "Pole5与plain/gold_linked输入包已备；IID768/COMP1349/LEN1253分列，论文划分计数差异保留；认证/原生主评分和运行接线未验收。",
+     "2026-10-27路线§3已定义：有严格互斥证明才加计数，否则完整身份集合。已有组件；现与Ours等价如实披露，尚缺逐基准生产接线。"
+    ]
    }
   },
   {
@@ -439,9 +481,10 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "missing": "需按每个基准定义集合计数的原生语义；随适配器实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "Pole5与plain/gold_linked输入包已备；IID768/COMP1349/LEN1253分列，论文划分计数差异保留；认证/原生主评分和运行接线未验收。",
+     "已有同计划原生集合计数组件及OSDB108/108历史证据；仅适用类回放，不能删除整格或缩主方法分母；尚缺逐基准接线。"
+    ]
    }
   },
   {
@@ -449,9 +492,10 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "missing": "权重公开(HF Anonymous234/Cypher-RI, Apache-2.0, 15.2GB)；待 vLLM 部署与 schema-selection 协议实现",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "Pole5与plain/gold_linked输入包已备；IID768/COMP1349/LEN1253分列，论文划分计数差异保留；认证/原生主评分和运行接线未验收。",
+     "候选HF权重未获作者身份认证；缺tokenizer/chat模板/完整prompt/训练ID；批量128与1024未决。已实现离线schema选择/回退/同rollout追加原语，不当官方复现。"
+    ]
    }
   },
   {
@@ -459,9 +503,10 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "无公开代码/训练数据/权重；按 reported 引用，不入复现实验",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "Pole5与plain/gold_linked输入包已备；IID768/COMP1349/LEN1253分列，论文划分计数差异保留；认证/原生主评分和运行接线未验收。",
+     "未取得认证代码/数据/目标模型/训练检查点；过滤文字与公式不同；2488对2348题目ID未齐。两种过滤规则已显式实现，未替作者选定；暂存reported独立轨道，不永久删格。"
+    ]
    }
   },
   {
@@ -469,9 +514,10 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "数据生成方法而非求解器；不参与方法对比，相关章节讨论",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "Pole5与plain/gold_linked输入包已备；IID768/COMP1349/LEN1253分列，论文划分计数差异保留；认证/原生主评分和运行接线未验收。",
+     "作者生成器已固定；论文训练并评估parser，不可因生成器定位删格。代码许可、图专用语料/训练脚本/检查点/种子/解码协议未齐。"
+    ]
    }
   },
   {
@@ -479,9 +525,10 @@
    "method": "direct",
    "status": "blocked",
    "unblock": {
-    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "四项目事件图有历史证据，不是四种DBMS部署；新Reference投影135951行/64289658字节不能替代事件图。独立正式任务/结构留出/参考未定。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -489,9 +536,10 @@
    "method": "ours",
    "status": "blocked",
    "unblock": {
-    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "四项目事件图有历史证据，不是四种DBMS部署；新Reference投影135951行/64289658字节不能替代事件图。独立正式任务/结构留出/参考未定。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -499,9 +547,10 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "missing": "反馈轮协议未定（派发/预算/评分口径）",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "四项目事件图有历史证据，不是四种DBMS部署；新Reference投影135951行/64289658字节不能替代事件图。独立正式任务/结构留出/参考未定。",
+     "准备阶段不派发；后续需冻结输入、同底模、主评分与独立预算准入。"
+    ]
    }
   },
   {
@@ -509,9 +558,10 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "missing": "策略定义缺失：正确全明细的取列/组装规则未定义，不能以猜测实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "四项目事件图有历史证据，不是四种DBMS部署；新Reference投影135951行/64289658字节不能替代事件图。独立正式任务/结构留出/参考未定。",
+     "2026-10-27路线§3已定义并有原生组件：必要身份/payload及完整集合运算。尚缺逐基准生产接线、范围验收和独立成本；共享Ours计划。"
+    ]
    }
   },
   {
@@ -519,9 +569,10 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "missing": "策略定义缺失：安全规则集未列出，不能以猜测实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "四项目事件图有历史证据，不是四种DBMS部署；新Reference投影135951行/64289658字节不能替代事件图。独立正式任务/结构留出/参考未定。",
+     "2026-10-27路线§3已定义：有严格互斥证明才加计数，否则完整身份集合。已有组件；现与Ours等价如实披露，尚缺逐基准生产接线。"
+    ]
    }
   },
   {
@@ -529,9 +580,10 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "missing": "需按每个基准定义集合计数的原生语义；随适配器实现",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "四项目事件图有历史证据，不是四种DBMS部署；新Reference投影135951行/64289658字节不能替代事件图。独立正式任务/结构留出/参考未定。",
+     "已有同计划原生集合计数组件及OSDB108/108历史证据；仅适用类回放，不能删除整格或缩主方法分母；尚缺逐基准接线。"
+    ]
    }
   },
   {
@@ -539,9 +591,10 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
-    "owner": "engineering",
-    "effort_days": null
+    "missing": [
+     "四项目事件图有历史证据，不是四种DBMS部署；新Reference投影135951行/64289658字节不能替代事件图。独立正式任务/结构留出/参考未定。",
+     "候选HF权重未获作者身份认证；缺tokenizer/chat模板/完整prompt/训练ID；批量128与1024未决。已实现离线schema选择/回退/同rollout追加原语，不当官方复现。"
+    ]
    }
   },
   {
@@ -549,9 +602,10 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "无公开代码/训练数据/权重；按 reported 引用，不入复现实验",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "四项目事件图有历史证据，不是四种DBMS部署；新Reference投影135951行/64289658字节不能替代事件图。独立正式任务/结构留出/参考未定。",
+     "未取得认证代码/数据/目标模型/训练检查点；过滤文字与公式不同；2488对2348题目ID未齐。两种过滤规则已显式实现，未替作者选定；暂存reported独立轨道，不永久删格。"
+    ]
    }
   },
   {
@@ -559,9 +613,10 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "数据生成方法而非求解器；不参与方法对比，相关章节讨论",
-    "owner": "external",
-    "effort_days": null
+    "missing": [
+     "四项目事件图有历史证据，不是四种DBMS部署；新Reference投影135951行/64289658字节不能替代事件图。独立正式任务/结构留出/参考未定。",
+     "作者生成器已固定；论文训练并评估parser，不可因生成器定位删格。代码许可、图专用语料/训练脚本/检查点/种子/解码协议未齐。"
+    ]
    }
   }
  ],

@@ -141,6 +141,7 @@ class Scheduler:
                     undispatched_reason="stop",
                 )
             reserve_started = time.monotonic()
+            write_new(folder / "logical_request.json", item.wire)
             slot = self.ledger.reserve(
                 rid,
                 item.key,
@@ -163,7 +164,7 @@ class Scheduler:
                     endpoint=endpoint.name,
                 )
                 value = prepared.send(
-                    item.wire, item.read_timeout_seconds * timeout_multiplier
+                    wire, item.read_timeout_seconds * timeout_multiplier
                 )
             value.update(
                 request_id=rid,
@@ -174,6 +175,9 @@ class Scheduler:
                 endpoint=endpoint.name,
                 endpoint_url=endpoint.url,
                 model=endpoint.model,
+                requested_model=item.model,
+                logical_request_sha256=digest(item.wire),
+                alias_evidence_sha256=endpoint.alias_evidence_sha256 or None,
                 benchmark=item.benchmark,
                 task_id=item.task_id,
                 method=item.method,
