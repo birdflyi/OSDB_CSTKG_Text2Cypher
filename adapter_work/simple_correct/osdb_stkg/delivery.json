@@ -1,0 +1,24 @@
+{
+ "method": "control",
+ "contract": "v24 (adapter_contracts_v24)",
+ "offline_checks": {
+  "command": "python -m pytest . -q",
+  "result": "143 passed (whole tree)",
+  "network": "none",
+  "database": "none"
+ },
+ "completed": [
+  "prepare/parse/consume wired to the shared core"
+ ],
+ "not_completed": [
+  "central NextStep dispatch",
+  "real compiler execution (runtime-injected)",
+  "live smoke"
+ ],
+ "requires": {
+  "model_calls": 0,
+  "database_runs": 0
+ },
+ "resources_ready": false,
+ "admission_signed_by_adapter": false
+}

@@ -20,6 +20,7 @@ from types import SimpleNamespace
 
 METHOD_STATUSES = (
     "executed",
+    "unsupported",
     "refused",
     "format_error",
     "run_error",
@@ -42,6 +43,7 @@ class Prediction:
     attempts: int = 1
     cost: float | None = None
     fallback: bool = False
+    parameters: dict | None = None
 
     @property
     def executable(self) -> bool:
@@ -55,6 +57,7 @@ class Prediction:
             attempts=self.attempts,
             cost=self.cost,
             fallback=self.fallback,
+            parameters=self.parameters,
         )
 
 
@@ -63,6 +66,7 @@ class CellResult:
     positions: int
     selected_positions: int
     executed: int
+    unsupported: int
     answered: int
     refused: int
     format_error: int
@@ -82,6 +86,7 @@ class CellResult:
             positions=self.positions,
             selected_positions=self.selected_positions,
             executed=self.executed,
+            unsupported=self.unsupported,
             answered=self.answered,
             refused=self.refused,
             format_error=self.format_error,
@@ -231,6 +236,7 @@ def consume(positions, predictions, runtime) -> CellResult:
         positions=len(positions),
         selected_positions=len(positions),
         executed=counts["executed"],
+        unsupported=counts["unsupported"],
         answered=counts["executed"],
         refused=counts["refused"],
         format_error=counts["format_error"],
