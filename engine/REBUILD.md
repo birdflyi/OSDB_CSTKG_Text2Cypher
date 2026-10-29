@@ -163,3 +163,8 @@ MTQ10113记录全部绑定作者schema（Manual bloom显式映射bloom50）；�
 ### 准备第十二批：方法保存后的参考边界
 
 新增neo4j_reference_boundary_dev_20261029.py及消费接口可选评估回调：方法摘要/任务/同事务核对后才读参考，不将参考错误用于模型反馈，固定分母保留未知/缺失。22项人工参考/假DB检查+35消费回归两端通过，MTQ10113/ZOG3370参考文本摘要索引齐备；未执行真实查询，排序与作者精确主比较器仍未冻结，primary_score保持null，严格类型比较只作辅助。原V10包不改，真实图/成本/反馈/full adapter及作者资源仍缺，见T1_REFERENCE_BOUNDARY_PREPARATION_V12_20261029.md。
+
+
+### 准备第十三批：作者材料与逐格复现缺口
+
+新增离线作者材料整理脚本 prepare_author_resources_v13_20261029.py：校验24项HTTP取证、35份固定CYQUARK作者文件，生成15格作者方法合同和12图公共schema注释表；全部45格保留。论文事实、版本、候选身份和未知字段分别保存，不执行模型/DB/训练。RI训练批量、Smith过滤剔除范围与测试人口差异仍未解决；CYQUARK生成库不冒充微调解析器，基础模型当前元数据不冒充作者检查点。见 D:/ch7/discussion/T1_AUTHOR_RESOURCES_V13_20261029.md。此脚本不改变引擎，也不授予预测准入。
