@@ -479,8 +479,8 @@
    "method": "direct",
    "status": "blocked",
    "unblock": {
-    "missing": "数据集未就绪：osdb-stkg",
-    "owner": "engineering_integration",
+    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -489,8 +489,8 @@
    "method": "ours",
    "status": "blocked",
    "unblock": {
-    "missing": "数据集未就绪：osdb-stkg",
-    "owner": "engineering_integration",
+    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -499,8 +499,8 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "missing": "数据集未就绪：osdb-stkg",
-    "owner": "engineering_integration",
+    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -509,8 +509,8 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "missing": "数据集未就绪：osdb-stkg",
-    "owner": "engineering_integration",
+    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -519,8 +519,8 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "missing": "数据集未就绪：osdb-stkg",
-    "owner": "engineering_integration",
+    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -529,8 +529,8 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "missing": "数据集未就绪：osdb-stkg",
-    "owner": "supported_task_subset",
+    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -539,8 +539,8 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "missing": "权重公开(HF Anonymous234/Cypher-RI, Apache-2.0, 15.2GB)；待 vLLM 部署与 schema-selection 协议实现",
-    "owner": "external",
+    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -549,8 +549,8 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "无公开代码/权重；属合成数据+微调类方法，复现需训练",
-    "owner": "external",
+    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -559,8 +559,8 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "本地为数据生成器而非求解器；在比较表中的角色待确认",
-    "owner": "external",
+    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "owner": "engineering",
     "effort_days": null
    }
   }
