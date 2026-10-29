@@ -1,0 +1,27 @@
+{
+ "cell": "M01-B05",
+ "method": "direct",
+ "benchmark": "OSDB-STKG",
+ "code_commit": "7afce382834d86fd14889449737de66003208bda",
+ "offline_checks": {
+  "command": "python -m pytest tests -q",
+  "result": "2 passed",
+  "network": "none",
+  "database": "none"
+ },
+ "completed": [
+  "prepare reads the 20 frozen positions and verifies every public input SHA",
+  "parse classifies answered / refused / format_error / unknown",
+  "consume keeps the denominator, saves the final answer before scoring and isolates failures"
+ ],
+ "not_completed": [
+  "registration into the central runtime",
+  "native graph lifecycle and official scoring (runtime responsibility)",
+  "real model requests (not authorised)"
+ ],
+ "requires": {
+  "model_calls": 0,
+  "database_runs": 0
+ },
+ "admission_signed_by_adapter": false
+}

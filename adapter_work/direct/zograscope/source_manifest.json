@@ -1,0 +1,22 @@
+[
+ {
+  "path": "adapter.py",
+  "sha256": "0ecba3753b22a79f1875d77dd32597d5a8ed0d0e74f31efa09f8e7a231589504"
+ },
+ {
+  "path": "deviations.json",
+  "sha256": "3ed9e73177c33e42f8834903594cea5c37786e59c964bdcf926976e2648afb89"
+ },
+ {
+  "path": "paper_to_code.json",
+  "sha256": "89126a61c33d153f19f9d84815e0b4e65923dbde21102b565843c728ec6d7087"
+ },
+ {
+  "path": "README.md",
+  "sha256": "059a13df550d043c29d4323d2dbc9a8815cd0358d94ffd77fdee14df13c70fff"
+ },
+ {
+  "path": "tests\\test_cell.py",
+  "sha256": "68196bf160b26aa8bca3f74fb97095810be19f99e1720dac57749534fcd5db1d"
+ }
+]

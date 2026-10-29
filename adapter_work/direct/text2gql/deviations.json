@@ -1,0 +1,17 @@
+[
+ {
+  "item": "20 positions are an adapter sample",
+  "choice": "counts cover exactly the frozen V22 positions",
+  "impact": "no accuracy claim"
+ },
+ {
+  "item": "Database lifecycle is not implemented here",
+  "choice": "runtime.graph_lease and runtime.db_client are injected",
+  "impact": "preparation stage uses fake objects only"
+ },
+ {
+  "item": "Scoring is delegated",
+  "choice": "runtime.score_saved_answer decides the value",
+  "impact": "a wrong scorer is not detected here"
+ }
+]

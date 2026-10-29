@@ -1,0 +1,18 @@
+[
+ {
+  "paper_step": "Provide the public question and graph schema",
+  "code": "adapter.prepare -> common.direct.compose"
+ },
+ {
+  "paper_step": "Obtain one query from the model",
+  "code": "adapter.parse"
+ },
+ {
+  "paper_step": "Execute the query on the graph",
+  "code": "adapter.consume -> runtime.db_client"
+ },
+ {
+  "paper_step": "Score against the official reference",
+  "code": "adapter.consume -> runtime.score_saved_answer"
+ }
+]
