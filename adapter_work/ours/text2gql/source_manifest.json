@@ -1,0 +1,34 @@
+[
+ {
+  "path": "adapter.py",
+  "sha256": "d421df39c487f99f45f68ff0c4842888eb121aa3b61bbd3482a97839f18ec897"
+ },
+ {
+  "path": ".pytest_cache\\.gitignore",
+  "sha256": "e7c6bb30148cf667606dcd63e7ca77acaa3cfb0c8303bf09e6419e1e1669dc6d"
+ },
+ {
+  "path": ".pytest_cache\\CACHEDIR.TAG",
+  "sha256": "37dc88ef9a0abeddbe81053a6dd8fdfb13afb613045ea1eb4a5c815a74a3bde4"
+ },
+ {
+  "path": ".pytest_cache\\README.md",
+  "sha256": "420e808d79a6c25d3cda0af33bc4782314a14949866682c68ce8149e89b66b70"
+ },
+ {
+  "path": ".pytest_cache\\v\\cache\\nodeids",
+  "sha256": "c6a86be2d1968e792aa661f60af010a483a190ecb4b329a8b284d094d5579cec"
+ },
+ {
+  "path": ".pytest_cache\\v\\cache\\stepwise",
+  "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+ },
+ {
+  "path": "tests\\conftest.py",
+  "sha256": "4274e36fef91c1e6696ed5fe236d1788e37ae4fc280af9831eda6ec21673fc30"
+ },
+ {
+  "path": "tests\\test_cell.py",
+  "sha256": "1dfb09d29e48ef39fea846f6ef83a370b972e0ad1d2dd779043ff32303891471"
+ }
+]

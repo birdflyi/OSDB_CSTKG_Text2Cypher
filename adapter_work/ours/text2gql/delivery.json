@@ -1,0 +1,26 @@
+{
+ "method": "ours",
+ "contract": "v24 (adapter_contracts_v24)",
+ "offline_checks": {
+  "command": "python -m pytest . -q",
+  "result": "143 passed (whole tree)",
+  "network": "none",
+  "database": "none"
+ },
+ "completed": [
+  "plan JSON parsed and validated",
+  "compile-before-execute order",
+  "unsupported plans keep their position"
+ ],
+ "not_completed": [
+  "central NextStep dispatch",
+  "real compiler execution (runtime-injected)",
+  "live smoke"
+ ],
+ "requires": {
+  "model_calls": 0,
+  "database_runs": 0
+ },
+ "resources_ready": false,
+ "admission_signed_by_adapter": false
+}
