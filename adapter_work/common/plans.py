@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 JSON_BLOCK = re.compile(r"<json>(.*?)</json>", re.DOTALL | re.IGNORECASE)
 FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL | re.IGNORECASE)
@@ -34,9 +34,6 @@ class PlanResult:
     plan: dict | None = None
     reason: str | None = None
     raw: str = ""
-
-    def as_dict(self) -> dict:
-        return dict(status=self.status, plan=self.plan, reason=self.reason)
 
 
 def _extract(reply: str) -> str:
@@ -93,14 +90,15 @@ def validate(plan: dict) -> dict:
             _require(item.get("field"), "return needs a field")
             if item.get("agg"):
                 _require(item["agg"] in AGGS, "unknown aggregate: " + str(item["agg"]))
-        order = call.get("order_by", [])
-        for item in order:
+        for item in call.get("order_by", []):
             _require(item.get("column") in aliases, "order_by must use a return alias")
             _require(item.get("direction") in ("ASC", "DESC"), "direction must be ASC or DESC")
         limit = call.get("limit")
         if limit is not None:
             _require(isinstance(limit, int) and 1 <= limit <= 10000, "limit must be 1-10000")
-    combine = plan.get("combine") or {"op": "single"}
+    _require("combine" in plan, "combine is required")
+    combine = plan["combine"]
+    _require(isinstance(combine, dict), "combine must be an object")
     _require(combine.get("op") == "single" or combine.get("op") in SET_OPS, "unknown combine op")
     if combine.get("op") in SET_OPS:
         _require(len(calls) == 2, "set combine needs exactly two calls")

@@ -278,8 +278,11 @@ def parse_selection(reply: str, schema: Schema) -> Selection:
     if not isinstance(value, dict):
         return Selection((), (), False, "invalid_shape")
     try:
-        if "name" in value or "entities" in value:
+        if "entities" in value:
             labels = _names(value.get("entities", []))
+            relations = _names(value.get("relations", []))
+        elif "name" in value:
+            labels = _names(value.get("name", []))
             relations = _names(value.get("relations", []))
         else:
             labels = _names(value.get("labels", []))
@@ -353,6 +356,7 @@ def next_request(spec: RequestSpec, reply: str, *, transport_unknown=False) -> N
     accepted = selection.accepted
     if selection.reason == "empty_selection":
         state["selection_note"] = "explicit_empty_selection"
+        state["fallback_reason"] = "empty_selection_explicit"
     if not accepted and selection.reason != "empty_selection":
         selection = _full_selection(spec.schema)
         state["fallback_reason"] = selection.reason

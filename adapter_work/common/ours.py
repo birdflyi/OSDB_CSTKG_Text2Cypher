@@ -21,12 +21,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from common import consumption, core, direct, plans  # noqa: E402
 
+
+class UnsupportedPlan(Exception):
+    """Compiler refuses the plan structure; keep the position."""
+
+
+class UnsupportedSelection(UnsupportedPlan):
+    """The selection cannot be compiled for this backend."""
+
+PREPARED = Path(r"D:\ch7\reports\t1_preparation_20261029\delegation_bc_v23\prepared_messages\ours")
+
 PROFILES = {
     "CypherBench": "cb-neo4j-eid-v1",
     "Text2GQL": "t2g-tugraph-4.5.2-v1",
     "OSDB-STKG": "osdb-observed-v2",
-    "MindTheQuery": "mtq-native-v1",
-    "ZOGRASCOPE": "zog-native-v1",
+    "MindTheQuery": "mtq-native-v2",
+    "ZOGRASCOPE": "zog-native-v2",
 }
 
 
@@ -72,7 +82,10 @@ def prepare(positions_path, benchmark: str, cell_id: str, *, limit=None) -> list
     specs = []
     for row in rows:
         payload = core.verify_public_input(row)
-        if "messages" in payload:
+        bound = PREPARED / (row["position_id"] + ".messages.json") if "PREPARED" in globals() else None
+        if bound is not None and bound.is_file():
+            messages = tuple(dict(m) for m in json.loads(bound.read_text(encoding="utf-8"))["messages"])
+        elif "messages" in payload:
             messages = tuple(dict(m) for m in payload["messages"])
         else:
             messages = direct.compose("MindTheQuery", payload)
@@ -129,9 +142,17 @@ def compile_plans(predictions, runtime, benchmark: str) -> dict:
             continue
         try:
             piece = runtime.compile(result.plan, benchmark=benchmark, profile_id=PROFILES.get(benchmark))
-        except Exception:
+        except (UnsupportedPlan, UnsupportedSelection):
             compiled[position_id] = consumption.Prediction(
                 "unsupported", None, prediction.raw, prediction.http_status,
+                prediction.attempts, prediction.cost,
+            )
+            continue
+        except OSError:
+            raise
+        except Exception as exc:
+            compiled[position_id] = consumption.Prediction(
+                "run_error", None, prediction.raw, prediction.http_status,
                 prediction.attempts, prediction.cost,
             )
             continue

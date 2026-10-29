@@ -27,7 +27,7 @@ STATUSES = (
     "execution_error",
     "not_run",
 )
-HARD_ERRORS = ("IdentityScopeConflict", "EvidenceConflict", "OSError")
+HARD_NAMES = {"OSError", "IdentityScopeConflict", "EvidenceConflict", "PersistenceError"}
 
 
 class UnsupportedPlan(Exception):
@@ -68,6 +68,20 @@ class ControlResult:
         )
 
 
+def _hard(exc) -> bool:
+    return type(exc).__name__ in HARD_NAMES
+
+
+def _answer_complete(read) -> bool:
+    answer = read.get("answer") if isinstance(read, dict) else None
+    return (
+        isinstance(answer, dict)
+        and answer.get("complete") is True
+        and answer.get("columns") is not None
+        and answer.get("rows") is not None
+    )
+
+
 def _result(envelope, control_id, profile_id, status, reason=None, **kwargs):
     return ControlResult(
         position_id=envelope.get("position_id", ""),
@@ -88,9 +102,9 @@ def replay(envelope, runtime, *, control_id: str, profile_id: str | None = None)
         runtime.verify_source(envelope)
     except UnsupportedPlan as exc:
         return _result(envelope, control_id, profile, "unsupported_plan", str(exc))
-    except (IdentityScopeConflict, EvidenceConflict):
-        raise
     except Exception as exc:
+        if _hard(exc):
+            raise
         return _result(envelope, control_id, profile, "execution_error", type(exc).__name__)
 
     if not plan or plan.get("status") not in (None, "ANSWER"):
@@ -107,12 +121,16 @@ def replay(envelope, runtime, *, control_id: str, profile_id: str | None = None)
         return _result(envelope, control_id, profile, "unsupported_plan", str(exc))
     except BackendPending as exc:
         return _result(envelope, control_id, profile, "backend_pending", str(exc))
-    except (IdentityScopeConflict, EvidenceConflict):
-        raise
     except Exception as exc:
+        if _hard(exc):
+            raise
         return _result(envelope, control_id, profile, "execution_error", type(exc).__name__)
 
+    if not _answer_complete(read):
+        return _result(envelope, control_id, profile, "execution_error", "incomplete_answer")
     receipt = runtime.save_control_result(envelope, read)
+    if not receipt:
+        return _result(envelope, control_id, profile, "execution_error", "missing_receipt")
     return _result(
         envelope,
         control_id,
@@ -131,9 +149,9 @@ def replay_all(envelope, runtime, control_ids):
     for control_id in control_ids:
         try:
             results.append(replay(envelope, runtime, control_id=control_id))
-        except (IdentityScopeConflict, EvidenceConflict):
-            raise
         except Exception as exc:
+            if _hard(exc):
+                raise
             results.append(_result(envelope, control_id, CONTROL_PROFILES.get(control_id, control_id), "execution_error", type(exc).__name__))
     return results
 
