@@ -1,0 +1,23 @@
+{
+ "method": "cyquark",
+ "contract": "CONTRACT_V2 (delegation_bc_v23)",
+ "offline_checks": {
+  "command": "python -m pytest tests -q",
+  "network": "none",
+  "database": "none"
+ },
+ "completed": [
+  "prepare verifies frozen public input SHA",
+  "parse classifies replies",
+  "consume uses the shared core"
+ ],
+ "not_completed": [
+  "central NextStep dispatch",
+  "real model requests and DB reads"
+ ],
+ "requires": {
+  "model_calls": 0,
+  "database_runs": 0
+ },
+ "admission_signed_by_adapter": false
+}

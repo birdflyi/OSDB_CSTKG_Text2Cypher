@@ -1,0 +1,10 @@
+[
+ {
+  "path": "adapter.py",
+  "sha256": "54fcedbd3add3c315efad6493194d54641fb63316ea97dfc01d397b7af2c0357"
+ },
+ {
+  "path": "tests\\test_cell.py",
+  "sha256": "b8e7aaa50f32b452cae18440f2904d540e00c906562510b00c89ef188bec4d8e"
+ }
+]
