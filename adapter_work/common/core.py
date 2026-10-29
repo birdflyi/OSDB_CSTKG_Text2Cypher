@@ -128,8 +128,9 @@ def consume(positions, predictions, runtime) -> CellResult:
 
         runtime.save_prediction(position["position_id"], prediction)
         lease = runtime.graph_lease(position["graph"])
+        entered = lease.__enter__() if hasattr(lease, "__enter__") else lease
         try:
-            records = runtime.db_client(lease, prediction.cypher)
+            records = runtime.db_client(entered, prediction.cypher)
         except Exception as exc:
             counts["run_error"] += 1
             rows.append(
@@ -140,6 +141,9 @@ def consume(positions, predictions, runtime) -> CellResult:
                 )
             )
             continue
+        finally:
+            if hasattr(lease, "__exit__"):
+                lease.__exit__(None, None, None)
 
         runtime.save_final_answer(position["position_id"], records)
         try:
@@ -186,7 +190,3 @@ def consume(positions, predictions, runtime) -> CellResult:
         cost=total_cost,
         rows=tuple(rows),
     )
-
-
-class ReferenceMissing(LookupError):
-    """Raised by a runtime when a position has no reference to score against."""
