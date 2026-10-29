@@ -1,0 +1,38 @@
+"""M07-B05: Cypher-RI x OSDB-STKG (offline preparation only).
+
+Protocol lives in `common/ri.py`; this file binds the benchmark and its
+frozen position list.
+"""
+
+import sys
+from pathlib import Path
+
+ADAPTER_WORK = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ADAPTER_WORK))
+
+from common import ri  # noqa: E402
+
+BENCHMARK = "OSDB-STKG"
+CELL = "M07-B05"
+POSITIONS = r"D:\ch7\reports\t1_preparation_20261029\adapter_positions_v22\cells\cypher-ri__OSDB-STKG.positions.json"
+
+Schema = ri.Schema
+Prediction = ri.Prediction
+NextStep = ri.NextStep
+parse_selection = ri.parse_selection
+
+
+def prepare(positions_path=POSITIONS, *, limit=None):
+    return ri.prepare(positions_path, BENCHMARK, CELL, limit=limit)
+
+
+def next_request(spec, reply, *, transport_unknown=False):
+    return ri.next_request(spec, reply, transport_unknown=transport_unknown)
+
+
+def parse(reply, **kwargs):
+    return ri.parse(reply, **kwargs)
+
+
+def consume(positions, predictions, runtime):
+    return ri.consume(positions, predictions, runtime)
