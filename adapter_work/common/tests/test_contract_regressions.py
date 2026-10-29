@@ -78,7 +78,8 @@ def test_scoring_failure_keeps_the_next_position_running():
     result = core.consume(positions, predictions, runtime)
     assert result.positions == 2
     assert result.scoring_error == 2
-    assert [r["status"] for r in result.rows] == ["scoring_error", "scoring_error"]
+    assert [r["score_status"] for r in result.rows] == ["scoring_error", "scoring_error"]
+    assert [r["status"] for r in result.rows] == ["executed", "executed"]
 
 
 def test_missing_reference_is_not_a_zero_score():
@@ -86,7 +87,8 @@ def test_missing_reference_is_not_a_zero_score():
     result = core.consume([position()], {"B01-P01": core.Prediction("answered", "MATCH (n) RETURN n")}, runtime)
     assert result.reference_missing == 1
     assert result.scored == 0
-    assert result.rows[0]["status"] == "reference_missing"
+    assert result.rows[0]["status"] == "executed"
+    assert result.rows[0]["score_status"] == "reference_missing"
 
 
 def test_lease_is_entered_and_released():

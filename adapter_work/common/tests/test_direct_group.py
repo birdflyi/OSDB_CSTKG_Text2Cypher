@@ -91,6 +91,7 @@ def test_consume_isolates_db_failure_and_keeps_order():
 
     assert result.positions == 3
     assert result.run_error == 1
+    assert result.executed == 2
     assert result.answered == 2
     kinds = [c[0] for c in runtime.calls]
     assert kinds.index("save_prediction") < kinds.index("save_final_answer") < kinds.index("score")
@@ -108,7 +109,7 @@ def test_scoring_failure_and_missing_reference_continue():
     assert result.positions == 3
     assert result.scoring_error == 1
     assert result.reference_missing == 1
-    assert result.answered == 1
+    assert result.executed == 3
     assert result.scored == 1
 
 
