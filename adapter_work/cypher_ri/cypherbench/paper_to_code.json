@@ -1,0 +1,22 @@
+[
+ {
+  "paper_step": "Ask the model to select labels and relationships from a compact schema",
+  "code": "adapter.first_prompt + adapter.parse_selection"
+ },
+ {
+  "paper_step": "Validate the selection and fall back to the full schema when invalid",
+  "code": "adapter.parse_selection"
+ },
+ {
+  "paper_step": "Append the expanded schema and continue the same answer",
+  "code": "adapter.next_request + adapter.second_prompt"
+ },
+ {
+  "paper_step": "Read the final Cypher from the answer block",
+  "code": "adapter.parse"
+ },
+ {
+  "paper_step": "Execute and score",
+  "code": "adapter.consume"
+ }
+]

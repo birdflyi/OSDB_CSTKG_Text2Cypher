@@ -1,0 +1,32 @@
+[
+ {
+  "item": "20 positions are an adapter sample",
+  "choice": "counts cover exactly the frozen V22 positions",
+  "impact": "no accuracy claim"
+ },
+ {
+  "item": "Scoring is delegated",
+  "choice": "runtime.scorer decides EX",
+  "impact": "a wrong scorer is not detected here"
+ },
+ {
+  "item": "No retries in the adapter",
+  "choice": "attempts/cost accepted per reply",
+  "impact": "cost is null if any attempt lacks usage"
+ },
+ {
+  "item": "Official Cypher-RI controller was never released",
+  "choice": "protocol reimplemented from the paper description",
+  "impact": "results are our reproduction, not the authors implementation"
+ },
+ {
+  "item": "Two model turns per position",
+  "choice": "prepare builds turn 1 and next_request builds turn 2",
+  "impact": "one position costs two requests; the shared contract has no multi-turn attempt field yet"
+ },
+ {
+  "item": "Schema JSON uses the key relations",
+  "choice": "parser accepts relations and relationships",
+  "impact": "a schema format change would need a parser update"
+ }
+]

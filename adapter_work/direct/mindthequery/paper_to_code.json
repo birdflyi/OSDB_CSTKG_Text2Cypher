@@ -1,0 +1,18 @@
+[
+ {
+  "paper_step": "Provide the public question and graph schema",
+  "code": "adapter.prepare"
+ },
+ {
+  "paper_step": "Obtain one Cypher statement from the model",
+  "code": "adapter.parse"
+ },
+ {
+  "paper_step": "Execute the statement on the graph",
+  "code": "adapter.consume -> runtime.db_client"
+ },
+ {
+  "paper_step": "Score against the official reference",
+  "code": "adapter.consume -> runtime.scorer"
+ }
+]

@@ -1,0 +1,17 @@
+[
+ {
+  "item": "20 positions are an adapter sample",
+  "choice": "counts cover exactly the frozen V22 positions",
+  "impact": "no accuracy claim"
+ },
+ {
+  "item": "Scoring is delegated",
+  "choice": "runtime.scorer decides EX",
+  "impact": "a wrong scorer is not detected here"
+ },
+ {
+  "item": "No retries in the adapter",
+  "choice": "attempts/cost accepted per reply",
+  "impact": "cost is null if any attempt lacks usage"
+ }
+]

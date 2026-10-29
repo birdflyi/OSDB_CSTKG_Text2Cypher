@@ -1,0 +1,26 @@
+{
+ "cell": "M07-B01",
+ "method": "cypher-ri",
+ "benchmark": "CypherBench",
+ "code_commit": "4ab2018c3bf0bbe2793e7b014518175b44f914b4",
+ "offline_checks": {
+  "command": "python -m pytest tests -q",
+  "result": "6 passed",
+  "network": "none",
+  "database": "none"
+ },
+ "completed": [
+  "prepare verifies every frozen public input SHA",
+  "parse classifies replies without treating HTTP 200 as correct",
+  "consume keeps the 20-position denominator and orders save_answer -> db_client -> scorer"
+ ],
+ "not_completed": [
+  "registration into the central runtime",
+  "real model requests and real DB reads (not authorised)"
+ ],
+ "requires": {
+  "model_calls": 0,
+  "database_runs": 0
+ },
+ "admission_signed_by_adapter": false
+}
