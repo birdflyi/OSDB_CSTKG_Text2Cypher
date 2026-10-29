@@ -139,8 +139,8 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "missing": "方法组件已存在；统一入口P1仍阻塞正式准入，反馈已有一次非gold反馈实现",
-    "owner": "engineering_integration",
+    "missing": "反馈轮协议未定（派发/预算/评分口径）",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -149,8 +149,8 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "missing": "共享计划回放组件已有，独立格子入口未接；复用Ours同一计划；简单策略与Ours等价须披露",
-    "owner": "engineering_integration",
+    "missing": "策略定义缺失：正确全明细的取列/组装规则未定义，不能以猜测实现",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -159,8 +159,8 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "missing": "共享计划回放组件已有，独立格子入口未接；复用Ours同一计划；简单策略与Ours等价须披露",
-    "owner": "engineering_integration",
+    "missing": "策略定义缺失：安全规则集未列出，不能以猜测实现",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -169,8 +169,8 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：集合计数引擎已有；须逐类确定适用子集，不能覆盖任意检索/排序/路径",
-    "owner": "supported_task_subset",
+    "missing": "需按每个基准定义集合计数的原生语义；随适配器实现",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -189,7 +189,7 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "无公开代码/权重；属合成数据+微调类方法，复现需训练",
+    "missing": "无公开代码/训练数据/权重；按 reported 引用，不入复现实验",
     "owner": "external",
     "effort_days": null
    }
@@ -199,7 +199,7 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "本地为数据生成器而非求解器；在比较表中的角色待确认",
+    "missing": "数据生成方法而非求解器；不参与方法对比，相关章节讨论",
     "owner": "external",
     "effort_days": null
    }
@@ -229,8 +229,8 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "missing": "已备当前Scheduler终结回复到原生journal/最终答案/评分的候选组件；本地和Linux15项合成检查通过，未注册完整adapter，仍待图/预算/反馈/控制接线",
-    "owner": "engineering_integration",
+    "missing": "反馈轮协议未定（派发/预算/评分口径）",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -239,8 +239,8 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "missing": "共享计划回放组件已有，独立格子入口未接；复用Ours同一计划；简单策略与Ours等价须披露",
-    "owner": "engineering_integration",
+    "missing": "策略定义缺失：正确全明细的取列/组装规则未定义，不能以猜测实现",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -249,8 +249,8 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "missing": "共享计划回放组件已有，独立格子入口未接；复用Ours同一计划；简单策略与Ours等价须披露",
-    "owner": "engineering_integration",
+    "missing": "策略定义缺失：安全规则集未列出，不能以猜测实现",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -259,8 +259,8 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：集合计数引擎已有；须逐类确定适用子集，不能覆盖任意检索/排序/路径",
-    "owner": "supported_task_subset",
+    "missing": "需按每个基准定义集合计数的原生语义；随适配器实现",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -279,7 +279,7 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "无公开代码/权重；属合成数据+微调类方法，复现需训练",
+    "missing": "无公开代码/训练数据/权重；按 reported 引用，不入复现实验",
     "owner": "external",
     "effort_days": null
    }
@@ -289,7 +289,7 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "本地为数据生成器而非求解器；在比较表中的角色待确认",
+    "missing": "数据生成方法而非求解器；不参与方法对比，相关章节讨论",
     "owner": "external",
     "effort_days": null
    }
@@ -319,8 +319,8 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "missing": "公共输入装载与全量身份/schema绑定已备；原生执行、最终答案/反馈与评分仍待接线，当前不注册adapter",
-    "owner": "engineering_integration",
+    "missing": "反馈轮协议未定（派发/预算/评分口径）",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -329,8 +329,8 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "missing": "公共输入已备；不能套用CB的.eid身份与字段假设，需原生Neo4j身份/结果及控制/评分接线；此是工程缺口，不判科学不适用",
-    "owner": "engineering_integration",
+    "missing": "策略定义缺失：正确全明细的取列/组装规则未定义，不能以猜测实现",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -339,8 +339,8 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "missing": "公共输入已备；不能套用CB的.eid身份与字段假设，需原生Neo4j身份/结果及控制/评分接线；此是工程缺口，不判科学不适用",
-    "owner": "engineering_integration",
+    "missing": "策略定义缺失：安全规则集未列出，不能以猜测实现",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -349,8 +349,8 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：集合计数引擎已有；须逐类确定适用子集，不能覆盖任意检索/排序/路径",
-    "owner": "supported_task_subset",
+    "missing": "需按每个基准定义集合计数的原生语义；随适配器实现",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -369,7 +369,7 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "无公开代码/权重；属合成数据+微调类方法，复现需训练",
+    "missing": "无公开代码/训练数据/权重；按 reported 引用，不入复现实验",
     "owner": "external",
     "effort_days": null
    }
@@ -379,7 +379,7 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "本地为数据生成器而非求解器；在比较表中的角色待确认",
+    "missing": "数据生成方法而非求解器；不参与方法对比，相关章节讨论",
     "owner": "external",
     "effort_days": null
    }
@@ -409,8 +409,8 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "missing": "公共输入装载与全量身份/schema绑定已备；原生执行、最终答案/反馈与评分仍待接线，当前不注册adapter",
-    "owner": "engineering_integration",
+    "missing": "反馈轮协议未定（派发/预算/评分口径）",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -419,8 +419,8 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "missing": "公共输入已备；不能套用CB的.eid身份与字段假设，需原生Neo4j身份/结果及控制/评分接线；此是工程缺口，不判科学不适用",
-    "owner": "engineering_integration",
+    "missing": "策略定义缺失：正确全明细的取列/组装规则未定义，不能以猜测实现",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -429,8 +429,8 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "missing": "公共输入已备；不能套用CB的.eid身份与字段假设，需原生Neo4j身份/结果及控制/评分接线；此是工程缺口，不判科学不适用",
-    "owner": "engineering_integration",
+    "missing": "策略定义缺失：安全规则集未列出，不能以猜测实现",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -439,8 +439,8 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "missing": "方法待复判：集合计数引擎已有；须逐类确定适用子集，不能覆盖任意检索/排序/路径",
-    "owner": "supported_task_subset",
+    "missing": "需按每个基准定义集合计数的原生语义；随适配器实现",
+    "owner": "engineering",
     "effort_days": null
    }
   },
@@ -459,7 +459,7 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "无公开代码/权重；属合成数据+微调类方法，复现需训练",
+    "missing": "无公开代码/训练数据/权重；按 reported 引用，不入复现实验",
     "owner": "external",
     "effort_days": null
    }
@@ -469,7 +469,7 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "本地为数据生成器而非求解器；在比较表中的角色待确认",
+    "missing": "数据生成方法而非求解器；不参与方法对比，相关章节讨论",
     "owner": "external",
     "effort_days": null
    }
@@ -499,7 +499,7 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "missing": "反馈轮协议未定（派发/预算/评分口径）",
     "owner": "engineering",
     "effort_days": null
    }
@@ -509,7 +509,7 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "missing": "策略定义缺失：正确全明细的取列/组装规则未定义，不能以猜测实现",
     "owner": "engineering",
     "effort_days": null
    }
@@ -519,7 +519,7 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "missing": "策略定义缺失：安全规则集未列出，不能以猜测实现",
     "owner": "engineering",
     "effort_days": null
    }
@@ -529,7 +529,7 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
+    "missing": "需按每个基准定义集合计数的原生语义；随适配器实现",
     "owner": "engineering",
     "effort_days": null
    }
@@ -549,8 +549,8 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
-    "owner": "engineering",
+    "missing": "无公开代码/训练数据/权重；按 reported 引用，不入复现实验",
+    "owner": "external",
     "effort_days": null
    }
   },
@@ -559,8 +559,8 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "missing": "四元组数据已就绪(4文件196MB)；四库执行与评分未接",
-    "owner": "engineering",
+    "missing": "数据生成方法而非求解器；不参与方法对比，相关章节讨论",
+    "owner": "external",
     "effort_days": null
    }
   }
