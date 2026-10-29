@@ -16,7 +16,7 @@ from .config import (
     retry_policy,
     timeouts_from,
 )
-from .journal import Journal, write_new, write_status
+from .journal import Journal, claim_owner, write_new, write_status
 from .ledger import BudgetError, Ledger, scan_legacy
 from .errors import IntegrityError, PersistenceError
 from .pool import DynamicPool
@@ -131,7 +131,7 @@ async def run_stages(
         raise ValueError("Existing pipeline requires explicit resume verification")
     root.mkdir(parents=True, exist_ok=True)
     owner = canonical(dict(pid=os.getpid(), started_epoch=time.time()))
-    write_new(root / ".pipeline.lock", owner)
+    claim_owner(root / ".pipeline.lock", owner)
     journal = Journal(root / "pipeline.jsonl")
     issues = Journal(root / "issues.jsonl")
     receipts = []

@@ -66,20 +66,69 @@
   {
    "benchmark": "cypherbench",
    "execution": {
+    "budget_scope": "T1_NEW_CYPHERBENCH_PRIMARY_20261028",
     "config": "D:\\ch7\\experiments\\ch7_engine_20261028\\t1_full_20261029\\config-direct.json",
-    "config_sha256": "ae0d74983dcc13be26efc7f7f67fa167b5074578389e637a83bcd8384fadba49",
-    "budget_scope": "T1_NEW_CYPHERBENCH_PRIMARY_20261028"
+    "config_sha256": "ae0d74983dcc13be26efc7f7f67fa167b5074578389e637a83bcd8384fadba49"
    },
    "method": "direct",
    "order": 1,
-   "status": "empty"
+   "result": {
+    "complete": false,
+    "completed": 0,
+    "evidence": "D:\\ch7\\experiments\\ch7_engine_20261028\\t1_full_20261029\\run-direct",
+    "full_population": false,
+    "model": null,
+    "planned": 2348,
+    "score": null,
+    "splits": {
+     "company": {
+      "planned": 347,
+      "terminal": 0
+     },
+     "fictional_character": {
+      "planned": 385,
+      "terminal": 0
+     },
+     "flight_accident": {
+      "planned": 189,
+      "terminal": 0
+     },
+     "geography": {
+      "planned": 366,
+      "terminal": 0
+     },
+     "movie": {
+      "planned": 401,
+      "terminal": 0
+     },
+     "nba": {
+      "planned": 270,
+      "terminal": 0
+     },
+     "politics": {
+      "planned": 390,
+      "terminal": 0
+     }
+    },
+    "stage": "full"
+   },
+   "splits": {
+    "company": 347,
+    "fictional_character": 385,
+    "flight_accident": 189,
+    "geography": 366,
+    "movie": 401,
+    "nba": 270,
+    "politics": 390
+   },
+   "status": "partial"
   },
   {
    "benchmark": "cypherbench",
    "execution": {
+    "budget_scope": "T1_NEW_CYPHERBENCH_PRIMARY_20261028",
     "config": "D:\\ch7\\experiments\\ch7_engine_20261028\\t1_full_20261029\\config-ours.json",
-    "config_sha256": "8cb525599d340c0fff69227510f24169a2fab6d7943c1cf061958098c190a971",
-    "budget_scope": "T1_NEW_CYPHERBENCH_PRIMARY_20261028"
+    "config_sha256": "8cb525599d340c0fff69227510f24169a2fab6d7943c1cf061958098c190a971"
    },
    "method": "ours",
    "order": 2,
@@ -90,9 +139,9 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.2,
-    "missing": "共享 Direct 首轮，待反馈接线",
-    "owner": "阶段B"
+    "missing": "方法组件已存在；统一入口P1仍阻塞正式准入，反馈已有一次非gold反馈实现",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -100,9 +149,9 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "共享计划回放组件已有，独立格子入口未接；复用Ours同一计划；简单策略与Ours等价须披露",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -110,9 +159,9 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "共享计划回放组件已有，独立格子入口未接；复用Ours同一计划；简单策略与Ours等价须披露",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -120,9 +169,9 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "方法待复判：集合计数引擎已有；须逐类确定适用子集，不能覆盖任意检索/排序/路径",
+    "owner": "supported_task_subset",
+    "effort_days": null
    }
   },
   {
@@ -130,9 +179,9 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "方法待复判：候选HF权重与作者关联未认证；仍缺schema选择/返回/续写控制器与图适配配置",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -140,9 +189,9 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "方法待复判：缺目标模型ID/checkpoint、训练数据/过滤和推理配置；2488/2348差额未解释；同名PyPI包未认证",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -150,9 +199,9 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "方法待复判：生成库35文件已下载；仍缺图/划分/底模/seed对应微调权重或完整训练配方",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -160,9 +209,9 @@
    "method": "direct",
    "status": "blocked",
    "unblock": {
-    "effort_days": 2.0,
-    "missing": "尚无可执行适配器",
-    "owner": "阶段C"
+    "missing": "已备当前Scheduler终结回复到原生journal/最终答案/评分的候选组件；本地和Linux15项合成检查通过，未注册完整adapter，仍待图/预算/反馈/控制接线",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -170,9 +219,9 @@
    "method": "ours",
    "status": "blocked",
    "unblock": {
-    "effort_days": 2.0,
-    "missing": "尚无可执行适配器",
-    "owner": "阶段C"
+    "missing": "已备当前Scheduler终结回复到原生journal/最终答案/评分的候选组件；本地和Linux15项合成检查通过，未注册完整adapter，仍待图/预算/反馈/控制接线",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -180,9 +229,9 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "effort_days": 2.0,
-    "missing": "尚无可执行适配器",
-    "owner": "阶段C"
+    "missing": "已备当前Scheduler终结回复到原生journal/最终答案/评分的候选组件；本地和Linux15项合成检查通过，未注册完整adapter，仍待图/预算/反馈/控制接线",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -190,9 +239,9 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "共享计划回放组件已有，独立格子入口未接；复用Ours同一计划；简单策略与Ours等价须披露",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -200,9 +249,9 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "共享计划回放组件已有，独立格子入口未接；复用Ours同一计划；简单策略与Ours等价须披露",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -210,9 +259,9 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "方法待复判：集合计数引擎已有；须逐类确定适用子集，不能覆盖任意检索/排序/路径",
+    "owner": "supported_task_subset",
+    "effort_days": null
    }
   },
   {
@@ -220,9 +269,9 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "方法待复判：候选HF权重与作者关联未认证；仍缺schema选择/返回/续写控制器与图适配配置",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -230,9 +279,9 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "方法待复判：缺目标模型ID/checkpoint、训练数据/过滤和推理配置；2488/2348差额未解释；同名PyPI包未认证",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -240,9 +289,9 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "方法待复判：生成库35文件已下载；仍缺图/划分/底模/seed对应微调权重或完整训练配方",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -250,9 +299,9 @@
    "method": "direct",
    "status": "blocked",
    "unblock": {
-    "effort_days": 2.0,
-    "missing": "尚无可执行适配器",
-    "owner": "阶段C"
+    "missing": "公共输入装载与全量身份/schema绑定已备；原生执行、最终答案/反馈与评分仍待接线，当前不注册adapter",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -260,9 +309,9 @@
    "method": "ours",
    "status": "blocked",
    "unblock": {
-    "effort_days": 2.0,
-    "missing": "尚无可执行适配器",
-    "owner": "阶段C"
+    "missing": "公共输入已备；不能套用CB的.eid身份与字段假设，需原生Neo4j身份/结果及控制/评分接线；此是工程缺口，不判科学不适用",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -270,9 +319,9 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "effort_days": 2.0,
-    "missing": "尚无可执行适配器",
-    "owner": "阶段C"
+    "missing": "公共输入装载与全量身份/schema绑定已备；原生执行、最终答案/反馈与评分仍待接线，当前不注册adapter",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -280,9 +329,9 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "公共输入已备；不能套用CB的.eid身份与字段假设，需原生Neo4j身份/结果及控制/评分接线；此是工程缺口，不判科学不适用",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -290,9 +339,9 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "公共输入已备；不能套用CB的.eid身份与字段假设，需原生Neo4j身份/结果及控制/评分接线；此是工程缺口，不判科学不适用",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -300,9 +349,9 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "方法待复判：集合计数引擎已有；须逐类确定适用子集，不能覆盖任意检索/排序/路径",
+    "owner": "supported_task_subset",
+    "effort_days": null
    }
   },
   {
@@ -310,9 +359,9 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "方法待复判：候选HF权重与作者关联未认证；仍缺schema选择/返回/续写控制器与图适配配置",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -320,9 +369,9 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "方法待复判：缺目标模型ID/checkpoint、训练数据/过滤和推理配置；2488/2348差额未解释；同名PyPI包未认证",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -330,9 +379,9 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "方法待复判：生成库35文件已下载；仍缺图/划分/底模/seed对应微调权重或完整训练配方",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -340,9 +389,9 @@
    "method": "direct",
    "status": "blocked",
    "unblock": {
-    "effort_days": 2.0,
-    "missing": "尚无可执行适配器",
-    "owner": "阶段C"
+    "missing": "公共输入装载与全量身份/schema绑定已备；原生执行、最终答案/反馈与评分仍待接线，当前不注册adapter",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -350,9 +399,9 @@
    "method": "ours",
    "status": "blocked",
    "unblock": {
-    "effort_days": 2.0,
-    "missing": "尚无可执行适配器",
-    "owner": "阶段C"
+    "missing": "公共输入已备；不能套用CB的.eid身份与字段假设，需原生Neo4j身份/结果及控制/评分接线；此是工程缺口，不判科学不适用",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -360,9 +409,9 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "effort_days": 2.0,
-    "missing": "尚无可执行适配器",
-    "owner": "阶段C"
+    "missing": "公共输入装载与全量身份/schema绑定已备；原生执行、最终答案/反馈与评分仍待接线，当前不注册adapter",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -370,9 +419,9 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "公共输入已备；不能套用CB的.eid身份与字段假设，需原生Neo4j身份/结果及控制/评分接线；此是工程缺口，不判科学不适用",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -380,9 +429,9 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "公共输入已备；不能套用CB的.eid身份与字段假设，需原生Neo4j身份/结果及控制/评分接线；此是工程缺口，不判科学不适用",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -390,9 +439,9 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "方法待复判：集合计数引擎已有；须逐类确定适用子集，不能覆盖任意检索/排序/路径",
+    "owner": "supported_task_subset",
+    "effort_days": null
    }
   },
   {
@@ -400,9 +449,9 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "方法待复判：候选HF权重与作者关联未认证；仍缺schema选择/返回/续写控制器与图适配配置",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -410,9 +459,9 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "方法待复判：缺目标模型ID/checkpoint、训练数据/过滤和推理配置；2488/2348差额未解释；同名PyPI包未认证",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -420,9 +469,9 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "方法待复判：生成库35文件已下载；仍缺图/划分/底模/seed对应微调权重或完整训练配方",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -430,9 +479,9 @@
    "method": "direct",
    "status": "blocked",
    "unblock": {
-    "effort_days": 2.0,
-    "missing": "尚无可执行适配器",
-    "owner": "阶段C"
+    "missing": "数据集未就绪：osdb-stkg",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -440,9 +489,9 @@
    "method": "ours",
    "status": "blocked",
    "unblock": {
-    "effort_days": 2.0,
-    "missing": "尚无可执行适配器",
-    "owner": "阶段C"
+    "missing": "数据集未就绪：osdb-stkg",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -450,9 +499,9 @@
    "method": "direct-feedback",
    "status": "blocked",
    "unblock": {
-    "effort_days": 2.0,
-    "missing": "尚无可执行适配器",
-    "owner": "阶段C"
+    "missing": "数据集未就绪：osdb-stkg",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -460,9 +509,9 @@
    "method": "correct-detail",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "数据集未就绪：osdb-stkg",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -470,9 +519,9 @@
    "method": "simple-correct",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "数据集未就绪：osdb-stkg",
+    "owner": "engineering_integration",
+    "effort_days": null
    }
   },
   {
@@ -480,9 +529,9 @@
    "method": "native-set-count",
    "status": "blocked",
    "unblock": {
-    "effort_days": 0.5,
-    "missing": "待回放执行器",
-    "owner": "阶段C"
+    "missing": "数据集未就绪：osdb-stkg",
+    "owner": "supported_task_subset",
+    "effort_days": null
    }
   },
   {
@@ -490,9 +539,9 @@
    "method": "cypher-ri",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "数据集未就绪：osdb-stkg",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -500,9 +549,9 @@
    "method": "cyphersmith",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "数据集未就绪：osdb-stkg",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   },
   {
@@ -510,9 +559,9 @@
    "method": "cyquark",
    "status": "blocked",
    "unblock": {
-    "effort_days": null,
-    "missing": "作者权重与推理协议未提供",
-    "owner": "外部"
+    "missing": "数据集未就绪：osdb-stkg",
+    "owner": "author_resource_and_protocol",
+    "effort_days": null
    }
   }
  ],

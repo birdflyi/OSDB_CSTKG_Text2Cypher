@@ -91,6 +91,13 @@ class Permit:
         await self.release()
 
 
+def serves(spec, model: str) -> bool:
+    """An endpoint serves its own name, an explicit alias, or its model family."""
+    if spec.model == model or model in spec.serves:
+        return True
+    return bool(spec.family) and spec.family.lower() in model.lower()
+
+
 class DynamicPool:
     """One authority for global and endpoint capacity; waiting uses no worker.
 
@@ -189,7 +196,7 @@ class DynamicPool:
         endpoints = sum(
             self.capacity(state)
             for state in self.states.values()
-            if (state.spec.model == model or model in state.spec.serves)
+            if serves(state.spec, model)
             and not state.removed
             and state.spec.enabled
         )
@@ -201,7 +208,7 @@ class DynamicPool:
         return [
             s
             for s in self.states.values()
-            if (s.spec.model == model or model in s.spec.serves)
+            if serves(s.spec, model)
             and s.spec.enabled
             and not s.removed
             and self.capacity(s) > s.inflight
@@ -224,7 +231,7 @@ class DynamicPool:
                     matching = [
                         s
                         for s in self.states.values()
-                        if (s.spec.model == model or model in s.spec.serves)
+                        if serves(s.spec, model)
                         and s.spec.enabled and not s.removed
                     ]
                     if matching and all(

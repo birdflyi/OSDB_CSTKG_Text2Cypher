@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 from pathlib import Path
 import threading
 import time
@@ -10,6 +11,43 @@ from functools import wraps
 
 from .config import canonical
 from .errors import PersistenceError
+
+
+def owner_alive(path) -> bool:
+    """Respect another host; reclaim a lock whose local pid is gone."""
+    try:
+        value = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if value.get("hostname") != socket.gethostname():
+        return True
+    pid = value.get("pid")
+    if type(pid) is not int or pid <= 0:
+        return False
+    if os.name == "nt":
+        import ctypes
+
+        handle = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
+        if not handle:
+            return False
+        ctypes.windll.kernel32.CloseHandle(handle)
+        return True
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def claim_owner(path, owner) -> None:
+    """Create an owner lock, replacing one whose local writer is gone."""
+    try:
+        write_new(path, owner)
+    except FileExistsError:
+        if owner_alive(path):
+            raise
+        Path(path).unlink()
+        write_new(path, owner)
 
 
 def _evidence_write(function):

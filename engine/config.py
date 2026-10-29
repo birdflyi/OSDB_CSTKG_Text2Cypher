@@ -144,6 +144,7 @@ class Endpoint:
         "max_tokens",
     )
     serves: tuple = ()
+    family: str = ""
 
     def __post_init__(self):
         url = urlsplit(self.url)
@@ -162,6 +163,8 @@ class Endpoint:
             or url.query
         ):
             raise ValueError("Invalid endpoint; URL credentials/query are forbidden")
+        if not isinstance(self.family, str):
+            raise ValueError("family must be a string")
         if not all(isinstance(name, str) and name for name in self.serves):
             raise ValueError("serves must list non-empty model names")
         if Path(self.key_ref).name != self.key_ref or not self.key_ref:
