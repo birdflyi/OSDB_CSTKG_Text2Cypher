@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import sys
 import time
+import threading
 from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -29,9 +30,12 @@ def test_execution_id_does_not_change_wire_or_original_spec():
 
 def test_100_paths_cap4_long_tail_rolls_without_expiring_the_backlog(tmp_path):
     started, ended = [], []
+    first_wave = threading.Barrier(4)
     def respond(call, wire, endpoint):
         ordinal = int(json.loads(wire)["messages"][0]["content"])
         started.append((ordinal, time.monotonic()))
+        if ordinal < 4:
+            first_wave.wait(timeout=10)
         if ordinal == 0:
             time.sleep(0.3)
         ended.append((ordinal, time.monotonic()))
