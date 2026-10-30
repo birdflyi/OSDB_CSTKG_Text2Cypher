@@ -51,8 +51,12 @@ def read_query(query):
     tokens = list(re.finditer(r'[A-Za-z_][A-Za-z0-9_]*|[^\s]', text))
     for index, token in enumerate(tokens):
         previous = tokens[index - 1].group() if index else ''
+        following = tokens[index + 1].group() if index + 1 < len(tokens) else ''
         word = token.group().upper()
-        if word in forbidden and previous not in ('.', '$', ':'):
+        # Keywords can also be result aliases or property owners (e.g. start).
+        # EXPLAIN must still confirm that the whole statement is a read.
+        identifier_context = previous.upper() == 'AS' or following == '.'
+        if word in forbidden and previous not in ('.', '$', ':') and not identifier_context:
             raise ReadOnlyViolation('Write/admin clause denied')
         if word == 'CALL' and previous not in ('.', '$', ':'):
             after = text[token.end():].lstrip()

@@ -343,18 +343,23 @@ class NativePlanChain:
             self._save('plan_failed',purpose='method',error_type=type(error).__name__)
             raise
 
-    def run_controls(self):
+    def run_controls(self, *, simple_strategy='full_detail'):
+        # Keep historical callers unchanged. New 20261027-profile consumers
+        # explicitly request the certificate-based strategy.
+        if simple_strategy not in ('full_detail', 'contract'):
+            raise ValueError('Unknown simple-correct strategy')
         if self.method_receipt is None or self.controls_started or self.failed or self.capture.state != 'open':
             raise CaptureStateError('Controls require a sealed successful method stage and run only once')
         results = {}
         try:
             self.evidence.verify(self.method_receipt)
             self.controls_started = True
-            for control,strategy in (('correct_detail','full_detail'),('simple_correct','full_detail'),
+            for control,strategy in (('correct_detail','full_detail'),('simple_correct',simple_strategy),
                                      ('native_set_count','native_set_count')):
                 self._save('control_execution_intent',control=control,strategy=strategy,
                            source_method_receipt=self.method_receipt,shared_planner=True,
-                           independent_model_method=False,simple_correct_equals_full_detail=True)
+                           independent_model_method=False,
+                           simple_correct_equals_full_detail=simple_strategy == 'full_detail')
                 result = self._run(strategy,'control')
                 self._save('control_final_saved',control=control,result=result,shared_planner=True,
                            independent_model_method=False)

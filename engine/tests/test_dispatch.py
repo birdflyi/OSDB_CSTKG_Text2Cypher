@@ -32,16 +32,29 @@ class RecordingTransport(FakeTransport):
 
 
 def test_batches_overlap_slow_responses_and_respect_actual_pool_cap(tmp_path):
+    class RecordingPacer(BatchPacer):
+        def __init__(self):
+            super().__init__(2, 0.04)
+            self.releases = []
+
+        async def wait(self, drain):
+            released = await super().wait(drain)
+            if released:
+                self.releases.append(time.monotonic())
+            return released
+
     async def scenario():
         scheduler, items, transport, ledger = await make_scheduler(
             tmp_path, cap=6, count=12, transport=RecordingTransport()
         )
-        scheduler.pacer = BatchPacer(2, 0.04)
+        scheduler.pacer = RecordingPacer()
         await execute_campaign(scheduler, items, simulated=True)
         assert len(transport.starts) == len(ledger.terminals) == 12
         assert transport.starts[4] < min(transport.ends)
         assert 2 < transport.peak <= 6
-        assert transport.starts[2] - transport.starts[0] >= 0.025
+        # The gate spaces releases. Durable writes and thread scheduling after
+        # release can delay an earlier HTTP start and compress start intervals.
+        assert scheduler.pacer.releases[2] - scheduler.pacer.releases[0] >= 0.025
         assert len(list((scheduler.spec.run_dir / "finals").glob("*.json"))) == 12
         rows = [
             json.loads(x) for x in (scheduler.spec.run_dir / "queue.jsonl").read_text().splitlines()

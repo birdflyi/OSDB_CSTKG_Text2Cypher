@@ -333,6 +333,18 @@ class PlanChecks(unittest.TestCase):
         with self.assertRaises(CaptureStateError):chain.run_controls()
         self.assertEqual(len(driver.tx.calls),4)
 
+    def test_new_simple_profile_uses_contract_without_changing_legacy_default(self):
+        for selected,expected in ((None,'full_detail'),('contract','contract')):
+            cap,driver,evidence=self.capture(read_results(rows('a'))+read_results([]))
+            with cap:
+                chain=NativePlanChain(self.prepare(),cap,evidence)
+                chain.run_method()
+                with patch.object(chain,'_run',return_value={'answer':{'complete':True}}) as run:
+                    if selected is None: chain.run_controls()
+                    else: chain.run_controls(simple_strategy=selected)
+                    self.assertEqual([c.args[0] for c in run.call_args_list],
+                                     ['full_detail',expected,'native_set_count'])
+
     def test_unsupported_reply_is_not_an_executed_empty_plan(self):
         with self.assertRaises(UnsupportedSelection):self.prepare(dict(status='UNSUPPORTED',reason='not covered'))
 

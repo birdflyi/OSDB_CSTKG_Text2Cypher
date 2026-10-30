@@ -53,7 +53,7 @@ class FactoryExecutor(ModelReadExecutor):
 
 class OwnedGraphFactory:
     def __init__(self, directory, inventory, inventory_sha256, profiles, home, lock_path,
-                 *, http=18531, bolt=18532):
+                 *, http=18531, bolt=18532, startup_seconds=32):
         self.directory = Path(directory).resolve(); self.inventory = Path(inventory)
         if sha(self.inventory) != inventory_sha256: raise RuntimeError('Cold inventory changed')
         self.pins = read(self.inventory)['cold_receipts']; self.profiles = profiles
@@ -61,6 +61,8 @@ class OwnedGraphFactory:
         if set(self.pins) != {'redis','duckdb','iotdb','elasticsearch'}: raise ValueError('Four graph pins required')
         if type(http) is not int or type(bolt) is not int or http == bolt: raise ValueError('Distinct ports required')
         self.http, self.bolt = http, bolt
+        if not 32 <= startup_seconds <= 600: raise ValueError('Bounded startup budget required')
+        self.startup_seconds = startup_seconds
         self.active = False; self.busy = False; self.unknown = False; self.used = set()
 
     def __enter__(self):
@@ -140,13 +142,16 @@ class OwnedGraphFactory:
             immutable(folder/'execution_owner.json',{'hostname':socket.gethostname(),'runner_pid':os.getpid(),
                 'wrapper_pid':process.pid,'conf':str(folder/'conf'),'graph':graph,'source':str(source)})
             session=requests.Session(); session.trust_env=False; ready=False
-            for index in range(3):
-                time.sleep(12 if index == 0 else 10); receipt={'attempt':index+1}
+            deadline = time.monotonic() + self.startup_seconds
+            index = 0
+            while time.monotonic() < deadline:
+                time.sleep(min(2, max(0, deadline-time.monotonic())))
+                index += 1; receipt={'attempt':index,'startup_seconds':self.startup_seconds}
                 try:
                     response=session.get(f'http://127.0.0.1:{self.http}/',timeout=(2,3))
                     receipt['http_status']=response.status_code; ready=response.status_code==200
                 except requests.RequestException as exc: receipt['error_type']=type(exc).__name__
-                immutable(folder/f'readiness_{index+1}.json',receipt)
+                immutable(folder/f'readiness_{index}.json',receipt)
                 if ready or process.poll() is not None: break
             if not ready: raise RuntimeError('Bounded readiness failed; no restart')
             driver=GraphDatabase.driver(f'bolt://127.0.0.1:{self.bolt}',auth=None,

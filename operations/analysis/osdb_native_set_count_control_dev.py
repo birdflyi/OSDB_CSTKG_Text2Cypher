@@ -63,7 +63,8 @@ def namespace_parameters(query, parameters, prefix):
     return ''.join(out), {mapping[k]: deepcopy(v) for k, v in parameters.items()}
 
 
-def compile_native_set_count(plan, schema):
+def compile_native_set_count(plan, schema, *, selection_compiler=compile_selection,
+                             set_contract=_set_contract, identity_kind=None):
     """Use source tags + DB grouping for UNION/INTERSECTION/LEFT DIFFERENCE.
 
     Both branches remain parameterized and DISTINCT. Grouping source tags
@@ -83,14 +84,17 @@ def compile_native_set_count(plan, schema):
     alias = name(combine.get('alias', 'count'))
     queries, params, identities = [], {}, []
     for index, source in enumerate(plan['calls']):
-        compiled = compile_selection(source, schema)
+        compiled = selection_compiler(source, schema)
         if compiled['columns'] != [key]:
             raise UnsupportedPlan('Control requires identity-only set inputs')
-        node, label = _set_contract(source, compiled, key)
-        identities.append((label, compiled['contract']['identity_fields'][node]['type']))
+        node, label = set_contract(source, compiled, key)
+        kind = compiled['contract'].get('identity_fields', {}).get(node, {}).get('type', identity_kind)
+        if kind is None:
+            raise UnsupportedPlan('Explicit identity kind required for this compiler')
+        identities.append((label, kind))
         distinct = deepcopy(source)
         distinct['distinct'] = True
-        compiled = compile_selection(distinct, schema)
+        compiled = selection_compiler(distinct, schema)
         query, branch_params = namespace_parameters(
             compiled['query'], compiled['parameters'], 't1Branch%d_' % index)
         if set(params) & set(branch_params):
