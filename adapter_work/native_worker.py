@@ -28,11 +28,12 @@ sys.path[:0] = [
     str(ROOT / "experiment-harness/public_benchmark_v1"),
 ]
 from native_cases import CaseLanes, instance_settings
-from common.methods import CYPHER_METHODS
+from adapter_work.common.methods import CYPHER_METHODS
 from engine.config import canonical, digest
 from engine.errors import IntegrityError
 from engine.journal import write_new
 from neo4j import GraphDatabase
+from neo4j.exceptions import DriverError, Neo4jError
 from neo4j_native_plan_dev_20261029 import (
     NativePlanChain,
     PlanEvidence,
@@ -43,6 +44,9 @@ from neo4j_native_selection_dev_20261029 import NativeSchema, UnsupportedSelecti
 from neo4j_native_answer_contract_dev_20261029 import compare_complete_auxiliary
 from neo4j_read_capture_dev_20261029 import NativeReadCapture
 from neo4j_reference_boundary_dev_20261029 import PinnedReferences
+from adapter_work.score_position import score_position, verify_answer_receipt
+from adapter_work.task_scoring_policy import ScorePolicyError, policy_digest
+from public_read_guard import ReadOnlyViolation
 
 
 def read(path):
@@ -318,6 +322,11 @@ class NativeWorker:
         ):
             raise IntegrityError("Score requires the last sealed native answer")
         try:
+            if "task_scoring_policy" in request:
+                try:
+                    return self._score_frozen_policy(request)
+                except ScorePolicyError as exc:
+                    raise IntegrityError(str(exc)) from exc
             with getattr(self, "reference_lock", nullcontext()):
                 item = self.references.get(self.last["identity"]["task_id"])
             if not item.get("query"):
@@ -344,6 +353,43 @@ class NativeWorker:
             return result
         finally:
             self.end_capture()
+
+    def _score_frozen_policy(self, request):
+        """New formal-policy path; legacy auxiliary scoring above is unchanged."""
+        policy = request["task_scoring_policy"]
+        identity = self.last["identity"]
+        if (
+            policy_digest(policy) != request.get("task_scoring_policy_sha256")
+            or policy.get("benchmark") != identity["benchmark"]
+            or policy.get("source_position_id") != identity["position_id"]
+        ):
+            raise IntegrityError("Task scoring policy identity/hash differs")
+        final_file = self.last["folder"] / "final.json"
+        final_receipt = dict(path=str(final_file), sha256=digest(final_file.read_bytes()))
+        verify_answer_receipt(self.last["answer"], final_receipt)
+        with getattr(self, "reference_lock", nullcontext()):
+            item = self.references.get(identity["task_id"])
+        reference = dict(status="MISSING", answer=None)
+        if item.get("query") and digest(item["query"].encode("utf8")) != policy.get("reference_query_sha256"):
+            raise IntegrityError("Reference query differs from frozen task policy")
+        if policy.get("reference_status") not in ("VALID", "UNVERIFIED"):
+            reference["status"] = policy["reference_status"]
+        elif item.get("query"):
+            try:
+                answer = self.capture.read(item["query"], {}, purpose="evaluator")
+                reference = dict(status="VALID", answer=answer)
+            except (Neo4jError, DriverError, TimeoutError, ReadOnlyViolation) as exc:
+                code = str(getattr(exc, "code", ""))
+                reference = dict(status="TIMEOUT" if isinstance(exc, TimeoutError) or "TimedOut" in code else "EXECUTION_ERROR",
+                                 answer=None, error_type=type(exc).__name__, database_code=code)
+        reference["query"] = item.get("query")
+        reference_file = self.last["folder"] / "reference.json"
+        save(reference_file, dict(source=item, **reference))
+        reference_receipt = dict(path=str(reference_file), sha256=digest(reference_file.read_bytes()))
+        result = score_position(policy, self.last["answer"], reference, method=identity["method"],
+                                answer_receipt=final_receipt, reference_receipt=reference_receipt)
+        save(self.last["folder"] / "score.json", result)
+        return result
 
     def close(self):
         try:
