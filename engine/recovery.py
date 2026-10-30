@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .config import digest
 from .errors import IntegrityError
+from .transport import failure_kind
 
 
 def logical_request_digest(request, terminal):
@@ -122,7 +123,8 @@ def merge_saved_reply(replies, record, entry=None):
     previous = replies.get(record["logical_key"])
     history = list(previous["history"]) if previous else []
     if previous and (
-        previous["response"]["status"] not in ("infra", "unknown", "throttled")
+        (previous["response"]["status"] not in ("infra", "unknown", "throttled")
+         and failure_kind(previous["response"]) != "model_unavailable")
         or previous["wire_sha256"] != logical_sha
     ):
         raise IntegrityError(

@@ -129,6 +129,9 @@ class DynamicPool:
         self.clock = clock
         self.condition = asyncio.Condition()
         self.states = {}
+        # Keep explicit configuration rejection across registry remove/re-add.
+        # A corrected URL/model is a different endpoint identity.
+        self.fatal_endpoints = set()
         self.inflight = self.peak = self.waiting = 0
         self.per_model_cap = {}
         self.model_inflight = {}
@@ -175,7 +178,11 @@ class DynamicPool:
             for endpoint in endpoints:
                 state = self.states.get(endpoint.identity)
                 if state is None:
-                    self.states[endpoint.identity] = EndpointState(endpoint)
+                    state = EndpointState(endpoint)
+                    if endpoint.identity in self.fatal_endpoints:
+                        state.quarantined_until = float("inf")
+                        state.quarantine_reason = "configuration_error"
+                    self.states[endpoint.identity] = state
                     self.transitions.append(
                         dict(kind="endpoint_added", endpoint=endpoint.name,
                              cap=endpoint.cap, t=time.time())
@@ -238,11 +245,13 @@ class DynamicPool:
                         and s.spec.enabled and not s.removed
                     ]
                     if matching and all(
-                        s.quarantine_reason == "auth_error"
+                        s.quarantine_reason in ("auth_error", "configuration_error")
                         and s.quarantined_until > self.clock()
                         for s in matching
                     ):
-                        raise RouteUnavailable("auth_error")
+                        reason = ("configuration_error" if any(s.quarantine_reason == "configuration_error" for s in matching)
+                                  else "auth_error")
+                        raise RouteUnavailable(reason)
                     # FIFO per model/priority; feedback leads queued initial work.
                     matching_tickets = [row for row in self._tickets if row[1] == model]
                     first = (
@@ -308,7 +317,14 @@ class DynamicPool:
         async with self.condition:
             state = permit.state
             transition = None
-            if status in ("model_mismatch", "auth_error"):
+            if status == "configuration_error":
+                self.fatal_endpoints.add(state.spec.identity)
+                state.quarantined_until = float("inf")
+                state.quarantine_reason = status
+                state.recovery_successes = 0
+                state.recovery_generation += 1
+                transition = "endpoint_fatal"
+            elif status in ("model_mismatch", "auth_error"):
                 state.quarantined_until = self.clock() + self.policy.quarantine_seconds
                 state.quarantine_reason = status
                 state.recovery_successes = 0
@@ -369,6 +385,8 @@ class DynamicPool:
                 return event
 
     def capacity(self, state):
+        if state.spec.identity in self.fatal_endpoints:
+            return 0
         if state.degraded and state.degraded_until <= self.clock():
             state.degraded = False
             state.failures = state.recovery_successes = 0
@@ -391,6 +409,8 @@ class DynamicPool:
             ]
             if not matches:
                 raise ValueError("Unknown current endpoint: " + name)
+            if any(s.spec.identity in self.fatal_endpoints for s in matches):
+                raise ValueError("Rejected model configuration requires a corrected endpoint identity")
             for state in matches:
                 state.degraded = False
                 state.quarantined_until = state.cooldown_until = 0

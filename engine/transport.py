@@ -42,6 +42,10 @@ def failure_kind(value):
     protocol error can therefore remain status=unknown without blaming capacity.
     """
     status = value.get("status")
+    # Older frozen runs called this response unknown. Interpret the unchanged
+    # saved error body without rewriting that billed terminal evidence.
+    if rejected_model_configuration(value):
+        return "model_unavailable"
     if status in ("ok", "length", "empty", "refused"):
         return status
     if value.get("protocol_error") == "model_mismatch":
@@ -51,6 +55,8 @@ def failure_kind(value):
     if status == "throttled":
         return "throttled"
     if status == "local_resource_error":
+        return status
+    if status == "configuration_error":
         return status
     if status == "auth_error" or value.get("http_status") in (401, 403, 404, 405):
         return "auth_error"
@@ -67,7 +73,8 @@ def failure_kind(value):
 
 def endpoint_health(value):
     kind = failure_kind(value)
-    return {"local_resource_error": "neutral", "protocol_error": "neutral"}.get(
+    return {"local_resource_error": "neutral", "protocol_error": "neutral",
+            "model_unavailable": "configuration_error"}.get(
         kind, kind
     )
 
@@ -75,6 +82,10 @@ def endpoint_health(value):
 def retryable(value, policy):
     """Transport retries never reroll a usable reply or bypass billing limits."""
     kind = failure_kind(value)
+    if kind == "model_unavailable":
+        # Still consumes a physical attempt. The scheduler enforces the frozen
+        # total attempt count and delay; the rejected route is already isolated.
+        return value.get("charged") is True
     if kind not in ("infra", "throttled", "protocol_error"):
         return False
     if value.get("status") == "unknown":
@@ -88,6 +99,19 @@ def retry_delay(value):
     except (TypeError, ValueError):
         return 5
     return min(300, max(0, delay)) if delay == delay else 5
+
+
+def rejected_model_configuration(value):
+    """Only explicit pre-generation model-name rejection is endpoint-fatal."""
+    if value.get("http_status") != 400 or not isinstance(value.get("body"), dict):
+        return False
+    error = value["body"].get("error")
+    if not isinstance(error, dict):
+        return False
+    if error.get("code") == "model_not_found" or error.get("type") == "model_not_found":
+        return True
+    message = error.get("message")
+    return isinstance(message, str) and "invalid model name passed" in message.lower()
 
 
 def classify(value: dict, expected_model: str, *, completion=False) -> dict:
@@ -105,6 +129,10 @@ def classify(value: dict, expected_model: str, *, completion=False) -> dict:
         return result
     if status in (401, 403, 404, 405):
         result.update(status="auth_error", generation_outcome_unknown=False)
+        return result
+    if rejected_model_configuration(value):
+        result.update(status="configuration_error", failure_class="EndpointFatal",
+                      configuration_error="model_not_found", generation_outcome_unknown=False)
         return result
     if status != 200:
         result.update(status="unknown", generation_outcome_unknown=True)
