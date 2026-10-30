@@ -15,6 +15,8 @@ from copy import deepcopy
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path[:0] = [
+    str(ROOT / "adapter_work"),
+    str(ROOT),
     str(ROOT / "operations" / "analysis"),
     str(ROOT / "experiment-harness" / "public_benchmark_v1"),
 ]
@@ -25,6 +27,85 @@ from engine.execution import JsonRpcClient, TracedRpcExecutor, worker_command
 from engine.errors import IntegrityError
 from offline_pipeline import read_pin, save
 from common.ri import payload_of
+
+
+class CohortScorer:
+    """Frozen per-position policy, opened only after the final answer is sealed."""
+
+    def __init__(self, settings):
+        self.settings = settings
+        self._lock = threading.Lock()
+        self._policies = None
+        self._comparators = {}
+        self._reference_files = {}
+
+    def policy(self, row, answer, receipt):
+        from adapter_work.score_position import verify_answer_receipt
+        from adapter_work.task_scoring_policy import ScorePolicyError
+        try:
+            verify_answer_receipt(answer, receipt)
+            with self._lock:
+                if self._policies is None:
+                    rows = read_pin(self.settings["scoring_contract"])["positions"]
+                    self._policies = {}
+                    for item in rows:
+                        key = item["source_position_id"]
+                        if key in self._policies:
+                            raise IntegrityError("Duplicate scoring policy position")
+                        self._policies[key] = item
+                item = self._policies[row["position_id"]]
+            policy = item["policy"]
+            if (item["task_id"] != row["task_id"] or item["graph"] != row["graph"]
+                    or policy["benchmark"] != row["benchmark"]
+                    or policy["source_position_id"] != row["position_id"]
+                    or policy["cohort_sha256"] != row["cohort_sha256"]):
+                raise IntegrityError("Scoring policy belongs to another cohort position")
+            return policy
+        except (ScorePolicyError, KeyError) as exc:
+            raise IntegrityError("Invalid frozen scoring policy: " + str(exc)) from exc
+
+    def reference(self, row):
+        """Called after policy() has verified the saved answer receipt."""
+        with self._lock:
+            binding = self._policies[row["position_id"]]["reference_binding"]
+            key = (binding["path"], binding["sha256"])
+            if key not in self._reference_files:
+                raw = Path(binding["path"]).read_bytes()
+                if digest(raw) != binding["sha256"]:
+                    raise IntegrityError("Reference file changed")
+                self._reference_files[key] = raw.splitlines()
+            line = binding["line_1based"]
+            if type(line) is not int or line < 1:
+                raise IntegrityError("Invalid reference record selector")
+            try:
+                record = json.loads(self._reference_files[key][line - 1])
+            except (IndexError, ValueError) as exc:
+                raise IntegrityError("Reference record is missing or malformed") from exc
+            if digest(canonical(record)) != binding["record_sha256"]:
+                raise IntegrityError("Reference record changed")
+            return record
+
+    def score(self, row, answer, receipt, reference_loader=None):
+        from adapter_work.score_position import load_comparator, score_position
+        from adapter_work.task_scoring_policy import ScorePolicyError, policy_digest
+        policy = self.policy(row, answer, receipt)
+        try:
+            reference = dict(status=policy["reference_status"], answer=None)
+            comparator = None
+            if answer.get("complete") is True and reference_loader is not None:
+                reference = reference_loader()
+                if policy["reference_status"] not in ("VALID", "UNVERIFIED"):
+                    reference = dict(status=policy["reference_status"], answer=None)
+                if policy.get("comparator_pin"):
+                    key = (policy["benchmark"], policy["comparator_pin"]["sha256"])
+                    with self._lock:
+                        if key not in self._comparators:
+                            self._comparators[key] = load_comparator(policy)
+                        comparator = self._comparators[key]
+            return score_position(policy, answer, reference, method=row["method"],
+                                  comparator=comparator, answer_receipt=receipt)
+        except ScorePolicyError as exc:
+            raise IntegrityError("Frozen score contract differs: " + str(exc)) from exc
 
 
 def instance_command(command, output):
@@ -48,6 +129,7 @@ class SelectionBackend:
         self.max_case_workers = settings.get("case_workers", 1)
         self._score_lock = threading.Lock()
         self._score_cache = None
+        self.formal_scorer = CohortScorer(settings)
 
     @staticmethod
     def schema(row):
@@ -106,6 +188,8 @@ class SelectionBackend:
         )
 
     def score(self, row, answer, receipt):
+        if row.get("cohort_sha256"):
+            return self.formal_scorer.score(row, answer, receipt, lambda: self.formal_scorer.reference(row))
         read_pin(receipt)
         if self.benchmark == "CypherBench":
             import answer_scoring
@@ -160,8 +244,9 @@ class SelectionBackend:
 
 
 class NativeBackend:
-    def __init__(self, client):
+    def __init__(self, client, settings=None):
         self.client = client
+        self.formal_scorer = CohortScorer(settings or {})
         self.answer_hashes = {}
         self._case_lock = threading.Lock()
         self._active = set()
@@ -212,15 +297,22 @@ class NativeBackend:
         return self.execute(row, source, directory)
 
     def score(self, row, answer, receipt):
+        policy = None
+        if row.get("cohort_sha256"):
+            policy = self.formal_scorer.policy(row, answer, receipt)
+            if answer.get("complete") is not True:
+                return self.formal_scorer.score(row, answer, receipt)
         read_pin(receipt)
         with self._case_lock:
             expected = self.answer_hashes[case_id(row)]
         if digest(canonical(answer)) != expected:
             raise IntegrityError("Local answer differs from remote case seal")
-        result = self.client.request(
-            dict(kind="score", identity=identity_of(row), answer_sha256=expected),
-            timeout=200,
-        )
+        request = dict(kind="score", identity=identity_of(row), answer_sha256=expected)
+        if policy is not None:
+            from adapter_work.task_scoring_policy import policy_digest
+            request.update(task_scoring_policy=policy,
+                           task_scoring_policy_sha256=policy_digest(policy))
+        result = self.client.request(request, timeout=200)
         if result.get("status") == "integrity_error":
             raise IntegrityError(result.get("error", "Remote score identity failure"))
         result.pop("id", None)
@@ -243,13 +335,15 @@ class NativeBackend:
 
 class Text2GQLBackend(NativeBackend):
     def __init__(self, client, settings):
-        super().__init__(client)
+        super().__init__(client, settings)
         self.settings = settings
         self.supports_finish_case = False  # TuGraph has no cross-command transaction.
         self._score_lock = threading.Lock()
         self._score_cache = None
 
     def score(self, row, answer, receipt):
+        if row.get("cohort_sha256"):
+            return self.formal_scorer.score(row, answer, receipt, lambda: self.formal_scorer.reference(row))
         read_pin(receipt)
         from text2gql_reference_store_eval_20261027 import SealedReferenceStore
         from text2gql_score_contract_dev_20261027 import FinalAnswerContract
@@ -376,7 +470,7 @@ def open_backend(benchmark, graph, settings, output):
                 yield (
                     Text2GQLBackend(client, settings)
                     if benchmark == "Text2GQL"
-                    else NativeBackend(client)
+                    else NativeBackend(client, settings)
                 )
             finally:
                 client.close()

@@ -4,6 +4,8 @@ No database imports or reference loading. A fresh, frozen run can explicitly reu
 a reconciled response manifest; an unexamined crashed run is never resumed silently.
 """
 
+from __future__ import annotations
+
 import argparse
 import asyncio
 from dataclasses import dataclass
@@ -38,9 +40,10 @@ from engine.fake import FakeTransport, MemoryLedger
 from engine.journal import Journal, write_new
 from engine.ledger import Ledger, scan_legacy
 from engine.pool import DynamicPool, serves
-from engine.recovery import saved_replies
+from engine.recovery import saved_replies, merge_saved_reply
 from engine.scheduler import Scheduler
 from engine.transport import HTTPTransport
+from cohort_runtime import execution_spec, is_cohort, provenance, validate_inventory
 
 
 def read(path):
@@ -69,6 +72,46 @@ def verify(receipt):
     return path
 
 
+def load_reuse_aliases(pin, jobs, ledger, graph_snapshots):
+    """Bind audited old paid answers to new position IDs without changing history."""
+    targets = {job.item.key: job for job in jobs}
+    reused = {}
+    for row in read(verify(pin)):
+        target = row["target_key"]
+        if target in reused or target not in targets:
+            raise IntegrityError("Duplicate or unknown reuse target")
+        job = targets[target]
+        expected = dict(logical_model=job.item.model, graph=job.item.graph,
+                        profile_sha256=(job.cohort or {}).get("profile_sha256"),
+                        public_input_sha256=(job.cohort or {}).get("public_input_sha256"),
+                        graph_snapshot_sha256=graph_snapshots[job.item.benchmark][job.item.graph])
+        if any(value is None for value in expected.values()) or row["compatibility"] != expected or row["source_compatibility"] != expected:
+            raise IntegrityError("Reuse input/profile/model/snapshot differs")
+        if not row.get("evidence"):
+            raise IntegrityError("Reuse needs explicit source compatibility evidence")
+        for evidence in row["evidence"]:
+            verify(evidence)
+        records = sorted((record for record in ledger.records.values()
+                          if record["logical_key"] == row["source_key"] and record["scope"] == row["source_scope"]),
+                         key=lambda record: record["slot"])
+        if not records:
+            raise IntegrityError("Reuse source has no paid history")
+        evidence_paths = {str(Path(p["path"]).resolve()) for p in row["evidence"]}
+        if any(str(Path(record["request_path"]).with_name("terminal.json").resolve()) not in evidence_paths
+               for record in records):
+            raise IntegrityError("Reuse evidence must pin every source terminal")
+        old = {}
+        for record in records:
+            merge_saved_reply(old, record)
+        saved = old[row["source_key"]]
+        if saved["wire_sha256"] != digest(job.item.wire):
+            raise IntegrityError("Reuse request bytes differ")
+        if saved["response"]["status"] not in ("ok", "length", "refused", "empty"):
+            raise IntegrityError("Only terminal model replies may be aliased")
+        reused[target] = saved
+    return reused
+
+
 @dataclass(frozen=True)
 class Job:
     cell_id: str
@@ -77,6 +120,8 @@ class Job:
     spec: object
     item: object
     sampling: dict
+    original_task_id: str | None = None
+    cohort: dict | None = None
 
 
 def load_feedback_jobs(inventory, bindings, queue_pin):
@@ -84,7 +129,10 @@ def load_feedback_jobs(inventory, bindings, queue_pin):
     from common.stages import advance
     from feedback_queue import operational_error
 
+    if is_cohort(inventory):
+        validate_inventory(inventory)
     cells = {c["cell_id"]: c for c in inventory["cells"]}
+    prepared_specs = {}
     jobs, positions = [], []
     for pin in read(verify(queue_pin)):
         entry = read(verify(pin))
@@ -93,8 +141,14 @@ def load_feedback_jobs(inventory, bindings, queue_pin):
         if cell["method"] != "direct-feedback":
             raise IntegrityError("Feedback queue contains another method")
         adapter = loader.load(verify(cell["adapter"]))
-        specs = adapter.prepare(str(verify(cell["positions_source"])))
-        spec = next(s for s in specs if s.position_id == row["position_id"])
+        if cell["cell_id"] not in prepared_specs:
+            if is_cohort(inventory):
+                from common.cohort_specs import prepare_cell_specs
+                specs = prepare_cell_specs(cell)
+            else:
+                specs = adapter.prepare(str(verify(cell["positions_source"])))
+            prepared_specs[cell["cell_id"]] = {s.position_id: s for s in specs}
+        spec = prepared_specs[cell["cell_id"]][row["position_id"]]
         if (spec.task_id, spec.graph, spec.benchmark) != (
             row["task_id"],
             row["graph"],
@@ -119,17 +173,20 @@ def load_feedback_jobs(inventory, bindings, queue_pin):
                 "Feedback protocol did not produce its one allowed stage"
             )
         binding = method_binding(bindings, "direct", row["benchmark"], row["graph"])
+        request = execution_spec(step.request, row)
         item = request_item(
-            step.request, model=binding["model"], sampling=binding.get("sampling", {})
+            request, model=binding["model"], sampling=binding.get("sampling", {})
         )
         jobs.append(
             Job(
                 cell["cell_id"],
                 row["position_id"],
                 adapter,
-                step.request,
+                request,
                 item,
                 binding.get("sampling", {}),
+                row["task_id"],
+                provenance(row),
             )
         )
         positions.append(
@@ -148,6 +205,8 @@ def load_feedback_jobs(inventory, bindings, queue_pin):
 
 
 def load_jobs(inventory, bindings, *, simulated=False):
+    if is_cohort(inventory):
+        validate_inventory(inventory)
     jobs, positions = [], []
     for cell in inventory["cells"]:
         verify(cell["positions_source"])
@@ -166,7 +225,11 @@ def load_jobs(inventory, bindings, *, simulated=False):
                 for p in cell["positions"]
             )
             continue
-        specs = adapter.prepare(cell["positions_source"]["path"])
+        if is_cohort(inventory):
+            from common.cohort_specs import prepare_cell_specs
+            specs = prepare_cell_specs(cell)
+        else:
+            specs = adapter.prepare(cell["positions_source"]["path"])
         if len(specs) != len(cell["positions"]):
             raise IntegrityError("Prepared position count changed")
         for pos, spec in zip(cell["positions"], specs):
@@ -204,6 +267,7 @@ def load_jobs(inventory, bindings, *, simulated=False):
                 reason=None if ready else binding.get("missing", "resource_pending"),
             )
             if ready:
+                spec = execution_spec(spec, pos)
                 item = request_item(
                     spec, model=binding["model"], sampling=binding.get("sampling", {})
                 )
@@ -216,6 +280,9 @@ def load_jobs(inventory, bindings, *, simulated=False):
                         spec,
                         item,
                         binding.get("sampling", {}),
+                        pos["task_id"],
+                        dict(provenance(pos), public_input_sha256=pos["public_input"]["sha256"],
+                             profile_sha256=pos.get("profile", {}).get("sha256")),
                     )
                 )
             positions.append(row)
@@ -226,6 +293,16 @@ def load_jobs(inventory, bindings, *, simulated=False):
 
 class AdapterScheduler(Scheduler):
     """Only the method protocol differs; all physical scheduling stays in Scheduler."""
+
+    async def _save_path(self, value):
+        # Ordinary isolated failures must preserve the same provenance as answers.
+        job = self.jobs.get(value["logical_key"])
+        if job is not None:
+            value = dict(value, cell_id=job.cell_id, position_id=job.position_id,
+                         benchmark=job.item.benchmark,
+                         task_id=job.original_task_id or job.item.task_id,
+                         **(job.cohort or {}))
+        return await super()._save_path(value)
 
     async def _path(self, item, execute, feedback):
         job = self.jobs[item.key]
@@ -243,7 +320,7 @@ class AdapterScheduler(Scheduler):
         return await self._save_path(
             dict(
                 logical_key=item.key,
-                task_id=item.task_id,
+                task_id=job.original_task_id or item.task_id,
                 graph=item.graph,
                 method=item.method,
                 benchmark=item.benchmark,
@@ -253,8 +330,49 @@ class AdapterScheduler(Scheduler):
                 final=final,
                 model_attempts=result["replies"],
                 views=[dict(phase="request_pipeline", outcome=final)],
+                **(job.cohort or {}),
             )
         )
+
+    async def run(self, items, *, execute=None, feedback=None):
+        """Cohort paths enter admission only when a bounded submission slot opens."""
+        if not getattr(self, "bounded_submission", False):
+            return await super().run(items, execute=execute, feedback=feedback)
+        items = list(items)
+        if len({item.key for item in items}) != len(items):
+            raise IntegrityError("Duplicate cohort request identity")
+        allowed = set(self.spec.models or (self.spec.model,))
+        if any(item.model not in allowed for item in items):
+            raise IntegrityError("Unbound cohort model")
+        waiting = iter(items)
+        active = set()
+        width = self.spec.global_cap
+
+        def fill():
+            while len(active) < width and not self.draining.is_set():
+                item = next(waiting, None)
+                if item is None:
+                    break
+                active.add(asyncio.create_task(self._isolated_path(item, execute, feedback)))
+
+        try:
+            fill()
+            while active:
+                done, active = await asyncio.wait(active, return_when=asyncio.FIRST_COMPLETED)
+                for task in done:
+                    try:
+                        await task
+                    except Exception as error:
+                        await self.drain("path_controller_error:" + type(error).__name__)
+                fill()
+            return self.paths
+        finally:
+            if active:
+                await asyncio.gather(*active, return_exceptions=True)
+            self.http_workers.shutdown(wait=True)
+            self.db_workers.shutdown(wait=True)
+            if self.close_transport:
+                self.transport.close()
 
 
 def position_results(positions, paths):
@@ -306,6 +424,7 @@ async def execute(
     saved=None,
     drain_paths=(),
     stop_event=None,
+    bounded_submission=False,
 ):
     scheduler = AdapterScheduler(
         spec, pool, ledger, Journal(spec.run_dir / "journal.jsonl"), transport
@@ -314,6 +433,7 @@ async def execute(
     scheduler.extra_drain_paths = [Path(path) for path in drain_paths]
     scheduler.external_stop_event = stop_event
     scheduler.saved_replies = saved or {}
+    scheduler.bounded_submission = bounded_submission
     summary = await execute_campaign(
         scheduler,
         [j.item for j in jobs],
@@ -376,6 +496,7 @@ async def run(config, *, simulated=False, admitted_session=None):
         models=models,
         retry=retry_policy(config.get("retry", {})),
         timeouts=timeouts_from(config.get("timeouts", {})),
+        queue_wait_until_available=is_cohort(inventory),
     )
     pool = DynamicPool(cap, ceiling=cap)
     if simulated:
@@ -440,6 +561,7 @@ async def run(config, *, simulated=False, admitted_session=None):
             FakeTransport(0.02, respond),
             simulated=True,
             drain_paths=config.get("drain_paths", ()),
+            bounded_submission=is_cohort(inventory),
         )
     if config.get("execute_authorized") is not True:
         raise ValueError("Preparation configuration is not live admission")
@@ -494,6 +616,11 @@ async def run(config, *, simulated=False, admitted_session=None):
                 else {}
             )
         )
+        if config.get("reuse_aliases"):
+            aliases = load_reuse_aliases(config["reuse_aliases"], jobs, ledger, config["graph_snapshots"])
+            if set(saved) & set(aliases):
+                raise IntegrityError("Current-scope recovery and cross-scope alias overlap")
+            saved.update(aliases)
         transport = HTTPTransport(
             Path(config["key_dir"]), connect_timeout=spec.timeouts.http_connect
         )
@@ -515,6 +642,7 @@ async def run(config, *, simulated=False, admitted_session=None):
             saved=saved,
             drain_paths=config.get("drain_paths", ()),
             stop_event=admitted_session.stop if admitted_session else None,
+            bounded_submission=is_cohort(inventory),
         )
         if admitted_session:
             admitted_session.refresh()

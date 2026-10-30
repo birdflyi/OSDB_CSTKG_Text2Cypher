@@ -30,12 +30,13 @@ def test_real_adapters_prepare_new_complete_inventory_and_request_loader(tmp_pat
                 assert len(template["body"]["messages"]) >= 2
         else:
             assert all("source" in p for p in cell["positions"])
-    # Current request loader accepts the new legacy-compatible shape. Repeated
-    # task IDs deliberately require the new runtime's execution_task_id branch.
+    # The integrated runtime preserves source task IDs while scheduling unique
+    # execution IDs, including duplicate task IDs across release positions.
     from adapter_work.request_pipeline import load_jobs
     bindings = {m: {"model": "fixture", "ready": True, "sampling": {}} for m in ("direct", "ours")}
-    with pytest.raises(Exception, match="Duplicate prepared path identity"):
-        load_jobs(result, bindings, simulated=True)
+    jobs, positions = load_jobs(result, bindings, simulated=True)
+    assert len(jobs) == 6 and len(positions) == 18
+    assert len({job.item.key for job in jobs}) == 6
 
 
 def test_unique_tasks_load_with_existing_request_path(tmp_path):

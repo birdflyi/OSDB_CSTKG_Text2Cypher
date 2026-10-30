@@ -3,7 +3,7 @@
 Manifest: planned=[{cell_id, position_id}], summaries=[{path,sha256}],
 selection_source={inventory:pin, config:pin} verifies the independent denominator;
 without it the declared plan is not verified. Only the existing one/five-position
-smoke selector is supported; full-selection formats require a separate contract.
+smoke selector and explicitly pinned cohort_inventory_v1 selections are supported.
 seals=[{path,sha256,root}], optional ledger={before:pin,after:pin},
 process_check=pin. Multiple summaries can cover disjoint or identical positions;
 conflicting duplicates are errors, never resolved by choosing a better result.
@@ -45,7 +45,7 @@ TERMINAL = {
 }
 SCORED = {"scored", "scored_development", "scored_auxiliary"}
 REFERENCE = {"reference_missing", "reference_error"}
-SCORE_STATUSES = SCORED | REFERENCE | {"execution_error", "not_scored"}
+SCORE_STATUSES = SCORED | REFERENCE | {"execution_error", "not_scored", "not_applicable"}
 
 
 def sha(path):
@@ -94,6 +94,18 @@ def selection_expected(source, errors, checks):
             or binding["sha256"] != source["inventory"]["sha256"]
         ):
             raise ValueError("Selection config binds another inventory")
+        if inventory.get("schema_version") == "cohort_inventory_v1":
+            from cohort_runtime import selected_cells
+            from engine.errors import IntegrityError
+
+            if "per_cell" in config or "selected_positions" in config:
+                raise ValueError("Do not mix cohort and legacy selection")
+            try:
+                cells = selected_cells(inventory, config["selection"])
+            except IntegrityError as error:
+                raise ValueError(str(error)) from error
+            return {(cell["cell_id"], row["position_id"])
+                    for cell in cells for row in cell["positions"]}, "verified"
         limit = config["per_cell"]
         if type(limit) is not int or limit not in (1, 5):
             raise ValueError(

@@ -24,6 +24,7 @@ from engine.journal import write_new
 
 from common.methods import AUTHOR_METHODS, CONTROL_METHODS, METHODS
 from common.author_assets import method_binding, validate_asset
+from cohort_runtime import is_cohort, selected_cells, validate_source, provenance
 
 HARD_ERRORS = (IntegrityError, PersistenceError, PermissionError, FileExistsError)
 
@@ -85,9 +86,17 @@ def validate_author_source(row, source, config):
 
 def load_selection(config):
     inventory = read_pin(config["inventory"])
-    limit = config["per_cell"]
-    if limit not in (1, 5):
-        raise ValueError("Offline smoke selects one or five frozen positions")
+    explicit = is_cohort(inventory)
+    if explicit:
+        if "per_cell" in config or "selected_positions" in config:
+            raise IntegrityError("Do not mix cohort and legacy smoke selectors")
+        cells = selected_cells(inventory, config["selection"])
+        limit = None
+    else:
+        limit = config["per_cell"]
+        if limit not in (1, 5):
+            raise ValueError("Offline smoke selects one or five frozen positions")
+        cells = inventory["cells"]
     sources = {}
     for pin in config["source_finals"]:
         result = read_pin(pin)
@@ -96,18 +105,18 @@ def load_selection(config):
             raise IntegrityError("Duplicate source final")
         sources[key] = dict(result=result, receipt=pin)
     groups = defaultdict(list)
-    for cell in inventory["cells"]:
+    for cell in cells:
         if cell["method"] not in METHODS:
             raise ValueError("Unsupported method in offline consumer")
-        selected = [p for p in cell["positions"] if p["full_flow_five"]][:limit]
-        if "selected_positions" in config:
+        selected = cell["positions"] if explicit else [p for p in cell["positions"] if p["full_flow_five"]][:limit]
+        if not explicit and "selected_positions" in config:
             wanted = set(config["selected_positions"].get(cell["cell_id"], []))
             selected = [p for p in selected if p["position_id"] in wanted]
             if {p["position_id"] for p in selected} != wanted:
                 raise IntegrityError("Recovery selection is outside the frozen subset")
             if not selected:
                 continue
-        elif len(selected) != limit:
+        elif not explicit and len(selected) != limit:
             raise IntegrityError("Incomplete frozen five-position subset")
         for position in selected:
             read_pin(position["public_input"])
@@ -117,6 +126,12 @@ def load_selection(config):
                 method=cell["method"],
                 benchmark=cell["benchmark"],
             )
+            if explicit:
+                source_method = "direct" if row["method"] == "direct-feedback" else ("ours" if row["method"] in CONTROL_METHODS else row["method"])
+                for method in {source_method, row["method"]}:
+                    source = sources.get((method, row["benchmark"], row["position_id"]))
+                    if source is not None:
+                        validate_source(row, source["result"])
             if row["method"] in AUTHOR_METHODS:
                 source = sources.get(
                     (row["method"], row["benchmark"], row["position_id"])
@@ -138,6 +153,14 @@ def error_result(error):
     )
 
 
+def case_folder(directory, row):
+    # Release position IDs can contain ':' or '/'. Preserve identity in JSON,
+    # but never interpret it as a Windows path or a directory traversal.
+    component = (digest(row["position_id"].encode("utf-8"))[:24]
+                 if "cohort_sha256" in row else row["position_id"])
+    return Path(directory) / row["cell_id"] / component
+
+
 def run_group(
     rows, sources, backend, directory, *, on_feedback=None, on_result=None, stop=None
 ):
@@ -149,7 +172,7 @@ def run_group(
         if stop is not None and stop.is_set():
             break
         try:
-            folder = directory / row["cell_id"] / row["position_id"]
+            folder = case_folder(directory, row)
             started = time.monotonic()
             source_method = (
                 "direct"
@@ -214,12 +237,7 @@ def run_group(
                                 if r["method"] == "direct"
                                 and r["position_id"] == row["position_id"]
                             )
-                            initial_file = (
-                                directory
-                                / initial_row["cell_id"]
-                                / row["position_id"]
-                                / "final.json"
-                            )
+                            initial_file = case_folder(directory, initial_row) / "final.json"
                             feedback_pin = save(
                                 folder / "feedback_request.json",
                                 dict(
@@ -267,10 +285,12 @@ def run_group(
                     score = dict(
                         method_scores["direct", row["position_id"]], shared_initial=True
                     )
+                    if "cohort_sha256" in row:
+                        score["method"] = row["method"]
                 else:
                     score = (
                         backend.score(row, answer, receipt)
-                        if answer.get("complete") is True
+                        if answer.get("complete") is True or "cohort_sha256" in row
                         else dict(status="not_scored", value=None)
                     )
             except HARD_ERRORS:
@@ -293,6 +313,7 @@ def run_group(
                 seconds=time.monotonic() - started,
                 source_status=source_status,
                 model_calls=0,
+                **provenance(row),
             )
             save(folder / "result.json", result)
             results.append(result)
@@ -306,10 +327,7 @@ def run_group(
                     finish(row)
                 except Exception as error:
                     save(
-                        directory
-                        / row["cell_id"]
-                        / row["position_id"]
-                        / "cleanup_error.json",
+                        case_folder(directory, row) / "cleanup_error.json",
                         error_result(error),
                     )
                     if not active_error:
@@ -441,7 +459,7 @@ def run(config, backend_factory=None, *, runtime=None, on_feedback=None):
     for rows in groups.values():
         for row in rows:
             if (row["cell_id"], row["position_id"]) not in done:
-                final_file = output / row["cell_id"] / row["position_id"] / "final.json"
+                final_file = case_folder(output, row) / "final.json"
                 receipt = (
                     dict(path=str(final_file), sha256=digest(final_file.read_bytes()))
                     if final_file.is_file()
