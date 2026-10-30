@@ -1,0 +1,552 @@
+{
+  "CypherBench": {
+    "prefix_messages": [
+      {
+        "content": "Return one JSON object only, without Markdown.\nUse {\"status\":\"UNSUPPORTED\",\"reason\":\"...\"} if outside the finite language.\nOtherwise use {\"status\":\"ANSWER\",\"calls\":[selection],\"combine\":{\"op\":\"single\"}}.\nA selection is {\"nodes\":[{\"id\":\"n\",\"label\":\"SCHEMA_LABEL\"}],\"edges\":[],\n\"where\":[],\"returns\":[{\"field\":\"n.name\",\"alias\":\"name\"}]}.\nEach calls item is directly this selection object; do not wrap it in a\n\"selection\" or \"query\" field. No text before/after the JSON.\nUp to4 nodes and3 connected directed edges; edges have id,source,target,label.\nThe first node is the required root. Mandatory edges form one Cypher MATCH:\ndistinct edge variables cannot reuse the same graph relationship.\nAt most one edge may have optional:true. It must attach to the required\npattern and may introduce a nullable neighbor. Use this when requested groups\nmust be preserved even when they have zero matching neighbors. Count a nullable\nneighbor eid (or edge rid), not count(*) or a required root, to obtain zero.\nAn optional expansion after an anchor filter can count ALL neighbors, including\nthe anchor relationship; this is a separate Cypher matching stage.\nAll labels/properties and edge directions must match schema. Available node\nmetadata properties: eid,name,aliases,description. Edge metadata: rid.\nwhere is an AND list of {field:\"n.property\",op:\"eq\",value:literal}; supported\nops eq,ne,lt,le,gt,ge,in,contains,starts_with,ends_with,is_null,not_null.\nEach predicate may add negate:true, applying Cypher NOT with three-valued\nNULL semantics. NOT unknown remains unknown and is rejected by WHERE.\nwhere predicates apply globally after the optional match. A condition on the\nnullable neighbor can therefore remove zero groups. Filtered optional counts\nthat require conditions inside the optional pattern are outside this version.\nSet difference removes known positive entity sets; it is not automatically\nequivalent to negating a nullable property predicate.\nUse other_field instead of value for same-type property comparisons.\nreturns items have field and alias; optional agg=count|sum|avg|min|max|collect,\noptional distinct boolean for aggregation. count may use field \"*\" or node ID.\nGrouping is otherwise implicit from non-aggregate returns. To group per ENTITY,\nadd group_by:[\"n.eid\"] (or the appropriate root eid); equal display names are\nnot guaranteed to be one entity. For grouping by a property value use that\nproperty as a grouping key. Returned non-aggregate properties must be determined\nby the keys. A filter-anchor neighbor and a neighbor to be counted may need\nseparate variables; do not count only the restricted anchor when all related\nentities are requested.\nSelection optional distinct boolean, order_by:[{column:alias,direction:\"ASC\"}],\nlimit:positive integer ONLY when explicitly requested; never add a default LIMIT.\nFor union/intersection/difference of ENTITY SETS use exactly2 selections. Each\nmust return the same columns, include projected n.eid as alias \"id\", and only\nproperties of that same answer entity. No input aggregation, order or limit.\ncombine is {op:\"union\"|\"intersection\"|\"difference\",key:\"id\",output:\"count\",\nalias:\"count\"}, or output:\"rows\",columns:[requested output aliases].\nThis finite version does not support multiple optional edges, subqueries, arbitrary\nexpressions, regex, variable-length paths, arithmetic, HAVING, multi-stage\naggregation, joins of service summaries, or semantic relations absent in schema.\nDo not replace an unsupported condition with an easier question.\n\nExplicit compiler contract (v3; use these exact JSON positions): Every property reference is variable.property, using a node or edge id declared in the selection and a property declared for that binding. This applies to where.field and where.other_field; bare property names are not valid. For a distinct projection without aggregation, use selection-level distinct:true. A returns item may contain distinct only when that same item contains agg; even distinct:false is invalid on a non-aggregate returns item. For distinct counting use {field:<valid field>,alias:<output>,agg:\"count\",distinct:true}; COUNT DISTINCT * is not supported. Use group_by only when the selection has an aggregate, with one to four unique grouping keys. Every non-aggregate projection must be determined by those keys. order_by.column names a returned alias and direction is ASC or DESC. Do not emit an implicit limit. No more than one optional edge is supported; the required pattern must connect to the first/root node. Unsupported syntax must produce UNSUPPORTED; do not change the question or guess a property.\nIn this profile, returns.field and group_by use qualified properties. Only agg:\"count\" additionally permits field:\"*\" or a declared node variable; bare entities are not ordinary projections. Two-call composition requires a required, non-null answer-entity identity projected under the shared key alias, aligned columns and payload from that same entity type. Inputs must be unaggregated, unordered and unlimited. Use the supplied entity eid as the composition identity, e.g. n.eid. \nSyntax examples only: assume an illustrative ExampleEntity label with string key declared as identity_property; CypherBench also supplies eid. These are not task schema declarations. Replace the illustrative label and property with the actual public schema. The duplicated union inputs below show only the two-call structure, not a recommended plan for any task.\ndistinct_projection: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n.eid\",\"alias\":\"id\"}],\"distinct\":true}],\"combine\":{\"op\":\"single\"}}\ndistinct_count: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n.eid\",\"alias\":\"total\",\"agg\":\"count\",\"distinct\":true}]}],\"combine\":{\"op\":\"single\"}}\nentity_set: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n.eid\",\"alias\":\"id\"}]},{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n.eid\",\"alias\":\"id\"}]}],\"combine\":{\"op\":\"union\",\"key\":\"id\",\"output\":\"count\",\"alias\":\"total\"}}",
+        "role": "system"
+      }
+    ],
+    "prefix_sha256": "bf27847fdbc820b3bdb86a5354e5c9d043d41726705d60f8064a480e59d42dcf",
+    "provenance": "Future generation only: explicit field, DISTINCT, grouping and entity-set key contracts; unchanged compilers and historical default profiles.",
+    "source_sha256": "3fe5bc673f10cdc5cc996c3c4994eab85efa2f7431a67d5d12fba6d7f844efcb",
+    "supersedes_prefix_sha256": "8addf6a3059fa631fdd6ddf91e9006b8c6234c995c3a8c6d299eaf55be12123c",
+    "profile_version": "ours-five-benchmark-contract-v3",
+    "source_kind": "historical_ours_profile_file",
+    "syntax_examples": {
+      "distinct_projection": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n.eid",
+                "alias": "id"
+              }
+            ],
+            "distinct": true
+          }
+        ],
+        "combine": {
+          "op": "single"
+        }
+      },
+      "distinct_count": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n.eid",
+                "alias": "total",
+                "agg": "count",
+                "distinct": true
+              }
+            ]
+          }
+        ],
+        "combine": {
+          "op": "single"
+        }
+      },
+      "entity_set": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n.eid",
+                "alias": "id"
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n.eid",
+                "alias": "id"
+              }
+            ]
+          }
+        ],
+        "combine": {
+          "op": "union",
+          "key": "id",
+          "output": "count",
+          "alias": "total"
+        }
+      }
+    }
+  },
+  "Text2GQL": {
+    "prefix_messages": [
+      {
+        "content": "The engine is pinned native TuGraph 4.5.2, not Neo4j.\nOnly actual schema properties exist; entity identity is identity_property.\nDo not assume eid, rid, aliases, name or description unless actually declared.\nUse actual simple schema identifiers; quoted label spelling was not equivalent\nin independent checks. Use explicit variable lists in WITH, not WITH *.\nSeparate consecutive MATCH/OPTIONAL stages using explicit WITH bindings.\nGlobal post-OPTIONAL predicates require a subsequent explicit WITH stage;\ncarry needed nodes and scalar edge properties, avoiding unused nullable edges.\nPreserve relationship-bag multiplicity, NULLs and zero-neighbor groups.\nFor three-valued WHERE negation, guard compared operands IS NOT NULL before NOT.\nWhen counting entities, count the actual declared non-null primary property;\ndo not use a node-object COUNT DISTINCT that can bypass an expansion here.\nNative datetime literals use a space separator and up to six fractional digits.\nDo not guess timezones or silently drop precision. BOOL values are true/false.\nNo writes/admin/procedures. Return only requested scalar/list/map properties,\nnot node/relationship/path objects. No default LIMIT; preserve requested order.\n\nReturn one JSON object only, without Markdown.\nIf outside the finite language return {\"status\":\"UNSUPPORTED\",\"reason\":\"...\"}.\nOtherwise return {\"status\":\"ANSWER\",\"calls\":[selection],\"combine\":{\"op\":\"single\"}}.\nA selection has nodes:[{id,label}], edges:[{id,source,target,label,optional?}],\nwhere:[{field,op,value?|other_field?,negate?}], returns:[{field,alias,agg?,distinct?}].\nUse actual schema labels/properties and directed endpoints. Field is a variable\nplus actual property, e.g. p.<actual primary property>, never a fabricated eid.\nUp to four connected nodes and three edges; the first node is the required root.\nMandatory edges share one MATCH, with distinct relationship bindings. At most\none optional edge can attach to required endpoints and introduce a nullable node.\nGlobal where filters apply after optional expansion. Count nullable primary\nproperties/nodes for zero groups; count(*) also counts the unmatched root row.\nwhere is a conjunction, with eq,ne,lt,le,gt,ge,in,contains,starts_with,ends_with,\nis_null,not_null. negate applies three-valued NOT; other_field compares same types.\nBOOL admits eq/ne/in/null checks. DATE uses ISO dates. DATETIME admits scalar\ncomparisons of naive ISO timestamps at microsecond precision; no timezone guess.\nreturns aggregates: count,sum,avg,min,max,collect; count also admits * or a node variable.\nOptional group_by lists actual property keys; to keep same-named entities apart,\ngroup by the declared primary property. Other selection fields: distinct,\norder_by:[{column,direction:\"ASC\"|\"DESC\"}], limit only when the question requests it.\nFor union/intersection/difference use exactly two unaggregated/unordered/unlimited\nselections, with aligned columns, projecting the answer entity's primary as id.\nAll payload must belong to that same entity type. combine is {op,key:\"id\",\noutput:\"count\",alias}, or output:\"rows\",columns:[requested aliases].\nNo arbitrary query/expression text, subqueries, variable-length paths, multiple\noptional edges, HAVING, regex, arithmetic or multi-stage summary joins.\nDo not discard an unsupported condition or silently fall back to direct Cypher.\n\nExplicit compiler contract (v3; use these exact JSON positions): Every property reference is variable.property, using a node or edge id declared in the selection and a property declared for that binding. This applies to where.field and where.other_field; bare property names are not valid. For a distinct projection without aggregation, use selection-level distinct:true. A returns item may contain distinct only when that same item contains agg; even distinct:false is invalid on a non-aggregate returns item. For distinct counting use {field:<valid field>,alias:<output>,agg:\"count\",distinct:true}; COUNT DISTINCT * is not supported. Use group_by only when the selection has an aggregate, with one to four unique grouping keys. Every non-aggregate projection must be determined by those keys. order_by.column names a returned alias and direction is ASC or DESC. Do not emit an implicit limit. No more than one optional edge is supported; the required pattern must connect to the first/root node. Unsupported syntax must produce UNSUPPORTED; do not change the question or guess a property.\nIn this profile, returns.field and group_by use qualified properties. Only agg:\"count\" additionally permits field:\"*\" or a declared node variable; bare entities are not ordinary projections. Two-call composition requires a required, non-null answer-entity identity projected under the shared key alias, aligned columns and payload from that same entity type. Inputs must be unaggregated, unordered and unlimited. Use the actual schema identity_property as the composition identity; do not assume its name is eid, key or id. \nSyntax examples only: assume an illustrative ExampleEntity label with string key declared as identity_property; CypherBench also supplies eid. These are not task schema declarations. Replace the illustrative label and property with the actual public schema. The duplicated union inputs below show only the two-call structure, not a recommended plan for any task.\ndistinct_projection: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n.key\",\"alias\":\"id\"}],\"distinct\":true}],\"combine\":{\"op\":\"single\"}}\ndistinct_count: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n.key\",\"alias\":\"total\",\"agg\":\"count\",\"distinct\":true}]}],\"combine\":{\"op\":\"single\"}}\nentity_set: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n.key\",\"alias\":\"id\"}]},{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n.key\",\"alias\":\"id\"}]}],\"combine\":{\"op\":\"union\",\"key\":\"id\",\"output\":\"count\",\"alias\":\"total\"}}",
+        "role": "system"
+      }
+    ],
+    "prefix_sha256": "5a5e1c015a7dc38ffea793bbcc00fe885f63ec39bc764d1df28d110b84a33328",
+    "provenance": "Future generation only: explicit field, DISTINCT, grouping and entity-set key contracts; unchanged compilers and historical default profiles.",
+    "source_sha256": "3fe5bc673f10cdc5cc996c3c4994eab85efa2f7431a67d5d12fba6d7f844efcb",
+    "supersedes_prefix_sha256": "f44c8280b58b40e686f2d9f8bcdc40e9fbae5378bb969e49bff20b2e009ef417",
+    "profile_version": "ours-five-benchmark-contract-v3",
+    "source_kind": "historical_ours_profile_file",
+    "syntax_examples": {
+      "distinct_projection": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n.key",
+                "alias": "id"
+              }
+            ],
+            "distinct": true
+          }
+        ],
+        "combine": {
+          "op": "single"
+        }
+      },
+      "distinct_count": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n.key",
+                "alias": "total",
+                "agg": "count",
+                "distinct": true
+              }
+            ]
+          }
+        ],
+        "combine": {
+          "op": "single"
+        }
+      },
+      "entity_set": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n.key",
+                "alias": "id"
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n.key",
+                "alias": "id"
+              }
+            ]
+          }
+        ],
+        "combine": {
+          "op": "union",
+          "key": "id",
+          "output": "count",
+          "alias": "total"
+        }
+      }
+    }
+  },
+  "MindTheQuery": {
+    "prefix_messages": [
+      {
+        "content": "Return one JSON object. If unsupported, return {\"status\":\"UNSUPPORTED\",\"reason\":\"...\"}.\nOtherwise return {\"status\":\"ANSWER\",\"calls\":[...],\"combine\":{\"op\":\"single\"}}.\nEach call has nodes [{\"id\":\"n\",\"label\":\"public_label\"}], edges [{\"id\":\"r\",\"source\":\"n\",\"target\":\"m\",\"label\":\"public_relation\"}], where [{\"field\":\"n.property\",\"op\":\"eq\",\"value\":\"literal\"}], returns [{\"field\":\"n.property\",\"alias\":\"value\"}].\nUse 1-4 nodes, 0-3 directed edges, at most 16 AND predicates and 1-8 returns. Empty edges/where are allowed. Only public labels/properties/types are available. Predicates support eq/ne/lt/le/gt/ge/in/contains/starts_with/ends_with/is_null/not_null; negate is optional. Aggregates count/sum/avg/min/max/collect use agg in a return item. Optional distinct, group_by, order_by [{\"column\":\"alias\",\"direction\":\"ASC\"}] and explicit limit are allowed only when required by the question.\nTwo-call entity-set union/intersection/difference requires matching columns, an entity key, and combine {\"op\":\"union|intersection|difference\",\"key\":\"entity_alias\",\"output\":\"count\",\"alias\":\"count\"} or output rows with columns. Set inputs must be unaggregated, unordered and untruncated. Never guess physical ID properties. Never change the task to fit this bounded representation.\nA complete plan has one or two calls in total.\nExplicit compiler contract (v3; use these exact JSON positions): Every property reference is variable.property, using a node or edge id declared in the selection and a property declared for that binding. This applies to where.field and where.other_field; bare property names are not valid. For a distinct projection without aggregation, use selection-level distinct:true. A returns item may contain distinct only when that same item contains agg; even distinct:false is invalid on a non-aggregate returns item. For distinct counting use {field:<valid field>,alias:<output>,agg:\"count\",distinct:true}; COUNT DISTINCT * is not supported. Use group_by only when the selection has an aggregate, with one to four unique grouping keys. Every non-aggregate projection must be determined by those keys. order_by.column names a returned alias and direction is ASC or DESC. Do not emit an implicit limit. No more than one optional edge is supported; the required pattern must connect to the first/root node. Unsupported syntax must produce UNSUPPORTED; do not change the question or guess a property.\nFor this native Neo4j profile, returns.field and group_by may also be a declared node or relationship variable, e.g. \"n\". These represent native entities, not string IDs. For two-call entity-set composition, project a required, non-null native entity as the shared key alias: {field:\"n\",alias:\"id\"}. A property such as n.name or an elementId string is not a valid composition key. Both inputs must have the same entity kind/label, matching output columns, and all payload fields must belong to the key entity. Inputs must be unaggregated, unordered and unlimited. Properties still require variable.property. Do not inject eid/rid or infer uniqueness from a name. MTQ properties are label/relationship scoped; use only declarations for that exact binding. \nSyntax examples only: assume an illustrative ExampleEntity label with string key declared as identity_property; CypherBench also supplies eid. These are not task schema declarations. Replace the illustrative label and property with the actual public schema. The duplicated union inputs below show only the two-call structure, not a recommended plan for any task.\ndistinct_projection: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n\",\"alias\":\"id\"}],\"distinct\":true}],\"combine\":{\"op\":\"single\"}}\ndistinct_count: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n\",\"alias\":\"total\",\"agg\":\"count\",\"distinct\":true}]}],\"combine\":{\"op\":\"single\"}}\nentity_set: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n\",\"alias\":\"id\"}]},{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n\",\"alias\":\"id\"}]}],\"combine\":{\"op\":\"union\",\"key\":\"id\",\"output\":\"count\",\"alias\":\"total\"}}",
+        "role": "system"
+      }
+    ],
+    "prefix_sha256": "00be5807c8e5211742acebd4376ebbe4853756975ca85902a8f8dc665efd4120",
+    "provenance": "Future generation only: explicit field, DISTINCT, grouping and entity-set key contracts; unchanged compilers and historical default profiles.",
+    "source_sha256": "3fe5bc673f10cdc5cc996c3c4994eab85efa2f7431a67d5d12fba6d7f844efcb",
+    "supersedes_prefix_sha256": "87f3122329675295596874708eabde0c223f9d82b8fc350b7f38cff908eb854d",
+    "profile_version": "ours-five-benchmark-contract-v3",
+    "source_kind": "historical_ours_profile_file",
+    "syntax_examples": {
+      "distinct_projection": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n",
+                "alias": "id"
+              }
+            ],
+            "distinct": true
+          }
+        ],
+        "combine": {
+          "op": "single"
+        }
+      },
+      "distinct_count": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n",
+                "alias": "total",
+                "agg": "count",
+                "distinct": true
+              }
+            ]
+          }
+        ],
+        "combine": {
+          "op": "single"
+        }
+      },
+      "entity_set": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n",
+                "alias": "id"
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n",
+                "alias": "id"
+              }
+            ]
+          }
+        ],
+        "combine": {
+          "op": "union",
+          "key": "id",
+          "output": "count",
+          "alias": "total"
+        }
+      }
+    }
+  },
+  "ZOGRASCOPE": {
+    "prefix_messages": [
+      {
+        "content": "Return one JSON object. If unsupported, return {\"status\":\"UNSUPPORTED\",\"reason\":\"...\"}.\nOtherwise return {\"status\":\"ANSWER\",\"calls\":[...],\"combine\":{\"op\":\"single\"}}.\nEach call has nodes [{\"id\":\"n\",\"label\":\"public_label\"}], edges [{\"id\":\"r\",\"source\":\"n\",\"target\":\"m\",\"label\":\"public_relation\"}], where [{\"field\":\"n.property\",\"op\":\"eq\",\"value\":\"literal\"}], returns [{\"field\":\"n.property\",\"alias\":\"value\"}].\nUse 1-4 nodes, 0-3 directed edges, at most 16 AND predicates and 1-8 returns. Empty edges/where are allowed. Only public labels/properties/types are available. Predicates support eq/ne/lt/le/gt/ge/in/contains/starts_with/ends_with/is_null/not_null; negate is optional. Aggregates count/sum/avg/min/max/collect use agg in a return item. Optional distinct, group_by, order_by [{\"column\":\"alias\",\"direction\":\"ASC\"}] and explicit limit are allowed only when required by the question.\nTwo-call entity-set union/intersection/difference requires matching columns, an entity key, and combine {\"op\":\"union|intersection|difference\",\"key\":\"entity_alias\",\"output\":\"count\",\"alias\":\"count\"} or output rows with columns. Set inputs must be unaggregated, unordered and untruncated. Never guess physical ID properties. Never change the task to fit this bounded representation.\nA complete plan has one or two calls in total.\nExplicit compiler contract (v3; use these exact JSON positions): Every property reference is variable.property, using a node or edge id declared in the selection and a property declared for that binding. This applies to where.field and where.other_field; bare property names are not valid. For a distinct projection without aggregation, use selection-level distinct:true. A returns item may contain distinct only when that same item contains agg; even distinct:false is invalid on a non-aggregate returns item. For distinct counting use {field:<valid field>,alias:<output>,agg:\"count\",distinct:true}; COUNT DISTINCT * is not supported. Use group_by only when the selection has an aggregate, with one to four unique grouping keys. Every non-aggregate projection must be determined by those keys. order_by.column names a returned alias and direction is ASC or DESC. Do not emit an implicit limit. No more than one optional edge is supported; the required pattern must connect to the first/root node. Unsupported syntax must produce UNSUPPORTED; do not change the question or guess a property.\nFor this native Neo4j profile, returns.field and group_by may also be a declared node or relationship variable, e.g. \"n\". These represent native entities, not string IDs. For two-call entity-set composition, project a required, non-null native entity as the shared key alias: {field:\"n\",alias:\"id\"}. A property such as n.name or an elementId string is not a valid composition key. Both inputs must have the same entity kind/label, matching output columns, and all payload fields must belong to the key entity. Inputs must be unaggregated, unordered and unlimited. Properties still require variable.property. Do not inject eid/rid or infer uniqueness from a name. ZOGRASCOPE properties form an author global vocabulary; this does not prove every label has each property or that values are non-null or unique. \nSyntax examples only: assume an illustrative ExampleEntity label with string key declared as identity_property; CypherBench also supplies eid. These are not task schema declarations. Replace the illustrative label and property with the actual public schema. The duplicated union inputs below show only the two-call structure, not a recommended plan for any task.\ndistinct_projection: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n\",\"alias\":\"id\"}],\"distinct\":true}],\"combine\":{\"op\":\"single\"}}\ndistinct_count: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n\",\"alias\":\"total\",\"agg\":\"count\",\"distinct\":true}]}],\"combine\":{\"op\":\"single\"}}\nentity_set: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n\",\"alias\":\"id\"}]},{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n\",\"alias\":\"id\"}]}],\"combine\":{\"op\":\"union\",\"key\":\"id\",\"output\":\"count\",\"alias\":\"total\"}}",
+        "role": "system"
+      }
+    ],
+    "prefix_sha256": "95770f1d62051d52fdfe6fb65a53cbca7949c71e0f9dd7b7aff8a3d684aec9d8",
+    "provenance": "Future generation only: explicit field, DISTINCT, grouping and entity-set key contracts; unchanged compilers and historical default profiles.",
+    "source_sha256": "3fe5bc673f10cdc5cc996c3c4994eab85efa2f7431a67d5d12fba6d7f844efcb",
+    "supersedes_prefix_sha256": "87f3122329675295596874708eabde0c223f9d82b8fc350b7f38cff908eb854d",
+    "profile_version": "ours-five-benchmark-contract-v3",
+    "source_kind": "historical_ours_profile_file",
+    "syntax_examples": {
+      "distinct_projection": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n",
+                "alias": "id"
+              }
+            ],
+            "distinct": true
+          }
+        ],
+        "combine": {
+          "op": "single"
+        }
+      },
+      "distinct_count": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n",
+                "alias": "total",
+                "agg": "count",
+                "distinct": true
+              }
+            ]
+          }
+        ],
+        "combine": {
+          "op": "single"
+        }
+      },
+      "entity_set": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n",
+                "alias": "id"
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n",
+                "alias": "id"
+              }
+            ]
+          }
+        ],
+        "combine": {
+          "op": "union",
+          "key": "id",
+          "output": "count",
+          "alias": "total"
+        }
+      }
+    }
+  },
+  "OSDB-STKG": {
+    "prefix_messages": [
+      {
+        "content": "Return one JSON object only. Both methods use status ANSWER, UNSUPPORTED or INSUFFICIENT_EVIDENCE. A decline has only status and a nonempty reason. Declines are not correct numeric answers. Never invent missing history, people identity or employment facts. Use the common input only; a valid executed answer receives no gold-driven repair. Return one JSON object only. Use the common input schema and database notes.\nFor unsupported requests return {\"status\":\"UNSUPPORTED\",\"reason\":\"...\"}; never fall back to Direct.\nOtherwise {\"status\":\"ANSWER\",\"calls\":[selection],\"combine\":{\"op\":\"single\"}}.\nA selection has nodes:[{id,label}], edges:[{id,source,target,label,optional?}], where:[{field,op,value?|other_field?,negate?}], returns:[{field,alias,agg?,distinct?}], and optional distinct,order_by,limit,group_by.\nUse one to four nodes, at most three connected directed edges and one OPTIONAL edge. Conditions are AND, at most16. Ops:eq,ne,lt,le,gt,ge,in,contains,starts_with,ends_with,is_null,not_null; bool only equality/membership/null. Literals must match declared types. Temporal predicates use schema annotations automatically, retain timezone/fraction literals. Returns1..8; aggregates:count,sum,avg,min,max,collect. Explicit group_by preserves declared identity grain. Count an optional neighbor or relationship identity to obtain zero, not count(*).\nFor two calls combine op:union|intersection|difference,key:<shared projected key alias>,output:rows|count,columns:<aliases for rows>|alias:<count alias>. Same entity type, required non-null declared identity as key, payload tied to that entity, matching columns, unaggregated/unordered/untruncated inputs. At most two calls. Full-detail and contract are controls sharing this plan, not independent model methods. No query text, new tools or metadata attributes.\nExplicit compiler contract (v3; use these exact JSON positions): Every property reference is variable.property, using a node or edge id declared in the selection and a property declared for that binding. This applies to where.field and where.other_field; bare property names are not valid. For a distinct projection without aggregation, use selection-level distinct:true. A returns item may contain distinct only when that same item contains agg; even distinct:false is invalid on a non-aggregate returns item. For distinct counting use {field:<valid field>,alias:<output>,agg:\"count\",distinct:true}; COUNT DISTINCT * is not supported. Use group_by only when the selection has an aggregate, with one to four unique grouping keys. Every non-aggregate projection must be determined by those keys. order_by.column names a returned alias and direction is ASC or DESC. Do not emit an implicit limit. No more than one optional edge is supported; the required pattern must connect to the first/root node. Unsupported syntax must produce UNSUPPORTED; do not change the question or guess a property.\nIn this profile, returns.field and group_by use qualified properties. Only agg:\"count\" additionally permits field:\"*\" or a declared node variable; bare entities are not ordinary projections. Two-call composition requires a required, non-null answer-entity identity projected under the shared key alias, aligned columns and payload from that same entity type. Inputs must be unaggregated, unordered and unlimited. Use the actual schema identity_property as the composition identity; do not assume its name is eid, key or id. \nSyntax examples only: assume an illustrative ExampleEntity label with string key declared as identity_property; CypherBench also supplies eid. These are not task schema declarations. Replace the illustrative label and property with the actual public schema. The duplicated union inputs below show only the two-call structure, not a recommended plan for any task.\ndistinct_projection: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n.key\",\"alias\":\"id\"}],\"distinct\":true}],\"combine\":{\"op\":\"single\"}}\ndistinct_count: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n.key\",\"alias\":\"total\",\"agg\":\"count\",\"distinct\":true}]}],\"combine\":{\"op\":\"single\"}}\nentity_set: {\"status\":\"ANSWER\",\"calls\":[{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n.key\",\"alias\":\"id\"}]},{\"nodes\":[{\"id\":\"n\",\"label\":\"ExampleEntity\"}],\"edges\":[],\"where\":[],\"returns\":[{\"field\":\"n.key\",\"alias\":\"id\"}]}],\"combine\":{\"op\":\"union\",\"key\":\"id\",\"output\":\"count\",\"alias\":\"total\"}}",
+        "role": "system"
+      }
+    ],
+    "prefix_sha256": "2f2a237e781763712e7ae6061ae61c5172bdc2e8e7a1332f4063f31e477e47c4",
+    "provenance": "Future generation only: explicit field, DISTINCT, grouping and entity-set key contracts; unchanged compilers and historical default profiles.",
+    "source_sha256": "3fe5bc673f10cdc5cc996c3c4994eab85efa2f7431a67d5d12fba6d7f844efcb",
+    "supersedes_prefix_sha256": "85ab2d8944ebf4df382eb28b6aac68812e88c27ecad6f4346c7cf12aabe25919",
+    "profile_version": "ours-five-benchmark-contract-v3",
+    "source_kind": "historical_ours_profile_file",
+    "syntax_examples": {
+      "distinct_projection": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n.key",
+                "alias": "id"
+              }
+            ],
+            "distinct": true
+          }
+        ],
+        "combine": {
+          "op": "single"
+        }
+      },
+      "distinct_count": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n.key",
+                "alias": "total",
+                "agg": "count",
+                "distinct": true
+              }
+            ]
+          }
+        ],
+        "combine": {
+          "op": "single"
+        }
+      },
+      "entity_set": {
+        "status": "ANSWER",
+        "calls": [
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n.key",
+                "alias": "id"
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "id": "n",
+                "label": "ExampleEntity"
+              }
+            ],
+            "edges": [],
+            "where": [],
+            "returns": [
+              {
+                "field": "n.key",
+                "alias": "id"
+              }
+            ]
+          }
+        ],
+        "combine": {
+          "op": "union",
+          "key": "id",
+          "output": "count",
+          "alias": "total"
+        }
+      }
+    }
+  }
+}

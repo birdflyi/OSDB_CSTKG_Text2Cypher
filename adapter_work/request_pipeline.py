@@ -16,6 +16,7 @@ sys.path.insert(0, str(WORK))
 sys.path.insert(0, str(WORK.parent))
 
 from common import loader
+from common.author_assets import method_binding, validate_asset
 from common.dispatch import generate_path, request_item
 from engine.campaign import (
     code_manifest,
@@ -66,20 +67,6 @@ def verify(receipt):
     if digest(path.read_bytes()) != receipt["sha256"]:
         raise IntegrityError("Changed preparation artifact: " + str(path))
     return path
-
-
-def method_binding(bindings, method, benchmark, graph):
-    base = bindings.get(method)
-    if not base:
-        raise ValueError("Missing explicit method binding: " + method)
-    if method == "cyquark":
-        key = benchmark + "/" + graph
-        if key not in base.get("graphs", {}):
-            raise ValueError(
-                "CYQUARK needs a graph-specific checkpoint binding: " + key
-            )
-        return base["graphs"][key]
-    return base
 
 
 @dataclass(frozen=True)
@@ -192,27 +179,13 @@ def load_jobs(inventory, bindings, *, simulated=False):
                 and not simulated
                 and cell["method"] in ("cypher-ri", "cyphersmith", "cyquark")
             ):
-                asset = read(verify(binding["asset_manifest"]))
-                if (
-                    asset.get("method") != cell["method"]
-                    or asset.get("model") != binding["model"]
-                ):
-                    raise IntegrityError(
-                        "Author asset identity differs from method binding"
-                    )
-                if not asset.get("checkpoint_sha256") or not asset.get(
-                    "tokenizer_sha256"
-                ):
-                    raise IntegrityError(
-                        "Author service requires checkpoint and tokenizer evidence"
-                    )
-                if cell["method"] == "cyquark" and (
-                    asset.get("benchmark"),
-                    asset.get("graph"),
-                ) != (cell["benchmark"], pos["graph"]):
-                    raise IntegrityError(
-                        "CYQUARK checkpoint belongs to another target graph"
-                    )
+                validate_asset(
+                    binding,
+                    cell["method"],
+                    cell["benchmark"],
+                    pos["graph"],
+                    read_pin=lambda pin: read(verify(pin)),
+                )
             template = read(verify(pos["request_template"]))
             value = spec if isinstance(spec, dict) else spec.as_dict()
             body = value.get("body") or {"messages": list(value["messages"])}

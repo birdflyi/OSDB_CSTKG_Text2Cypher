@@ -21,15 +21,10 @@ from engine.config import canonical, digest
 from engine.errors import IntegrityError, PersistenceError
 from engine.journal import write_new
 
+from common.methods import AUTHOR_METHODS, CONTROL_METHODS, METHODS
+from common.author_assets import method_binding, validate_asset
+
 HARD_ERRORS = (IntegrityError, PersistenceError, PermissionError, FileExistsError)
-METHODS = (
-    "direct",
-    "ours",
-    "direct-feedback",
-    "correct-detail",
-    "simple-correct",
-    "native-set-count",
-)
 
 
 def read_pin(pin):
@@ -59,6 +54,34 @@ def source_manifest():
     }
 
 
+def validate_author_source(row, source, config):
+    """A Cypher execution route does not itself admit an author's model assets."""
+    if config.get("test_only") is True:
+        return
+    if source is None:
+        return  # Retain the unrun position in the denominator.
+    result = source["result"]
+    if result["final"]["status"] not in ("ready", "answered"):
+        return
+    request_config = read_pin(config["author_request_config"])
+    binding = method_binding(
+        request_config["bindings"], row["method"], row["benchmark"], row["graph"]
+    )
+    if binding.get("ready") is not True:
+        raise IntegrityError("Author inference assets remain resource_pending")
+    validate_asset(
+        binding, row["method"], row["benchmark"], row["graph"], read_pin=read_pin
+    )
+    # This is the original logical Item.model, not the endpoint's wire alias.
+    if result.get("model") != binding["model"]:
+        raise IntegrityError("Source response belongs to another model")
+    if any(
+        result.get(k) != row[k]
+        for k in ("task_id", "graph", "method", "benchmark", "position_id")
+    ):
+        raise IntegrityError("Author source identity differs from position")
+
+
 def load_selection(config):
     inventory = read_pin(config["inventory"])
     limit = config["per_cell"]
@@ -74,7 +97,7 @@ def load_selection(config):
     groups = defaultdict(list)
     for cell in inventory["cells"]:
         if cell["method"] not in METHODS:
-            raise ValueError("This consumer scope contains the six nonauthor methods")
+            raise ValueError("Unsupported method in offline consumer")
         selected = [p for p in cell["positions"] if p["full_flow_five"]][:limit]
         if "selected_positions" in config:
             wanted = set(config["selected_positions"].get(cell["cell_id"], []))
@@ -93,6 +116,11 @@ def load_selection(config):
                 method=cell["method"],
                 benchmark=cell["benchmark"],
             )
+            if row["method"] in AUTHOR_METHODS:
+                source = sources.get(
+                    (row["method"], row["benchmark"], row["position_id"])
+                )
+                validate_author_source(row, source, config)
             groups[cell["benchmark"], position["graph"]].append(row)
     return groups, sources
 
@@ -120,7 +148,7 @@ def run_group(rows, sources, backend, directory):
         source_method = (
             "direct"
             if row["method"] == "direct-feedback"
-            else ("ours" if row["method"] in METHODS[3:] else row["method"])
+            else ("ours" if row["method"] in CONTROL_METHODS else row["method"])
         )
         feedback_source = sources.get(
             ("direct-feedback", row["benchmark"], row["position_id"])
@@ -140,7 +168,7 @@ def run_group(rows, sources, backend, directory):
                 answer = dict(
                     status=source_status, complete=False, rows=None, columns=None
                 )
-            elif row["method"] in ("direct", "ours"):
+            elif row["method"] in ("direct", "ours") + AUTHOR_METHODS:
                 answer = backend.execute(row, source["result"], folder)
                 method_answers[row["method"], row["position_id"]] = answer
             elif row["method"] == "direct-feedback":
@@ -254,6 +282,8 @@ def run_group(rows, sources, backend, directory):
 
 
 def run(config, backend_factory=None):
+    if config.get("test_only") is True and backend_factory is None:
+        raise IntegrityError("test_only requires an explicitly injected test backend")
     if config.get("execute_authorized") is not True:
         raise ValueError("Explicit offline smoke admission required")
     if backend_factory is None and config.get("source") != source_manifest():
@@ -307,6 +337,7 @@ def run(config, backend_factory=None):
         counts=dict(Counter(r["status"] for r in results)),
         model_calls=0,
         paper_result=False,
+        test_only=config.get("test_only") is True,
     )
     save(output / "summary.json", summary)
     return summary

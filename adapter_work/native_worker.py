@@ -25,6 +25,7 @@ sys.path[:0] = [
     str(ROOT / "operations/analysis"),
     str(ROOT / "experiment-harness/public_benchmark_v1"),
 ]
+from common.methods import CYPHER_METHODS
 from engine.config import canonical, digest
 from engine.errors import IntegrityError
 from engine.journal import write_new
@@ -222,7 +223,7 @@ class NativeWorker:
         )
         self.capture.__enter__()
         method = identity["method"]
-        if method in ("direct", "direct-feedback"):
+        if method in CYPHER_METHODS:
             answer = self.capture.read(
                 request["cypher"], request.get("parameters", {}), purpose="method"
             )

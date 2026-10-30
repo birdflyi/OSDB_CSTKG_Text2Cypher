@@ -20,6 +20,7 @@ sys.path[:0] = [
     str(ROOT / "experiment-harness/public_benchmark_v1"),
     str(ROOT / "operations/analysis"),
 ]
+from common.methods import CYPHER_METHODS
 from engine.config import canonical, digest
 from engine.errors import IntegrityError
 from engine.journal import write_new
@@ -240,8 +241,8 @@ class TuGraphWorker:
             folder / "queries", self.transport, query_seconds=60, wall_seconds=90
         )
         method = identity["method"]
-        if method in ("direct", "direct-feedback"):
-            result = journal.execute("direct", self.storage_graph, request["cypher"])
+        if method in CYPHER_METHODS:
+            result = journal.execute(method, self.storage_graph, request["cypher"])
         elif method == "native-set-count":
             combine = request["plan"].get("combine", {})
             applicable = (
