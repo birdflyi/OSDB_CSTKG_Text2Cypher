@@ -72,7 +72,8 @@ async def watch_drain(scheduler, stop: asyncio.Event, interval=0.2):
             scheduler.spec.run_dir / "DRAIN",
             *getattr(scheduler, "extra_drain_paths", ()),
         ]
-        if any(path.exists() for path in paths):
+        signal = getattr(scheduler, "external_stop_event", None)
+        if (signal is not None and signal.is_set()) or any(path.exists() for path in paths):
             await scheduler.drain()
             return
         try:

@@ -10,18 +10,27 @@ from contextlib import contextmanager
 import json
 from pathlib import Path
 import sys
+import threading
+from copy import deepcopy
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path[:0] = [
     str(ROOT / "operations" / "analysis"),
     str(ROOT / "experiment-harness" / "public_benchmark_v1"),
 ]
+from native_cases import case_id, identity_of
 from common.methods import CYPHER_METHODS
 from engine.config import canonical, digest
 from engine.execution import JsonRpcClient, TracedRpcExecutor, worker_command
 from engine.errors import IntegrityError
 from offline_pipeline import read_pin, save
 from common.ri import payload_of
+
+
+def instance_command(command, output):
+    """Only explicit placeholders opt frozen commands into versioned reopens."""
+    token = digest(str(output.resolve()).encode("utf-8"))[:20]
+    return [part.replace("{instance_id}", token) for part in command]
 
 
 class SelectionBackend:
@@ -36,6 +45,9 @@ class SelectionBackend:
         else:
             import observed_neo4j_services_dev_v2 as compiler
         self.compiler = compiler
+        self.max_case_workers = settings.get("case_workers", 1)
+        self._score_lock = threading.Lock()
+        self._score_cache = None
 
     @staticmethod
     def schema(row):
@@ -98,17 +110,22 @@ class SelectionBackend:
         if self.benchmark == "CypherBench":
             import answer_scoring
 
-            reference = self.settings["reference"]
-            raw = Path(reference["path"]).read_bytes()
-            if digest(raw) != reference["sha256"]:
-                raise IntegrityError("Reference changed")
-            references = {
-                v["qid"]: v for v in map(json.loads, raw.decode("utf-8").splitlines())
-            }
-            gold = references[row["task_id"]]
-            comparator = answer_scoring.load_official_comparator(
-                self.settings["official_source"]
-            )
+            with self._score_lock:
+                if self._score_cache is None:
+                    reference = self.settings["reference"]
+                    raw = Path(reference["path"]).read_bytes()
+                    if digest(raw) != reference["sha256"]:
+                        raise IntegrityError("Reference changed")
+                    references = {
+                        v["qid"]: v
+                        for v in map(json.loads, raw.decode("utf-8").splitlines())
+                    }
+                    comparator = answer_scoring.load_official_comparator(
+                        self.settings["official_source"]
+                    )
+                    self._score_cache = (references, comparator)
+                references, comparator = self._score_cache
+                gold = deepcopy(references[row["task_id"]])
             result = answer_scoring.score_executed_answer(
                 status=answer["status"],
                 predicted_rows=answer["rows"],
@@ -126,8 +143,12 @@ class SelectionBackend:
             )
         from osdb_response_boundary_dev import score_numeric
 
-        references = read_pin(self.settings["reference"])
-        gold = next(r for r in references if r["task_id"] == row["task_id"])
+        with self._score_lock:
+            if self._score_cache is None:
+                self._score_cache = {
+                    r["task_id"]: r for r in read_pin(self.settings["reference"])
+                }
+            gold = deepcopy(self._score_cache[row["task_id"]])
         result = score_numeric(answer, gold["numeric_reference_rows"])
         return dict(
             status="scored_development",
@@ -142,14 +163,18 @@ class NativeBackend:
     def __init__(self, client):
         self.client = client
         self.answer_hashes = {}
+        self._case_lock = threading.Lock()
+        self._active = set()
+        ready = getattr(client, "ready_value", {})
+        self.max_case_workers = ready.get("max_case_workers", 1)
+        if type(self.max_case_workers) is not int or self.max_case_workers < 1:
+            raise IntegrityError("Invalid backend case capacity")
+        self.supports_finish_case = ready.get("case_protocol") == "thread-affine-v1"
 
     def execute(self, row, source, directory):
         request = dict(
             kind="execute",
-            identity={
-                k: row[k]
-                for k in ("task_id", "method", "benchmark", "graph", "position_id")
-            },
+            identity=identity_of(row),
         )
         if row["method"] in CYPHER_METHODS:
             request.update(
@@ -162,7 +187,11 @@ class NativeBackend:
                 schema=SelectionBackend.schema(row),
             )
         save(directory / "rpc_intent.json", request)
+        with self._case_lock:
+            self._active.add(case_id(row))
         result = self.client.request(request, timeout=200)
+        if result.get("status") == "integrity_error":
+            raise IntegrityError(result.get("error", "Remote case integrity failure"))
         save(directory / "rpc_result.json", result)
         if "answer" not in result:
             return dict(
@@ -175,9 +204,8 @@ class NativeBackend:
         answer = result["answer"]
         if digest(canonical(answer)) != result["remote_final_sha256"]:
             raise IntegrityError("Remote sealed answer differs")
-        self.answer_hashes[row["method"], row["position_id"]] = result[
-            "remote_final_sha256"
-        ]
+        with self._case_lock:
+            self.answer_hashes[case_id(row)] = result["remote_final_sha256"]
         return answer
 
     def control(self, row, source, directory):
@@ -185,21 +213,41 @@ class NativeBackend:
 
     def score(self, row, answer, receipt):
         read_pin(receipt)
+        with self._case_lock:
+            expected = self.answer_hashes[case_id(row)]
+        if digest(canonical(answer)) != expected:
+            raise IntegrityError("Local answer differs from remote case seal")
         result = self.client.request(
-            dict(
-                kind="score",
-                answer_sha256=self.answer_hashes[row["method"], row["position_id"]],
-            ),
+            dict(kind="score", identity=identity_of(row), answer_sha256=expected),
             timeout=200,
         )
+        if result.get("status") == "integrity_error":
+            raise IntegrityError(result.get("error", "Remote score identity failure"))
         result.pop("id", None)
         return result
+
+    def finish_case(self, row):
+        key = case_id(row)
+        with self._case_lock:
+            active = key in self._active
+        if active and self.supports_finish_case:
+            result = self.client.request(
+                dict(kind="finish_case", identity=identity_of(row)), timeout=30
+            )
+            if result.get("status") != "case_closed":
+                raise IntegrityError("Remote native case did not confirm closure")
+        with self._case_lock:
+            self._active.discard(key)
+            self.answer_hashes.pop(key, None)
 
 
 class Text2GQLBackend(NativeBackend):
     def __init__(self, client, settings):
         super().__init__(client)
         self.settings = settings
+        self.supports_finish_case = False  # TuGraph has no cross-command transaction.
+        self._score_lock = threading.Lock()
+        self._score_cache = None
 
     def score(self, row, answer, receipt):
         read_pin(receipt)
@@ -207,20 +255,24 @@ class Text2GQLBackend(NativeBackend):
         from text2gql_score_contract_dev_20261027 import FinalAnswerContract
         from audit_text2gql_score_boundaries_20261027 import subset
 
-        reference = self.settings["reference"]
-        store = SealedReferenceStore(
-            reference["path"], expected_seal_sha256=reference["sha256"]
-        )
-        comparator = self.settings["comparator"]
-        path = Path(comparator["path"])
-        if digest(path.read_bytes()) != comparator["sha256"]:
-            raise IntegrityError("Text2GQL comparator changed")
-        evaluator, _ = subset(path, "ExecutionEvaluator", ["compare_results"])
-        contract = FinalAnswerContract(
-            store.cohort(),
-            evaluator.compare_results,
-            comparator_sha256=comparator["sha256"],
-        )
+        with self._score_lock:
+            if self._score_cache is None:
+                reference = self.settings["reference"]
+                store = SealedReferenceStore(
+                    reference["path"], expected_seal_sha256=reference["sha256"]
+                )
+                comparator = self.settings["comparator"]
+                path = Path(comparator["path"])
+                if digest(path.read_bytes()) != comparator["sha256"]:
+                    raise IntegrityError("Text2GQL comparator changed")
+                evaluator, _ = subset(path, "ExecutionEvaluator", ["compare_results"])
+                contract = FinalAnswerContract(
+                    store.cohort(),
+                    evaluator.compare_results,
+                    comparator_sha256=comparator["sha256"],
+                )
+                self._score_cache = (store, contract)
+            store, contract = self._score_cache
         metadata = store.metadata(row["graph"], row["task_id"])
         gold = store.load(
             row["graph"], row["task_id"], expected_query_sha256=metadata["query_sha256"]
@@ -245,7 +297,7 @@ def open_backend(benchmark, graph, settings, output):
         route = settings["graphs"][graph]
         with (output / ("worker-" + graph + ".stderr")).open("xb") as stderr:
             client = JsonRpcClient(
-                worker_command(route["command"]),
+                worker_command(instance_command(route["command"], output)),
                 expected_ready=route["expected_ready"],
                 stderr=stderr,
             )
@@ -265,7 +317,9 @@ def open_backend(benchmark, graph, settings, output):
                         worker_version="engine-neo4j-v1",
                     ).execute
 
-                yield SelectionBackend(benchmark, settings, execute_factory)
+                backend = SelectionBackend(benchmark, settings, execute_factory)
+                backend.max_case_workers = client.ready_value.get("max_case_workers", 1)
+                yield backend
             finally:
                 client.close()
     elif benchmark == "OSDB-STKG":
@@ -278,20 +332,31 @@ def open_backend(benchmark, graph, settings, output):
             if "runtime_root" in settings
             else output / ("osdb-" + graph)
         )
+        route = settings.get("graphs", {}).get(graph, {})
         factory = OwnedGraphFactory(
             runtime_directory,
             binding["inventory"]["path"],
             binding["inventory"]["sha256"],
             binding["profiles"],
             binding["neo4j_home"],
-            Path(settings["lock_path"]),
-            http=binding["http_port"],
-            bolt=binding["bolt_port"],
+            Path(route.get("lock_path") or settings["lock_path"]),
+            http=route.get("http_port", binding["http_port"]),
+            bolt=route.get("bolt_port", binding["bolt_port"]),
+            workers=settings.get("case_workers", 1),
+            connection_pool_size=settings.get("connection_pool_size"),
+            cpu_count=settings.get("cpu_count", 2),
+            heap_initial=settings.get("heap_initial", "256m"),
+            heap_max=settings.get("heap_max", "512m"),
+            pagecache=settings.get("pagecache", "128m"),
             startup_seconds=settings.get("startup_seconds", 32),
         )
         with factory, factory(graph) as handle:
             yield SelectionBackend(
-                benchmark, settings, lambda row, directory: handle["execute"]
+                benchmark,
+                settings,
+                lambda row, directory: handle["case_executor"](directory / "reads")[
+                    "execute"
+                ],
             )
     elif benchmark in ("MindTheQuery", "ZOGRASCOPE", "Text2GQL"):
         route = settings["graphs"][graph]
@@ -299,7 +364,7 @@ def open_backend(benchmark, graph, settings, output):
             "xb"
         ) as stderr:
             client = JsonRpcClient(
-                worker_command(route["command"]),
+                worker_command(instance_command(route["command"], output)),
                 expected_ready=route["expected_ready"],
                 stderr=stderr,
             )

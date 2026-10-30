@@ -9,7 +9,7 @@ import time
 
 from .config import CampaignSpec, DEFAULT_TIMEOUTS, canonical, digest
 from .ids import component, logical_key, request_id
-from .ledger import BudgetError
+from .ledger import BudgetExhausted
 from .errors import IntegrityError, PersistenceError
 from .pool import AdmissionTimeout, DynamicPool, RouteUnavailable
 from .transport import endpoint_health, local_resource_error, retryable
@@ -209,7 +209,7 @@ class Scheduler:
             )
             self.ledger.finish(rid, value)
             return value
-        except BudgetError as exc:
+        except BudgetExhausted as exc:
             return dict(
                 status="not_dispatched",
                 request_id=rid,

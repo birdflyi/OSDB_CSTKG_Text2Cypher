@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, TimeoutError, wait
 import json
 import math
 from pathlib import PureWindowsPath
@@ -11,7 +11,7 @@ import uuid
 
 from .config import DEFAULT_TIMEOUTS, canonical, timeouts_from
 from .journal import write_new
-from .errors import IntegrityError
+from .errors import IntegrityError, PersistenceError
 
 
 class UnknownExecution(RuntimeError):
@@ -176,11 +176,17 @@ class JsonRpcClient:
             with self.write_lock:
                 self.process.stdin.write(payload)
                 self.process.stdin.flush()
-            return future.result(self.timeouts.rpc if timeout is None else timeout)
+            result = future.result(self.timeouts.rpc if timeout is None else timeout)
         except (OSError, TimeoutError) as exc:
             with self.lock:
                 self.pending.pop(identity, None)
             raise UnknownExecution(type(exc).__name__) from exc
+        if result.get("status") == "HARD_ERROR":
+            error = PersistenceError if result.get("error_type") in (
+                "PersistenceError", "PermissionError", "FileExistsError"
+            ) else IntegrityError
+            raise error("Worker rejected execution: " + result.get("error_type", "unknown"))
+        return result
 
     def close(self):
         if self.process.stdin and not self.process.stdin.closed:
@@ -195,12 +201,23 @@ class JsonRpcClient:
 
 
 def serve_stream(stream, emit, handler, workers: int):
-    """Parallelize tagged requests; output writes remain atomic JSON lines."""
+    """Bound admitted requests; preserve hard failures and drain active work."""
+    if type(workers) is not int or workers < 1:
+        raise ValueError("workers must be a positive integer")
     output_lock = threading.Lock()
+    stopped = threading.Event()
+    hard_errors = (IntegrityError, PersistenceError, PermissionError, FileExistsError)
 
     def work(request):
+        failure = None
         try:
+            if stopped.is_set():
+                raise IntegrityError("Worker stopped after an earlier hard failure")
             result = handler(request)
+        except hard_errors as exc:
+            stopped.set()
+            failure = exc
+            result = dict(status="HARD_ERROR", error_type=type(exc).__name__, complete=False)
         except Exception as exc:
             result = dict(
                 status="EXECUTION_ERROR",
@@ -210,16 +227,28 @@ def serve_stream(stream, emit, handler, workers: int):
                 complete=False,
             )
         with output_lock:
-            emit(dict(result, id=request["id"]))
+            try:
+                emit(dict(result, id=request["id"]))
+            except BaseException:
+                stopped.set()
+                raise
+        if failure is not None:
+            raise failure
 
     with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="graph-read") as executor:
-        futures = []
+        pending = set()
         for line in stream:
+            if stopped.is_set():
+                break
             request = json.loads(line)
             if not isinstance(request.get("id"), str):
                 raise ValueError("Worker requires an explicit request id")
-            futures.append(executor.submit(work, request))
-        for future in futures:
+            pending.add(executor.submit(work, request))
+            if len(pending) >= workers:
+                completed, pending = wait(pending, return_when=FIRST_COMPLETED)
+                for future in completed:
+                    future.result()
+        for future in pending:
             future.result()
 
 

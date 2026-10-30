@@ -58,7 +58,9 @@ def checkpoint_replies(path, ledger, *, logical_keys=None):
             )
         )
     write_new(path, canonical(entries))
-    return saved_replies(path, digest(path.read_bytes()), ledger, logical_keys=logical_keys)
+    return saved_replies(
+        path, digest(path.read_bytes()), ledger, logical_keys=logical_keys
+    )
 
 
 def saved_replies(manifest_path, expected_sha256, ledger, *, logical_keys=None):
@@ -80,50 +82,67 @@ def saved_replies(manifest_path, expected_sha256, ledger, *, logical_keys=None):
     expected_ids = {
         r["request_id"]
         for r in records
-        if r["scope"] == ledger.scope and (logical_keys is None or r["logical_key"] in logical_keys)
+        if r["scope"] == ledger.scope
+        and (logical_keys is None or r["logical_key"] in logical_keys)
     }
     if {e["request_id"] for e in entries} != expected_ids:
-        raise IntegrityError("Recovery must account for every charged attempt in its scope")
+        raise IntegrityError(
+            "Recovery must account for every charged attempt in its scope"
+        )
     replies = {}
     for entry in sorted(entries, key=lambda e: ledger.records[e["request_id"]]["slot"]):
-        record = ledger.records[entry["request_id"]]
-        request = Path(record["request_path"])
-        terminal = request.parent / "terminal.json"
-        if (
-            record["request_sha256"] != entry["request_sha256"]
-            or digest(request.read_bytes()) != entry["request_sha256"]
-            or digest(terminal.read_bytes()) != entry["terminal_sha256"]
-        ):
-            raise IntegrityError("Changed charged response/request")
-        value = json.loads(terminal.read_text(encoding="utf-8"))
-        if value["request_id"] != entry["request_id"] or value["budget_slot"] != record["slot"]:
-            raise IntegrityError("Cached physical identity differs")
-        logical_sha = logical_request_digest(request, value)
-        previous = replies.get(record["logical_key"])
-        history = list(previous["history"]) if previous else []
-        if previous and (
-            previous["response"]["status"] not in ("infra", "unknown", "throttled")
-            or previous["wire_sha256"] != logical_sha
-        ):
-            raise IntegrityError(
-                "Recovery cannot replace a completed model response or change bytes"
-            )
-        if len(history) >= 3:
-            raise IntegrityError("Recovery history exceeds three physical attempts")
-        if any(r["response"]["request_id"] == entry["request_id"] for r in history):
-            raise IntegrityError("Duplicate physical recovery identity")
-        history.append(
-            dict(
-                response=value,
-                source_terminal=str(terminal),
-                source_terminal_sha256=entry["terminal_sha256"],
-            )
+        merge_saved_reply(replies, ledger.records[entry["request_id"]], entry)
+    return replies
+
+
+def merge_saved_reply(replies, record, entry=None):
+    """Validate one terminal and append it to the existing, already audited history."""
+    if entry is None:
+        terminal = Path(record["request_path"]).with_name("terminal.json")
+        entry = dict(
+            request_id=record["request_id"],
+            request_sha256=record["request_sha256"],
+            terminal_sha256=digest(terminal.read_bytes()),
         )
-        replies[record["logical_key"]] = dict(
+    request = Path(record["request_path"])
+    terminal = request.parent / "terminal.json"
+    if (
+        record["request_sha256"] != entry["request_sha256"]
+        or digest(request.read_bytes()) != entry["request_sha256"]
+        or digest(terminal.read_bytes()) != entry["terminal_sha256"]
+    ):
+        raise IntegrityError("Changed charged response/request")
+    value = json.loads(terminal.read_text(encoding="utf-8"))
+    if (
+        value["request_id"] != entry["request_id"]
+        or value["budget_slot"] != record["slot"]
+    ):
+        raise IntegrityError("Cached physical identity differs")
+    logical_sha = logical_request_digest(request, value)
+    previous = replies.get(record["logical_key"])
+    history = list(previous["history"]) if previous else []
+    if previous and (
+        previous["response"]["status"] not in ("infra", "unknown", "throttled")
+        or previous["wire_sha256"] != logical_sha
+    ):
+        raise IntegrityError(
+            "Recovery cannot replace a completed model response or change bytes"
+        )
+    if len(history) >= 3:
+        raise IntegrityError("Recovery history exceeds three physical attempts")
+    if any(r["response"]["request_id"] == entry["request_id"] for r in history):
+        raise IntegrityError("Duplicate physical recovery identity")
+    history.append(
+        dict(
             response=value,
-            wire_sha256=logical_sha,
             source_terminal=str(terminal),
             source_terminal_sha256=entry["terminal_sha256"],
-            history=history,
         )
-    return replies
+    )
+    replies[record["logical_key"]] = dict(
+        response=value,
+        wire_sha256=logical_sha,
+        source_terminal=str(terminal),
+        source_terminal_sha256=entry["terminal_sha256"],
+        history=history,
+    )

@@ -49,10 +49,10 @@ def test_import_uses_storage_name_and_retains_public_identity(tmp_path, monkeypa
 def test_execution_routes_storage_graph_but_saves_public_case(tmp_path, monkeypatch, method):
     public = "Manufacturing_BOM(Bill_Of_Materials)"
     instance = worker.TuGraphWorker.__new__(worker.TuGraphWorker)
-    instance.settings = {"graph": public}
+    instance.settings = {"graph": public, "port": 18871}
     instance.storage_graph = worker.graph_storage_name(public)
     instance.folder = tmp_path
-    instance.transport = object()
+    instance.token = "test-only-token"
     seen = []
 
     class Journal:

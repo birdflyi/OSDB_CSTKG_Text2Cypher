@@ -303,12 +303,16 @@ async def execute(
     *,
     simulated=False,
     registry=None,
-    saved=None
+    saved=None,
+    drain_paths=(),
+    stop_event=None,
 ):
     scheduler = AdapterScheduler(
         spec, pool, ledger, Journal(spec.run_dir / "journal.jsonl"), transport
     )
     scheduler.jobs = {j.item.key: j for j in jobs}
+    scheduler.extra_drain_paths = [Path(path) for path in drain_paths]
+    scheduler.external_stop_event = stop_event
     scheduler.saved_replies = saved or {}
     summary = await execute_campaign(
         scheduler,
@@ -337,7 +341,13 @@ async def execute(
     return result
 
 
-async def run(config, *, simulated=False):
+async def run(config, *, simulated=False, admitted_session=None):
+    if admitted_session is not None:
+        from request_session import RequestSession
+
+        if simulated or type(admitted_session) is not RequestSession:
+            raise IntegrityError("A live admitted RequestSession is required")
+        admitted_session.validate(config)
     if config["source"] != source_manifest():
         raise IntegrityError("Source changed; prepare a new freeze")
     inventory = read(verify(config["inventory"]))
@@ -348,6 +358,10 @@ async def run(config, *, simulated=False):
     )
     if not jobs:
         raise ValueError("No ready requests; do not start an idle runner")
+    if admitted_session is not None and any(
+        j.item.method != "direct-feedback" for j in jobs
+    ):
+        raise IntegrityError("RequestSession accepts only Direct-feedback jobs")
     models = tuple(sorted({j.item.model for j in jobs}))
     settings = registry_from_file(config["registry_path"]) if not simulated else None
     cap = config["simulation_cap"] if simulated else settings["global_cap"]
@@ -425,6 +439,7 @@ async def run(config, *, simulated=False):
             MemoryLedger(config["physical_attempt_cap"]),
             FakeTransport(0.02, respond),
             simulated=True,
+            drain_paths=config.get("drain_paths", ()),
         )
     if config.get("execute_authorized") is not True:
         raise ValueError("Preparation configuration is not live admission")
@@ -447,23 +462,37 @@ async def run(config, *, simulated=False):
         global_cap=settings["global_cap"],
         per_model_cap=settings["per_model_cap"],
     )
-    legacy = scan_legacy(Path(config["legacy_ledger"]), config.get("path_rewrites", []))
-    with Ledger(
-        spec.ledger_dir, spec.approval_path, legacy, spec.budget_scope
-    ) as ledger:
-        if any(
-            r["scope"] == spec.budget_scope for r in ledger.records.values()
-        ) and not config.get("recovery"):
+    from contextlib import nullcontext
+
+    if admitted_session is None:
+        legacy = scan_legacy(
+            Path(config["legacy_ledger"]), config.get("path_rewrites", [])
+        )
+        ledger_context = Ledger(
+            spec.ledger_dir, spec.approval_path, legacy, spec.budget_scope
+        )
+    else:
+        ledger_context = nullcontext(admitted_session.ledger)
+    with ledger_context as ledger:
+        if (
+            admitted_session is None
+            and any(r["scope"] == spec.budget_scope for r in ledger.records.values())
+            and not config.get("recovery")
+        ):
             raise IntegrityError(
                 "This scope has prior attempts; supply an audited recovery manifest before continuing"
             )
         ledger.limit_run(spec.run_dir, config["physical_attempt_cap"])
         saved = (
-            saved_replies(
-                config["recovery"]["path"], config["recovery"]["sha256"], ledger
+            admitted_session.replies_for(j.item.key for j in jobs)
+            if admitted_session
+            else (
+                saved_replies(
+                    config["recovery"]["path"], config["recovery"]["sha256"], ledger
+                )
+                if config.get("recovery")
+                else {}
             )
-            if config.get("recovery")
-            else {}
         )
         transport = HTTPTransport(
             Path(config["key_dir"]), connect_timeout=spec.timeouts.http_connect
@@ -475,7 +504,7 @@ async def run(config, *, simulated=False):
                 if e.enabled and any(serves(e, m) for m in models)
             ]
         )
-        return await execute(
+        result = await execute(
             spec,
             jobs,
             positions,
@@ -484,7 +513,12 @@ async def run(config, *, simulated=False):
             transport,
             registry=Path(config["registry_path"]),
             saved=saved,
+            drain_paths=config.get("drain_paths", ()),
+            stop_event=admitted_session.stop if admitted_session else None,
         )
+        if admitted_session:
+            admitted_session.refresh()
+        return result
 
 
 if __name__ == "__main__":

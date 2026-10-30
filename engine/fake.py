@@ -24,9 +24,9 @@ class MemoryLedger:
                     raise BudgetError("Body mismatch")
                 return old
             if len(self.records) >= self.cap:
-                from .ledger import BudgetError
+                from .ledger import BudgetExhausted
 
-                raise BudgetError("Simulated allowance exhausted")
+                raise BudgetExhausted("Simulated allowance exhausted")
             value = dict(
                 slot=len(self.records) + 1, request_sha256=digest(wire), run_dir=str(run_dir)
             )

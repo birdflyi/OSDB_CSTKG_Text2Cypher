@@ -282,15 +282,13 @@ class DynamicPool:
                     # Timed wake only for cooldown/quarantine expiry, not polling.
                     wakeups = [
                         max(s.quarantined_until, s.cooldown_until) - self.clock()
-                        for s in self.states.values()
-                        if s.spec.model == model
-                        and max(s.quarantined_until, s.cooldown_until) > self.clock()
+                        for s in matching
+                        if max(s.quarantined_until, s.cooldown_until) > self.clock()
                     ]
                     wakeups.extend(
                         s.degraded_until - self.clock()
-                        for s in self.states.values()
-                        if s.spec.model == model
-                        and s.degraded
+                        for s in matching
+                        if s.degraded
                         and s.degraded_until > self.clock()
                     )
                     wait_for = min([remaining] + wakeups)

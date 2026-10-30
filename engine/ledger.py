@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 import json
 import os
@@ -16,6 +16,10 @@ from .journal import Journal, write_new
 
 class BudgetError(RuntimeError):
     pass
+
+
+class BudgetExhausted(BudgetError):
+    """An approved allowance is consumed; evidence and ownership remain valid."""
 
 
 @dataclass(frozen=True)
@@ -42,7 +46,9 @@ def scan_legacy(directory: Path, path_rewrites=()) -> LegacySnapshot:
         for source, target in path_rewrites:
             prefix = str(source).rstrip("\\/")
             if stored.startswith(prefix + "\\") or stored.startswith(prefix + "/"):
-                request = Path(target) / stored[len(prefix) :].lstrip("\\/").replace("\\", "/")
+                request = Path(target) / stored[len(prefix) :].lstrip("\\/").replace(
+                    "\\", "/"
+                )
                 break
         identity = os.path.normcase(str(request.resolve()))
         if identity in seen or not request.is_file():
@@ -76,7 +82,11 @@ def scan_legacy(directory: Path, path_rewrites=()) -> LegacySnapshot:
         scopes[record.get("scope_id") or "CypherBench"] += 1
         hashes.append((slot.name, digest(raw)))
     return LegacySnapshot(
-        len(slots), dict(scopes), tuple(pending), dict(formats), digest(canonical(hashes))
+        len(slots),
+        dict(scopes),
+        tuple(pending),
+        dict(formats),
+        digest(canonical(hashes)),
     )
 
 
@@ -86,7 +96,11 @@ def audit_new(directory: Path) -> dict:
     for number, path in enumerate(sorted(Path(directory).glob("[0-9]*.json")), 1):
         raw = path.read_bytes()
         row = json.loads(raw)
-        if row["slot"] != number or row["prev_sha256"] != head or row["request_id"] in seen:
+        if (
+            row["slot"] != number
+            or row["prev_sha256"] != head
+            or row["request_id"] in seen
+        ):
             raise BudgetError("Changed/noncontiguous ledger chain")
         head = digest(raw)
         seen.add(row["request_id"])
@@ -153,11 +167,17 @@ class Ledger:
     charges or automatically resending. The journal records intent before a slot.
     """
 
-    def __init__(self, directory: Path, approval_path: Path, legacy: LegacySnapshot, scope: str):
+    def __init__(
+        self, directory: Path, approval_path: Path, legacy: LegacySnapshot, scope: str
+    ):
         self.directory, self.approval_path = Path(directory), Path(approval_path)
         self.legacy, self.scope = legacy, scope
         self.lock = threading.RLock()
         self.records = {}
+        self.slot_records = []
+        self.records_by_run = defaultdict(list)
+        self.charged_by_root = Counter()
+        self.pending_ids = set()
         self.new_by_scope = Counter()
         self.run_caps = {}
         self.head = "0" * 64
@@ -175,7 +195,8 @@ class Ledger:
             or approval.get("active") is not True
             or self.scope not in approval.get("scope_caps", {})
             or type(approval.get("cumulative_cap")) is not int
-            or Path(approval.get("ledger_dir", "")).resolve() != self.directory.resolve()
+            or Path(approval.get("ledger_dir", "")).resolve()
+            != self.directory.resolve()
         ):
             raise BudgetError("Separate active approval required")
         if self.legacy.pending:
@@ -198,12 +219,18 @@ class Ledger:
             write_new(self.owner_path, self.owner)
         try:
             audit = audit_new(self.directory)
-            if audit["unknown"] or audit["orphan_slot"] or audit["missing_dispatch_intent"]:
-                raise BudgetError("Incomplete ledger/journal; verify before explicit resume")
+            if (
+                audit["unknown"]
+                or audit["orphan_slot"]
+                or audit["missing_dispatch_intent"]
+            ):
+                raise BudgetError(
+                    "Incomplete ledger/journal; verify before explicit resume"
+                )
             for value in audit["records"]:
                 if value["scope"] not in self.scope_caps:
                     raise BudgetError("Unapproved historical new scope")
-                self.records[value["request_id"]] = value
+                self._index_record(value, pending=False)
                 self.new_by_scope[value["scope"]] += 1
             self.head = audit["head_sha256"]
             if self.legacy.charged + len(self.records) > self.cap or any(
@@ -222,6 +249,31 @@ class Ledger:
         if self.owner_path.read_bytes() != self.owner:
             raise BudgetError("Foreign writer lock; retained")
         self.owner_path.unlink()
+
+    def _index_record(self, value, *, pending):
+        """Build once after audit; update only after a durable slot is written."""
+        self.records[value["request_id"]] = value
+        self.slot_records.append(value)
+        run = Path(value["run_dir"]).resolve()
+        self.records_by_run[run].append(value)
+        for root in (run, *run.parents):
+            self.charged_by_root[root] += 1
+        if pending:
+            self.pending_ids.add(value["request_id"])
+
+    def records_since(self, slot):
+        with self.lock:
+            return list(self.slot_records[slot:])
+
+    def phase_status(self, root):
+        root = Path(root).resolve()
+        with self.lock:
+            pending = [
+                rid
+                for rid in self.pending_ids
+                if Path(self.records[rid]["run_dir"]).is_relative_to(root)
+            ]
+            return dict(reserved=self.charged_by_root[root], pending=pending)
 
     def reserve(
         self,
@@ -257,13 +309,13 @@ class Ledger:
                 or self.legacy.by_scope.get(scope, 0) + self.new_by_scope[scope]
                 >= self.scope_caps[scope]
             ):
-                raise BudgetError("Cumulative/scope budget exhausted")
+                raise BudgetExhausted("Cumulative/scope budget exhausted")
             target = Path(run_dir).resolve()
             matching_limits = []
             for root, limit in self.run_caps.items():
                 if target == root or target.is_relative_to(root):
                     if limit["used"] >= limit["cap"]:
-                        raise BudgetError("Pipeline physical-attempt cap exhausted")
+                        raise BudgetExhausted("Pipeline physical-attempt cap exhausted")
                     matching_limits.append(limit)
             write_new(request_path, wire)
             journal.append(
@@ -293,7 +345,8 @@ class Ledger:
             )
             raw = canonical(value)
             write_new(self.directory / ("%08d.json" % slot), raw)
-            self.records[request_id], self.head = value, digest(raw)
+            self._index_record(value, pending=True)
+            self.head = digest(raw)
             self.new_by_scope[scope] += 1
             for limit in matching_limits:
                 limit["used"] += 1
@@ -307,8 +360,7 @@ class Ledger:
         with self.lock:
             if root in self.run_caps and self.run_caps[root]["cap"] != cap:
                 raise BudgetError("Run cap changed inside an active ledger")
-            used = sum(Path(v["run_dir"]) == root or Path(v["run_dir"]).is_relative_to(root)
-                       for v in self.records.values())
+            used = self.charged_by_root[root]
             if used > cap:
                 raise BudgetError("Historical attempts already exceed this run cap")
             self.run_caps[root] = dict(cap=cap, used=used)
@@ -318,7 +370,11 @@ class Ledger:
             value = self.records[request_id]
         write_new(
             Path(value["request_path"]).parent / "dispatch_claim.json",
-            canonical(dict(request_id=request_id, physical_attempt=1, claimed_epoch=time.time())),
+            canonical(
+                dict(
+                    request_id=request_id, physical_attempt=1, claimed_epoch=time.time()
+                )
+            ),
         )
 
     def finish(self, request_id: str, terminal: dict):
@@ -328,39 +384,42 @@ class Ledger:
             raise BudgetError("Terminal slot mismatch")
         # Each terminal has a unique immutable filename; unrelated completions
         # need not hold up the budget's single slot allocator while fsync runs.
-        write_new(Path(value["request_path"]).parent / "terminal.json", canonical(terminal))
+        write_new(
+            Path(value["request_path"]).parent / "terminal.json", canonical(terminal)
+        )
+        with self.lock:
+            self.pending_ids.discard(request_id)
 
     def summary(self) -> dict:
         with self.lock:
-            records = list(self.records.items())
-        pending = [
-            rid
-            for rid, value in records
-            if not (Path(value["request_path"]).parent / "terminal.json").exists()
-        ]
+            charged = len(self.records)
+            pending = sorted(self.pending_ids)
         return dict(
             legacy_charged=self.legacy.charged,
-            new_charged=len(records),
-            total_charged=self.legacy.charged + len(records),
+            new_charged=charged,
+            total_charged=self.legacy.charged + charged,
             cap=self.cap,
             scope=self.scope,
             pending=pending,
         )
 
     def run_status(self, run_dir: Path) -> dict:
-        target = os.path.normcase(str(Path(run_dir).resolve()))
+        target = Path(run_dir).resolve()
         with self.lock:
-            snapshot = list(self.records.values())
-        records = [v for v in snapshot if os.path.normcase(str(Path(v["run_dir"]))) == target]
-        pending = [
-            v["request_id"]
-            for v in records
-            if not (Path(v["request_path"]).parent / "terminal.json").exists()
-        ]
-        return dict(reserved=len(records), terminal=len(records) - len(pending), pending=pending)
+            records = self.records_by_run[target]
+            pending = [
+                v["request_id"] for v in records if v["request_id"] in self.pending_ids
+            ]
+        return dict(
+            reserved=len(records), terminal=len(records) - len(pending), pending=pending
+        )
 
     def __exit__(self, *unused):
         self.active = False
+        audit = audit_new(self.directory)
+        self.last_close_audit = audit
+        if audit["orphan_slot"] or audit["missing_dispatch_intent"]:
+            raise BudgetError("Closing ledger failed evidence audit; owner retained")
         # Never remove the writer claim when a physical attempt has no terminal.
-        if not self.summary()["pending"]:
+        if not audit["unknown"]:
             self._release_owner()

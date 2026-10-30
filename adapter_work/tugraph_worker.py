@@ -21,8 +21,10 @@ sys.path[:0] = [
     str(ROOT / "operations/analysis"),
 ]
 from common.methods import CYPHER_METHODS
+from native_cases import instance_settings
 from engine.config import canonical, digest
 from engine.errors import IntegrityError
+from engine.execution import serve_stream
 from engine.journal import write_new
 from tugraph_execution import (
     LocalRestTransport,
@@ -47,8 +49,17 @@ def graph_storage_name(public_name):
 class TuGraphWorker:
     def __init__(self, settings):
         self.settings = settings
+        self.workers = settings.get("workers", 1)
+        self.thread_limit = settings.get("thread_limit", 2)
+        self.import_threads = settings.get("import_threads", 2)
+        if any(
+            type(n) is not int or not 1 <= n <= 100
+            for n in (self.workers, self.thread_limit, self.import_threads)
+        ):
+            raise ValueError("Worker and import concurrency must be in 1..100")
         self.storage_graph = graph_storage_name(settings["graph"])
         self.process = None
+        self.port_lock = None
         root = Path(settings["owner_root"]).resolve()
         self.folder = Path(settings["output"]).resolve()
         if (
@@ -75,8 +86,8 @@ class TuGraphWorker:
         environment = dict(
             os.environ,
             LD_LIBRARY_PATH=str(runtime / "lib"),
-            OMP_NUM_THREADS="2",
-            OPENBLAS_NUM_THREADS="2",
+            OMP_NUM_THREADS=str(self.thread_limit),
+            OPENBLAS_NUM_THREADS=str(self.thread_limit),
         )
         config = json.loads((source / "import_config.json").read_bytes())
         for entry in config["files"]:
@@ -100,13 +111,13 @@ class TuGraphWorker:
             "--continue_on_error",
             "false",
             "--parse_block_threads",
-            "2",
+            str(self.import_threads),
             "--parse_file_threads",
-            "2",
+            str(self.import_threads),
             "--generate_sst_threads",
-            "2",
+            str(self.import_threads),
             "--read_rocksdb_threads",
-            "2",
+            str(self.import_threads),
         ]
         with (self.folder / "import.log").open("xb") as log:
             imported = subprocess.run(
@@ -135,7 +146,7 @@ class TuGraphWorker:
             bolt_port=0,
             enable_rpc=False,
             enable_ha=False,
-            thread_limit=2,
+            thread_limit=self.thread_limit,
             verbose=1,
             log_file_size=16,
             max_n_log_files=2,
@@ -144,6 +155,18 @@ class TuGraphWorker:
         )
         save(self.folder / "server.json", server)
         try:
+            lock_path = root / (".tugraph-port-" + str(port) + ".lock")
+            self.lock_bytes = canonical(
+                dict(
+                    pid=os.getpid(),
+                    hostname=socket.gethostname(),
+                    folder=str(self.folder),
+                )
+            )
+            write_new(lock_path, self.lock_bytes)
+            self.port_lock = lock_path
+            with socket.socket() as sock:
+                sock.bind(("127.0.0.1", port))
             with (self.folder / "console.log").open("xb") as log:
                 self.process = subprocess.Popen(
                     [
@@ -192,7 +215,8 @@ class TuGraphWorker:
                 body = json.loads(response.read())
                 if response.status != 200 or not body.get("jwt"):
                     raise RuntimeError("Fresh owned TuGraph login failed")
-                self.transport = LocalRestTransport(port, body["jwt"])
+                self.token = body["jwt"]
+                self.transport = LocalRestTransport(port, self.token)
             finally:
                 connection.close()
             counts = NativeQueryJournal(
@@ -219,6 +243,7 @@ class TuGraphWorker:
                 worker_sha256=digest(Path(__file__).read_bytes()),
                 data_sha256=digest(canonical(settings["data_sha256"])),
                 model_calls=0,
+                max_case_workers=self.workers,
                 loopback_only=True,
                 read_guard_and_explain=True,
                 server_readonly_role=False,
@@ -238,7 +263,10 @@ class TuGraphWorker:
         folder = self.folder / "cases" / digest(canonical(identity))[:24]
         save(folder / "input.json", request)
         journal = NativeQueryJournal(
-            folder / "queries", self.transport, query_seconds=60, wall_seconds=90
+            folder / "queries",
+            LocalRestTransport(self.settings["port"], self.token),
+            query_seconds=60,
+            wall_seconds=90,
         )
         method = identity["method"]
         if method in CYPHER_METHODS:
@@ -292,33 +320,36 @@ class TuGraphWorker:
             except subprocess.TimeoutExpired:
                 os.killpg(self.process.pid, signal.SIGKILL)
                 self.process.wait(timeout=10)
+        if self.port_lock is not None:
+            with socket.socket() as sock:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                sock.bind(("127.0.0.1", self.settings["port"]))
+            if self.port_lock.read_bytes() != self.lock_bytes:
+                raise IntegrityError("Foreign TuGraph port lock retained")
+            self.port_lock.unlink()
+            self.port_lock = None
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("settings", type=Path)
+    parser.add_argument("--instance-id")
     args = parser.parse_args()
-    worker = TuGraphWorker(json.loads(args.settings.read_bytes()))
+    worker = TuGraphWorker(
+        instance_settings(json.loads(args.settings.read_bytes()), args.instance_id)
+    )
     print(json.dumps(worker.ready), flush=True)
+
+    def handle(request):
+        if request["kind"] != "execute":
+            raise ValueError("Unknown TuGraph command")
+        return worker.execute(request)
+
+    def emit(value):
+        print(json.dumps(value, ensure_ascii=False), flush=True)
+
     try:
-        for line in sys.stdin:
-            request = json.loads(line)
-            try:
-                if request["kind"] != "execute":
-                    raise ValueError("Unknown TuGraph command")
-                result = worker.execute(request)
-            except (IntegrityError, OSError):
-                raise
-            except Exception as error:
-                result = dict(
-                    status="execution_error",
-                    error_type=type(error).__name__,
-                    error=str(error)[:1000],
-                )
-            print(
-                json.dumps(dict(result, id=request["id"]), ensure_ascii=False),
-                flush=True,
-            )
+        serve_stream(sys.stdin, emit, handle, worker.workers)
     finally:
         worker.close()
 

@@ -1,8 +1,8 @@
 """Owned MTQ/ZOGRASCOPE smoke worker; one explicit transaction per case.
 
-The serial command loop intentionally stays on one thread: native entity
-identities and their reference comparison belong to that same transaction.
-Model requests run in a different process and never wait on this worker.
+A bounded lane keeps each case on one thread from execution through scoring.
+Cases share only the driver and pinned reference loader. Model requests run in
+a different process and never wait on this worker.
 """
 
 from __future__ import annotations
@@ -18,6 +18,8 @@ import socket
 import subprocess
 import sys
 import time
+import threading
+from contextlib import nullcontext
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path[:0] = [
@@ -25,6 +27,7 @@ sys.path[:0] = [
     str(ROOT / "operations/analysis"),
     str(ROOT / "experiment-harness/public_benchmark_v1"),
 ]
+from native_cases import CaseLanes, instance_settings
 from common.methods import CYPHER_METHODS
 from engine.config import canonical, digest
 from engine.errors import IntegrityError
@@ -55,6 +58,10 @@ class NativeWorker:
         self.settings = settings
         self.capture = self.driver = self.process = None
         self.last = None
+        self.reference_lock = threading.Lock()
+        self.workers = settings.get("workers", 1)
+        if type(self.workers) is not int or not 1 <= self.workers <= 4:
+            raise ValueError("Native worker supports one to four case lanes")
         root = Path(settings["owner_root"]).resolve()
         if (
             read(root / "execution_owner.json")["hostname"] != socket.gethostname()
@@ -136,6 +143,7 @@ class NativeWorker:
                 connection_timeout=3,
                 connection_acquisition_timeout=5,
                 max_transaction_retry_time=0,
+                max_connection_pool_size=self.workers + 2,
             )
             deadline = time.monotonic() + 90
             while True:
@@ -164,6 +172,8 @@ class NativeWorker:
                 counts=counts,
                 read_only_config=True,
                 model_calls=0,
+                max_case_workers=self.workers,
+                case_protocol="thread-affine-v1",
             )
             save(self.folder / "ready.json", self.ready)
             package = Path(settings["reference_package"])
@@ -186,6 +196,14 @@ class NativeWorker:
             self.close()
             raise
 
+    def new_case(self):
+        """Each lane gets independent session/transaction state, never a new DB."""
+        case = NativeWorker.__new__(NativeWorker)
+        for name in ("settings", "folder", "driver", "references", "reference_lock"):
+            setattr(case, name, getattr(self, name))
+        case.capture = case.last = case.current_identity = None
+        return case
+
     def verify_source(self):
         for name, pin in self.snapshot["files"].items():
             path = (self.source / name).resolve()
@@ -196,9 +214,36 @@ class NativeWorker:
                 raise IntegrityError("Cold snapshot bytes changed")
 
     def end_capture(self):
+        if getattr(self, "capture_close_error", False):
+            raise IntegrityError("Previous native capture cleanup was not confirmed")
         if self.capture is not None:
-            capture, self.capture = self.capture, None
-            capture.__exit__(None, None, None)
+            try:
+                self.capture.__exit__(None, None, None)
+            except BaseException:
+                self.capture_close_error = True
+                raise
+            self.capture = None
+
+    def finish_case(self, reason):
+        self.end_capture()
+        identity = getattr(self, "current_identity", None)
+        if identity:
+            path = (
+                self.folder
+                / "cases"
+                / digest(canonical(identity))[:24]
+                / "case_closed.json"
+            )
+            if not path.exists():
+                save(
+                    path,
+                    dict(
+                        identity=identity,
+                        reason=reason,
+                        thread_id=threading.get_ident(),
+                        closed_epoch=time.time(),
+                    ),
+                )
 
     def execute(self, request):
         self.end_capture()
@@ -209,6 +254,7 @@ class NativeWorker:
             self.settings["graph"],
         ):
             raise IntegrityError("Case belongs to a different graph")
+        self.current_identity = identity
         folder = self.folder / "cases" / digest(canonical(identity))[:24]
         evidence = PlanEvidence(folder / "capture", max_record_bytes=64000000)
         save(folder / "input.json", request)
@@ -268,10 +314,12 @@ class NativeWorker:
             self.last is None
             or self.capture is None
             or self.last["sha256"] != request["answer_sha256"]
+            or ("identity" in request and self.last["identity"] != request["identity"])
         ):
             raise IntegrityError("Score requires the last sealed native answer")
         try:
-            item = self.references.get(self.last["identity"]["task_id"])
+            with getattr(self, "reference_lock", nullcontext()):
+                item = self.references.get(self.last["identity"]["task_id"])
             if not item.get("query"):
                 result = dict(status="reference_missing", value=None)
             else:
@@ -316,42 +364,55 @@ class NativeWorker:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("settings", type=Path)
+    parser.add_argument("--instance-id")
     args = parser.parse_args()
-    worker = NativeWorker(read(args.settings))
+    worker = NativeWorker(instance_settings(read(args.settings), args.instance_id))
     print(json.dumps(worker.ready), flush=True)
-    try:
-        for line in sys.stdin:
-            request = json.loads(line)
-            try:
-                if request["kind"] == "execute":
-                    result = worker.execute(request)
-                elif request["kind"] == "score":
-                    result = worker.score(request)
-                else:
-                    raise ValueError("Unknown worker command")
-            except (IntegrityError, PermissionError, FileExistsError, OSError):
-                raise
-            except UnsupportedSelection as error:
-                worker.end_capture()
-                result = dict(
-                    status="UNSUPPORTED",
-                    error_type=type(error).__name__,
-                    error=str(error)[:1000],
-                )
-            except Exception as error:
-                worker.end_capture()
-                result = dict(
-                    error_type=type(error).__name__,
-                    error=str(error)[:1000],
-                    database_code=getattr(error, "code", None),
-                    status="execution_error",
-                )
+    lanes = CaseLanes(
+        worker.new_case,
+        worker.workers,
+        idle_seconds=worker.settings.get("case_idle_seconds", 300),
+    )
+    output_lock = threading.Lock()
+
+    def reply(request, future):
+        try:
+            result = future.result()
+        except (IntegrityError, PermissionError, FileExistsError, OSError) as error:
+            result = dict(
+                status="integrity_error",
+                error_type=type(error).__name__,
+                error=str(error)[:1000],
+            )
+        except UnsupportedSelection as error:
+            result = dict(
+                status="UNSUPPORTED",
+                error_type=type(error).__name__,
+                error=str(error)[:1000],
+            )
+        except Exception as error:
+            result = dict(
+                status="execution_error",
+                error_type=type(error).__name__,
+                error=str(error)[:1000],
+                database_code=getattr(error, "code", None),
+            )
+        with output_lock:
             print(
                 json.dumps(dict(result, id=request["id"]), ensure_ascii=False),
                 flush=True,
             )
+
+    try:
+        for line in sys.stdin:
+            request = json.loads(line)
+            future = lanes.submit(request)
+            future.add_done_callback(lambda done, request=request: reply(request, done))
     finally:
-        worker.close()
+        try:
+            lanes.close()
+        finally:
+            worker.close()
 
 
 if __name__ == "__main__":

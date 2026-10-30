@@ -5,6 +5,8 @@ from dataclasses import asdict
 import importlib
 import json
 import os
+import re
+import shutil
 from pathlib import Path
 import signal
 import socket
@@ -15,6 +17,7 @@ import time
 from ..config import DEFAULT_TIMEOUTS, canonical, digest, timeouts_from
 from ..campaign import code_manifest
 from ..execution import serve_stream
+from ..errors import IntegrityError
 from ..journal import Journal, write_new
 
 
@@ -50,7 +53,9 @@ class ReadHandler:
                 status="CANDIDATES",
                 candidates=candidates,
                 lookup_seconds=time.monotonic() - started,
-                result_bytes=len(json.dumps(candidates, ensure_ascii=False).encode("utf-8")),
+                result_bytes=len(
+                    json.dumps(candidates, ensure_ascii=False).encode("utf-8")
+                ),
             )
         query = self.read_query(request["query"])
         parameters = request.get("parameters", {})
@@ -65,13 +70,15 @@ class ReadHandler:
             if explained.query_type != "r":
                 raise ValueError("EXPLAIN did not certify read-only query")
             after_explain = time.monotonic()
-            cursor = session.run(self.query_class(query, timeout=self.timeouts.query), parameters)
+            cursor = session.run(
+                self.query_class(query, timeout=self.timeouts.query), parameters
+            )
             columns, rows, complete, size = list(cursor.keys()), [], True, 2
             for record in cursor:
                 values = [self.normalize(record[c]) for c in columns]
-                row_size = len(json.dumps(values, ensure_ascii=False).encode("utf-8")) + (
-                    2 if rows else 0
-                )
+                row_size = len(
+                    json.dumps(values, ensure_ascii=False).encode("utf-8")
+                ) + (2 if rows else 0)
                 if len(rows) == 1000000 or size + row_size > 64 * 1024 * 1024:
                     complete = False
                     break
@@ -92,13 +99,13 @@ class ReadHandler:
 def load_helpers(harness: Path, expected: dict):
     names = ("public_read_guard.py", "entity_candidates.py", "smoke_train_database.py")
     if set(expected) != set(names):
-        raise ValueError("Exact hash-pinned read helper set required")
+        raise IntegrityError("Exact hash-pinned read helper set required")
     for name in names:
         if digest((harness / name).read_bytes()) != expected[name]:
-            raise ValueError("Database read helper changed")
+            raise IntegrityError("Database read helper changed")
         module = sys.modules.get(Path(name).stem)
         if module and Path(module.__file__).resolve().parent != harness.resolve():
-            raise ValueError("Conflicting helper already imported")
+            raise IntegrityError("Conflicting helper already imported")
     sys.path.insert(0, str(harness))
     guard = importlib.import_module("public_read_guard")
     candidates = importlib.import_module("entity_candidates")
@@ -115,6 +122,93 @@ def check_bolt_available(port=17688):
         check.bind(("127.0.0.1", port))
 
 
+def instance_paths(settings):
+    """Select an already validated owned copy; never clone or rewrite cold data."""
+    root = Path(settings["root"]).resolve()
+    folder = Path(
+        settings.get("instance_dir", root / "test_runtime_v1" / settings["graph"])
+    ).resolve()
+    if root not in folder.parents:
+        raise IntegrityError("Graph instance must be strictly inside owned root")
+    port = settings.get("bolt_port", 17688)
+    if type(port) is not int or not 1024 <= port <= 65535:
+        raise ValueError("Private Bolt port required")
+    default_lock = (
+        folder / ".engine-instance.lock"
+        if "instance_dir" in settings
+        else root / ".public-runtime.lock"
+    )
+    lock = Path(settings.get("instance_lock_path", default_lock)).resolve()
+    if root not in lock.parents:
+        raise IntegrityError("Instance lock outside owner root")
+    return folder, port, lock
+
+
+def check_instance_conf(folder, port):
+    """An explicit copy cannot point its mutable directories at another instance."""
+    values = {}
+    for line in (folder / "conf/neo4j.conf").read_text().splitlines():
+        if line.strip() and not line.lstrip().startswith("#") and "=" in line:
+            key, value = line.split("=", 1)
+            values[key.strip()] = value.strip()
+    if values.get("server.bolt.listen_address") != "127.0.0.1:" + str(port):
+        raise IntegrityError("Instance config must bind assigned loopback Bolt port")
+    for key in ("data", "logs", "run", "transaction.logs.root"):
+        value = values.get("server.directories." + key)
+        if value is None:
+            if key == "transaction.logs.root":
+                continue
+            raise IntegrityError("Explicit instance directory missing: " + key)
+        target = Path(value)
+        if not target.is_absolute() or folder not in target.resolve().parents:
+            raise IntegrityError("Mutable Neo4j directory outside instance: " + key)
+    for protocol in ("http", "https"):
+        if values.get("server." + protocol + ".enabled") != "false":
+            raise IntegrityError(
+                "Explicit read worker requires HTTP and HTTPS disabled"
+            )
+
+
+def runtime_conf(settings, folder, diagnostics):
+    """Resource overrides live in a fresh launch config, not the validated copy."""
+    overrides = {}
+    cpu = settings.get("cpu_count")
+    if cpu is not None:
+        if type(cpu) is not int or not 1 <= cpu <= 100:
+            raise ValueError("CPU allocation must be in 1..100")
+        overrides["server.jvm.additional"] = "-XX:ActiveProcessorCount=" + str(cpu)
+    for setting, key in (
+        ("heap_initial", "server.memory.heap.initial_size"),
+        ("heap_max", "server.memory.heap.max_size"),
+        ("pagecache", "server.memory.pagecache.size"),
+    ):
+        if setting in settings:
+            value = settings[setting]
+            if not isinstance(value, str) or not re.fullmatch(
+                r"[1-9][0-9]*[mMgG]", value
+            ):
+                raise ValueError("Invalid memory resource setting")
+            overrides[key] = value
+    if not overrides:
+        return folder / "conf"
+    target = diagnostics / "launch_conf"
+    shutil.copytree(folder / "conf", target)
+    lines = (target / "neo4j.conf").read_text().splitlines()
+    retained = []
+    for line in lines:
+        key, _, value = line.partition("=")
+        if key.strip() in overrides:
+            if key.strip() == "server.jvm.additional" and not value.strip().startswith(
+                "-XX:ActiveProcessorCount="
+            ):
+                retained.append(line)
+            continue
+        retained.append(line)
+    retained.extend(key + "=" + value for key, value in overrides.items())
+    (target / "neo4j.conf").write_text("\n".join(retained) + "\n")
+    return target
+
+
 class OwnedRuntime:
     def __init__(self, settings: dict):
         startup_started = time.monotonic()
@@ -128,7 +222,9 @@ class OwnedRuntime:
                 epoch=time.time(),
             )
             if diagnostics is not None:
-                Journal(diagnostics / "startup.jsonl").append("worker_startup", **record)
+                Journal(diagnostics / "startup.jsonl").append(
+                    "worker_startup", **record
+                )
             print(
                 json.dumps(dict(kind="worker_startup", **record)),
                 file=sys.stderr,
@@ -148,24 +244,34 @@ class OwnedRuntime:
             owner["hostname"] != socket.gethostname()
             or owner["hostname"] != settings["expected_hostname"]
         ):
-            raise ValueError("Execution owner/hostname mismatch")
+            raise IntegrityError("Execution owner/hostname mismatch")
         diagnostics = (
-            self.root / "worker_diagnostics" / (settings["graph"] + "-" + str(os.getpid()))
+            self.root
+            / "worker_diagnostics"
+            / (settings["graph"] + "-" + str(os.getpid()) + "-" + str(time.time_ns()))
         )
         diagnostics.mkdir(parents=True, exist_ok=False)
         self.diagnostics = diagnostics
         milestone("owner_verified")
-        self.folder = self.root / "test_runtime_v1" / settings["graph"]
+        self.folder, self.port, self.lock_path = instance_paths(settings)
+        if "instance_dir" in settings:
+            check_instance_conf(self.folder, self.port)
+            identity = json.loads((self.folder / "instance_identity.json").read_bytes())
+            if (
+                identity.get("graph") != settings["graph"]
+                or identity.get("graph_sha256") != settings["graph_sha256"]
+            ):
+                raise IntegrityError("Explicit instance snapshot identity differs")
         validation = json.loads((self.folder / "graph_validation.json").read_text())
         if validation.get("all_properties_labels_and_endpoints_match") is not True:
-            raise ValueError("Full graph validation is missing")
+            raise IntegrityError("Full graph validation is missing")
         source = (
             self.root
             / "cypherbench_data/upstream/graphs/simplekg"
             / (settings["graph"] + "_simplekg.json")
         )
         if digest(source.read_bytes()) != settings["graph_sha256"]:
-            raise ValueError("Graph source snapshot differs")
+            raise IntegrityError("Graph source snapshot differs")
         guard, candidates, normalize = load_helpers(
             Path(settings["harness"]), settings["helper_sha256"]
         )
@@ -176,17 +282,23 @@ class OwnedRuntime:
         milestone("candidate_index_complete")
         runtime = json.loads((self.root / "runtime_receipt.json").read_text())
         credentials = json.loads((self.folder / "db_connection.json").read_text())
-        if credentials["uri"] != "bolt://127.0.0.1:17688":
-            raise ValueError("Unexpected database URI")
-        check_bolt_available()
+        if credentials["uri"] != "bolt://127.0.0.1:" + str(self.port):
+            raise IntegrityError("Unexpected database URI")
+        check_bolt_available(self.port)
         # Share the old ownership lock, so old/new workers cannot open this DB together.
-        self.lock_path = self.root / ".public-runtime.lock"
+        self.port_lock = self.root / (".engine-bolt-" + str(self.port) + ".lock")
         write_new(self.lock_path, self.lock_bytes)
+        try:
+            write_new(self.port_lock, self.lock_bytes)
+        except BaseException:
+            if self.lock_path.read_bytes() == self.lock_bytes:
+                self.lock_path.unlink()
+            raise
         try:
             environment = dict(
                 os.environ,
                 JAVA_HOME=runtime["java_home"],
-                NEO4J_CONF=str(self.folder / "conf"),
+                NEO4J_CONF=str(runtime_conf(settings, self.folder, diagnostics)),
             )
             log_path = self.folder / ("engine_worker_" + str(time.time_ns()) + ".log")
             with log_path.open("x") as log:
@@ -225,7 +337,7 @@ class OwnedRuntime:
                     session.run("MATCH ()-[r]->() RETURN count(r) AS n").single()["n"],
                 ]
             if counts != [validation["nodes"], validation["edges"]]:
-                raise ValueError("Graph identity/counts differ")
+                raise IntegrityError("Graph identity/counts differ")
             milestone("graph_counts_complete")
             self.handler = ReadHandler(
                 self.driver,
@@ -247,6 +359,9 @@ class OwnedRuntime:
                 worker_source_sha256=digest(Path(__file__).read_bytes()),
                 runtime_code_sha256=digest(canonical(code_manifest())),
                 workers=settings["workers"],
+                max_case_workers=settings["workers"],
+                instance_dir=str(self.folder),
+                bolt_port=self.port,
                 diagnostics_dir=str(diagnostics),
                 worker_pid=os.getpid(),
                 max_rows=1000000,
@@ -274,16 +389,22 @@ class OwnedRuntime:
         deadline = time.monotonic() + 10
         while True:
             try:
-                check_bolt_available()
+                check_bolt_available(self.port)
                 break
             except OSError:
                 if time.monotonic() >= deadline:
-                    raise RuntimeError("Owned database has not released Bolt; lock retained")
+                    raise RuntimeError(
+                        "Owned database has not released Bolt; lock retained"
+                    )
                 time.sleep(0.2)
-        if self.lock_path.exists():
-            if self.lock_path.read_bytes() != self.lock_bytes:
-                raise RuntimeError("Foreign runtime lock retained")
-            self.lock_path.unlink()
+        locks = [self.port_lock, self.lock_path]
+        if any(
+            path.exists() and path.read_bytes() != self.lock_bytes for path in locks
+        ):
+            raise IntegrityError("Foreign runtime/port lock retained")
+        for path in locks:
+            if path.exists():
+                path.unlink()
 
 
 def main():

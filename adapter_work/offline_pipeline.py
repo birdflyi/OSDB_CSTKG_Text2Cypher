@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter, defaultdict
 from contextlib import ExitStack
+import threading
 import json
 from pathlib import Path
 import sys
@@ -137,151 +138,186 @@ def error_result(error):
     )
 
 
-def run_group(rows, sources, backend, directory):
+def run_group(
+    rows, sources, backend, directory, *, on_feedback=None, on_result=None, stop=None
+):
     results, method_answers, method_scores = [], {}, {}
     # Freeze a method's actual answer before its controls and evaluator.
     for row in sorted(
         rows, key=lambda r: (METHODS.index(r["method"]), r["position_id"])
     ):
-        folder = directory / row["cell_id"] / row["position_id"]
-        started = time.monotonic()
-        source_method = (
-            "direct"
-            if row["method"] == "direct-feedback"
-            else ("ours" if row["method"] in CONTROL_METHODS else row["method"])
-        )
-        feedback_source = sources.get(
-            ("direct-feedback", row["benchmark"], row["position_id"])
-        )
-        if row["method"] == "direct-feedback" and feedback_source:
-            source_method = "direct-feedback"
-        source = sources.get((source_method, row["benchmark"], row["position_id"]))
-        save(
-            folder / "input.json",
-            dict(position=row, source=source["receipt"] if source else None),
-        )
-        source_status = (
-            source["result"]["final"]["status"] if source else "not_dispatched"
-        )
+        if stop is not None and stop.is_set():
+            break
         try:
-            if source_status not in ("ready", "answered"):
-                answer = dict(
-                    status=source_status, complete=False, rows=None, columns=None
-                )
-            elif row["method"] in ("direct", "ours") + AUTHOR_METHODS:
-                answer = backend.execute(row, source["result"], folder)
-                method_answers[row["method"], row["position_id"]] = answer
-            elif row["method"] == "direct-feedback":
-                initial = method_answers.get(("direct", row["position_id"]))
-                if feedback_source:
-                    answer = backend.execute(row, source["result"], folder)
-                    answer = dict(answer, feedback_used=True)
-                elif initial is None:
-                    answer = dict(status="dependency_missing", complete=False)
-                elif (
-                    initial.get("status") == "EXECUTED"
-                    and initial.get("complete") is True
-                ):
-                    answer = dict(initial, shared_initial=True, feedback_required=False)
-                else:
-                    from feedback_queue import operational_error
-
-                    error = operational_error(initial)
-                    answer = dict(
-                        status=(
-                            "feedback_pending"
-                            if error
-                            else "initial_failed_no_model_repair"
-                        ),
-                        complete=False,
-                        rows=None,
-                        columns=None,
-                        initial_status=initial.get("status"),
-                        feedback_required=error is not None,
-                    )
-                    if error:
-                        initial_row = next(
-                            r
-                            for r in rows
-                            if r["method"] == "direct"
-                            and r["position_id"] == row["position_id"]
-                        )
-                        initial_file = (
-                            directory
-                            / initial_row["cell_id"]
-                            / row["position_id"]
-                            / "final.json"
-                        )
-                        save(
-                            folder / "feedback_request.json",
-                            dict(
-                                position=row,
-                                source=source["receipt"],
-                                database_final=dict(
-                                    path=str(initial_file),
-                                    sha256=digest(initial_file.read_bytes()),
-                                ),
-                            ),
-                        )
-            else:
-                initial = method_answers.get(("ours", row["position_id"]))
-                if initial is None:
-                    answer = dict(
-                        status="source_plan_not_executed",
-                        complete=False,
-                        rows=None,
-                        columns=None,
-                    )
-                else:
-                    answer = backend.control(row, source["result"], folder)
-        except HARD_ERRORS:
-            raise
-        except Exception as error:
-            answer = error_result(error)
-            if row["method"] in ("direct", "ours"):
-                method_answers[row["method"], row["position_id"]] = answer
-        if answer.get("status") == "EXECUTED" and answer.get("complete") is not True:
-            answer = dict(answer, status="incomplete_answer")
-        receipt = save(folder / "final.json", answer)
-        try:
-            # The backend may read references only at this point.
-            if answer.get("shared_initial"):
-                score = dict(
-                    method_scores["direct", row["position_id"]], shared_initial=True
-                )
-            else:
-                score = (
-                    backend.score(row, answer, receipt)
-                    if answer.get("complete") is True
-                    else dict(status="not_scored", value=None)
-                )
-        except HARD_ERRORS:
-            raise
-        except Exception as error:
-            score = dict(
-                status="scoring_error", value=None, error_type=type(error).__name__
+            folder = directory / row["cell_id"] / row["position_id"]
+            started = time.monotonic()
+            source_method = (
+                "direct"
+                if row["method"] == "direct-feedback"
+                else ("ours" if row["method"] in CONTROL_METHODS else row["method"])
             )
-        if row["method"] in ("direct", "ours"):
-            method_scores[row["method"], row["position_id"]] = score
-        result = dict(
-            cell_id=row["cell_id"],
-            position_id=row["position_id"],
-            method=row["method"],
-            benchmark=row["benchmark"],
-            graph=row["graph"],
-            status=answer["status"],
-            final=receipt,
-            score=score,
-            seconds=time.monotonic() - started,
-            source_status=source_status,
-            model_calls=0,
-        )
-        save(folder / "result.json", result)
-        results.append(result)
+            feedback_source = sources.get(
+                ("direct-feedback", row["benchmark"], row["position_id"])
+            )
+            if row["method"] == "direct-feedback" and feedback_source:
+                source_method = "direct-feedback"
+            source = sources.get((source_method, row["benchmark"], row["position_id"]))
+            save(
+                folder / "input.json",
+                dict(position=row, source=source["receipt"] if source else None),
+            )
+            source_status = (
+                source["result"]["final"]["status"] if source else "not_dispatched"
+            )
+            try:
+                if source_status not in ("ready", "answered"):
+                    answer = dict(
+                        status=source_status, complete=False, rows=None, columns=None
+                    )
+                elif row["method"] in ("direct", "ours") + AUTHOR_METHODS:
+                    answer = backend.execute(row, source["result"], folder)
+                    method_answers[row["method"], row["position_id"]] = answer
+                elif row["method"] == "direct-feedback":
+                    initial = method_answers.get(("direct", row["position_id"]))
+                    if feedback_source:
+                        answer = backend.execute(row, source["result"], folder)
+                        answer = dict(answer, feedback_used=True)
+                    elif initial is None:
+                        answer = dict(status="dependency_missing", complete=False)
+                    elif (
+                        initial.get("status") == "EXECUTED"
+                        and initial.get("complete") is True
+                    ):
+                        answer = dict(
+                            initial, shared_initial=True, feedback_required=False
+                        )
+                    else:
+                        from feedback_queue import operational_error
+
+                        error = operational_error(initial)
+                        answer = dict(
+                            status=(
+                                "feedback_pending"
+                                if error
+                                else "initial_failed_no_model_repair"
+                            ),
+                            complete=False,
+                            rows=None,
+                            columns=None,
+                            initial_status=initial.get("status"),
+                            feedback_required=error is not None,
+                        )
+                        if error:
+                            initial_row = next(
+                                r
+                                for r in rows
+                                if r["method"] == "direct"
+                                and r["position_id"] == row["position_id"]
+                            )
+                            initial_file = (
+                                directory
+                                / initial_row["cell_id"]
+                                / row["position_id"]
+                                / "final.json"
+                            )
+                            feedback_pin = save(
+                                folder / "feedback_request.json",
+                                dict(
+                                    position=row,
+                                    source=source["receipt"],
+                                    database_final=dict(
+                                        path=str(initial_file),
+                                        sha256=digest(initial_file.read_bytes()),
+                                    ),
+                                ),
+                            )
+                            if on_feedback is not None:
+                                try:
+                                    on_feedback(feedback_pin)
+                                except Exception as error:
+                                    raise PersistenceError(
+                                        "Feedback delivery callback failed"
+                                    ) from error
+                else:
+                    initial = method_answers.get(("ours", row["position_id"]))
+                    if initial is None:
+                        answer = dict(
+                            status="source_plan_not_executed",
+                            complete=False,
+                            rows=None,
+                            columns=None,
+                        )
+                    else:
+                        answer = backend.control(row, source["result"], folder)
+            except HARD_ERRORS:
+                raise
+            except Exception as error:
+                answer = error_result(error)
+                if row["method"] in ("direct", "ours"):
+                    method_answers[row["method"], row["position_id"]] = answer
+            if (
+                answer.get("status") == "EXECUTED"
+                and answer.get("complete") is not True
+            ):
+                answer = dict(answer, status="incomplete_answer")
+            receipt = save(folder / "final.json", answer)
+            try:
+                # The backend may read references only at this point.
+                if answer.get("shared_initial"):
+                    score = dict(
+                        method_scores["direct", row["position_id"]], shared_initial=True
+                    )
+                else:
+                    score = (
+                        backend.score(row, answer, receipt)
+                        if answer.get("complete") is True
+                        else dict(status="not_scored", value=None)
+                    )
+            except HARD_ERRORS:
+                raise
+            except Exception as error:
+                score = dict(
+                    status="scoring_error", value=None, error_type=type(error).__name__
+                )
+            if row["method"] in ("direct", "ours"):
+                method_scores[row["method"], row["position_id"]] = score
+            result = dict(
+                cell_id=row["cell_id"],
+                position_id=row["position_id"],
+                method=row["method"],
+                benchmark=row["benchmark"],
+                graph=row["graph"],
+                status=answer["status"],
+                final=receipt,
+                score=score,
+                seconds=time.monotonic() - started,
+                source_status=source_status,
+                model_calls=0,
+            )
+            save(folder / "result.json", result)
+            results.append(result)
+            if on_result is not None:
+                on_result(result)
+        finally:
+            finish = getattr(backend, "finish_case", None)
+            if finish is not None:
+                active_error = sys.exc_info()[0] is not None
+                try:
+                    finish(row)
+                except Exception as error:
+                    save(
+                        directory
+                        / row["cell_id"]
+                        / row["position_id"]
+                        / "cleanup_error.json",
+                        error_result(error),
+                    )
+                    if not active_error:
+                        raise
     return results
 
 
-def run(config, backend_factory=None):
+def run(config, backend_factory=None, *, runtime=None, on_feedback=None):
     if config.get("test_only") is True and backend_factory is None:
         raise IntegrityError("test_only requires an explicitly injected test backend")
     if config.get("execute_authorized") is not True:
@@ -292,23 +328,19 @@ def run(config, backend_factory=None):
     output = Path(config["output"])
     output.mkdir(parents=True, exist_ok=False)
     save(output / "config.json", config)
-    results = []
+    results, results_lock = [], threading.Lock()
     if backend_factory is None:
         from offline_backends import open_backend
 
         backend_factory = open_backend
-    for (benchmark, graph), rows in groups.items():
-        settings = config["backends"].get(benchmark)
-        try:
-            with ExitStack() as stack:
-                backend = stack.enter_context(
-                    backend_factory(benchmark, graph, settings, output)
-                )
-                results.extend(run_group(rows, sources, backend, output))
-        except HARD_ERRORS:
-            raise
-        except Exception as error:
-            # Existing case receipts survive a later group/cleanup failure.
+
+    def record(result):
+        with results_lock:
+            results.append(result)
+
+    def group_failure(benchmark, graph, rows, error):
+        # Keep all saved results, including those produced before a cleanup error.
+        with results_lock:
             done = {(r["cell_id"], r["position_id"]) for r in results}
             for row in rows:
                 if (row["cell_id"], row["position_id"]) not in done:
@@ -325,12 +357,113 @@ def run(config, backend_factory=None):
                             model_calls=0,
                         )
                     )
-            save(
-                output
-                / "group_errors"
-                / (digest(canonical([benchmark, graph]))[:20] + ".json"),
-                dict(benchmark=benchmark, graph=graph, **error_result(error)),
-            )
+        save(
+            output
+            / "group_errors"
+            / (digest(canonical([benchmark, graph]))[:20] + ".json"),
+            dict(benchmark=benchmark, graph=graph, **error_result(error)),
+        )
+
+    parallel = config.get("parallel")
+    if runtime is not None and parallel is not None:
+        from offline_runtime import Limits
+
+        if runtime.limits != Limits.parse(parallel):
+            raise IntegrityError("Shared runtime capacity differs from frozen config")
+
+    def consume_group(item):
+        (benchmark, graph), rows = item
+        settings = config["backends"].get(benchmark)
+        try:
+            if runtime is None:
+                with backend_factory(benchmark, graph, settings, output) as backend:
+                    run_group(
+                        rows,
+                        sources,
+                        backend,
+                        output,
+                        on_feedback=on_feedback,
+                        on_result=record,
+                    )
+            else:
+                with runtime.pool.lease(
+                    benchmark, graph, settings, runtime.stop
+                ) as backend:
+                    positions = defaultdict(list)
+                    for row in rows:
+                        positions[row["position_id"]].append(row)
+                    runtime.run_positions(
+                        lambda position: run_group(
+                            position,
+                            sources,
+                            backend,
+                            output,
+                            on_feedback=on_feedback,
+                            on_result=record,
+                            stop=runtime.stop,
+                        ),
+                        positions.values(),
+                        backend,
+                        benchmark + "/" + graph,
+                    )
+        except HARD_ERRORS:
+            if runtime is not None:
+                runtime.stop.set()
+            raise
+        except Exception as error:
+            if runtime is not None and runtime.stop.is_set():
+                raise
+            group_failure(benchmark, graph, rows, error)
+
+    failure = None
+    try:
+        with ExitStack() as stack:
+            if runtime is None and parallel is not None:
+                from offline_runtime import OfflineRuntime
+
+                runtime = stack.enter_context(
+                    OfflineRuntime(output / "runtime", backend_factory, parallel)
+                )
+            if runtime is None:
+                for item in groups.items():
+                    consume_group(item)
+            else:
+                if runtime.stop.is_set():
+                    raise IntegrityError("Shared runtime is already draining")
+                for benchmark, graph in groups:
+                    runtime.pool.resources(graph, config["backends"].get(benchmark))
+                runtime.run_groups(consume_group, groups.items())
+    except BaseException as error:
+        failure = error
+
+    # Build the entire denominator, even when admission or persistent IO halted work.
+    done = {(r["cell_id"], r["position_id"]) for r in results}
+    for rows in groups.values():
+        for row in rows:
+            if (row["cell_id"], row["position_id"]) not in done:
+                final_file = output / row["cell_id"] / row["position_id"] / "final.json"
+                receipt = (
+                    dict(path=str(final_file), sha256=digest(final_file.read_bytes()))
+                    if final_file.is_file()
+                    else None
+                )
+                results.append(
+                    dict(
+                        cell_id=row["cell_id"],
+                        position_id=row["position_id"],
+                        method=row["method"],
+                        benchmark=row["benchmark"],
+                        graph=row["graph"],
+                        status=(
+                            "interrupted_after_final"
+                            if receipt
+                            else "not_run_hard_stop"
+                        ),
+                        final=receipt,
+                        model_calls=0,
+                    )
+                )
+    results.sort(key=lambda r: (r["cell_id"], r["position_id"]))
     summary = dict(
         planned=sum(map(len, groups.values())),
         results=results,
@@ -338,8 +471,12 @@ def run(config, backend_factory=None):
         model_calls=0,
         paper_result=False,
         test_only=config.get("test_only") is True,
+        runtime=runtime.snapshot() if runtime is not None else None,
+        hard_stop=error_result(failure) if failure else None,
     )
-    save(output / "summary.json", summary)
+    save(output / ("partial_summary.json" if failure else "summary.json"), summary)
+    if failure is not None:
+        raise failure
     return summary
 
 

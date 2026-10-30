@@ -29,6 +29,20 @@ def run(config):
     output.mkdir(parents=True, exist_ok=False)
     save(output / "config.json", config)
     offline = read_pin(config["offline"])
+    if (
+        config.get("streaming_feedback") is not None
+        and config.get("streaming_feedback") is not False
+    ):
+        from feedback_stream import run_streaming
+
+        return run_streaming(
+            config,
+            output,
+            offline,
+            read_pin(config["requests"]),
+            consume,
+            request_pipeline.run,
+        )
     initial = consume(offline)
     queue = sorted(Path(offline["output"]).glob("M*/B*/feedback_request.json"))
     if not queue:
