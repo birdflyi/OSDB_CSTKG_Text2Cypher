@@ -33,6 +33,10 @@ async def generate_path(adapter, spec, scheduler, *, model, sampling, benchmark=
         replies.append(reply)
         if reply.get("status") not in ("ok", "length", "refused", "empty"):
             return dict(status=reply.get("status", "unknown"), replies=replies, prediction=None)
+        if reply.get("status") != "ok":
+            # A syntactically plausible truncated answer is still incomplete.
+            # Preserve the paid response, but never execute or reissue it here.
+            return dict(status=reply["status"], replies=replies, prediction=None)
         text = reply.get("content") or ""
         if getattr(current, "generation_stage", None) == "schema_select":
             usage = reply.get("usage") or {}
