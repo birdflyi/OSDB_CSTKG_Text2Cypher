@@ -271,8 +271,14 @@ def open_backend(benchmark, graph, settings, output):
         from osdb_owned_graph_factory_dev import OwnedGraphFactory
 
         binding = read_pin(settings["binding"])
+        runtime_root = Path(settings.get("runtime_root", output))
+        runtime_directory = (
+            runtime_root / output.name / ("osdb-" + graph)
+            if "runtime_root" in settings
+            else output / ("osdb-" + graph)
+        )
         factory = OwnedGraphFactory(
-            output / ("osdb-" + graph),
+            runtime_directory,
             binding["inventory"]["path"],
             binding["inventory"]["sha256"],
             binding["profiles"],

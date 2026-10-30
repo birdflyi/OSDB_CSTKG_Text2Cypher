@@ -7,6 +7,7 @@ import http.client
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import socket
 import subprocess
@@ -33,9 +34,19 @@ def save(path, value):
     write_new(path, canonical(value))
 
 
+def graph_storage_name(public_name):
+    """Keep public benchmark names unchanged; map unsupported DB names deterministically."""
+    if not isinstance(public_name, str) or not public_name:
+        raise IntegrityError("TuGraph public graph name must be nonempty text")
+    if re.fullmatch(r"[A-Za-z0-9_]+", public_name):
+        return public_name
+    return "smoke_" + digest(public_name.encode("utf-8"))[:24]
+
+
 class TuGraphWorker:
     def __init__(self, settings):
         self.settings = settings
+        self.storage_graph = graph_storage_name(settings["graph"])
         self.process = None
         root = Path(settings["owner_root"]).resolve()
         self.folder = Path(settings["output"]).resolve()
@@ -82,7 +93,7 @@ class TuGraphWorker:
             "--dir",
             str(self.folder / "db"),
             "--graph",
-            settings["graph"],
+            self.storage_graph,
             "--overwrite",
             "false",
             "--continue_on_error",
@@ -107,7 +118,11 @@ class TuGraphWorker:
             )
         save(
             self.folder / "import_result.json",
-            dict(returncode=imported.returncode, graph=settings["graph"]),
+            dict(
+                returncode=imported.returncode,
+                graph=settings["graph"],
+                storage_graph=self.storage_graph,
+            ),
         )
         if imported.returncode:
             raise RuntimeError("TuGraph import failed; retained import.log")
@@ -189,7 +204,7 @@ class TuGraphWorker:
                 ("vertices", "MATCH (n) RETURN count(n) AS n"),
                 ("edges", "MATCH ()-[r]->() RETURN count(r) AS n"),
             ]:
-                result = counts.execute(kind, settings["graph"], pattern)
+                result = counts.execute(kind, self.storage_graph, pattern)
                 if result.get("complete") is not True or result.get("rows") != [
                     [settings["expected_" + kind]]
                 ]:
@@ -198,6 +213,7 @@ class TuGraphWorker:
                 kind="READY",
                 hostname=socket.gethostname(),
                 graph=settings["graph"],
+                storage_graph=self.storage_graph,
                 benchmark="Text2GQL",
                 worker_sha256=digest(Path(__file__).read_bytes()),
                 data_sha256=digest(canonical(settings["data_sha256"])),
@@ -225,7 +241,7 @@ class TuGraphWorker:
         )
         method = identity["method"]
         if method in ("direct", "direct-feedback"):
-            result = journal.execute("direct", identity["graph"], request["cypher"])
+            result = journal.execute("direct", self.storage_graph, request["cypher"])
         elif method == "native-set-count":
             combine = request["plan"].get("combine", {})
             applicable = (
@@ -247,7 +263,7 @@ class TuGraphWorker:
                     set_contract=schema_services._set_contract,
                 )
                 query = render_compiler_query(compiled["query"], compiled["parameters"])
-                result = journal.execute("native-set-count", identity["graph"], query)
+                result = journal.execute("native-set-count", self.storage_graph, query)
             else:
                 result = dict(
                     status="not_applicable",
@@ -260,7 +276,7 @@ class TuGraphWorker:
                 request["schema"],
                 journal,
                 request_prefix=method,
-                graph=identity["graph"],
+                graph=self.storage_graph,
                 strategy="full_detail" if method == "correct-detail" else "contract",
             )
             result = dict(result, complete=result.get("status") == "EXECUTED")

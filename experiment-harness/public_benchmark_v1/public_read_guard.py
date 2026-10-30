@@ -55,7 +55,7 @@ def read_query(query):
         word = token.group().upper()
         # Keywords can also be result aliases or property owners (e.g. start).
         # EXPLAIN must still confirm that the whole statement is a read.
-        identifier_context = previous.upper() == 'AS' or following == '.'
+        identifier_context = previous.upper() in ('AS', 'WITH') or previous == ',' or following == '.'
         if word in forbidden and previous not in ('.', '$', ':') and not identifier_context:
             raise ReadOnlyViolation('Write/admin clause denied')
         if word == 'CALL' and previous not in ('.', '$', ':'):

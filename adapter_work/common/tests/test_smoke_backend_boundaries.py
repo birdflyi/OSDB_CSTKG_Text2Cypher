@@ -17,6 +17,10 @@ from offline_pipeline import save
 def test_temporal_alias_is_not_a_start_command():
     query = "WITH datetime('2023-07-01') AS start RETURN start.epochSeconds"
     assert read_query(query) == query
+    carried = "WITH datetime('2023-07-01') AS start WITH start RETURN start.epochSeconds"
+    assert read_query(carried) == carried
+    with pytest.raises(ReadOnlyViolation):
+        read_query('WITH 1 AS x CREATE (n) RETURN n')
     for query in (
         "CREATE (n) RETURN n",
         "MATCH (n) SET n.x=1 RETURN n",

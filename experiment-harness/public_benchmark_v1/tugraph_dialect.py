@@ -35,9 +35,11 @@ def literal(value):
 
 def render_compiler_query(query, parameters):
     """Internal compiler callback; never an entrypoint for raw model queries."""
-    # This renderer only accepts output of the compiler above, which has plain
-    # identifiers and no string literals. Literal text is never scanned again.
-    if any(mark in query for mark in ('"', "'", '`', '//', '/*', ';')):
+    # Selection and set-count compilers emit plain or backtick-quoted ASCII
+    # identifiers, and no string literals. Validate quotations before replacing
+    # parameter tokens; user literal values are encoded once and never rescanned.
+    unquoted = re.sub(r"`[A-Za-z_][A-Za-z0-9_]*`", "identifier", query)
+    if "``" in query or any(mark in unquoted for mark in ('"', "'", '`', '//', '/*', ';')):
         raise UnsupportedPlan('Unexpected token in compiler-owned query')
     seen = set()
     def replace(match):
