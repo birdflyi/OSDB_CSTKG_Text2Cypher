@@ -79,7 +79,7 @@ def test_selection_accepts_paper_and_public_shape():
     spec = prepare(POSITIONS, limit=1)[0]
     entity = spec.schema.entities[0].label
     relation = spec.schema.relations[0].label
-    paper = '<json>{"name":["%s"],"entities":["%s"],"relations":["%s"]}</json>' % (
+    paper = '<json>{"name":"%s","entities":["%s"],"relations":["%s"]}</json>' % (
         spec.schema.graph,
         entity,
         relation,
@@ -108,7 +108,7 @@ def test_empty_selection_is_explicit_not_silent_full():
     selection = parse_selection('<json>{"labels":[],"relationships":[]}</json>', spec.schema)
     assert selection.accepted is False
     assert selection.reason == "empty_selection"
-    step = next_request(spec, '<json>{"labels":[],"relationships":[]}</json>')
+    step = next_request(spec, '<json>{"labels":[],"relationships":[]}</json>', generated_tokens=12)
     assert step.action == "request"
     assert step.state["selection_note"] == "explicit_empty_selection"
     assert step.request.protocol == "completion_prefix"
@@ -119,7 +119,7 @@ def test_stage2_continues_the_same_prefix():
     entity = spec.schema.entities[0].label
     relation = spec.schema.relations[0].label
     reply = 'thinking <json>{"labels":["%s"],"relationships":["%s"]}</json>' % (entity, relation)
-    step = next_request(spec, reply)
+    step = next_request(spec, reply, generated_tokens=12)
     assert step.action == "request"
     prefix = step.request.messages[0]["content"]
     assert prefix.startswith(spec.messages[0]["content"])

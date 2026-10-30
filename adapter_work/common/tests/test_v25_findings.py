@@ -99,8 +99,7 @@ def test_r4_complete_answer_executes():
 
 
 def test_r5_oserror_and_persistence_errors_propagate():
-    class PersistenceError(Exception):
-        pass
+    from common.errors import PersistenceError
 
     for error in (OSError("disk"), PersistenceError("fsync")):
         runtime = ControlRuntime({"answer": {}})

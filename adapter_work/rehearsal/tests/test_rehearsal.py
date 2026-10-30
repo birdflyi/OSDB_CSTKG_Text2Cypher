@@ -26,6 +26,15 @@ def test_full_rehearsal_is_900_positions():
     assert report["positions"] == 600
     assert report["replays"] == 300
     assert report["positions"] + report["replays"] == 900
-    assert report["model_requests"] == 700
+    assert report["model_requests"] == 600
+    assert report["charge_ids"] == 600
+    assert report["missing_dependencies"] == 0
+    assert report["network_calls"] == 0
     assert report["executed"] == 600
     assert report["scored"] == 600
+
+
+def test_control_without_ours_keeps_missing_dependency():
+    report = rehearsal.run({"native_set_count/cypherbench"})
+    assert report["replays"] == 20 and report["missing_dependencies"] == 20
+    assert report["model_requests"] == 0 and report["controls"]["executed"] == 0

@@ -138,7 +138,7 @@ def _pid(spec):
     return spec["position_id"] if isinstance(spec, dict) else spec.position_id
 
 
-def _run_model_cell(name, relative, method_slug, bench, model, runtime, limit=20):
+def _run_model_cell(name, relative, method_slug, bench, model, runtime, replies, plan_receipts, limit=20):
     adapter = _adapter(relative)
     specs = adapter.prepare(_positions(method_slug, bench), limit=limit)
     method_id = METHOD_IDS.get(method_slug, method_slug)
@@ -146,17 +146,27 @@ def _run_model_cell(name, relative, method_slug, bench, model, runtime, limit=20
     for spec in specs:
         if method_id == "cypher-ri":
             reply = model.reply(method_id, "schema_select")
-            step = adapter.next_request(spec, reply)
+            step = adapter.next_request(spec, reply, generated_tokens=12)
             assert step.action == "request", name + " stage2"
             reply2 = model.reply(method_id, "answer_continue")
             predictions[_pid(spec)] = adapter.parse(reply2)
         elif method_id == "direct-feedback":
-            reply = model.reply(method_id)
+            # The request smoke has no DB feedback. Reuse the frozen Direct reply.
+            reply = replies[(bench, _pid(spec))]
             predictions[_pid(spec)] = adapter.parse(reply)
             step = adapter.next_request(spec, reply)
             assert step.action == "complete"
         else:
-            predictions[_pid(spec)] = adapter.parse(model.reply(method_id))
+            reply = model.reply(method_id)
+            predictions[_pid(spec)] = adapter.parse(reply)
+            if method_id == "direct":
+                replies[(bench, _pid(spec))] = reply
+            if method_id == "ours":
+                plan = json.loads(reply)
+                plan_receipts[(bench, _pid(spec))] = dict(
+                    position_id=_pid(spec), benchmark=bench, plan=plan,
+                    source_plan_sha256=hashlib.sha256(json.dumps(plan, sort_keys=True).encode()).hexdigest(),
+                    charge_ids=["fake-" + str(len(model.requests))], simulated=True)
     result = adapter.consume(specs, predictions, runtime)
     return result, specs
 
@@ -165,6 +175,7 @@ def _run_model_cell(name, relative, method_slug, bench, model, runtime, limit=20
 def run(cells_filter=None):
     model = FakeModel()
     runtime = FakeRuntime()
+    replies, plan_receipts = {}, {}
     report = {
         "cells": 0,
         "positions": 0,
@@ -178,7 +189,10 @@ def run(cells_filter=None):
         "scored": 0,
         "controls": {"executed": 0, "not_applicable": 0, "execution_error": 0},
         "plan_artifacts": 0,
-        "charge_ids": set(),
+        "charge_ids": 0,
+        "simulated": True,
+        "network_calls": 0,
+        "missing_dependencies": 0,
     }
 
     for method in ("direct", "ours", "direct_feedback", "cypher_ri", "cyphersmith", "cyquark"):
@@ -186,7 +200,12 @@ def run(cells_filter=None):
             name = "%s/%s" % (method, slug)
             if cells_filter and name not in cells_filter:
                 continue
-            result, specs = _run_model_cell(name, name, method, bench, model, runtime)
+            if method == "direct_feedback" and not any(key[0] == bench for key in replies):
+                report["missing_dependencies"] += 20
+                report["cells"] += 1
+                report["positions"] += 20
+                continue
+            result, specs = _run_model_cell(name, name, method, bench, model, runtime, replies, plan_receipts)
             report["cells"] += 1
             report["positions"] += result.positions
             report["executed"] += result.executed
@@ -197,8 +216,6 @@ def run(cells_filter=None):
             report["scored"] += result.scored
             if method == "ours":
                 report["plan_artifacts"] += result.executed
-            if method == "direct":
-                report["charge_ids"].add(name)
 
     for group, control_id in (
         ("correct_detail", "correct-detail"),
@@ -211,25 +228,19 @@ def run(cells_filter=None):
                 continue
             adapter = _adapter(name)
             report["cells"] += 1
-            for index in range(1, 21):
-                position_id = "%s-P%02d" % (name.split("/")[0][:3].upper(), index)
-                plan = dict(PLAN)
-                if control_id == "native-set-count":
-                    plan = dict(PLAN, calls=[PLAN["calls"][0], PLAN["calls"][0]],
-                                combine={"op": "union", "key": "value", "output": "count", "alias": "c"})
-                envelope = {
-                    "position_id": position_id,
-                    "source_plan_sha256": hashlib.sha256(json.dumps(plan, sort_keys=True).encode()).hexdigest(),
-                    "benchmark": bench,
-                    "plan": plan,
-                    "charge_ids": ["gen-" + bench],
-                }
+            rows = json.loads((POSITIONS / (control_id + "__" + bench + ".positions.json")).read_text(encoding="utf-8-sig"))["positions"]
+            for row in rows:
+                envelope = plan_receipts.get((bench, row["position_id"]))
+                if envelope is None:
+                    report["missing_dependencies"] += 1
+                    report["replays"] += 1
+                    continue
                 result = adapter.replay(envelope, runtime)
                 report["replays"] += 1
                 report["controls"][result.status] = report["controls"].get(result.status, 0) + 1
 
     report["model_requests"] = len(model.requests)
-    report["charge_ids"] = len(report["charge_ids"])
+    report["charge_ids"] = len(model.requests)
     return report
 
 

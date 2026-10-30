@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from common import core, direct  # noqa: E402
+from common.stages import NextStep
 
 MESSAGE_BENCHMARKS = ("CypherBench", "Text2GQL", "OSDB-STKG")
 QUESTION_BENCHMARKS = ("MindTheQuery", "ZOGRASCOPE")
@@ -61,20 +62,8 @@ class RequestSpec:
         )
 
 
-@dataclass(frozen=True)
-class NextStep:
-    action: str
-    request: RequestSpec | None = None
-    state: dict = field(default_factory=dict)
-    reason: str | None = None
-
-
 def _messages(payload, benchmark):
-    if benchmark in MESSAGE_BENCHMARKS:
-        return tuple(dict(m) for m in payload["messages"])
-    if benchmark in QUESTION_BENCHMARKS:
-        return direct.compose("MindTheQuery", payload)
-    raise ValueError("unsupported benchmark for feedback adapter: " + benchmark)
+    return direct.compose(benchmark, payload)
 
 
 def prepare(positions_path, benchmark: str, cell_id: str, *, limit=None) -> list:

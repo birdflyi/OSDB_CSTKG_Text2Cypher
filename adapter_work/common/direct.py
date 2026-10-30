@@ -12,6 +12,7 @@ import re
 from pathlib import Path
 
 from common import core
+from common.prompts import compose_direct
 
 FENCE = re.compile(r"```(?:cypher|gql)?\s*(.*?)```", re.DOTALL | re.IGNORECASE)
 REFUSAL = re.compile(
@@ -25,17 +26,7 @@ QUESTION_BENCHMARKS = ("MindTheQuery", "ZOGRASCOPE")
 
 def compose(benchmark: str, payload: dict) -> tuple:
     """Return chat messages for the frozen public input of one benchmark."""
-    if benchmark in MESSAGE_BENCHMARKS:
-        return tuple(dict(message) for message in payload["messages"])
-    if benchmark in QUESTION_BENCHMARKS:
-        schema = payload["schema"]
-        rendered = schema if isinstance(schema, str) else json.dumps(schema, ensure_ascii=False)
-        content = (
-            "Graph schema:\n%s\n\nWrite one query that answers the question.\n"
-            "Return only the query.\n\nQuestion: %s" % (rendered, payload["question"])
-        )
-        return (dict(role="user", content=content),)
-    raise ValueError("unsupported benchmark for direct adapter: " + benchmark)
+    return compose_direct(benchmark, payload)
 
 
 def prepare(positions_path, benchmark: str, *, limit=None) -> list:
@@ -47,6 +38,10 @@ def prepare(positions_path, benchmark: str, *, limit=None) -> list:
             dict(
                 position_id=row["position_id"],
                 task_id=row["task_id"],
+                benchmark=benchmark,
+                method="direct",
+                generation_stage="initial",
+                protocol="chat",
                 graph=row["graph"],
                 category=row.get("category"),
                 ordinal=row["ordinal"],
@@ -68,6 +63,17 @@ def parse(reply: str, *, http_status=None, attempts=1, cost=None) -> core.Predic
         return core.Prediction("format_error", None, text, http_status, attempts, cost)
     if REFUSAL.search(stripped):
         return core.Prediction("refused", None, text, http_status, attempts, cost)
+    if stripped.startswith("{"):
+        try:
+            document = json.loads(stripped)
+        except ValueError:
+            return core.Prediction("format_error", None, text, http_status, attempts, cost)
+        status = document.get("status")
+        if status in ("UNSUPPORTED", "INSUFFICIENT_EVIDENCE") and isinstance(document.get("reason"), str) and document["reason"].strip():
+            return core.Prediction("unsupported" if status == "UNSUPPORTED" else "refused", None, text, http_status, attempts, cost)
+        if status != "ANSWER" or not isinstance(document.get("query"), str):
+            return core.Prediction("format_error", None, text, http_status, attempts, cost)
+        stripped = document["query"]
     fenced = FENCE.search(stripped)
     candidate = (fenced.group(1) if fenced else stripped).strip().rstrip(";").strip()
     if not candidate or not ANSWER_HINT.search(candidate):

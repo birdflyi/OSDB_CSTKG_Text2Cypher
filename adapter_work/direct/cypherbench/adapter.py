@@ -19,6 +19,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from common.consumption import consume as consume_positions  # noqa: E402
+from common.prompts import compose_direct
+from common.errors import IntegrityError
 
 FENCE = re.compile(r"```(?:cypher)?\s*(.*?)```", re.DOTALL | re.IGNORECASE)
 ANSWER_BLOCK = re.compile(r"<answer>(.*?)</answer>", re.DOTALL | re.IGNORECASE)
@@ -30,10 +32,6 @@ CLAUSE = re.compile(
     r"\b(match|optional\s+match|unwind|return|with|call|create|merge|delete|set|remove)\b",
     re.IGNORECASE,
 )
-
-
-class IntegrityError(RuntimeError):
-    """Frozen input bytes do not match the SHA recorded in the position list."""
 
 
 @dataclass(frozen=True)
@@ -108,7 +106,7 @@ def prepare(positions_path, *, limit=None, cell_id="M01-B01") -> list:
         payload = json.loads(path.read_text(encoding="utf-8"))
         if "gold" in payload or "reference" in payload:
             raise IntegrityError("public input leaks gold: " + str(path))
-        messages = tuple(dict(m) for m in payload["messages"])
+        messages = compose_direct("CypherBench", payload)
         specs.append(
             RequestSpec(
                 cell_id=cell_id,

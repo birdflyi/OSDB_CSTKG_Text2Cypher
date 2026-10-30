@@ -1,0 +1,57 @@
+{
+  "CypherBench": {
+    "prefix_messages": [
+      {
+        "content": "Translate the question into a single read-only Neo4j Cypher query.\nReturn only the query, with no explanation. Use the supplied complete graph schema.\nReturn entity names/properties, not node or path objects. Do not add a default\nLIMIT; use a limit only if the question asks for one. Preserve requested DISTINCT,\ntime filters, grouping and ordering. Database-side aggregation is allowed.\nNode metadata: eid,name,aliases,description; relationship metadata: rid.\nNo write/admin/procedure statements. Read subqueries CALL { ... } are allowed.\n",
+        "role": "system"
+      }
+    ],
+    "prefix_sha256": "83932ce7833da130329e7c43cc79007655d3f2ff770c04aa84d3d5b4151a8558",
+    "provenance": "Frozen V23 Direct prompt prefixes; shared with feedback and author engineering profiles",
+    "source_sha256": "2049e179a715a7b600f8add284d59652f28cd1724fc52b36fc9e8b2f2123652e"
+  },
+  "Text2GQL": {
+    "prefix_messages": [
+      {
+        "content": "The engine is pinned native TuGraph 4.5.2, not Neo4j.\nOnly actual schema properties exist; entity identity is identity_property.\nDo not assume eid, rid, aliases, name or description unless actually declared.\nUse actual simple schema identifiers; quoted label spelling was not equivalent\nin independent checks. Use explicit variable lists in WITH, not WITH *.\nSeparate consecutive MATCH/OPTIONAL stages using explicit WITH bindings.\nGlobal post-OPTIONAL predicates require a subsequent explicit WITH stage;\ncarry needed nodes and scalar edge properties, avoiding unused nullable edges.\nPreserve relationship-bag multiplicity, NULLs and zero-neighbor groups.\nFor three-valued WHERE negation, guard compared operands IS NOT NULL before NOT.\nWhen counting entities, count the actual declared non-null primary property;\ndo not use a node-object COUNT DISTINCT that can bypass an expansion here.\nNative datetime literals use a space separator and up to six fractional digits.\nDo not guess timezones or silently drop precision. BOOL values are true/false.\nNo writes/admin/procedures. Return only requested scalar/list/map properties,\nnot node/relationship/path objects. No default LIMIT; preserve requested order.\n\nTranslate the question into one read-only native Cypher query.\nReturn only the query without Markdown or explanation. Use the complete schema,\ncommon entity suggestions and native-engine notes. General read query constructs\nsupported by the engine are permitted; you are not restricted to the service IR.\nKeep the requested predicates, multiplicities, distinctness, grouping and order.\nIf the engine cannot express the request, do not replace it with an easier task.\n",
+        "role": "system"
+      }
+    ],
+    "prefix_sha256": "be42c5d3fd282b55df51dec996cf1c70df5be17dc7005fa9437981cb9b23c278",
+    "provenance": "Frozen V23 Direct prompt prefixes; shared with feedback and author engineering profiles",
+    "source_sha256": "ed2fa79108762c32a4b6839acf10bb9e767c3f082a1a2960dc85fb4b6a3f4c58"
+  },
+  "MindTheQuery": {
+    "prefix_messages": [
+      {
+        "content": "Translate the public question to one read-only Neo4j Cypher query. Return the query only. Use the exact supplied native schema and requested result semantics. Do not invent properties, synthetic eid/rid fields or default LIMITs. Preserve DISTINCT, grouping, order, NULL and multiplicity. Database-side aggregation and read-only CALL { ... } subqueries are allowed. Writes, admin commands, procedure calls and database switches are not allowed.",
+        "role": "system"
+      }
+    ],
+    "prefix_sha256": "bdcc2bea00239e8d40c3ef0619e844f0f823b5ebd386592b4082fb2e518717fa",
+    "provenance": "Frozen V23 Direct prompt prefixes; shared with feedback and author engineering profiles",
+    "source_sha256": "6b73a0415223781b244b709cd70d391e355a50079e744913ab93a796cf9dd29f"
+  },
+  "ZOGRASCOPE": {
+    "prefix_messages": [
+      {
+        "content": "Translate the public question to one read-only Neo4j Cypher query. Return the query only. Use the exact supplied native schema and requested result semantics. Do not invent properties, synthetic eid/rid fields or default LIMITs. Preserve DISTINCT, grouping, order, NULL and multiplicity. Database-side aggregation and read-only CALL { ... } subqueries are allowed. Writes, admin commands, procedure calls and database switches are not allowed.",
+        "role": "system"
+      }
+    ],
+    "prefix_sha256": "bdcc2bea00239e8d40c3ef0619e844f0f823b5ebd386592b4082fb2e518717fa",
+    "provenance": "Frozen V23 Direct prompt prefixes; shared with feedback and author engineering profiles",
+    "source_sha256": "2f065d7560c1a78967a8d282accf519d36fcce34b5439c235bcc624fcbce87d4"
+  },
+  "OSDB-STKG": {
+    "prefix_messages": [
+      {
+        "content": "Return one JSON object only. Both methods use status ANSWER, UNSUPPORTED or INSUFFICIENT_EVIDENCE. A decline has only status and a nonempty reason. Declines are not correct numeric answers. Never invent missing history, people identity or employment facts. Use the common input only; a valid executed answer receives no gold-driven repair. For ANSWER use {\"status\":\"ANSWER\",\"query\":\"one read-only Neo4j 5.15 Cypher\"}. No parameters outside the query, explanations or extra fields. Native read patterns, aggregates, UNION and read subqueries remain available. No write/admin/procedure/database-switch commands. Use declared data and explicit absolute-instant conversions; no implicit LIMIT.",
+        "role": "system"
+      }
+    ],
+    "prefix_sha256": "c5cd44701dde44e06bdc824bedd6d8c0c6abafa4f49549e787ca2b83be37ac89",
+    "provenance": "Frozen V23 Direct prompt prefixes; shared with feedback and author engineering profiles",
+    "source_sha256": "40e492c2c6ea190d2e55b07863732b24ff29e0f51b3b014c9ea4127727cb3860"
+  }
+}

@@ -26,8 +26,8 @@ def prepare(positions_path=POSITIONS, *, limit=None):
     return ri.prepare(positions_path, BENCHMARK, CELL, limit=limit)
 
 
-def next_request(spec, reply, *, transport_unknown=False):
-    return ri.next_request(spec, reply, transport_unknown=transport_unknown)
+def next_request(spec, reply, *, transport_unknown=False, **metadata):
+    return ri.next_request(spec, reply, transport_unknown=transport_unknown, **metadata)
 
 
 def parse(reply, **kwargs):

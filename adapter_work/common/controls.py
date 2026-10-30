@@ -12,6 +12,7 @@ continues with the next position; identity and persistence failures propagate.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from common.errors import HARD_ERRORS, UnsupportedPlan, IdentityScopeConflict, EvidenceConflict
 
 CONTROL_PROFILES = {
     "correct-detail": "full_detail",
@@ -27,13 +28,6 @@ STATUSES = (
     "execution_error",
     "not_run",
 )
-HARD_NAMES = {"OSError", "IdentityScopeConflict", "EvidenceConflict", "PersistenceError"}
-
-
-class UnsupportedPlan(Exception):
-    """The frozen plan cannot express this control; keep the position."""
-
-
 class BackendPending(Exception):
     """Structurally applicable but this backend has no control path yet."""
 
@@ -69,7 +63,7 @@ class ControlResult:
 
 
 def _hard(exc) -> bool:
-    return type(exc).__name__ in HARD_NAMES
+    return isinstance(exc, HARD_ERRORS) and not isinstance(exc, (TimeoutError, ConnectionError))
 
 
 def _answer_complete(read) -> bool:
@@ -154,12 +148,3 @@ def replay_all(envelope, runtime, control_ids):
                 raise
             results.append(_result(envelope, control_id, CONTROL_PROFILES.get(control_id, control_id), "execution_error", type(exc).__name__))
     return results
-
-
-# Defined late so ``except`` clauses above can name them without import cycles.
-class IdentityScopeConflict(RuntimeError):
-    """Identity scope changed under the capture; the capture is invalid."""
-
-
-class EvidenceConflict(RuntimeError):
-    """Persistence or evidence conflict; hand it to the central session."""

@@ -2,8 +2,8 @@
 
 The model returns the v24 plan JSON; this module parses it, asks the injected
 runtime to compile it with the benchmark's existing compiler (never a new one),
-and only then executes. Unsupported plans keep their position and are not
-counted as wrong answers.
+and only then executes. Unsupported plans keep their position in the full
+denominator and do not count as correct answers.
 
 Compilers stay in the runtime: the adapter never imports a driver and never
 starts a graph service. Offline tests inject a fake compiler and a fake
@@ -20,16 +20,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from common import consumption, core, direct, plans  # noqa: E402
+from common.errors import HARD_ERRORS, UnsupportedPlan, UnsupportedSelection
+from common.prompts import DEFAULT_PROFILES, compose_ours
 
-
-class UnsupportedPlan(Exception):
-    """Compiler refuses the plan structure; keep the position."""
-
-
-class UnsupportedSelection(UnsupportedPlan):
-    """The selection cannot be compiled for this backend."""
-
-PREPARED = Path(r"D:\ch7\reports\t1_preparation_20261029\delegation_bc_v23\prepared_messages\ours")
 
 PROFILES = {
     "CypherBench": "cb-neo4j-eid-v1",
@@ -77,18 +70,12 @@ class RequestSpec:
         )
 
 
-def prepare(positions_path, benchmark: str, cell_id: str, *, limit=None) -> list:
+def prepare(positions_path, benchmark: str, cell_id: str, *, limit=None, prompt_profiles=DEFAULT_PROFILES) -> list:
     rows = core.load_positions(positions_path, limit=limit)
     specs = []
     for row in rows:
         payload = core.verify_public_input(row)
-        bound = PREPARED / (row["position_id"] + ".messages.json") if "PREPARED" in globals() else None
-        if bound is not None and bound.is_file():
-            messages = tuple(dict(m) for m in json.loads(bound.read_text(encoding="utf-8"))["messages"])
-        elif "messages" in payload:
-            messages = tuple(dict(m) for m in payload["messages"])
-        else:
-            messages = direct.compose("MindTheQuery", payload)
+        messages = compose_ours(benchmark, payload, prompt_profiles)
         specs.append(
             RequestSpec(
                 cell_id=cell_id,
@@ -117,6 +104,8 @@ def parse(reply: str, *, http_status=None, attempts=1, cost=None) -> consumption
     result = plans.parse(reply)
     if result.status == "answer":
         return consumption.Prediction("ready", None, reply or "", http_status, attempts, cost)
+    if result.status == "unsupported":
+        return consumption.Prediction("unsupported", None, reply or "", http_status, attempts, cost)
     return consumption.Prediction("format_error", None, reply or "", http_status, attempts, cost)
 
 
@@ -148,7 +137,7 @@ def compile_plans(predictions, runtime, benchmark: str) -> dict:
                 prediction.attempts, prediction.cost,
             )
             continue
-        except OSError:
+        except HARD_ERRORS:
             raise
         except Exception as exc:
             compiled[position_id] = consumption.Prediction(
@@ -158,12 +147,13 @@ def compile_plans(predictions, runtime, benchmark: str) -> dict:
             continue
         compiled[position_id] = consumption.Prediction(
             "ready",
-            piece["query"],
+            piece.get("query") if isinstance(piece, dict) else None,
             prediction.raw,
             prediction.http_status,
             prediction.attempts,
             prediction.cost,
-            parameters=piece.get("parameters") or {},
+            parameters=(piece.get("parameters") or {}) if isinstance(piece, dict) else {},
+            compiled_plan=piece if not (isinstance(piece, dict) and "query" in piece) else None,
         )
     return compiled
 

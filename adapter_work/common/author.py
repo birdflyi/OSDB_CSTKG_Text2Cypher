@@ -1,14 +1,15 @@
 """Shared inference-side adapter for the two training-based author methods.
 
 CypherSmith and CYQUARK are training/data methods: their paper contribution is
-data generation plus fine-tuning, and neither ships a runnable solver. This
+data generation plus fine-tuning. Our retrieved assets do not yet include a
+verified, runnable trained solver for either method. This
 factory therefore covers only the thin inference adapter that the comparison
 needs — compose the benchmark prompt, classify the reply, hand it to the shared
 consumer. Training assets stay ``resource_pending`` in each cell's delivery.
 
 Prompt choice is our engineering setting, not the authors' template: the frozen
-V22 public input is used verbatim where it is a chat message, and composed from
-``question``/``schema`` otherwise (same rule as the direct factory).
+V22 public input uses the frozen Direct engineering profile. A paper-faithful
+training run must bind its own training-compatible prompt before admission.
 """
 
 from __future__ import annotations
@@ -29,12 +30,7 @@ def prepare(positions_path, benchmark: str, cell_id: str, method: str, *, limit=
     specs = []
     for row in rows:
         payload = core.verify_public_input(row)
-        if benchmark in MESSAGE_BENCHMARKS:
-            messages = tuple(dict(message) for message in payload["messages"])
-        elif benchmark in QUESTION_BENCHMARKS:
-            messages = direct.compose("MindTheQuery", payload)
-        else:
-            raise ValueError("unsupported benchmark for author adapter: " + benchmark)
+        messages = direct.compose(benchmark, payload)
         specs.append(
             dict(
                 cell_id=cell_id,

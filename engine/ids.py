@@ -17,7 +17,7 @@ def component(value: str) -> str:
 
 
 def logical_key(benchmark: str, task: str, method: str, phase: str) -> str:
-    if phase not in ("initial", "feedback"):
+    if phase not in ("initial", "feedback", "schema_select", "answer_continue"):
         raise ValueError("Unknown generation phase")
     return "__".join(component(v) for v in (benchmark, task, method, phase))
 

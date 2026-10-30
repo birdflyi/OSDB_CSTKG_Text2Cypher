@@ -49,7 +49,7 @@ def test_prepare_reads_twenty_positions():
 
 def test_parse_plan_and_unsupported():
     assert adapter.parse(json.dumps(PLAN)).status == "ready"
-    assert adapter.parse(json.dumps({"status": "UNSUPPORTED", "reason": "x"})).status == "format_error"
+    assert adapter.parse(json.dumps({"status": "UNSUPPORTED", "reason": "x"})).status == "unsupported"
     assert adapter.parse("not json").status == "format_error"
 
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from common.errors import IntegrityError
 
 from common.consumption import (  # noqa: F401  (re-exported for cells)
     CellResult,
@@ -18,10 +19,6 @@ from common.consumption import (  # noqa: F401  (re-exported for cells)
     ReferenceMissing,
     consume,
 )
-
-
-class IntegrityError(RuntimeError):
-    """Frozen input bytes do not match the recorded SHA."""
 
 
 def load_positions(path, *, limit=None) -> list:

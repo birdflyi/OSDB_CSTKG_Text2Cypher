@@ -90,7 +90,7 @@ def retry_delay(value):
     return min(300, max(0, delay)) if delay == delay else 5
 
 
-def classify(value: dict, expected_model: str) -> dict:
+def classify(value: dict, expected_model: str, *, completion=False) -> dict:
     """A complete HTTP error and unknown model-generation outcome are distinct."""
     result = dict(value)
     status = value.get("http_status")
@@ -129,7 +129,7 @@ def classify(value: dict, expected_model: str) -> dict:
         result.update(status="unknown", protocol_error="invalid_response_envelope")
         return result
     choice = choices[0]
-    message = choice.get("message")
+    message = {"content": choice.get("text")} if completion else choice.get("message")
     if not isinstance(message, dict):
         result.update(status="unknown", protocol_error="missing_message")
         return result
@@ -150,6 +150,7 @@ def classify(value: dict, expected_model: str) -> dict:
         reasoning_content=message.get("reasoning_content"),
         usage=body.get("usage") if isinstance(body.get("usage"), dict) else None,
         fingerprint=body.get("system_fingerprint"),
+        matched_stop=choice.get("stop_reason") if isinstance(choice.get("stop_reason"), str) else None,
     )
     return result
 
@@ -251,7 +252,7 @@ class PreparedHTTP:
             deadline_expired=expired.is_set(),
             seconds=time.monotonic() - start + self.connected_seconds,
         )
-        return classify(value, self.endpoint.model)
+        return classify(value, self.endpoint.model, completion="prompt" in json.loads(wire))
 
     def close(self):
         self.owner.release(self.endpoint, self.connection, self.reusable)

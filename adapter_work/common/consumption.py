@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from types import SimpleNamespace
+from common.errors import HARD_ERRORS
 
 METHOD_STATUSES = (
     "executed",
@@ -44,6 +45,7 @@ class Prediction:
     cost: float | None = None
     fallback: bool = False
     parameters: dict | None = None
+    compiled_plan: object | None = None
 
     @property
     def executable(self) -> bool:
@@ -58,6 +60,7 @@ class Prediction:
             cost=self.cost,
             fallback=self.fallback,
             parameters=self.parameters,
+            compiled_plan_present=self.compiled_plan is not None,
         )
 
 
@@ -118,6 +121,8 @@ def _score(runtime, position, saved, legacy):
         result = runtime.score_saved_answer(position.position_id) if legacy else runtime.score_saved_answer(position, saved)
     except ReferenceMissing:
         return dict(status="reference_missing", value=None, error=None)
+    except HARD_ERRORS:
+        raise
     except Exception as exc:
         return dict(status="scoring_error", value=None, error=type(exc).__name__)
     if result is None:
@@ -134,6 +139,8 @@ def _controls(runtime, position, saved):
     try:
         result = hook(position, saved)
         return getattr(result, "status", "control_ok") if result is not None else None
+    except HARD_ERRORS:
+        raise
     except Exception as exc:
         return "control_error:" + type(exc).__name__
 
@@ -167,7 +174,10 @@ def _run_one(runtime, position, prediction, legacy):
     lease = runtime.graph_lease(position.graph)
     handle = lease.__enter__() if hasattr(lease, "__enter__") else lease
     try:
-        execution = runtime.execute(handle, position, prediction)
+        if getattr(prediction, "compiled_plan", None) is not None:
+            execution = runtime.execute_plan(handle, position, prediction.compiled_plan)
+        else:
+            execution = runtime.execute(handle, position, prediction)
     finally:
         if hasattr(lease, "__exit__"):
             lease.__exit__(None, None, None)
@@ -220,6 +230,12 @@ def consume(positions, predictions, runtime) -> CellResult:
             counts["run_error"] += 1
             rows.append(dict(position_id=position.position_id, status="run_error", error="ReferenceMissing"))
             continue
+        except TimeoutError as exc:
+            counts["run_error"] += 1
+            rows.append(dict(position_id=position.position_id, status="run_error", error=type(exc).__name__))
+            continue
+        except HARD_ERRORS:
+            raise
         except Exception as exc:
             counts["run_error"] += 1
             rows.append(

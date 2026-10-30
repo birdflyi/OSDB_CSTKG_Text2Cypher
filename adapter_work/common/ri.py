@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from common.consumption import consume as consume_positions
+from common.errors import IntegrityError
+from common.stages import NextStep
 
 SCHEMA_HEAD = "Graph schema:"
 QUESTION_HEAD = "Question:"
@@ -32,10 +34,6 @@ CLAUSE = re.compile(
     r"\b(match|optional\s+match|unwind|return|with|call|create|merge|delete|set|remove)\b",
     re.IGNORECASE,
 )
-
-
-class IntegrityError(RuntimeError):
-    """Frozen input bytes do not match the SHA recorded in the position list."""
 
 
 @dataclass(frozen=True)
@@ -63,6 +61,7 @@ class Schema:
     graph: str
     entities: tuple
     relations: tuple
+    global_properties: dict = field(default_factory=dict)
 
     def compact_text(self) -> str:
         return "Labels: %s\nRelationships: %s" % (
@@ -71,9 +70,9 @@ class Schema:
         )
 
     def expanded_text(self, selection) -> str:
-        entities = [e for e in self.entities if not selection.labels or e.label in selection.labels]
+        entities = [e for e in self.entities if e.label in selection.labels]
         relations = [
-            r for r in self.relations if not selection.relations or r.label in selection.relations
+            r for r in self.relations if r.label in selection.relations
         ]
         lines = ["Labels:"]
         for entity in entities:
@@ -86,6 +85,10 @@ class Schema:
                 "  (%s)-[%s%s]->(%s)"
                 % (relation.subject, relation.label, (" " + props) if props else "", relation.object)
             )
+        if self.global_properties:
+            # This vocabulary has no per-class ownership. Do not invent one.
+            lines.append("Global property vocabulary (original scope):")
+            lines.append(json.dumps(self.global_properties, ensure_ascii=False, sort_keys=True))
         return "\n".join(lines)
 
 
@@ -134,7 +137,9 @@ class RequestSpec:
             body=(
                 {"messages": [dict(m) for m in self.messages]}
                 if self.protocol == "chat"
-                else {"prefix": self.messages[0]["content"]}
+                else {"prompt": self.messages[0]["content"],
+                      "max_tokens": self.state["token_budget_remaining"],
+                      "stop": ["</json>"] if self.generation_stage == "schema_select" else None}
             ),
             state=dict(self.state),
         )
@@ -159,14 +164,6 @@ class Prediction:
             cost=self.cost,
             fallback=self.fallback,
         )
-
-
-@dataclass(frozen=True)
-class NextStep:
-    action: str
-    request: RequestSpec | None = None
-    state: dict = field(default_factory=dict)
-    reason: str | None = None
 
 
 def _sha(path: Path) -> str:
@@ -204,7 +201,9 @@ def schema_from_dict(document: dict) -> Schema:
             for label, props in document["node_props"].items()
         ]
         relations = [
-            Relation(item["type"], item.get("start", ""), item.get("end", ""), ())
+            Relation(item["type"], item.get("start", ""), item.get("end", ""),
+                     tuple(Property(prop["property"], str(prop.get("datatype", "")))
+                           for prop in document.get("rel_props", {}).get(item["type"], [])))
             for item in document.get("relationships", [])
         ]
     else:
@@ -213,7 +212,8 @@ def schema_from_dict(document: dict) -> Schema:
             Relation(name, spec.get("domain", ""), spec.get("range", ""), ())
             for name, spec in (document.get("relations") or {}).items()
         ]
-    return Schema(document.get("name") or document.get("graph") or "", tuple(entities), tuple(relations))
+    return Schema(document.get("name") or document.get("graph") or "", tuple(entities), tuple(relations),
+                  dict(document.get("properties", {})) if "classes" in document else {})
 
 
 def payload_of(row) -> dict:
@@ -240,11 +240,14 @@ def payload_of(row) -> dict:
 
 def first_prompt(question: str, schema: Schema) -> str:
     return (
-        "You generate Cypher for a property graph.\n"
+        "User: You generate Cypher for a property graph.\n"
         "Think first, then choose the labels and relationships you need.\n"
-        'Finish with <json>{"name": [...], "entities": [...], "relations": [...]}</json> '
+        'Finish with <json>{"name": "GRAPH_NAME", "entities": [...], "relations": [...]}</json>. '
+        'Use the supplied graph name as a string. '
         "and stop immediately after </json>.\n\n"
-        "Schema (names only):\n%s\n\nQuestion: %s" % (schema.compact_text(), question)
+        "After the schema is inserted, continue and put the query in <answer></answer>.\n"
+        "Graph: %s\nSchema (names only):\n%s\n\nQuestion: %s\nAssistant: "
+        % (schema.graph, schema.compact_text(), question)
     )
 
 
@@ -277,6 +280,8 @@ def parse_selection(reply: str, schema: Schema) -> Selection:
         return Selection((), (), False, "invalid_json")
     if not isinstance(value, dict):
         return Selection((), (), False, "invalid_shape")
+    if "entities" in value and value.get("name") != schema.graph:
+        return Selection((), (), False, "graph_name_mismatch")
     try:
         if "entities" in value:
             labels = _names(value.get("entities", []))
@@ -307,7 +312,9 @@ def _full_selection(schema: Schema) -> Selection:
     )
 
 
-def prepare(positions_path, benchmark: str, cell_id: str, *, limit=None) -> list:
+def prepare(positions_path, benchmark: str, cell_id: str, *, limit=None, total_tokens=8192) -> list:
+    if type(total_tokens) is not int or total_tokens <= 0:
+        raise ValueError("total_tokens must be a positive integer")
     document = json.loads(Path(positions_path).read_text(encoding="utf-8-sig"))
     rows = document["positions"]
     if limit is not None:
@@ -315,7 +322,7 @@ def prepare(positions_path, benchmark: str, cell_id: str, *, limit=None) -> list
     specs = []
     for row in rows:
         payload = payload_of(row)
-        schema = schema_from_dict(payload["schema"])
+        schema = schema_from_dict(dict(payload["schema"], graph=row["graph"]))
         question = payload.get("question") or ""
         prompt = first_prompt(question, schema)
         specs.append(
@@ -330,36 +337,50 @@ def prepare(positions_path, benchmark: str, cell_id: str, *, limit=None) -> list
                 ordinal=row["ordinal"],
                 full_flow_five=bool(row.get("full_flow_five")),
                 generation_stage="schema_select",
-                protocol="chat",
+                protocol="completion_prefix",
                 messages=(dict(role="user", content=prompt),),
                 input_path=row["public_input_path"],
                 input_sha256=row["public_input_sha256"],
                 question=question,
                 schema=schema,
-                state=dict(stage="schema_select", token_budget_remaining=None),
+                state=dict(stage="schema_select", token_budget_remaining=total_tokens,
+                           prompt_profile="ri-engineering-v27", author_template_byte_exact=False),
             )
         )
     return specs
 
 
-def next_request(spec: RequestSpec, reply: str, *, transport_unknown=False) -> NextStep:
+def next_request(spec: RequestSpec, reply: str, *, transport_unknown=False,
+                 generated_tokens=None, finish_reason=None, matched_stop=None) -> NextStep:
     state = dict(spec.state)
     state.update(stage="schema_select", parent_request_id=spec.position_id)
     if transport_unknown:
         return NextStep("failed", None, state, "transport_unknown")
+    if spec.generation_stage == "answer_continue":
+        return NextStep("complete", None, state)
     text = reply or ""
+    if finish_reason == "length":
+        return NextStep("failed", None, state, "truncated_before_stop")
+    if not JSON_BLOCK.search(text) and matched_stop == "</json>" and finish_reason == "stop":
+        text += "</json>"
     if not JSON_BLOCK.search(text):
         if JSON_OPEN.search(text):
             return NextStep("failed", None, state, "truncated_before_stop")
         return NextStep("failed", None, state, "missing_json_block")
+    if type(generated_tokens) is not int or generated_tokens < 0:
+        return NextStep("blocked", None, state, "missing_generated_token_usage")
+    remaining = state["token_budget_remaining"] - generated_tokens
+    if remaining <= 0:
+        return NextStep("failed", None, state, "token_budget_exhausted")
+    state["token_budget_remaining"] = remaining
     selection = parse_selection(text, spec.schema)
     accepted = selection.accepted
     if selection.reason == "empty_selection":
         state["selection_note"] = "explicit_empty_selection"
         state["fallback_reason"] = "empty_selection_explicit"
     if not accepted and selection.reason != "empty_selection":
-        selection = _full_selection(spec.schema)
         state["fallback_reason"] = selection.reason
+        selection = _full_selection(spec.schema)
     state.update(
         stage="answer_continue",
         selection={"labels": list(selection.labels), "relations": list(selection.relations)},

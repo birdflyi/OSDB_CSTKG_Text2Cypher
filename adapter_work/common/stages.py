@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 ACTIONS = ("request", "complete", "blocked", "failed")
-STAGES = ("schema_select", "answer_continue")
+TRANSITIONS = {"schema_select": "answer_continue", "initial": "feedback"}
 
 
 class StageError(RuntimeError):
@@ -43,10 +43,8 @@ def check(request, step: NextStep, *, previous_stage: str, position_id: str) -> 
     if step.action != "request":
         return
     stage = getattr(step.request, "generation_stage", None)
-    if stage not in STAGES:
-        raise StageError("unknown generation stage: " + str(stage))
-    if previous_stage == "answer_continue":
-        raise StageError("answer_continue is the last stage")
+    if TRANSITIONS.get(previous_stage) != stage:
+        raise StageError("invalid generation transition: " + previous_stage + " -> " + str(stage))
     if getattr(step.request, "position_id", None) != position_id:
         raise StageError("next step changed the position")
     if getattr(step.request, "task_id", None) != getattr(request, "task_id", None):
@@ -57,9 +55,9 @@ def check(request, step: NextStep, *, previous_stage: str, position_id: str) -> 
         raise StageError("next step changed the method")
 
 
-def advance(adapter, request, reply, *, transport_unknown=False) -> NextStep:
+def advance(adapter, request, reply, *, transport_unknown=False, **metadata) -> NextStep:
     """Call the cell's next_request and validate the transition."""
-    step = adapter.next_request(request, reply, transport_unknown=transport_unknown)
+    step = adapter.next_request(request, reply, transport_unknown=transport_unknown, **metadata)
     check(request, step, previous_stage=request.generation_stage, position_id=request.position_id)
     if step.action == "request":
         state = dict(step.state or {})
