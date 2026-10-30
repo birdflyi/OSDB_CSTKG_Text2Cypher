@@ -92,7 +92,28 @@ def load_reuse_aliases(pin, jobs, ledger, graph_snapshots):
             if (source_pin["sha256"] != source_compatibility.get("public_input_sha256")
                     or target_pin["sha256"] != expected["public_input_sha256"]):
                 raise IntegrityError("Public equivalence pins differ from declared inputs")
-            old_public, new_public = canonical(read(verify(source_pin))), canonical(read(verify(target_pin)))
+            old_value, new_value = read(verify(source_pin)), read(verify(target_pin))
+            mode = equivalent.get("mode", "exact_json_v1")
+            if mode == "text2gql_context_wrapper_v1":
+                if (job.item.benchmark != "Text2GQL"
+                        or old_value.get("format") != "original_public_user_messages"
+                        or new_value.get("format") != "cohort_public_context_v1"):
+                    raise IntegrityError("Unexpected Text2GQL public wrapper")
+                old_value, new_value = dict(old_value), dict(new_value)
+                del old_value["format"]
+                del new_value["format"]
+            elif mode == "zograscope_plain_wrapper_v1":
+                if (job.item.benchmark != "ZOGRASCOPE"
+                        or old_value.get("format") != "question_and_schema"
+                        or "input_variant" in old_value or "format" in new_value
+                        or new_value.get("input_variant") != "plain"):
+                    raise IntegrityError("Unexpected ZOGRASCOPE public wrapper")
+                old_value, new_value = dict(old_value), dict(new_value)
+                del old_value["format"]
+                del new_value["input_variant"]
+            elif mode != "exact_json_v1":
+                raise IntegrityError("Unknown public equivalence transformation")
+            old_public, new_public = canonical(old_value), canonical(new_value)
             if old_public != new_public or digest(new_public) != equivalent["canonical_sha256"]:
                 raise IntegrityError("Public inputs differ semantically")
             # Different JSON formatting is permitted; retain both original pins.

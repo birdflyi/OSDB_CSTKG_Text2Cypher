@@ -63,3 +63,33 @@ def test_equivalent_public_serialization_requires_equal_canonical_content(tmp_pa
             load_reuse_aliases(aliases, [job], ledger, {"B": {"g": "g"}})
     else:
         assert load_reuse_aliases(aliases, [job], ledger, {"B": {"g": "g"}})["new"]["response"]["status"] == "ok"
+
+
+@pytest.mark.parametrize("benchmark,mode,old_metadata,new_metadata", [
+    ("Text2GQL", "text2gql_context_wrapper_v1", {"format":"original_public_user_messages"}, {"format":"cohort_public_context_v1"}),
+    ("ZOGRASCOPE", "zograscope_plain_wrapper_v1", {"format":"question_and_schema"}, {"input_variant":"plain"}),
+])
+@pytest.mark.parametrize("change", [None, "value", "extra_field", "wrong_wrapper"])
+def test_only_two_named_metadata_migrations_preserve_input(tmp_path, benchmark, mode, old_metadata, new_metadata, change):
+    job, ledger, alias = fixture(tmp_path)
+    job.item.benchmark = benchmark
+    old_value = dict(question="Q", **old_metadata)
+    new_value = dict(question="Q", **new_metadata)
+    if change == "value":
+        new_value["question"] = "different"
+    elif change == "extra_field":
+        new_value["candidates"] = ["different"]
+    elif change == "wrong_wrapper":
+        new_value[next(iter(new_metadata))] = "unknown"
+    old_pin = save(tmp_path / "old.json", old_value)
+    new_pin = save(tmp_path / "new.json", new_value)
+    job.cohort["public_input_sha256"] = new_pin["sha256"]
+    alias["compatibility"] = dict(alias["compatibility"], public_input_sha256=new_pin["sha256"])
+    alias["source_compatibility"] = dict(alias["source_compatibility"], public_input_sha256=old_pin["sha256"])
+    alias["public_equivalence"] = dict(mode=mode,source=old_pin,target=new_pin,canonical_sha256=digest(canonical(dict(question="Q"))))
+    aliases = save(tmp_path / "aliases.json", [alias])
+    if change:
+        with pytest.raises(IntegrityError):
+            load_reuse_aliases(aliases,[job],ledger,{benchmark:{"g":"g"}})
+    else:
+        assert "new" in load_reuse_aliases(aliases,[job],ledger,{benchmark:{"g":"g"}})
