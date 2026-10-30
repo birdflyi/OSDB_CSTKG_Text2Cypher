@@ -85,7 +85,19 @@ def load_reuse_aliases(pin, jobs, ledger, graph_snapshots):
                         profile_sha256=(job.cohort or {}).get("profile_sha256"),
                         public_input_sha256=(job.cohort or {}).get("public_input_sha256"),
                         graph_snapshot_sha256=graph_snapshots[job.item.benchmark][job.item.graph])
-        if any(value is None for value in expected.values()) or row["compatibility"] != expected or row["source_compatibility"] != expected:
+        source_compatibility = dict(row["source_compatibility"])
+        equivalent = row.get("public_equivalence")
+        if equivalent is not None:
+            source_pin, target_pin = equivalent["source"], equivalent["target"]
+            if (source_pin["sha256"] != source_compatibility.get("public_input_sha256")
+                    or target_pin["sha256"] != expected["public_input_sha256"]):
+                raise IntegrityError("Public equivalence pins differ from declared inputs")
+            old_public, new_public = canonical(read(verify(source_pin))), canonical(read(verify(target_pin)))
+            if old_public != new_public or digest(new_public) != equivalent["canonical_sha256"]:
+                raise IntegrityError("Public inputs differ semantically")
+            # Different JSON formatting is permitted; retain both original pins.
+            source_compatibility["public_input_sha256"] = expected["public_input_sha256"]
+        if any(value is None for value in expected.values()) or row["compatibility"] != expected or source_compatibility != expected:
             raise IntegrityError("Reuse input/profile/model/snapshot differs")
         if not row.get("evidence"):
             raise IntegrityError("Reuse needs explicit source compatibility evidence")

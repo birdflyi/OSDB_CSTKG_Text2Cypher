@@ -4,7 +4,7 @@ import pytest
 
 from adapter_work.request_pipeline import load_reuse_aliases
 from adapter_work.cohort_pipeline import save
-from engine.config import digest
+from engine.config import canonical, digest
 from engine.errors import IntegrityError
 
 
@@ -44,3 +44,22 @@ def test_reuse_rejects_changed_context_or_saved_response(tmp_path, change):
         (tmp_path / "terminal.json").write_bytes(b"{}")
     with pytest.raises(IntegrityError):
         load_reuse_aliases(save(tmp_path / "aliases.json", [alias]), [job], ledger, {"B": {"g": "g"}})
+
+
+@pytest.mark.parametrize("different", [False, True])
+def test_equivalent_public_serialization_requires_equal_canonical_content(tmp_path, different):
+    job, ledger, alias = fixture(tmp_path)
+    old = tmp_path / "old_public.json"
+    old.write_bytes(b'{\n  "question": "Q"\n}\n')
+    old_pin = dict(path=str(old), sha256=digest(old.read_bytes()))
+    new_pin = save(tmp_path / "new_public.json", dict(question="changed" if different else "Q"))
+    job.cohort["public_input_sha256"] = new_pin["sha256"]
+    alias["compatibility"] = dict(alias["compatibility"], public_input_sha256=new_pin["sha256"])
+    alias["source_compatibility"] = dict(alias["source_compatibility"], public_input_sha256=old_pin["sha256"])
+    alias["public_equivalence"] = dict(source=old_pin, target=new_pin, canonical_sha256=digest(canonical(dict(question="Q"))))
+    aliases = save(tmp_path / "aliases.json", [alias])
+    if different:
+        with pytest.raises(IntegrityError, match="semantically"):
+            load_reuse_aliases(aliases, [job], ledger, {"B": {"g": "g"}})
+    else:
+        assert load_reuse_aliases(aliases, [job], ledger, {"B": {"g": "g"}})["new"]["response"]["status"] == "ok"
