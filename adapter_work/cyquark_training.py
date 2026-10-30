@@ -4,6 +4,7 @@ Importing, auditing, or building examples never downloads models or trains.
 The input must be separately generated, paraphrased and filtered training data.
 """
 import argparse
+import csv
 import hashlib
 import json
 import os
@@ -76,6 +77,35 @@ def encode_example(tokenizer, row, max_length):
     return dict(input_ids=full, attention_mask=[1]*len(full), labels=[-100]*len(prefix)+full[len(prefix):])
 
 
+def author_tsv_rows(path, *, benchmark, graph, source, heldout_questions=()):
+    """Import supplied corpora without inventing generation/filtering provenance."""
+    if (source.get('benchmark'), source.get('graph')) != (benchmark, graph):
+        raise ValueError('Author source graph binding mismatch')
+    for field in ('archive_sha256', 'member_sha256', 'member_path', 'permission_evidence_sha256'):
+        if not source.get(field):
+            raise ValueError('Incomplete author source receipt')
+    verify_file(path, source['member_sha256'])
+    heldout = {' '.join(q.split()).casefold() for q in heldout_questions}
+    rows, rejected = [], []
+    with Path(path).open(encoding='utf-8-sig', newline='') as stream:
+        reader = csv.DictReader(stream, delimiter='\t')
+        if reader.fieldnames != ['X', 'Y']:
+            raise ValueError('Unexpected author TSV columns')
+        for index, record in enumerate(reader, 1):
+            if None in record or not record['X'] or not record['Y']:
+                raise ValueError('Malformed author TSV record ' + str(index))
+            identity = source['member_sha256'] + ':' + str(index)
+            question = record['X']
+            if ' '.join(question.split()).casefold() in heldout:
+                rejected.append(dict(source_id=identity, reason='exact_heldout_question_overlap'))
+                continue
+            rows.append(dict(source_id=identity, benchmark=benchmark, graph=graph,
+                             split='train', question=question, cypher=record['Y'],
+                             messages=[dict(role='user', content=question)],
+                             provenance=dict(kind='author_supplied', source=source, record_index=index)))
+    return rows, rejected
+
+
 def validate_recipe(recipe):
     required = ('benchmark','graph','model_path','tokenizer_path','dataset_path','dataset_sha256',
                 'heldout_questions_path','heldout_questions_sha256','model_config_sha256',
@@ -83,14 +113,35 @@ def validate_recipe(recipe):
                 'micro_batch_size','max_length','seed','output_dir','choices')
     if any(recipe.get(key) is None for key in required):
         raise ValueError('Incomplete explicit training recipe')
-    if (recipe['epochs'],recipe['learning_rate'],recipe['weight_decay'],recipe['effective_batch_size']) != (1,5e-6,0.01,16):
-        raise ValueError('This profile preserves the paper training settings; version any alternative')
+    if (recipe['learning_rate'],recipe['weight_decay'],recipe['effective_batch_size']) != (5e-6,0.01,16):
+        raise ValueError('Version any alternative learning rate, decay or effective batch')
+    training_options(recipe)
     if type(recipe['micro_batch_size']) is not int or recipe['micro_batch_size'] < 1 or 16 % recipe['micro_batch_size']:
         raise ValueError('Micro batch must divide effective batch 16')
     if type(recipe['max_length']) is not int or recipe['max_length'] < 1 or type(recipe['seed']) is not int:
         raise ValueError('Explicit positive sequence limit and integer seed required')
     if recipe['choices'].get('loss_scope') != 'completion_only' or recipe['choices'].get('thinking') is not False:
         raise ValueError('Freeze the disclosed completion-only, non-thinking engineering profile')
+
+
+def training_options(recipe):
+    """Preserve historical recipes; require explicit evidence for a new profile."""
+    profile = recipe.get('training_profile', 'legacy_v28')
+    if profile == 'legacy_v28':
+        if recipe['epochs'] != 1:
+            raise ValueError('Legacy profile requires one epoch')
+        return dict(optim='adamw_torch', lr_scheduler_type='constant')
+    if profile != 'explicit_v2':
+        raise ValueError('Unknown training profile')
+    if not recipe.get('settings_evidence_sha256'):
+        raise ValueError('Explicit profile requires settings evidence')
+    if type(recipe['epochs']) is not int or recipe['epochs'] < 1:
+        raise ValueError('Epochs must be an explicit positive integer')
+    optimizer = recipe.get('optimizer')
+    scheduler = recipe.get('lr_scheduler_type')
+    if optimizer not in ('adafactor', 'adamw_torch') or scheduler not in ('cosine', 'constant'):
+        raise ValueError('Unsupported explicit optimizer or scheduler')
+    return dict(optim=optimizer, lr_scheduler_type=scheduler)
 
 
 def verify_file(path, expected):
@@ -110,8 +161,17 @@ def train(recipe):
                      (Path(recipe['model_path'])/'config.json',recipe['model_config_sha256']),
                      (Path(recipe['tokenizer_path'])/'tokenizer_config.json',recipe['tokenizer_config_sha256'])):
         verify_file(path,sha)
-    rows,rejected = checked_rows(recipe['dataset_path'],benchmark=recipe['benchmark'],graph=recipe['graph'],
-                                 heldout_questions=json.loads(Path(recipe['heldout_questions_path']).read_text(encoding='utf8')))
+    heldout = json.loads(Path(recipe['heldout_questions_path']).read_text(encoding='utf8'))
+    data_format = recipe.get('dataset_format', 'generated_jsonl')
+    if data_format == 'author_tsv_v1':
+        rows, rejected = author_tsv_rows(recipe['dataset_path'], benchmark=recipe['benchmark'],
+                                        graph=recipe['graph'], source=recipe['author_source'],
+                                        heldout_questions=heldout)
+    elif data_format == 'generated_jsonl':
+        rows, rejected = checked_rows(recipe['dataset_path'], benchmark=recipe['benchmark'],
+                                      graph=recipe['graph'], heldout_questions=heldout)
+    else:
+        raise ValueError('Unknown training dataset format')
     # Heavy imports happen only after explicit authorization and file checks.
     import torch
     from transformers import AutoTokenizer, Qwen3_5ForConditionalGeneration, Trainer, TrainingArguments, DataCollatorForSeq2Seq
@@ -137,7 +197,7 @@ def train(recipe):
     args=TrainingArguments(output_dir=str(output/'checkpoints'),num_train_epochs=recipe['epochs'],
          learning_rate=recipe['learning_rate'],weight_decay=recipe['weight_decay'],
          per_device_train_batch_size=recipe['micro_batch_size'],gradient_accumulation_steps=16//recipe['micro_batch_size'],
-         bf16=True,seed=recipe['seed'],data_seed=recipe['seed'],optim='adamw_torch',lr_scheduler_type='constant',
+         bf16=True,seed=recipe['seed'],data_seed=recipe['seed'],**training_options(recipe),
          warmup_ratio=0,gradient_checkpointing=True,report_to=[],save_strategy='epoch',save_total_limit=1)
     model=Qwen3_5ForConditionalGeneration.from_pretrained(recipe['model_path'],local_files_only=True,
                                                        trust_remote_code=False,torch_dtype=torch.bfloat16)
