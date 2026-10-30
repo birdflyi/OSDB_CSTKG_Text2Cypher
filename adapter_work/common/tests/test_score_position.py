@@ -28,6 +28,10 @@ def policy(benchmark="MindTheQuery", identity="q", status="VALID", query="RETURN
 
 
 @pytest.mark.parametrize("prediction,state,partition,value", [
+    ({"status": "length"}, "VALID", "W", False),
+    ({"status": "format_error"}, "VALID", "W", False),
+    ({"status": "case_error"}, "VALID", "W", False),
+    ({"status": "not_dispatched"}, "VALID", "U", None),
     ({"status": "REFUSED"}, "VALID", "W", False),
     ({"status": "REFUSED"}, "UNVERIFIED", "R", None),
     ({"status": "UNKNOWN"}, "UNVERIFIED", "R", None),
