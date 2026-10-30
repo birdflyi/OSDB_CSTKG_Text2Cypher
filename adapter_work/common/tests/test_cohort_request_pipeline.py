@@ -30,15 +30,21 @@ def test_execution_id_does_not_change_wire_or_original_spec():
 
 def test_100_paths_cap4_long_tail_rolls_without_expiring_the_backlog(tmp_path):
     started, ended = [], []
+    lifecycle = []
     first_wave = threading.Barrier(4)
+    next_cell_started = threading.Event()
     def respond(call, wire, endpoint):
         ordinal = int(json.loads(wire)["messages"][0]["content"])
         started.append((ordinal, time.monotonic()))
+        lifecycle.append(('started', ordinal))
         if ordinal < 4:
             first_wave.wait(timeout=10)
         if ordinal == 0:
-            time.sleep(0.3)
+            assert next_cell_started.wait(timeout=10), "Next cell blocked behind first-cell tail"
+        if ordinal == 25:
+            next_cell_started.set()
         ended.append((ordinal, time.monotonic()))
+        lifecycle.append(('ended', ordinal))
         return dict(status="ok", content="RETURN 1", http_status=200,
                     finish_reason="stop", usage={"completion_tokens": 1})
     transport = FakeTransport(.002, respond)
@@ -66,7 +72,7 @@ def test_100_paths_cap4_long_tail_rolls_without_expiring_the_backlog(tmp_path):
     assert transport.calls == 100 and transport.peak == 4
     assert len(result["positions"]) == 100
     assert {p["status"] for p in result["positions"]} == {"answered"}
-    assert dict(started)[25] < dict(ended)[0], "Next cell must not wait for the first cell tail"
+    assert lifecycle.index(('started', 25)) < lifecycle.index(('ended', 0)), "Next cell must not wait for the first cell tail"
     finals = [json.loads(p.read_bytes()) for p in (tmp_path/"run/finals").glob("*.json")]
     assert len(finals) == 100 and all(f["task_id"].startswith("original-") for f in finals)
     assert all(f["execution_task_id"].startswith("execution-") for f in finals)
