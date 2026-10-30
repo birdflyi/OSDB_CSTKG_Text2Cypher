@@ -72,7 +72,11 @@ def test_prepare_composes_prompt_and_checks_sha():
     assert sum(1 for s in specs if s.full_flow_five) == 5
     assert len({s.graph for s in specs}) == 11
     assert len({s.category for s in specs}) == 5
-    assert all("Graph schema:" in s.messages[0]["content"] for s in specs)
+    from common.prompts import compose_direct
+    for spec in specs:
+        payload = json.loads(Path(spec.input_path).read_text(encoding="utf-8-sig"))
+        assert spec.messages == compose_direct("MindTheQuery", payload)
+        assert spec.messages[0]["role"] == "system"
     assert specs[0].cell_id == "M01-B03"
 
 

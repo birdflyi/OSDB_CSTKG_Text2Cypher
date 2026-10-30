@@ -17,6 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from common.consumption import consume as consume_positions  # noqa: E402
+from common.prompts import compose_direct
 
 FENCE = re.compile(r"```(?:cypher)?\s*(.*?)```", re.DOTALL | re.IGNORECASE)
 ANSWER_BLOCK = re.compile(r"<answer>(.*?)</answer>", re.DOTALL | re.IGNORECASE)
@@ -93,14 +94,6 @@ def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _prompt(question: str, schema) -> str:
-    rendered = schema if isinstance(schema, str) else json.dumps(schema, ensure_ascii=False)
-    return (
-        "Graph schema:\n%s\n\nWrite one Cypher query that answers the question.\n"
-        "Return only the Cypher statement.\n\nQuestion: %s" % (rendered, question)
-    )
-
-
 def prepare(positions_path, *, limit=None, cell_id="M01-B03") -> list:
     document = json.loads(Path(positions_path).read_text(encoding="utf-8-sig"))
     rows = document["positions"]
@@ -114,7 +107,7 @@ def prepare(positions_path, *, limit=None, cell_id="M01-B03") -> list:
         payload = json.loads(path.read_text(encoding="utf-8-sig"))
         if "gold" in payload or "reference" in payload:
             raise IntegrityError("public input leaks gold: " + str(path))
-        messages = (dict(role="user", content=_prompt(payload["question"], payload["schema"])),)
+        messages = compose_direct("MindTheQuery", payload)
         specs.append(
             RequestSpec(
                 cell_id=cell_id,
