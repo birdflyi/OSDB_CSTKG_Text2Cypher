@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from common import loader
 
@@ -32,13 +33,20 @@ def save(path, value):
         stream.write("\n")
 
 
-def build(materials, output):
+def build(materials, output, *, methods=METHODS):
     materials, output = Path(materials), Path(output)
+    methods = tuple(methods)
+    if not methods or len(set(methods)) != len(methods) or set(methods) - set(METHODS):
+        raise ValueError("Select unique known methods")
+    for method in methods:
+        dependency = "ours" if method in CONTROLS else "direct" if method == "direct-feedback" else None
+        if dependency and dependency not in methods:
+            raise ValueError(method + " requires " + dependency)
     if output.exists():
         raise FileExistsError("Choose a fresh inventory directory")
     work = Path(__file__).resolve().parent
     rows, public, stages, graphs = [], {}, [], set()
-    for method in METHODS:
+    for method in methods:
         for benchmark, slug in BENCHMARKS.items():
             source = materials / "adapter_positions_v22/cells" / f"{method}__{benchmark}.positions.json"
             cell = read(source)
@@ -91,9 +99,16 @@ def build(materials, output):
         "delegation_bc_v23":["resource_manifest.json"],
     }.items():
         dependencies.extend(receipt(materials / folder / name) for name in names)
-    save(output / "matrix.json", dict(cells=rows, counts=dict(cells=45, A_positions=900, B_positions=225,
-         unique_public_inputs=len(public), initial_requests=500, conditional_RI_continuations=100,
-         shared_Direct_views=100, control_dependencies=300), graph_inventory=[dict(benchmark=b,graph=g) for b,g in sorted(graphs)]))
+    counts = dict(cells=len(rows), A_positions=sum(len(c["positions"]) for c in rows),
+                  B_positions=sum(p["full_flow_five"] for c in rows for p in c["positions"]),
+                  unique_public_inputs=len(public),
+                  initial_requests=sum("request_template" in p for c in rows for p in c["positions"]),
+                  conditional_RI_continuations=sum(s["stage"] == "answer_continue" for s in stages),
+                  shared_Direct_views=sum(len(c["positions"]) for c in rows if c["method"] == "direct-feedback"),
+                  control_dependencies=sum(len(c["positions"]) for c in rows if c["method"] in CONTROLS))
+    save(output / "matrix.json", dict(cells=rows, counts=counts,
+         selected_methods=list(methods), excluded_methods=[m for m in METHODS if m not in methods],
+         graph_inventory=[dict(benchmark=b,graph=g) for b,g in sorted(graphs)]))
     save(output / "generation_stages.json", stages)
     save(output / "material_index.json", dict(contract_files=dependencies, public_inputs=list(public.values()),
           note="Historical contracts are immutable; V27 corrections override listed stale implementation notes."))
@@ -108,5 +123,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--materials", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--scope", type=Path, help="Explicit method scope; the historical 45-cell default remains available")
     args = parser.parse_args()
-    print(json.dumps(build(args.materials, args.output)))
+    methods = read(args.scope)["methods"] if args.scope else METHODS
+    print(json.dumps(build(args.materials, args.output, methods=methods)))

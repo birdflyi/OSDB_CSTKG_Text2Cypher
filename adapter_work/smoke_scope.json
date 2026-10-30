@@ -1,0 +1,13 @@
+{
+  "version": "20261030-without-cyphersmith",
+  "methods": ["direct", "ours", "correct-detail", "simple-correct", "native-set-count", "direct-feedback", "cypher-ri", "cyquark"],
+  "excluded": {
+    "cyphersmith": {
+      "reason": "User removed it from the active comparison scope after reviewing value and reproduction uncertainty",
+      "scientifically_inapplicable": false,
+      "historical_materials_retained": true
+    }
+  },
+  "model_calls_authorized_by_this_file": false,
+  "training_authorized_by_this_file": false
+}
