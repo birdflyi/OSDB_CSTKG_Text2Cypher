@@ -5,7 +5,7 @@ answer and score have been saved. Model capacity is deliberately absent here.
 """
 
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 import threading
@@ -294,7 +294,13 @@ class OfflineRuntime:
             identity = dict(benchmark=benchmark, graph=graph, instance=folder.name)
             started = time.monotonic()
             self.journal.append("graph_prepare_started", **identity)
-            with backend_factory(benchmark, graph, settings, folder) as backend:
+            with ExitStack() as stack:
+                try:
+                    backend = stack.enter_context(backend_factory(benchmark, graph, settings, folder))
+                except Exception as exc:
+                    self.journal.append("graph_prepare_failed", seconds=time.monotonic() - started,
+                                        error_type=type(exc).__name__, **identity)
+                    raise
                 self.journal.append(
                     "graph_ready", seconds=time.monotonic() - started, **identity
                 )

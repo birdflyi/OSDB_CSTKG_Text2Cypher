@@ -135,6 +135,16 @@ class JsonRpcClient:
             if any(self.ready_value.get(k) != v for k, v in expected_ready.items()):
                 raise IntegrityError("Worker READY owner/snapshot/version mismatch")
             self.startup_roundtrip_seconds = time.monotonic() - started
+        except (UnknownExecution, TimeoutError) as exc:
+            # Sample before closing: close() can terminate our own SSH child.
+            rc = self.process.poll()
+            elapsed = time.monotonic() - started
+            detail = str(exc) if not isinstance(exc, TimeoutError) else "READY timeout"
+            self.close()
+            raise type(exc)(
+                f"READY not received: {detail}; elapsed={elapsed:.3f}s; "
+                f"channel_returncode_before_cleanup={rc}"
+            ) from exc
         except BaseException:
             self.close()
             raise
@@ -159,7 +169,9 @@ class JsonRpcClient:
         except BaseException as exc:
             self.failure = type(exc).__name__
             if not self.ready.done():
-                self.ready.set_exception(UnknownExecution(self.failure))
+                self.ready.set_exception(UnknownExecution(
+                    str(exc) if isinstance(exc, UnknownExecution) else self.failure
+                ))
             with self.lock:
                 for future in self.pending.values():
                     future.set_exception(UnknownExecution(self.failure))
