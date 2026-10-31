@@ -82,6 +82,7 @@ def test_tugraph_parallel_cases_have_separate_transport_and_evidence(
     import tugraph_worker as module
 
     worker = TuGraphWorker.__new__(TuGraphWorker)
+    worker.process = SimpleNamespace(poll=lambda: None)
     worker.folder, worker.settings = tmp_path, dict(graph="g", port=18871)
     worker.storage_graph, worker.token = "g", "test-only-token"
     barrier = threading.Barrier(2)

@@ -257,6 +257,7 @@ def test_remote_workers_keep_author_identity_and_take_cypher_branch(
 
         monkeypatch.setattr(module, "NativeQueryJournal", Journal)
         worker = module.TuGraphWorker.__new__(module.TuGraphWorker)
+        worker.process = SimpleNamespace(poll=lambda: None)
         worker.settings = dict(graph="g", port=18871)
         worker.token = "test-only-token"
         worker.storage_graph = "g"

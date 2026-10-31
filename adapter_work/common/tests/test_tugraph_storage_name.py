@@ -53,6 +53,7 @@ def test_execution_routes_storage_graph_but_saves_public_case(tmp_path, monkeypa
     instance.storage_graph = worker.graph_storage_name(public)
     instance.folder = tmp_path
     instance.token = "test-only-token"
+    instance.process = SimpleNamespace(poll=lambda: None)
     seen = []
 
     class Journal:
@@ -87,3 +88,31 @@ def test_execution_routes_storage_graph_but_saves_public_case(tmp_path, monkeypa
     saved = list(tmp_path.glob("cases/*/input.json"))
     assert len(saved) == 1
     assert json.loads(saved[0].read_text())["identity"]["graph"] == public
+
+
+def test_dead_owned_process_does_not_send_or_mark_query_wrong(tmp_path):
+    instance = worker.TuGraphWorker.__new__(worker.TuGraphWorker)
+    instance.folder = tmp_path
+    instance.settings = {"graph": "test"}
+    instance.process = SimpleNamespace(pid=100, poll=lambda: -11)
+    request = dict(identity=dict(benchmark="Text2GQL", graph="test", method="direct"))
+    answer = instance.execute(request)["answer"]
+    assert answer["status"] == "INFRASTRUCTURE_ERROR"
+    assert answer["physical_database_requests"] == 0
+    assert answer["server_exit_code"] == -11
+    assert not list(tmp_path.rglob("queries"))
+
+
+def test_exit_during_case_preserves_unknown(monkeypatch, tmp_path):
+    instance = worker.TuGraphWorker.__new__(worker.TuGraphWorker)
+    instance.folder = tmp_path
+    instance.settings = {"graph": "test", "port": 18871}
+    instance.storage_graph, instance.token = "test", "test-only"
+    instance.process = SimpleNamespace(pid=101, poll=iter([None, -11]).__next__)
+    original = dict(status="UNKNOWN_EXECUTION", complete=False, response_bytes_all_attempts=547)
+    monkeypatch.setattr(worker, "NativeQueryJournal", lambda *a, **k:
+                        SimpleNamespace(execute=lambda *args: original))
+    req = dict(identity=dict(benchmark="Text2GQL", graph="test", method="direct"), cypher="RETURN 1")
+    assert instance.execute(req)["answer"] == original
+    evidence = next(tmp_path.rglob("server_exit_observed.json"))
+    assert json.loads(evidence.read_bytes())["server_exit_code"] == -11

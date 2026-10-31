@@ -262,6 +262,16 @@ class TuGraphWorker:
             raise IntegrityError("TuGraph case graph differs")
         folder = self.folder / "cases" / digest(canonical(identity))[:24]
         save(folder / "input.json", request)
+        exit_code = self.process.poll()
+        if exit_code is not None:
+            # The dispatcher can requeue this case on a fresh owned instance.
+            # Do not send to a dead (or subsequently reused) port.
+            result = dict(status="INFRASTRUCTURE_ERROR", complete=False,
+                          failure_kind="OWNED_SERVER_EXITED_BEFORE_CASE",
+                          server_pid=self.process.pid, server_exit_code=exit_code,
+                          physical_database_requests=0, model_calls=0)
+            save(folder / "final.json", result)
+            return dict(answer=result, remote_final_sha256=digest(canonical(result)))
         journal = NativeQueryJournal(
             folder / "queries",
             LocalRestTransport(self.settings["port"], self.token),
@@ -309,6 +319,13 @@ class TuGraphWorker:
                 strategy="full_detail" if method == "correct-detail" else "contract",
             )
             result = dict(result, complete=result.get("status") == "EXECUTED")
+        exit_code = self.process.poll()
+        if exit_code is not None:
+            # Preserve the original response, including any partial bytes. Exit
+            # during concurrent reads does not identify the triggering query.
+            save(folder / "server_exit_observed.json", dict(
+                server_pid=self.process.pid, server_exit_code=exit_code,
+                observed_epoch=time.time(), original_status=result.get("status")))
         save(folder / "final.json", result)
         return dict(answer=result, remote_final_sha256=digest(canonical(result)))
 
