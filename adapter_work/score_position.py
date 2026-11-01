@@ -209,7 +209,8 @@ def score_position(policy, prediction, reference, *, method, comparator=None, an
     may load it once per frozen backend rather than once per position.
     """
     benchmark = policy.get("benchmark")
-    if benchmark not in BENCHMARKS or (policy.get("metric_id"), policy.get("metric_authority")) != BENCHMARKS[benchmark]:
+    expected_metric = ("project_osdb_explicit_output_v2", "project_defined") if benchmark == "OSDB-STKG" and policy.get("output_contract") else BENCHMARKS.get(benchmark)
+    if benchmark not in BENCHMARKS or (policy.get("metric_id"), policy.get("metric_authority")) != expected_metric:
         raise ScorePolicyError("Unknown metric/benchmark policy")
     if policy.get("reference_status") not in REFERENCE_STATUSES or policy.get("order_rule") not in ("BAG", "ORDERED", "UNADJUDICATED"):
         raise ScorePolicyError("Malformed scoring policy")
@@ -278,6 +279,9 @@ def score_position(policy, prediction, reference, *, method, comparator=None, an
             value = compare_numeric_exact(ref, prediction, ordered=policy["order_rule"] == "ORDERED")
             # The old strict representation metric remains a distinct diagnostic.
             record["diagnostics"]["strict_typed_output_exact"] = _strict_json(ref, prediction, policy["order_rule"] == "ORDERED")
+        elif benchmark == "OSDB-STKG" and policy.get("output_contract"):
+            from adapter_work.osdb_output import compare
+            value = compare(ref, prediction, policy["output_contract"])
         else:
             value = _strict_json(ref, prediction, ordered=policy["order_rule"] == "ORDERED")
     except ScorePolicyError:

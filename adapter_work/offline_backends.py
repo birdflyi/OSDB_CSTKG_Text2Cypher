@@ -387,7 +387,7 @@ class Text2GQLBackend(NativeBackend):
 def open_backend(benchmark, graph, settings, output):
     if not settings:
         raise ValueError("Backend configuration missing: " + benchmark)
-    if benchmark == "CypherBench":
+    if benchmark == "CypherBench" or (benchmark == "OSDB-STKG" and settings.get("transport") == "rpc"):
         route = settings["graphs"][graph]
         with (output / ("worker-" + graph + ".stderr")).open("xb") as stderr:
             client = JsonRpcClient(
