@@ -7,6 +7,7 @@ continue to use the full recovery path in request_pipeline.
 from pathlib import Path
 import threading
 import time
+import json
 
 from engine.config import canonical, digest
 from engine.errors import IntegrityError
@@ -32,7 +33,7 @@ def fixed_config(config):
 class RequestSession:
     """Never pass this object across model-owner threads or reuse it after close."""
 
-    def __init__(self, config, root, stop=None):
+    def __init__(self, config, root, stop=None, *, logical_keys=None):
         self.config, self.root = config, Path(root).resolve()
         self.cap = config["physical_attempt_cap"]
         if type(self.cap) is not int or self.cap < 1:
@@ -44,27 +45,41 @@ class RequestSession:
         self.saved = {}
         self.seen_slot = 0
         self.owner_thread = None
+        self.logical_keys = None if logical_keys is None else frozenset(logical_keys)
+
+    def progress(self, stage, **detail):
+        """Small append-only diagnostics; does not alter the accounting journal."""
+        self.root.mkdir(parents=True, exist_ok=True)
+        with (self.root / 'admission_progress.jsonl').open('a', encoding='utf8') as f:
+            f.write(json.dumps(dict(stage=stage, epoch=time.time(), **detail)) + '\n')
+            f.flush()
 
     def __enter__(self):
         if self.ledger is not None:
             raise IntegrityError("A request session cannot be reopened")
         started = time.monotonic()
+        self.progress('legacy_scan_started')
         legacy = scan_legacy(
             Path(self.config["legacy_ledger"]), self.config.get("path_rewrites", [])
         )
         legacy_done = time.monotonic()
+        self.progress('legacy_scan_completed', seconds=legacy_done-started)
         self.ledger = Ledger(
             Path(self.config["ledger_dir"]),
             Path(self.config["approval_path"]),
             legacy,
             self.config["budget_scope"],
         )
+        self.progress('ledger_audit_started')
         self.ledger.__enter__()
         ledger_done = time.monotonic()
+        self.progress('ledger_audit_completed', seconds=ledger_done-legacy_done, slots=len(self.ledger.records))
         try:
             self.ledger.limit_run(self.root, self.cap)
             checkpoint = self.root / "admission_recovery.json"
-            self.saved = checkpoint_replies(checkpoint, self.ledger)
+            self.progress('reply_recovery_started', logical_keys=None if self.logical_keys is None else len(self.logical_keys))
+            self.saved = checkpoint_replies(checkpoint, self.ledger, logical_keys=self.logical_keys)
+            self.progress('reply_recovery_completed', seconds=time.monotonic()-ledger_done, recovered_keys=len(self.saved))
             self.recovery = dict(
                 path=str(checkpoint), sha256=digest(checkpoint.read_bytes())
             )
@@ -83,6 +98,7 @@ class RequestSession:
                         scope=self.ledger.scope,
                         historical_slots=self.seen_slot,
                         recovery=self.recovery,
+                        recovery_logical_keys=None if self.logical_keys is None else sorted(self.logical_keys),
                         continuous_request_measurement=False,
                     )
                 ),
@@ -144,6 +160,9 @@ class RequestSession:
         self.seen_slot += len(added)
 
     def replies_for(self, keys):
+        keys = set(keys)
+        if self.logical_keys is not None and not keys <= self.logical_keys:
+            raise IntegrityError('Batch requests are outside the admitted recovery keys')
         self.refresh()
         verified = {}
         for key in set(keys):

@@ -143,6 +143,23 @@ def test_cached_reply_is_rechecked_only_when_used(tmp_path):
             session.replies_for(["r1"])
 
 
+def test_targeted_recovery_preserves_all_attempts_and_rejects_other_keys(tmp_path):
+    cfg = config(tmp_path, cap=3)
+    with RequestSession(cfg, tmp_path/'old') as session:
+        reserve(session, 1, key='target', status='unknown')
+        reserve(session, 2, key='target', attempt=2)
+        reserve(session, 3, key='unrelated')
+    with RequestSession(cfg, tmp_path/'new', logical_keys={'target','fresh'}) as session:
+        assert set(session.saved) == {'target'}
+        assert len(session.saved['target']['history']) == 2
+        assert len(json.loads(Path(session.recovery['path']).read_bytes())) == 2
+        assert session.replies_for(['fresh']) == {}
+        with pytest.raises(IntegrityError, match='outside'):
+            session.replies_for(['unrelated'])
+        stages=[json.loads(line)['stage'] for line in (session.root/'admission_progress.jsonl').read_text().splitlines()]
+        assert stages[-1]=='reply_recovery_completed'
+
+
 def test_session_rejects_changed_identity_and_nonfeedback_entry(tmp_path):
     with RequestSession(config(tmp_path), tmp_path / "phase") as session:
         good = batch(session, 1)
