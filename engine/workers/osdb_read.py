@@ -66,6 +66,7 @@ def main():
             return handler(request)
         ready = dict(kind='READY', graph=config['graph'], graph_sha256=config['graph_sha256'],
                      source_sha256=digest(Path(__file__).read_bytes()), max_case_workers=2,
+                     hostname=socket.gethostname(), worker_version='osdb-existing-read-v1',
                      import_receipt_sha256=config['import_receipt']['sha256'],
                      database_pid=pid, counts=[nodes, edges])
         def emit(value):

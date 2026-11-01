@@ -408,7 +408,7 @@ def open_backend(benchmark, graph, settings, output):
                             benchmark=benchmark,
                         ),
                         graph_sha256=route["expected_ready"]["graph_sha256"],
-                        worker_version="engine-neo4j-v1",
+                        worker_version=route["expected_ready"].get("worker_version", "engine-neo4j-v1"),
                     ).execute
 
                 backend = SelectionBackend(benchmark, settings, execute_factory)
