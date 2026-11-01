@@ -204,7 +204,6 @@ def run_group(
                     initial = method_answers.get(("direct", row["position_id"]))
                     if feedback_source:
                         answer = backend.execute(row, source["result"], folder)
-                        answer = dict(answer, feedback_used=True)
                     elif initial is None:
                         answer = dict(status="dependency_missing", complete=False)
                     elif (
@@ -312,6 +311,7 @@ def run_group(
                 score=score,
                 seconds=time.monotonic() - started,
                 source_status=source_status,
+                feedback_used=row["method"] == "direct-feedback" and bool(feedback_source),
                 model_calls=0,
                 **provenance(row),
             )

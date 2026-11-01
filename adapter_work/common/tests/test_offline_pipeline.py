@@ -94,3 +94,24 @@ def test_integrity_failure_not_swallowed(tmp_path):
 
     with pytest.raises(IntegrityError):
         run_group(rows(), sources(), Broken(), tmp_path)
+
+
+def test_feedback_metadata_does_not_change_sealed_backend_answer(tmp_path):
+    from engine.config import canonical, digest
+    class Sealed(Backend):
+        def execute(self, row, source, directory):
+            answer = super().execute(row, source, directory)
+            self.remote_hash = digest(canonical(answer))
+            return answer
+
+        def score(self, row, answer, receipt):
+            assert digest(canonical(answer)) == self.remote_hash
+            return super().score(row, answer, receipt)
+
+    source = sources()
+    source['direct-feedback', 'fixture', 'P1'] = source['direct', 'fixture', 'P1']
+    row = next(r for r in rows() if r['method'] == 'direct-feedback')
+    result = run_group([row], source, Sealed(), tmp_path)[0]
+    assert result['feedback_used'] is True
+    assert 'feedback_used' not in json.loads(Path(result['final']['path']).read_bytes())
+    assert result['score']['status'] == 'scored'
