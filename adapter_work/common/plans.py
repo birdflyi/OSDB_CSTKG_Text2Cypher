@@ -57,8 +57,10 @@ def validate(plan: dict) -> dict:
     calls = plan.get("calls")
     _require(isinstance(calls, list) and 1 <= len(calls) <= 2, "calls must be 1 or 2")
     for call in calls:
+        _require(isinstance(call, dict), "call must be an object")
         nodes = call.get("nodes")
         _require(isinstance(nodes, list) and 1 <= len(nodes) <= 4, "nodes must be 1-4")
+        _require(all(isinstance(node, dict) for node in nodes), "nodes must contain objects")
         ids = [node.get("id") for node in nodes]
         _require(all(isinstance(i, str) and i for i in ids), "node ids must be non-empty")
         _require(len(set(ids)) == len(ids), "node ids must be unique")
@@ -67,6 +69,7 @@ def validate(plan: dict) -> dict:
         _require(isinstance(edges, list) and len(edges) <= 3, "edges must be 0-3")
         optional = 0
         for edge in edges:
+            _require(isinstance(edge, dict), "edge must be an object")
             _require(edge.get("source") in ids and edge.get("target") in ids, "edge endpoint unknown")
             _require(edge.get("label"), "edge needs a label")
             optional += 1 if edge.get("optional") else 0
@@ -74,8 +77,9 @@ def validate(plan: dict) -> dict:
         where = call.get("where", [])
         _require(isinstance(where, list) and len(where) <= 16, "where must be <=16 predicates")
         for predicate in where:
+            _require(isinstance(predicate, dict), "predicate must be an object")
             op = predicate.get("op")
-            _require(op in PREDICATES, "unknown predicate: " + str(op))
+            _require(isinstance(op, str) and op in PREDICATES, "unknown predicate: " + str(op))
             _require(predicate.get("field"), "predicate needs a field")
             if op in NULL_PREDICATES:
                 _require("value" not in predicate and "other_field" not in predicate, "null predicate takes no value")
@@ -84,13 +88,18 @@ def validate(plan: dict) -> dict:
                 _require(given == 1, "predicate takes exactly one argument")
         returns = call.get("returns")
         _require(isinstance(returns, list) and 1 <= len(returns) <= 8, "returns must be 1-8")
+        _require(all(isinstance(item, dict) for item in returns), "returns must contain objects")
         aliases = [item.get("alias") for item in returns]
-        _require(all(aliases) and len(set(aliases)) == len(aliases), "aliases must be unique")
+        _require(all(isinstance(alias, str) and alias for alias in aliases), "aliases must be non-empty strings")
+        _require(len(set(aliases)) == len(aliases), "aliases must be unique")
         for item in returns:
             _require(item.get("field"), "return needs a field")
             if item.get("agg"):
-                _require(item["agg"] in AGGS, "unknown aggregate: " + str(item["agg"]))
-        for item in call.get("order_by", []):
+                _require(isinstance(item["agg"], str) and item["agg"] in AGGS, "unknown aggregate: " + str(item["agg"]))
+        order_by = call.get("order_by", [])
+        _require(isinstance(order_by, list), "order_by must be a list")
+        for item in order_by:
+            _require(isinstance(item, dict), "order_by items must be objects")
             _require(item.get("column") in aliases, "order_by must use a return alias")
             _require(item.get("direction") in ("ASC", "DESC"), "direction must be ASC or DESC")
         limit = call.get("limit")
@@ -99,6 +108,7 @@ def validate(plan: dict) -> dict:
     _require("combine" in plan, "combine is required")
     combine = plan["combine"]
     _require(isinstance(combine, dict), "combine must be an object")
+    _require(isinstance(combine.get("op"), str), "combine op must be a string")
     _require(combine.get("op") == "single" or combine.get("op") in SET_OPS, "unknown combine op")
     if combine.get("op") in SET_OPS:
         _require(len(calls) == 2, "set combine needs exactly two calls")
