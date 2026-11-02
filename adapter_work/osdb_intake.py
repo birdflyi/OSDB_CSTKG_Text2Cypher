@@ -26,7 +26,7 @@ def jsonl(path, rows):
     return receipt(path)
 
 
-def build(input_path, output):
+def build(input_path, output, *, methods=None, split="engineering_smoke", profiles=None):
     output = Path(output).resolve()
     output.mkdir(exist_ok=False, parents=True)
     tasks = [json.loads(line) for line in Path(input_path).read_bytes().splitlines() if line]
@@ -64,11 +64,11 @@ def build(input_path, output):
     population = []
     for i, (task, public, reference) in enumerate(zip(tasks, publics, references), 1):
         population.append(dict(position_id=public['position_id'], benchmark='osdb_stkg',
-            task_id=task['task_id'], graph=task['graph'], split='engineering_smoke', source_group=task['layer'],
+            task_id=task['task_id'], graph=task['graph'], split=split, source_group=task['layer'],
             category=task.get('category'), source_file=task['source']['path'], source_sha256=task['source']['sha256'],
             public_binding=dict(pub, line_1based=i, record_sha256=digest(canonical(public))),
             reference_binding=dict(ref, line_1based=i, record_sha256=digest(canonical(reference))),
-            public_input_sha256=digest(canonical(public['public_input'])), exposure_status='development_exposed'))
+            public_input_sha256=digest(canonical(public['public_input'])), exposure_status=task.get('exposure_status', 'development_exposed')))
     population.sort(key=lambda r:r['position_id'])
     source = jsonl(output/'population.jsonl', population)
     selection = jsonl(output/'selection.jsonl', [dict(r, population_row_sha256=digest(canonical(r))) for r in population])
@@ -76,8 +76,9 @@ def build(input_path, output):
     manifest = save(output/'cohort.json', dict(kind='cohort_v1', schema_version='cohort_v1',
         benchmark='osdb_stkg', selection_mode='independently_authored', source=source, policy=policy,
         selection=selection, population_count=len(tasks), selected_count=len(tasks), formal_admitted=False))
-    profiles = {m:receipt(ROOT/'adapter_work'/'prompts'/(m+'.json')) for m in ('direct','ours')}
-    inventory = build_inventory([manifest], list(METHOD_IDS), output/'inventory', profiles=profiles, bindings={})
+    if profiles is None:
+        profiles = {m:receipt(ROOT/'adapter_work'/'prompts'/(m+'.json')) for m in ('direct','ours')}
+    inventory = build_inventory([manifest], list(METHOD_IDS) if methods is None else methods, output/'inventory', profiles=profiles, bindings={})
     policies = []
     for task, row in zip(tasks, population):
         p = build_task_policy('OSDB-STKG', row['position_id'], task['reference_query'], reference_status='VALID', cohort_sha256=manifest['sha256'])
